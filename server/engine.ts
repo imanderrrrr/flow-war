@@ -1,0 +1,311 @@
+import { BLOCKS, SUITES, type Company, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
+
+const NAMES = ['NOVA', 'VERTEX', 'BYTE', 'EMBER', 'ORBIT'];
+const COLORS = ['#f5d45c', '#68dca2', '#69adff', '#f27e79', '#b69af7'];
+export const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+export function initialGraph(domain: 'backend' | 'security' | 'product'): Graph {
+  const types = domain === 'backend' ? ['entry', 'read', 'write', 'payment', 'exit'] : ['entry', 'exit'];
+  const labels: Record<string, string> = { entry: 'Request IN', read: 'Read Stock', write: 'Write Stock', payment: 'Payment', exit: 'Response OUT' };
+  return { nodes: types.map((type, i) => ({ id: `${domain}-${type}`, type, position: { x: i * 190, y: 160 }, data: { label: labels[type] } })), edges: types.slice(1).map((type, i) => ({ id: `${domain}-e${i}`, source: `${domain}-${types[i]}`, target: `${domain}-${type}` })) };
+}
+export function createGame(duration = 1500, seed = 7357): GameState {
+  const companies: Company[] = NAMES.map((name, id) => ({
+    id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
+    servers: 1, balancer: false, infraBudget: duration * .5, reserved: 0, version: 1, deployments: 0, active: 1, requests: 0, successes: 0, errors: 0, breaches: 0, oversold: 0, duplicates: 0,
+    lostRevenue: 0, revenue: 0, latency: 180, utilization: .08, queue: 0, migratedIn: 0, migratedOut: 0, eliminated: false, crisisTicks: 0, deadTicks: 0, bankruptTicks: 0, concurrencyUntil: 0,
+    backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100,
+  }));
+  return { schema: 1, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
+}
+function rng(g: GameState) { g.seed = (Math.imul(g.seed, 1664525) + 1013904223) >>> 0; return g.seed / 4294967296; }
+export function event(g: GameState, companyId: number | null, text: string, tone: 'good' | 'bad' | 'neutral' = 'neutral', category = 'SISTEMA') {
+  g.events.unshift({ id: ++g.eventSeq, at: g.tick, companyId, text, tone, category });
+  g.events.length = Math.min(g.events.length, 60);
+}
+export function route(graph: Graph): Graph['nodes'] {
+  const start = graph.nodes.find(n => n.type === 'entry');
+  const path: Graph['nodes'] = [];
+  const visited = new Set<string>();
+  let node = start;
+  while (node && !visited.has(node.id)) {
+    visited.add(node.id); path.push(node);
+    if (node.type === 'exit') break;
+    const edge = graph.edges.find(e => e.source === node!.id);
+    node = graph.nodes.find(n => n.id === edge?.target);
+  }
+  return path;
+}
+export function validateGraph(input: unknown, domain: 'backend' | 'security' | 'product', complete = true): Graph {
+  if (!input || typeof input !== 'object') throw new Error('Grafo inválido.');
+  const graph = structuredClone(input) as Graph;
+  if (!Array.isArray(graph.nodes) || !Array.isArray(graph.edges) || graph.nodes.length > 25 || graph.edges.length > 30) throw new Error('Máximo 20 piezas y 30 conexiones.');
+  const catalog = domain === 'product' ? [] : BLOCKS[domain];
+  const allowed = new Set(['entry', 'exit', ...(domain === 'backend' ? ['read', 'write', 'payment'] : []), ...catalog.map(b => b.type)]);
+  const ids = new Set<string>();
+  for (const n of graph.nodes) {
+    if (typeof n.id !== 'string' || n.id.length > 100 || ids.has(n.id) || !allowed.has(n.type) || !n.position || !Number.isFinite(n.position.x) || !Number.isFinite(n.position.y)) throw new Error('Nodo inválido.');
+    ids.add(n.id);
+    const block = catalog.find(b => b.type === n.type);
+    n.data = { label: block?.label ?? ({ entry: 'Request IN', exit: 'Response OUT', read: 'Read Stock', write: 'Write Stock', payment: 'Payment' }[n.type] ?? n.type), ...(block ? { value: clamp(Number(n.data?.value ?? block.value) || block.value, 1, n.type === 'lock' ? 5000 : 120) } : {}) };
+  }
+  for (const type of ['entry', 'exit', ...(domain === 'backend' ? ['read', 'write', 'payment'] : [])]) if (graph.nodes.filter(n => n.type === type).length !== 1) throw new Error(`El grafo requiere un módulo ${type}.`);
+  const out = new Set<string>(), edgeIds = new Set<string>();
+  for (const e of graph.edges) {
+    if (!ids.has(e.source) || !ids.has(e.target) || out.has(e.source) || typeof e.id !== 'string' || edgeIds.has(e.id)) throw new Error('Puertos o conexiones incompatibles.');
+    if (graph.nodes.find(n => n.id === e.source)?.type === 'exit' || graph.nodes.find(n => n.id === e.target)?.type === 'entry') throw new Error('Dirección de conexión inválida.');
+    out.add(e.source); edgeIds.add(e.id);
+  }
+  for (const n of graph.nodes) {
+    let id: string | undefined = n.id; const seen = new Set<string>();
+    while (id) { if (seen.has(id)) throw new Error('Ciclo no soportado.'); seen.add(id); id = graph.edges.find(e => e.source === id)?.target; }
+  }
+  const path = route(graph);
+  if (complete && path.at(-1)?.type !== 'exit') throw new Error('No existe una ruta de entrada a salida.');
+  if (complete && domain === 'backend' && !['read', 'write', 'payment'].every(t => path.some(n => n.type === t))) throw new Error('La ruta debe atravesar inventario y pagos.');
+  return graph;
+}
+export function evaluateSecurity(graph: Graph, kind: 'valid' | 'forged' | 'injection' | 'bot', ordinal = 0) {
+  let authenticated = false;
+  for (const n of route(graph)) {
+    if (n.type === 'auth') { if (kind === 'forged') return false; authenticated = true; }
+    if (n.type === 'role' && !authenticated) return false;
+    if (n.type === 'waf' && kind === 'injection') return false;
+    if (n.type === 'ip' && kind === 'bot' && ordinal % 2 === 0) return false;
+    if (n.type === 'bot' && kind === 'bot' && ordinal % 100 < Number(n.data.value ?? 65)) return false;
+    if (n.type === 'rate' && ordinal % 25 >= Number(n.data.value ?? 12)) return false;
+  }
+  return true;
+}
+export function inventoryBatch(graph: Graph, demand: number, stock: number): { completed: number; oversold: number; duplicates: number; remaining: number } {
+  const p = route(graph).map(n => n.type), write = p.indexOf('write'), payment = p.indexOf('payment');
+  const atomic = p.indexOf('atomic') >= 0 && p.indexOf('atomic') < write;
+  const locked = p.indexOf('lock') >= 0 && p.indexOf('lock') < p.indexOf('read');
+  const idempotent = p.indexOf('idempotency') >= 0 && p.indexOf('idempotency') < payment;
+  const retries = p.indexOf('retry') >= 0 && p.indexOf('retry') < payment;
+  const completed = atomic || locked ? Math.min(demand, Math.max(0, stock)) : stock > 0 ? demand : 0;
+  return { completed, oversold: Math.max(0, completed - stock), duplicates: retries && !idempotent ? Math.floor(completed * .08) : 0, remaining: Math.max(0, stock - completed) };
+}
+export function reportFor(g: GameState, change: Change, suite: string): Report {
+  const company = g.companies[change.companyId];
+  const backend = change.domain === 'backend' ? change.graph : company.backend;
+  const security = change.domain === 'security' ? change.graph : company.security;
+  const load = suite === 'Carga' ? 400 : 100;
+  const valid = Array.from({ length: load }, (_, i) => evaluateSecurity(security, 'valid', i)).filter(Boolean).length;
+  const batches = suite === 'Concurrencia' || suite === 'Integración' ? inventoryBatch(backend, valid, 20) : inventoryBatch(backend, valid, load);
+  let breaches = 0;
+  if (suite === 'Seguridad' || suite === 'Integración') for (let i = 0; i < 60; i++) if (evaluateSecurity(security, (['forged', 'injection', 'bot'] as const)[i % 3], i)) breaches++;
+  return { suite, requests: load, completed: batches.completed, rejected: load - batches.completed, oversold: batches.oversold, breaches, duplicates: batches.duplicates, latency: Math.round(180 + route(backend).length * 12 + (suite === 'Carga' ? load / Math.max(1, company.servers) * 4 : 0)), tick: g.tick };
+}
+function releaseReservation(c: Company, change: Change) { c.reserved = Math.max(0, c.reserved - change.reserved); change.reserved = 0; }
+const permission: Record<string, string[]> = {
+  'draft.save': ['backend', 'security'], 'change.submit': ['backend', 'security'],
+  'qa.run': ['qa'], 'qa.approve': ['qa'], 'qa.reject': ['qa'],
+  'cto.authorize': ['cto'], 'cto.reject': ['cto'], 'cto.budget': ['cto'], 'cto.prioritize': ['cto'],
+  'infra.scale': ['devops'], 'infra.balancer': ['devops'], 'deploy.start': ['devops'],
+  'room.start': ['operator'], 'room.pause': ['operator'], 'room.reset': ['operator'], 'room.speed': ['operator'], 'room.finish': ['operator'],
+};
+export function applyCommand(g: GameState, identity: Identity | null, command: Command): Result {
+  if (!identity || !permission[command.type]?.includes(identity.role)) return { ok: false, code: 'FORBIDDEN', error: 'Acción no autorizada para este rol.' };
+  if (identity.role === 'operator') {
+    if (command.type === 'room.reset') { const duration = Number(command.payload?.duration) === 1200 ? 1200 : 1500; Object.assign(g, createGame(duration)); return { ok: true }; }
+    if (command.type === 'room.start') { if (g.status === 'FINISHED') return { ok: false, error: 'La partida ha finalizado.' }; g.status = 'RUNNING'; event(g, null, 'SIMULACIÓN EN CURSO', 'good'); }
+    if (command.type === 'room.pause' && g.status === 'RUNNING') { g.status = 'PAUSED'; event(g, null, 'Simulación pausada.'); }
+    if (command.type === 'room.finish') { g.status = 'FINISHED'; event(g, null, 'PARTIDA FINALIZADA'); }
+    if (command.type === 'room.speed') g.speed = [1, 5, 20].includes(Number(command.payload?.speed)) ? Number(command.payload?.speed) : 1;
+    return { ok: true };
+  }
+  if (g.status !== 'RUNNING') return { ok: false, code: 'ROOM_PAUSED', error: 'La simulación no está en curso.' };
+  if (command.companyId !== identity.companyId) return { ok: false, code: 'FORBIDDEN', error: 'Empresa no autorizada.' };
+  const c = g.companies[identity.companyId!];
+  if (c.eliminated) return { ok: false, error: 'La empresa está fuera de la partida.' };
+  const ch = g.changes.find(x => x.id === command.changeId && x.companyId === c.id);
+  const p = command.payload ?? {};
+  try {
+    if (command.type === 'draft.save' || command.type === 'change.submit') {
+      const domain = identity.role as 'backend' | 'security';
+      const current = c.drafts[domain]?.revision ?? 0;
+      if (Number(p.revision) !== current) throw new Error('La revisión cambió. Recarga el borrador.');
+      const graph = validateGraph(p.graph, domain, command.type === 'change.submit');
+      c.drafts[domain] = { graph, revision: current + 1 };
+      if (command.type === 'change.submit') {
+        const cost = 100 + graph.nodes.reduce((sum, n) => sum + (BLOCKS[domain].find(b => b.type === n.type)?.cost ?? 0), 0);
+        const change: Change = { id: `CH-${String(g.changes.length + 1).padStart(3, '0')}`, companyId: c.id, domain, name: `${domain === 'backend' ? 'Lógica' : 'Seguridad'} · revisión ${current + 1}`, graph: structuredClone(graph), status: 'QA_PENDING', cost, reserved: 0, baseVersion: c.version, created: g.tick, reports: [], actorId: identity.id };
+        g.changes.unshift(change); event(g, c.id, `${change.id} enviado a QA.`, 'neutral', 'PIPELINE');
+      }
+      return { ok: true };
+    }
+    if (command.type === 'cto.budget') {
+      const amount = Number(p.amount);
+      if (![250, 500, 1000].includes(amount) || c.capital - c.reserved - c.infraBudget < amount) throw new Error('Saldo disponible insuficiente.');
+      c.infraBudget += amount; event(g, c.id, `Q${amount} de operación autorizados.`, 'neutral', 'CTO'); return { ok: true };
+    }
+    if (command.type === 'cto.prioritize') { event(g, c.id, `Prioridad: ${p.incident === 'security' ? 'seguridad' : 'concurrencia'}.`, 'neutral', 'CTO'); return { ok: true }; }
+    if (command.type === 'infra.scale') {
+      const delta = Number(p.delta); if (delta !== 1 && delta !== -1) throw new Error('Operación inválida.');
+      if (c.servers + delta < 1 || c.servers + delta > 8) throw new Error('Rango de servidores: 1–8.');
+      if (delta > 0 && c.infraBudget < (c.servers + 1) * 30) throw new Error('Presupuesto operativo insuficiente.');
+      c.servers += delta; event(g, c.id, `${delta > 0 ? '+1' : '-1'} SERVER · ${c.servers} en servicio.`, 'neutral', 'DEVOPS'); return { ok: true };
+    }
+    if (command.type === 'infra.balancer') { c.balancer = Boolean(p.enabled); event(g, c.id, `Balanceador ${c.balancer ? 'activo' : 'desactivado'}.`, 'neutral', 'DEVOPS'); return { ok: true }; }
+    if (!ch) throw new Error('Cambio no encontrado.');
+    if (ch.baseVersion !== c.version && !['DEPLOYED', 'QA_REJECTED', 'CTO_REJECTED'].includes(ch.status)) throw new Error('La versión base cambió.');
+    if (command.type === 'qa.run') {
+      if (ch.status !== 'QA_PENDING' || !SUITES.includes(String(p.suite))) throw new Error('No se puede ejecutar esa suite en este estado.');
+      ch.status = 'QA_RUNNING'; ch.runningSuite = String(p.suite); ch.due = g.tick + 4;
+    } else if (command.type === 'qa.approve') {
+      if (ch.status !== 'QA_PENDING' || !ch.reports.length) throw new Error('Se requiere una prueba terminada.');
+      ch.status = 'CTO_PENDING'; event(g, c.id, `${ch.id} aprobado por QA.`, 'neutral', 'PIPELINE');
+    } else if (command.type === 'qa.reject') {
+      if (ch.status !== 'QA_PENDING') throw new Error('Estado de cambio inválido.'); ch.status = 'QA_REJECTED';
+    } else if (command.type === 'cto.authorize') {
+      if (ch.status !== 'CTO_PENDING') throw new Error('Falta aprobación de QA.');
+      if (c.capital - c.reserved - c.infraBudget < ch.cost) throw new Error('Saldo disponible insuficiente.');
+      c.reserved += ch.cost; ch.reserved = ch.cost; ch.status = 'AUTHORIZED'; ch.expires = g.tick + 60;
+      event(g, c.id, `${ch.id} autorizado · Q${ch.cost}.`, 'neutral', 'CTO');
+    } else if (command.type === 'cto.reject') {
+      if (ch.status !== 'CTO_PENDING') throw new Error('Estado de cambio inválido.'); ch.status = 'CTO_REJECTED';
+    } else if (command.type === 'deploy.start') {
+      if (ch.status !== 'AUTHORIZED' || g.tick > (ch.expires ?? 0)) throw new Error('No existe autorización vigente.');
+      if (g.changes.some(x => x.companyId === c.id && x.status === 'DEPLOYING')) throw new Error('Ya existe un despliegue activo.');
+      if (!['rolling', 'restart'].includes(String(p.strategy))) throw new Error('Estrategia no disponible.');
+      ch.status = 'DEPLOYING'; ch.strategy = String(p.strategy); ch.due = g.tick + (p.strategy === 'rolling' ? 6 : 3);
+      event(g, c.id, `${ch.id} · DEPLOY INICIADO`, 'neutral', 'DEVOPS');
+    }
+    return { ok: true };
+  } catch (e) { return { ok: false, error: e instanceof Error ? e.message : 'Comando inválido.' }; }
+}
+function jobs(g: GameState) {
+  for (const ch of g.changes) {
+    const c = g.companies[ch.companyId];
+    if (ch.status === 'AUTHORIZED' && g.tick > (ch.expires ?? Infinity)) { ch.status = 'EXPIRED'; releaseReservation(c, ch); }
+    if (ch.status === 'QA_RUNNING' && g.tick >= (ch.due ?? Infinity)) { ch.reports.push(reportFor(g, ch, ch.runningSuite!)); ch.status = 'QA_PENDING'; event(g, c.id, `${ch.id} · ${ch.runningSuite} completada.`, 'neutral', 'QA'); }
+    if (ch.status === 'DEPLOYING' && g.tick >= (ch.due ?? Infinity)) {
+      c[ch.domain] = structuredClone(ch.graph); c.version++; c.deployments++; c.capital -= ch.cost; releaseReservation(c, ch); ch.status = 'DEPLOYED';
+      event(g, c.id, `${ch.id} EN PRODUCCIÓN · v${c.version}`, 'good', 'DEPLOY');
+      for (const other of g.changes) if (other.companyId === c.id && other.id !== ch.id && ['QA_PENDING', 'QA_RUNNING', 'CTO_PENDING', 'AUTHORIZED', 'EXPIRED'].includes(other.status)) { other.status = 'STALE'; releaseReservation(c, other); }
+    }
+  }
+}
+export function step(g: GameState, dt = .1) {
+  if (g.status !== 'RUNNING') return;
+  const previousSecond = Math.floor(g.tick);
+  g.tick = Math.min(g.duration, Math.round((g.tick + dt) * 1000) / 1000);
+  jobs(g);
+  const second = Math.floor(g.tick) !== previousSecond;
+  const demand = 5 + 295 * (g.tick / g.duration) ** 1.25;
+  const securityIncident = g.tick >= g.duration * .12;
+  const concurrencyIncident = g.tick >= g.duration * .24;
+  if (g.tick - dt < g.duration * .12 && securityIncident) event(g, null, 'Tráfico anómalo detectado en las cinco empresas.', 'bad', 'SECURITY');
+  if (g.tick - dt < g.duration * .24 && concurrencyIncident) event(g, null, 'Ráfagas de compra sobre inventario compartido.', 'bad', 'CONCURRENCIA');
+  for (const c of g.companies) {
+    if (c.eliminated) continue;
+    const backendPath = route(c.backend), securityPath = route(c.security);
+    const lambda = demand * c.customers / 5000;
+    const attackRate = securityIncident ? 2 + 18 * (g.tick / g.duration) : 0;
+    const attackAllowed = attackRate ? (['forged', 'injection', 'bot'] as const).reduce((sum, k, i) => sum + Number(evaluateSecurity(c.security, k, previousSecond + i)), 0) / 3 : 0;
+    const legitimateAllowed = evaluateSecurity(c.security, 'valid', previousSecond) ? 1 : .12;
+    const cached = backendPath.some(n => n.type === 'cache' && Number(n.data.value) > 0);
+    const queueNode = backendPath.find(n => n.type === 'queue');
+    const deploying = g.changes.find(ch => ch.companyId === c.id && ch.status === 'DEPLOYING');
+    const paid = c.infraBudget > 0 && c.capital > 0;
+    let capacity = (c.balancer ? c.servers : Math.min(1, c.servers)) * 12 * (cached ? 1.35 : 1);
+    if (!paid || (deploying?.strategy === 'restart')) capacity = 0;
+    else if (deploying) capacity *= c.servers === 1 ? .12 : (c.servers - 1) / c.servers;
+    const traffic = lambda * legitimateAllowed + attackRate * attackAllowed;
+    c.utilization = capacity > 0 ? traffic / capacity : traffic > 0 ? 3 : 0;
+    const queueMax = 40 + Number(queueNode?.data.value ?? 0);
+    c.queue = clamp(c.queue + (traffic - capacity) * dt, 0, queueMax);
+    c.latency = Math.round(180 + backendPath.length * 10 + securityPath.length * 6 + (capacity ? c.queue / capacity * 1000 : 2820));
+    const errorFraction = clamp((1 - legitimateAllowed) + Math.max(0, 1 - capacity / Math.max(traffic, .01)) + (c.latency > 3000 ? .25 : 0), 0, 1);
+    const breachesPerSec = attackRate * (Number(evaluateSecurity(c.security, 'forged', previousSecond)) + Number(evaluateSecurity(c.security, 'injection', previousSecond))) / 3;
+    c.active = Math.round(Math.min(c.customers, lambda * c.latency / 1000 + c.queue));
+    c.arrivalRemainder += lambda * dt;
+    const arrivals = Math.floor(c.arrivalRemainder); c.arrivalRemainder -= arrivals;
+    c.requests += arrivals;
+    if (arrivals) {
+      const failed = Math.min(arrivals, Math.floor(arrivals * errorFraction + rng(g)));
+      c.errors += failed; c.successes += arrivals - failed;
+      c.processedRemainder += Math.max(0, arrivals - failed) * .3;
+      const purchases = Math.floor(c.processedRemainder); c.processedRemainder -= purchases;
+      const purchase = inventoryBatch(c.backend, purchases, c.stock);
+      c.stock = purchase.remaining; c.oversold += purchase.oversold; c.duplicates += purchase.duplicates;
+      c.capital += purchase.completed * 3; c.revenue += purchase.completed * 45; c.lostRevenue += (Math.floor(failed * .3) + purchases - purchase.completed) * 45;
+      for (let a = 0; a < Math.min(arrivals, 3); a++) c.particles.push({ id: `${c.id}-${g.tick}-${a}`, born: g.tick, duration: 6 + Math.min(4, c.queue / 10), color: c.color, kind: a < failed ? 'error' : 'success', route: (g.tick * 10 + a) % 3 < 1 ? 'browse' : 'purchase', seed: rng(g) });
+    }
+    if (second) {
+      const breaches = Math.floor(breachesPerSec + rng(g)); c.breaches += breaches;
+      if (breaches && previousSecond % 12 === 0) event(g, c.id, `${breaches} accesos indebidos · SECURITY BREACH`, 'bad', 'SECURITY');
+      if (securityIncident && attackAllowed) c.particles.push({ id: `attack-${c.id}-${previousSecond}`, born: g.tick, duration: 5, color: '#f27e79', kind: 'attack', route: 'purchase', seed: rng(g) });
+      if (concurrencyIncident && previousSecond % 45 === 0) {
+        const burst = inventoryBatch(c.backend, 40, 20); c.oversold += burst.oversold; c.duplicates += burst.duplicates; c.errors += 40 - burst.completed; c.requests += 40;
+        c.capital -= burst.oversold * 8 + burst.duplicates * 5;
+        if (burst.oversold || burst.duplicates) { c.concurrencyUntil = g.tick + 20; event(g, c.id, `${burst.oversold} sobreventas · ${burst.duplicates} cobros duplicados`, 'bad', 'CONCURRENCIA'); }
+      }
+      c.stock = Math.min(200, c.stock + 12);
+      if (previousSecond % 10 === 0) { c.history.push(c.customers / 50); c.history = c.history.slice(-24); }
+    }
+    const concurrencyRisk = g.tick < c.concurrencyUntil ? .45 : 0;
+    const fraud = clamp(breachesPerSec / 5, 0, 1);
+    const health = errorFraction < .02 && fraud === 0 && c.latency < 500 && c.utilization < .9 && !concurrencyRisk ? 1 : 0;
+    c.pressure = clamp(c.pressure + dt * (.8 * errorFraction + .4 * clamp((c.latency - 500) / 2500, 0, 1) + .5 * clamp(c.utilization - 1, 0, 1) + 1.2 * fraud + concurrencyRisk - .35 * health - .002 * c.pressure), 0, 300);
+    c.reputation = clamp(c.reputation + dt * (.04 * health - .15 * errorFraction - .30 * fraud - .06 * concurrencyRisk), 0, 100);
+    const operation = Math.min(c.infraBudget, c.servers * .5 * dt); c.infraBudget -= operation; c.capital -= operation;
+    for (const ch of g.changes) if (ch.companyId === c.id && ch.status === 'AUTHORIZED' && c.capital < c.reserved + c.infraBudget) { releaseReservation(c, ch); ch.status = 'EXPIRED'; }
+    if (c.capital < c.reserved + c.infraBudget) c.infraBudget = Math.max(0, c.capital - c.reserved);
+    c.particles = c.particles.filter(p => g.tick - p.born < p.duration).slice(-90);
+    c.deadTicks = capacity === 0 ? c.deadTicks + dt : 0;
+    c.bankruptTicks = c.capital <= 0 ? c.bankruptTicks + dt : 0;
+    c.crisisTicks = c.customers < 50 && c.pressure >= 200 && !health ? c.crisisTicks + dt : 0;
+  }
+  if (second) migrate(g);
+  const removed = g.companies.filter(c => !c.eliminated && (c.deadTicks >= 90 || c.crisisTicks >= 30 || c.bankruptTicks >= 30));
+  for (const c of removed) { c.eliminated = true; c.eliminatedAt = g.tick; c.active = 0; c.particles = []; event(g, c.id, 'EMPRESA FUERA DEL MERCADO', 'bad', 'COLAPSO'); }
+  if (removed.length) {
+    const survivors = g.companies.filter(c => !c.eliminated);
+    for (const c of removed) {
+      let rest = c.customers; c.customers = 0;
+      if (!survivors.length) g.unserved += rest;
+      else for (let i = 0; i < survivors.length; i++) { const amount = Math.ceil(rest / (survivors.length - i)); survivors[i].customers += amount; survivors[i].migratedIn += amount; rest -= amount; }
+      for (const ch of g.changes.filter(ch => ch.companyId === c.id && !['DEPLOYED', 'QA_REJECTED', 'CTO_REJECTED'].includes(ch.status))) { releaseReservation(c, ch); ch.status = 'STALE'; }
+      c.infraBudget = 0;
+    }
+  }
+  if (g.tick >= g.duration || g.companies.every(c => c.eliminated)) { g.status = 'FINISHED'; event(g, null, 'PARTIDA FINALIZADA', 'neutral', 'SISTEMA'); }
+  g.migrations = g.migrations.filter(m => g.tick - m.at < 20).slice(-30);
+}
+function migrate(g: GameState) {
+  const companies = g.companies.filter(c => !c.eliminated);
+  const quota = new Map(companies.map(c => [c.id, Math.max(1, Math.floor(c.customers * .01 * clamp(1 - c.utilization, .05, 1)))]));
+  const transfers: { from: Company; to: Company; count: number }[] = [];
+  for (const c of companies) {
+    c.migrationRemainder += c.customers * (1 - Math.exp(-.002 * c.pressure / 100));
+    let count = Math.min(c.customers - 1, Math.floor(c.migrationRemainder)); c.migrationRemainder -= Math.floor(c.migrationRemainder);
+    const candidates = companies.filter(x => x.id !== c.id).sort((a, b) => (b.reputation * clamp(1 - b.utilization, .05, 1)) - (a.reputation * clamp(1 - a.utilization, .05, 1)));
+    for (const to of candidates) {
+      const n = Math.min(count, quota.get(to.id) ?? 0); if (n <= 0) continue;
+      quota.set(to.id, (quota.get(to.id) ?? 0) - n); count -= n; transfers.push({ from: c, to, count: n });
+    }
+  }
+  for (const { from, to, count } of transfers) {
+    from.customers -= count; to.customers += count; from.migratedOut += count; to.migratedIn += count;
+    const id = `m-${g.tick}-${from.id}-${to.id}`; g.migrations.push({ id, from: from.id, to: to.id, count, at: g.tick, color: from.color });
+    to.particles.push({ id, born: g.tick, duration: 15, color: from.color, kind: 'success', route: 'purchase', seed: rng(g) });
+    if (count >= 2 || Math.floor(g.tick) % 10 === 0) event(g, to.id, `+${count} CLIENTES · desde ${from.name}`, 'good', 'MERCADO');
+  }
+}
+export function project(g: GameState, identity: Identity | null): Snapshot {
+  const privateC = identity?.companyId != null ? structuredClone(g.companies[identity.companyId]) : undefined;
+  if (privateC) {
+    const ownDraft = identity?.role === 'backend' || identity?.role === 'security' ? identity.role : null;
+    privateC.drafts = ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {};
+  }
+  return {
+    tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
+    companies: g.companies.map(c => {
+      const { drafts, backend, security, product, migrationRemainder, arrivalRemainder, processedRemainder, crisisTicks, deadTicks, bankruptTicks, concurrencyUntil, ...pub } = c;
+      return { ...pub, modules: [...route(backend), ...route(security)].map(n => n.type), pipelineCounts: [['QA_PENDING', 'QA_RUNNING'], ['CTO_PENDING'], ['AUTHORIZED', 'DEPLOYING'], ['DEPLOYED']].map(states => g.changes.filter(ch => ch.companyId === c.id && states.includes(ch.status)).length) };
+    }),
+    events: g.events, migrations: g.migrations, unserved: g.unserved, privateCompany: privateC,
+    changes: identity?.role === 'operator' ? g.changes : g.changes.filter(ch => ch.companyId === identity?.companyId),
+  };
+}

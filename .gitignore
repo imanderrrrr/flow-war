@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.local/
+.DS_Store
+artifacts/
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite-*
+*.log
+package-lock [0-9]*.json
