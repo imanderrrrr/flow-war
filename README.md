@@ -2,7 +2,7 @@
 
 Especificación para una práctica universitaria competitiva de calidad de software: cinco empresas de comercio electrónico, roles separados y consecuencias visibles en una arquitectura de estilo arcade 8-bit.
 
-**El proyecto es ejecutable.** Incluye la arena, interfaces privadas, editores conectables y pipeline multirrol. La [Entrega 2](docs/08-entrega-2-trafico-colas.md) integra tráfico individual, FIFO, capacidad, abandono y contabilidad real, conservando el escenario de concurrencia de Entrega 1. Los documentos de diseño describen también ampliaciones pendientes.
+**El proyecto es ejecutable.** Incluye la arena, interfaces privadas, editores conectables y pipeline multirrol. La [Entrega 2](docs/08-entrega-2-trafico-colas.md) integra tráfico individual, FIFO, capacidad, abandono y contabilidad real, conservando el escenario de concurrencia de Entrega 1. La [Entrega 3](docs/09-entrega-3-clientes-migracion.md) añade 5,000 clientes persistentes, migración competitiva, fidelidad visual y cascadas por redistribución real de demanda. Los documentos de diseño describen también ampliaciones pendientes.
 
 ```sh
 npm install --include=optional --prefer-online
@@ -25,6 +25,7 @@ Abrir [http://localhost:4173](http://localhost:4173). Las credenciales locales s
 | [Auditoría de fidelidad](docs/06-auditoria-fidelidad.md) | Hallazgos verificados y orden de mejora progresiva del motor. |
 | [Entrega 1: concurrencia](docs/07-entrega-1-concurrencia.md) | Escenario de solicitudes individuales, persistencia, límites y verificación manual por roles. |
 | [Entrega 2: tráfico y colas](docs/08-entrega-2-trafico-colas.md) | Motor ordinario individual, capacidad, FIFO, deadlines, QA, recuperación, ensayos y verificación manual. |
+| [Entrega 3: clientes y migración](docs/09-entrega-3-clientes-migracion.md) | Población individual, fidelización, esquema 4, eliminación y ensayos de cascada de 20/25 minutos. |
 
 ## Decisiones centrales
 
@@ -34,7 +35,7 @@ Abrir [http://localhost:4173](http://localhost:4173). Las credenciales locales s
 - Node.js + Express + Socket.IO; un servidor autoritativo calcula el juego y verifica cada acción.
 - Flujo obligatorio: **Backend / Seguridad → QA → CTO → DevOps → producción**. Producto seguirá el mismo flujo cuando se habilite.
 - Un bloque solo afecta las solicitudes que pasan por él. Sus conexiones y configuración tienen efectos funcionales.
-- El mercado se conserva al migrar clientes; la fidelización individual entre visitas queda pendiente.
+- Los 5,000 clientes se conservan entre propietarios y el pool sin servicio; visitas reales determinan fidelidad y color persistente.
 - La interfaz muestra datos, eventos, resultados de pruebas y consecuencias. No incluye ayudas, recomendaciones ni evaluación del plan.
 
 ## Cobertura de la solicitud

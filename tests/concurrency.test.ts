@@ -133,7 +133,7 @@ test('QA runs from the submitted context and ignores subsequent production infra
 test('scheduled incident admits two new requests, replaces the old burst, and isolates the legacy SKU', () => {
   const game = createGame(); game.status = 'RUNNING'; game.tick = 359.9;
   // No ordinary market traffic, so every commercial counter here belongs to the fixture.
-  game.companies[0].customers = 0;
+  game.companies[0].traffic.initialDebt = 100000;
   for (const company of game.companies) company.pressure = 0;
   advanceGame(game, 4);
   const company = game.companies[0];

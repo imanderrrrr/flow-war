@@ -6,6 +6,7 @@ export function createLoadRun(company: Company, context: ScenarioContext, at: nu
     id: company.id, capital: 10000, infraBudget: 750, servers: 1, balancer: false, eliminated: false,
     requests: 0, successes: 0, errors: 0, breaches: 0, oversold: 0, duplicates: 0, revenue: 0, lostRevenue: 0,
     stock: 100, traffic: initialTraffic(100, 7357, 'qa-load') };
+  staging.traffic.scope = 'qa';
   // Versioned fixture deliberately offers more waiting room than the baseline:
   // some requests hit their individual patience before the buffer rejects all excess.
   staging.traffic.config.queues.web = 80;

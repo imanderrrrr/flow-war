@@ -1,3 +1,4 @@
+import { attachCustomer, recordCustomerExperience, selectCustomer } from './market.js';
 import type { Company, ConcurrencyState, ScenarioContext } from '../shared/types.js';
 import { advanceConcurrency, createConcurrencyRun, isRunFinished } from './requests.js';
 
@@ -14,9 +15,12 @@ export function productionContext(company: Company): ScenarioContext {
 /** The only admission point for production's LAST-UNIT requests. */
 export function startConcurrency(company: Company, at: number) {
   const state = company.concurrency;
-  if (state.run && !isRunFinished(state.run)) return false;
+  if (company.eliminated || (state.run && !isRunFinished(state.run))) return false;
+  const customers = [selectCustomer(company), selectCustomer(company)];
+  if (customers.some(customer => !customer)) return false;
   settleConcurrency(company);
   state.run = createConcurrencyRun(`C${company.id}-CC${++state.sequence}`, productionContext(company), at);
+  state.run.requests.forEach((request, index) => attachCustomer(company, request, customers[index]!));
   state.totals.generated += state.run.requests.length;
   company.requests += state.run.requests.length;
   return true;
@@ -43,6 +47,7 @@ export function settleConcurrency(company: Company) {
     company.capital += result.capitalDelta;
     company.oversold += request.oversold;
     newOversold += request.oversold;
+    recordCustomerExperience(company, request, 'purchase', (result.at - request.arrivalAt) * 1000);
     request.accounted = true;
   }
   return newOversold;

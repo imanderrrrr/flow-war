@@ -33,7 +33,7 @@ function Sidebar() {
       <div className="company-card-bottom"><Status company={c}/><span className="card-rank">#{ranks.findIndex(r => r.id === c.id) + 1}</span><span>{money(c.capital)}</span></div>
       <div className="pressure-line"><span>Presión de abandono</span><b className={c.pressure >= 60 ? 'warn-text' : ''}>{Math.round(c.pressure)}%</b></div>
     </button>)}</div>
-    <div className="sidebar-bottom"><div className="market-color-bar">{s.companies.map(c => <span key={c.id} style={{width: `${c.customers/50}%`,background: c.color}}/>)}</div><span>MERCADO COMPARTIDO <b>{s.unserved ? `${100 - s.unserved/50}%` : '100%'}</b></span><div className="sidebar-footer"><Icon name="pulse" size={14}/><span>5 empresas. Un mercado.</span></div></div>
+    <div className="sidebar-bottom"><div className="market-color-bar">{s.companies.map(c => <span key={c.id} style={{width: `${c.customers/50}%`,background: c.color}}/>)}</div><span>MERCADO COMPARTIDO <b>{s.unserved ? `${(100 - s.unserved/50).toFixed(1)}%` : '100%'}</b></span><div className="sidebar-footer"><Icon name="pulse" size={14}/><span>{s.unserved ? `${number(s.unserved)} clientes sin servicio` : '5 empresas. Un mercado.'}</span></div></div>
   </aside>;
 }
 function Metric({ label, value, unit, color, children }: { label: string; value: ReactNode; unit?: string; color?: string; children?: ReactNode }) {

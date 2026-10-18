@@ -3,7 +3,6 @@ import type { PublicCompany, Snapshot } from '../shared/types';
 import { MAP_WIDTH as W, MAP_HEIGHT as H, SERVICES, ROAD_PATHS, SERVICE_CONNECTIONS, particlePath, particlePosition, particleProgress, type Path } from './trafficGeometry';
 
 const { ENTRY, GATE, WEB, AUTH, CHECK, STOCK, PAY, OUT } = SERVICES;
-function blend(a: string, b: string, t: number) { const aa = a.match(/\w\w/g)!, bb = b.match(/\w\w/g)!; return '#' + aa.map((v, i) => Math.round(parseInt(v, 16) * (1 - t) + parseInt(bb[i], 16) * t).toString(16).padStart(2, '0')).join(''); }
 export default function TrafficCanvas({ company, snapshot, zoom }: { company: PublicCompany; snapshot: Snapshot; zoom: number }) {
   const canvas = useRef<HTMLCanvasElement>(null), state = useRef({ company, snapshot, zoom, received: performance.now() });
   useEffect(() => { state.current = { company, snapshot, zoom, received: performance.now() }; }, [company, snapshot, zoom]);
@@ -71,7 +70,7 @@ export default function TrafficCanvas({ company, snapshot, zoom }: { company: Pu
       for (const p of particles) {
         if (p.status === 'ABANDONED' && p.finishedAt !== undefined) ctx.globalAlpha = Math.max(0, 1 - (now - p.finishedAt) / 3);
         const progress = p.queue ? Math.min(particleProgress(p, now), Math.max(.15, .97 - (p.queue.position + 1) / Math.max(12, p.queue.depth) * .8)) : particleProgress(p, now);
-        const [x,y] = particlePosition(particlePath(p), progress, p.seed); const color = p.color !== c.color && p.kind === 'success' ? blend(p.color, c.color, Math.min(.85, progress * .85)) : p.color;
+        const [x,y] = particlePosition(particlePath(p), progress, p.seed); const color = p.color;
         if (p.kind === 'attack') { rect(x-4,y-4,8,8,color); rect(x-2,y-2,4,4,'#0d1420'); }
         else { rect(x-2,y-6,4,4,'#e3dac5'); rect(x-3,y-1,6,6,color); rect(x-3,y+5,2,3,color); rect(x+1,y+5,2,3,color); }
         if (p.kind === 'error' && progress > .85) { text('×',x,y-15,'#f27e79',20); }

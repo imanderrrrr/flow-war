@@ -4,6 +4,7 @@ import { tmpdir, cpus, totalmem } from 'node:os';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
+import { assertMarket } from '../server/market.js';
 import * as current from '../server/engine.js';
 import { createGameWriter } from '../server/storage.js';
 import { runLoadFixture } from '../server/load.js';
@@ -11,7 +12,7 @@ import type { GameState } from '../shared/types.js';
 
 const baseArgument = process.argv.find(arg => arg.startsWith('--baseline='));
 const engine: typeof current = baseArgument ? await import(pathToFileURL(resolve(baseArgument.slice(11), 'server/engine.ts')).href) : current;
-const version = baseArgument ? 'eae4bbf' : 'traffic-2.0';
+const version = baseArgument ? 'eae4bbf' : 'traffic-2.0-market-3.0';
 const results: unknown[] = [];
 for (const duration of [1200, 1500]) for (const strategy of ['baseline', 'scaled', 'protected-scaled']) {
   const directory = mkdtempSync(join(tmpdir(), 'flow-war-benchmark-'));
@@ -63,6 +64,7 @@ for (const duration of [1200, 1500]) for (const strategy of ['baseline', 'scaled
       }
       peak.queue = Math.max(peak.queue, ...game.companies.map(company => company.queue));
       if (Math.round(game.tick * 10) % 10 === 0 || game.tick >= duration) {
+        if (!baseArgument) assertMarket(game);
         if (writer) {
           audited += game.companies.reduce((sum, company) => sum + company.traffic.outbox.length, 0);
           const beforeSave = performance.now(); writer(game); saves.push(performance.now() - beforeSave);
@@ -73,6 +75,7 @@ for (const duration of [1200, 1500]) for (const strategy of ['baseline', 'scaled
         peak.snapshotKB = Math.max(peak.snapshotKB, JSON.stringify(engine.project(game, { id: 'bench', role: 'qa', companyId: 0 })).length / 1024);
       }
     }
+    if (!baseArgument && new Set(game.companies.map(c => JSON.stringify([c.customers, c.capital, c.pressure, c.reputation, c.requests, c.successes, c.errors, c.migratedIn, c.migratedOut]))).size !== 1) throw new Error('Symmetric decisions produced an index-dependent result');
     const percentile = (samples: number[], fraction: number) => { const sorted = [...samples].sort((a,b)=>a-b); return Math.round((sorted[Math.min(sorted.length-1, Math.floor(sorted.length*fraction))] ?? 0)*1000)/1000; };
     const elapsed = performance.now() - started;
     const result = {

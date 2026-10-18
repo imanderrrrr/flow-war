@@ -1,5 +1,6 @@
+import { customerColor } from './market.js';
 import { createHash } from 'node:crypto';
-import type { ConcurrencyRun, FlowParticle, PurchaseRequest, Report, RequestResult, RequestStage, ScenarioContext, InventoryState } from '../shared/types.js';
+import type { Company, ConcurrencyRun, FlowParticle, PurchaseRequest, Report, RequestResult, RequestStage, ScenarioContext, InventoryState } from '../shared/types.js';
 import { evaluateSecurity, route } from './graphs.js';
 
 export const REQUEST_ENGINE_VERSION = 'requests-1' as const;
@@ -94,12 +95,13 @@ export function runConcurrencyFixture(context: ScenarioContext): ConcurrencyRun 
   return run;
 }
 
-export function concurrencyParticles(run: ConcurrencyRun | undefined, color: string, tick: number): FlowParticle[] {
+export function concurrencyParticles(run: ConcurrencyRun | undefined, color: string, tick: number, company?: Company): FlowParticle[] {
   if (!run) return [];
   return run.requests.filter(request => tick >= request.arrivalAt && (!request.result || tick - request.result.at < 5)).map((request, index) => ({
     id: request.id, requestId: request.id, executionVersion: request.executionVersion, status: request.status, reason: request.result?.reason,
     born: request.arrivalAt, duration: 21, route: 'purchase', seed: index ? .9 : .1,
-    color: request.oversold ? '#f27e79' : color,
+    customerId: request.customerSource === 'market' ? request.customerId : undefined,
+    color: company ? customerColor(company, request) : request.customerColor ?? color,
     kind: request.result && (request.status !== 'COMPLETED' || request.oversold > 0) ? 'error' : 'success',
     journey: structuredClone(request.journey),
   }));

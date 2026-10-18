@@ -1,3 +1,4 @@
+import { advanceMarket, assertMarket, bindMarket, createMarket, evacuateEliminated, flushMigrations } from './market.js';
 import { advanceLoadRun, createLoadRun, loadReport, runLoadFixture } from './load.js';
 import { initialTraffic, issueInitialTraffic, generateTraffic, serviceRates, advanceTraffic, restockTraffic, cancelTraffic, trafficParticles, trafficView } from './traffic.js';
 import { advanceConcurrency, cancelConcurrency, concurrencyParticles, concurrencyReport, createConcurrencyRun, isRunFinished, runConcurrencyFixture } from './requests.js';
@@ -21,7 +22,8 @@ export function createGame(duration = 1500, seed = 7357, generation = 0): GameSt
     lostRevenue: 0, revenue: 0, latency: 0, utilization: 0, queue: 0, migratedIn: 0, migratedOut: 0, eliminated: false, crisisTicks: 0, deadTicks: 0, bankruptTicks: 0, concurrencyUntil: 0,
     backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
   }));
-  return { schema: 3, generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
+  const game: GameState = { schema: 4, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
+  bindMarket(game); assertMarket(game); return game;
 }
 export function event(g: GameState, companyId: number | null, text: string, tone: 'good' | 'bad' | 'neutral' = 'neutral', category = 'SISTEMA') {
   g.events.unshift({ id: ++g.eventSeq, at: g.tick, companyId, text, tone, category });
@@ -88,6 +90,7 @@ const permission: Record<string, string[]> = {
   'room.start': ['operator'], 'room.pause': ['operator'], 'room.reset': ['operator'], 'room.speed': ['operator'], 'room.finish': ['operator'],
 };
 export function applyCommand(g: GameState, identity: Identity | null, command: Command): Result {
+  bindMarket(g);
   if (!identity || !permission[command.type]?.includes(identity.role)) return { ok: false, code: 'FORBIDDEN', error: 'Acción no autorizada para este rol.' };
   if (identity.role === 'operator') {
     if (command.type === 'room.reset') { const duration = Number(command.payload?.duration) === 1200 ? 1200 : 1500; finishRequests(g); const receipts = g.companies.map(company => company.traffic.outbox); Object.assign(g, createGame(duration, 7357, g.generation + 1)); for (const company of g.companies) company.traffic.outbox = receipts[company.id]; return { ok: true }; }
@@ -182,6 +185,7 @@ function jobs(g: GameState) {
 }
 export function step(g: GameState, dt = .1) {
   if (g.status !== 'RUNNING') return;
+  bindMarket(g);
   if (dt > .1) { for (let remaining = dt; remaining > .00001; remaining = Math.round((remaining - .1) * 1e6) / 1e6) step(g, Math.min(.1, remaining)); return; }
   const previousSecond = Math.floor(g.tick);
   g.tick = Math.min(g.duration, Math.round((g.tick + dt) * 1000) / 1000);
@@ -225,16 +229,13 @@ export function step(g: GameState, dt = .1) {
     c.bankruptTicks = c.capital <= 0 ? c.bankruptTicks + dt : 0;
     c.crisisTicks = c.customers < 50 && c.pressure >= 200 && !health ? c.crisisTicks + dt : 0;
   }
-  if (second) migrate(g);
+  advanceMarket(g);
   const removed = g.companies.filter(c => !c.eliminated && (c.deadTicks >= 90 || c.crisisTicks >= 30 || c.bankruptTicks >= 30));
   for (const c of removed) { cancelTraffic(c, g.tick, 'COMPANY_ELIMINATED'); if (c.concurrency.run) { cancelConcurrency(c.concurrency.run, g.tick, 'COMPANY_ELIMINATED'); settleConcurrency(c); } c.eliminated = true; c.eliminatedAt = g.tick; c.active = 0; c.particles = []; event(g, c.id, 'EMPRESA FUERA DEL MERCADO', 'bad', 'COLAPSO'); }
   if (removed.length) {
-    const survivors = g.companies.filter(c => !c.eliminated);
+    evacuateEliminated(g);
     for (const c of removed) {
-      let rest = c.customers; c.customers = 0;
-      if (!survivors.length) g.unserved += rest;
-      else for (let i = 0; i < survivors.length; i++) { const amount = Math.ceil(rest / (survivors.length - i)); survivors[i].customers += amount; survivors[i].migratedIn += amount; rest -= amount; }
-      for (const ch of g.changes.filter(ch => ch.companyId === c.id && !['DEPLOYED', 'QA_REJECTED', 'CTO_REJECTED'].includes(ch.status))) { releaseReservation(c, ch); ch.status = 'STALE'; }
+      for (const ch of g.changes.filter(ch => ch.companyId === c.id && !['DEPLOYED', 'QA_REJECTED', 'CTO_REJECTED'].includes(ch.status))) { releaseReservation(c, ch); ch.status = 'STALE'; delete ch.qaLoad; delete ch.qaScenario; delete ch.due; }
       c.infraBudget = 0;
     }
   }
@@ -246,31 +247,12 @@ function finishRequests(g: GameState) {
     cancelTraffic(company, g.tick, 'ROOM_FINISHED');
     if (company.concurrency.run) { cancelConcurrency(company.concurrency.run, g.tick, 'ROOM_FINISHED'); settleConcurrency(company); }
   }
-}
-function migrate(g: GameState) {
-  const companies = g.companies.filter(c => !c.eliminated);
-  const quota = new Map(companies.map(c => [c.id, Math.max(1, Math.floor(c.customers * .01 * clamp(1 - c.utilization, .05, 1)))]));
-  const transfers: { from: Company; to: Company; count: number }[] = [];
-  const rotation = (Math.floor(g.tick) + g.seed) % companies.length;
-  const proposals = [...companies.slice(rotation), ...companies.slice(0, rotation)];
-  for (const c of proposals) {
-    c.migrationRemainder += c.customers * (1 - Math.exp(-.002 * c.pressure / 100));
-    let count = Math.min(c.customers - 1, Math.floor(c.migrationRemainder)); c.migrationRemainder -= Math.floor(c.migrationRemainder);
-    const candidates = companies.filter(x => x.id !== c.id).sort((a, b) => (b.reputation * clamp(1 - b.utilization, .05, 1)) - (a.reputation * clamp(1 - a.utilization, .05, 1)) || ((a.id - c.id - Math.floor(g.tick)) % 5 + 5) % 5 - ((b.id - c.id - Math.floor(g.tick)) % 5 + 5) % 5);
-    for (const to of candidates) {
-      const n = Math.min(count, quota.get(to.id) ?? 0); if (n <= 0) continue;
-      quota.set(to.id, (quota.get(to.id) ?? 0) - n); count -= n; transfers.push({ from: c, to, count: n });
-    }
-  }
-  for (const { from, to, count } of transfers) {
-    from.customers -= count; to.customers += count; from.migratedOut += count; to.migratedIn += count;
-    const id = `m-${g.tick}-${from.id}-${to.id}`; g.migrations.push({ id, from: from.id, to: to.id, count, at: g.tick, color: from.color });
-    if (count >= 2 || Math.floor(g.tick) % 10 === 0) event(g, to.id, `+${count} CLIENTES · desde ${from.name}`, 'good', 'MERCADO');
-  }
+  flushMigrations(g); assertMarket(g);
 }
 export function project(g: GameState, identity: Identity | null): Snapshot {
+  bindMarket(g);
   const ownCompany = identity?.companyId != null ? g.companies[identity.companyId] : undefined;
-  const privateC = ownCompany ? structuredClone({ ...ownCompany, traffic: trafficView(ownCompany.traffic) }) : undefined;
+  const privateC = ownCompany ? structuredClone({ ...ownCompany, particles: trafficParticles(ownCompany, g.tick), traffic: trafficView(ownCompany.traffic) }) : undefined;
   if (privateC) {
     const ownDraft = identity?.role === 'backend' || identity?.role === 'security' ? identity.role : null;
     privateC.drafts = ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {};
@@ -279,7 +261,7 @@ export function project(g: GameState, identity: Identity | null): Snapshot {
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
     companies: g.companies.map(c => {
       const { drafts, backend, security, product, migrationRemainder, arrivalRemainder, processedRemainder, crisisTicks, deadTicks, bankruptTicks, concurrencyUntil, concurrency, traffic, ...pub } = c;
-      return { ...pub, traffic: trafficView(traffic), concurrency: { runId: concurrency.run?.id, inventory: concurrency.run && { ...concurrency.run.inventory }, totals: { ...concurrency.totals } }, particles: [...trafficParticles(c, g.tick), ...concurrencyParticles(concurrency.run, c.color, g.tick)], modules: [...route(backend), ...route(security)].map(n => n.type), pipelineCounts: [['QA_PENDING', 'QA_RUNNING'], ['CTO_PENDING'], ['AUTHORIZED', 'DEPLOYING'], ['DEPLOYED']].map(states => g.changes.filter(ch => ch.companyId === c.id && states.includes(ch.status)).length) };
+      return { ...pub, traffic: trafficView(traffic), concurrency: { runId: concurrency.run?.id, inventory: concurrency.run && { ...concurrency.run.inventory }, totals: { ...concurrency.totals } }, particles: [...trafficParticles(c, g.tick), ...concurrencyParticles(concurrency.run, c.color, g.tick, c)], modules: [...route(backend), ...route(security)].map(n => n.type), pipelineCounts: [['QA_PENDING', 'QA_RUNNING'], ['CTO_PENDING'], ['AUTHORIZED', 'DEPLOYING'], ['DEPLOYED']].map(states => g.changes.filter(ch => ch.companyId === c.id && states.includes(ch.status)).length) };
     }),
     events: g.events, migrations: g.migrations, unserved: g.unserved, privateCompany: privateC,
     changes: (identity?.role === 'operator' ? g.changes : g.changes.filter(ch => ch.companyId === identity?.companyId)).map(({ qaLoad, ...change }) => change),

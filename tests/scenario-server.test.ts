@@ -130,7 +130,7 @@ test('real server backs up a v1 snapshot before upgrading it', { timeout: 10000 
     db = new DatabaseSync(path);
     assert.equal((db.prepare('SELECT state FROM game_migrations WHERE schema=1').get() as {state:string}).state, serialized);
     const state = JSON.parse((db.prepare('SELECT state FROM game WHERE id=1').get() as {state:string}).state); db.close();
-    assert.equal(state.schema, 3); assert.equal(state.status, 'PAUSED'); assert.equal(state.tick, 200);
+    assert.equal(state.schema, 4); assert.equal(state.status, 'PAUSED'); assert.equal(state.tick, 200);
     assert.equal(state.companies[0].concurrency.totals.generated, 0);
   } finally { await stop(child); await rm(directory, { recursive: true, force: true }); }
 });

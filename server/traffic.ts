@@ -1,4 +1,5 @@
-import type { ServiceQueue, Company, FlowParticle, InventoryState, RequestResult, ScenarioTotals, ServiceId, TrafficMetrics, TrafficReceipt, TrafficRequest, TrafficScenario, TrafficState, TrafficView } from '../shared/types.js';
+import { attachCustomer, customerColor, recordCustomerExperience, selectCustomer } from './market.js';
+import type { MarketCustomer, ServiceQueue, Company, FlowParticle, InventoryState, RequestResult, ScenarioTotals, ServiceId, TrafficMetrics, TrafficReceipt, TrafficRequest, TrafficScenario, TrafficState, TrafficView } from '../shared/types.js';
 import { evaluateSecurity, route } from './graphs.js';
 import { executePurchaseOperation, finishRequest, moveRequest } from './requests.js';
 
@@ -46,14 +47,17 @@ function enqueue(company: Company, request: TrafficRequest, service: ServiceId, 
   queue.waiting.push(request.id); queue.offered++;
 }
 
-export function admitTraffic(company: Company, now: number, type: TrafficRequest['type'] = 'browse', trafficClass: TrafficRequest['trafficClass'] = 'legitimate', attackKind?: TrafficRequest['attackKind']): TrafficRequest {
+export function admitTraffic(company: Company, now: number, type: TrafficRequest['type'] = 'browse', trafficClass: TrafficRequest['trafficClass'] = 'legitimate', attackKind?: TrafficRequest['attackKind'], selected?: MarketCustomer): TrafficRequest {
+  if (company.eliminated) throw new Error('Empresa eliminada.');
+  const customer = trafficClass === 'legitimate' && company.traffic.scope !== 'qa' ? selected ?? selectCustomer(company) : undefined;
+  if (trafficClass === 'legitimate' && company.traffic.scope !== 'qa' && !customer) throw new Error('No hay cliente admisible.');
   const state = company.traffic, ordinal = ++state.sequence;
   const id = `${state.namespace}-C${company.id}-O${ordinal}`;
   const executionPath = state.paths[company.version] ??= structuredClone(route(company.backend));
   const path = type === 'query' ? executionPath.filter(node => ['entry', 'read', 'exit'].includes(node.type)) : executionPath;
   const request: TrafficRequest = {
     id, ...(type === 'purchase' ? { intentId: `${id}-intent` } : {}), companyId: company.id,
-    ...(trafficClass === 'legitimate' ? { customerId: `C${company.id}-visitor-${ordinal % Math.max(1, company.customers)}` } : {}),
+    ...(trafficClass === 'legitimate' && state.scope === 'qa' ? { customerId: `qa-${company.id}-${ordinal}`, customerSource: 'qa' as const } : {}),
     type, trafficClass, ...(attackKind ? { attackKind } : {}), attempt: 0, commercial: type === 'purchase' && trafficClass === 'legitimate',
     executionVersion: company.version, path, securityAllowed: evaluateSecurity(company.security, trafficClass === 'legitimate' ? 'valid' : attackKind ?? 'bot', ordinal - 1),
     arrivalAt: now, nextAt: now, deadline: round(now + state.config.patience[type]), cursor: 1,
@@ -61,6 +65,7 @@ export function admitTraffic(company: Company, now: number, type: TrafficRequest
     service: 'security', stage: 'entry', phase: 'security', transaction: 'NONE', breach: false, waits: [], trace: [],
     journey: { from: 'entry', to: 'entry', at: now, duration: .2 },
   };
+  if (customer) attachCustomer(company, request, customer);
   state.requests[id] = request;
   state.totals.generated++; state[trafficClass].generated++; company.requests++;
   enqueue(company, request, 'security', now);
@@ -70,7 +75,8 @@ export function admitTraffic(company: Company, now: number, type: TrafficRequest
 export function issueInitialTraffic(company: Company, at: number) {
   if (company.traffic.initialIssued || company.eliminated) return;
   company.traffic.initialIssued = true; company.traffic.initialDebt = 1;
-  admitTraffic(company, at);
+  const customer = selectCustomer(company);
+  if (customer) admitTraffic(company, at, 'browse', 'legitimate', undefined, customer);
 }
 
 function terminate(request: TrafficRequest, status: RequestResult['status'], reason: RequestResult['reason'], now: number) {
@@ -137,6 +143,7 @@ export function settleTraffic(company: Company, now: number) {
     company.successes += Number(result.status === 'COMPLETED'); company.errors += Number(result.status !== 'COMPLETED');
     company.revenue += result.revenue; company.lostRevenue += result.lostRevenue; company.capital += result.capitalDelta;
     company.oversold += request.oversold; company.breaches += Number(request.breach);
+    if (request.trafficClass === 'legitimate') recordCustomerExperience(company, request, request.type, request.latencyMs!);
     request.accounted = true;
     if (request.transaction === 'PENDING_RESOLUTION') state.unresolvedCount++;
     state.observations.push({ at: now, legitimate: request.trafficClass === 'legitimate', status: result.status, latency: request.latencyMs!, breach: request.breach, oversold: request.oversold });
@@ -197,6 +204,7 @@ function updateTrafficMetrics(company: Company, now: number, dt: number, rates: 
 
 /** Arrival streams depend on seed/ordinal, never on visual sampling or other companies. */
 export function generateTraffic(company: Company, at: number, dt: number, duration: number) {
+  if (company.eliminated) return;
   const state = company.traffic;
   const demand = (5 + 295 * (at / duration) ** 1.25) * company.customers / 5000;
   state.arrivalRemainder = round(state.arrivalRemainder + demand * dt);
@@ -205,7 +213,8 @@ export function generateTraffic(company: Company, at: number, dt: number, durati
     if (state.initialDebt) { state.initialDebt--; continue; }
     const ordinal = state.legitimate.generated;
     const offset = state.seed % 10;
-    admitTraffic(company, at, (ordinal + offset) % 10 < 7 ? 'browse' : 'purchase');
+    const customer = selectCustomer(company);
+    if (customer) admitTraffic(company, at, (ordinal + offset) % 10 < 7 ? 'browse' : 'purchase', 'legitimate', undefined, customer);
   }
   if (at >= duration * .12) {
     state.attackRemainder = round(state.attackRemainder + (2 + 18 * at / duration) * dt);
@@ -247,8 +256,8 @@ export function trafficParticles(company: Company, now: number, limit = 48): Flo
   // Stable admission-order sample, with queue heads represented before terminal tails.
   requests.sort((a, b) => Number(!!a.result) - Number(!!b.result) || a.arrivalAt - b.arrivalAt || a.id.localeCompare(b.id));
   return requests.slice(0, limit).map(request => ({ id: request.id, requestId: request.id, companyId: company.id, born: request.arrivalAt, duration: company.traffic.config.patience[request.type] + 3,
-    executionVersion: request.executionVersion, status: request.status, reason: request.result?.reason, finishedAt: request.finishedAt,
-    route: request.type, seed: (request.id.length + request.arrivalAt * 10) % 10 / 10, color: request.oversold ? '#f27e79' : company.color,
+    customerId: request.customerSource === 'market' ? request.customerId : undefined, executionVersion: request.executionVersion, status: request.status, reason: request.result?.reason, finishedAt: request.finishedAt,
+    route: request.type, seed: (request.id.length + request.arrivalAt * 10) % 10 / 10, color: request.trafficClass === 'malicious' ? company.color : customerColor(company, request),
     kind: request.trafficClass === 'malicious' ? 'attack' : request.result && (request.status !== 'COMPLETED' || request.oversold) ? 'error' : 'success',
     journey: { ...request.journey }, queue: positions.get(request.id),
   }));
