@@ -1,6 +1,6 @@
 # FLOW WAR — motor de simulación
 
-Estado de implementación: este documento describe el diseño objetivo completo. La [Entrega 1](07-entrega-1-concurrencia.md) implementa un corte de dos compras/una unidad con solicitudes individuales y ejecutor común QA/producción; la ráfaga objetivo 40/20 y el resto del intérprete completo siguen pendientes.
+Estado de implementación: este documento describe el diseño objetivo completo, con parámetros propuestos. La [Entrega 2](08-entrega-2-trafico-colas.md) documenta el contrato y los parámetros realmente implementados para tráfico ordinario, FIFO, deadlines, economía, Carga y recuperación; prevalece sobre los valores provisionales de este documento. La [Entrega 1](07-entrega-1-concurrencia.md) conserva su corte de dos compras/una unidad; la ráfaga objetivo 40/20 y el resto del intérprete completo siguen pendientes.
 
 ## 1. Principios y unidades
 

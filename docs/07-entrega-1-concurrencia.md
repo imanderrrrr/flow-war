@@ -1,5 +1,7 @@
 # Entrega 1 — dos compras sobre la última unidad
 
+Nota de evolución: la [Entrega 2](08-entrega-2-trafico-colas.md) conserva este escenario y migra el tráfico ordinario a un ejecutor individual, añade esquema 3 y muestra ambos inventarios por separado. Los límites de tráfico agregado y esquema 2 descritos aquí corresponden al corte histórico de Entrega 1.
+
 Implementada sobre `codex/auditoria-fidelidad-motor`, a partir de la auditoría del documento 06. La interfaz conserva componentes, estilos, calles, edificios y sprites existentes.
 
 ## Comportamiento entregado

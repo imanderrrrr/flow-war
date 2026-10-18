@@ -7,7 +7,8 @@
     "dev": "tsx server/index.ts",
     "build": "tsc --noEmit && vite build",
     "start": "NODE_ENV=production tsx server/index.ts",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "bench:traffic": "tsx scripts/traffic-benchmark.ts"
   },
   "dependencies": {
     "@fontsource/press-start-2p": "^5.2.5",

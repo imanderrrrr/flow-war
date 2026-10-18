@@ -2,7 +2,7 @@
 
 Especificación para una práctica universitaria competitiva de calidad de software: cinco empresas de comercio electrónico, roles separados y consecuencias visibles en una arquitectura de estilo arcade 8-bit.
 
-**El primer prototipo ya es ejecutable.** Incluye la arena, interfaces privadas, editores conectables, pipeline multirrol y un motor inicial. Los documentos de diseño describen el objetivo completo; los límites del corte actual se detallan en [ejecución del prototipo](docs/05-prototipo.md).
+**El proyecto es ejecutable.** Incluye la arena, interfaces privadas, editores conectables y pipeline multirrol. La [Entrega 2](docs/08-entrega-2-trafico-colas.md) integra tráfico individual, FIFO, capacidad, abandono y contabilidad real, conservando el escenario de concurrencia de Entrega 1. Los documentos de diseño describen también ampliaciones pendientes.
 
 ```sh
 npm install --include=optional --prefer-online
@@ -24,6 +24,7 @@ Abrir [http://localhost:4173](http://localhost:4173). Las credenciales locales s
 | [Ejecutar el prototipo](docs/05-prototipo.md) | Inicio, acceso por rol, funciones implementadas, limitaciones y verificación. |
 | [Auditoría de fidelidad](docs/06-auditoria-fidelidad.md) | Hallazgos verificados y orden de mejora progresiva del motor. |
 | [Entrega 1: concurrencia](docs/07-entrega-1-concurrencia.md) | Escenario de solicitudes individuales, persistencia, límites y verificación manual por roles. |
+| [Entrega 2: tráfico y colas](docs/08-entrega-2-trafico-colas.md) | Motor ordinario individual, capacidad, FIFO, deadlines, QA, recuperación, ensayos y verificación manual. |
 
 ## Decisiones centrales
 
@@ -33,7 +34,7 @@ Abrir [http://localhost:4173](http://localhost:4173). Las credenciales locales s
 - Node.js + Express + Socket.IO; un servidor autoritativo calcula el juego y verifica cada acción.
 - Flujo obligatorio: **Backend / Seguridad → QA → CTO → DevOps → producción**. Producto seguirá el mismo flujo cuando se habilite.
 - Un bloque solo afecta las solicitudes que pasan por él. Sus conexiones y configuración tienen efectos funcionales.
-- El mercado se conserva al migrar clientes; el color cambia con la experiencia posterior en la empresa receptora.
+- El mercado se conserva al migrar clientes; la fidelización individual entre visitas queda pendiente.
 - La interfaz muestra datos, eventos, resultados de pruebas y consecuencias. No incluye ayudas, recomendaciones ni evaluación del plan.
 
 ## Cobertura de la solicitud

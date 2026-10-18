@@ -35,7 +35,7 @@ Para otros dispositivos en la misma red, usar la dirección IP del host y el pue
 - Autorización de costos por CTO y reserva de saldo; DevOps ejecuta Rolling o Restart Replace.
 - Escalamiento manual de aplicación y activación de balanceador por DevOps; presupuesto operativo autorizado por CTO.
 - Carga gradual, solicitudes hostiles, ráfagas de concurrencia, sobreventa, duplicación, presión, reputación, migración y eliminación.
-- Migrantes visibles con color de origen y mezcla progresiva hacia el color receptor durante su recorrido completado.
+- Migración agregada con conservación de mercado y eventos; el tráfico visual ordinario representa solicitudes reales.
 - Sonido arcade opcional, silenciable desde el encabezado cuando el ancho disponible lo permite.
 - Persistencia SQLite, comandos deduplicados, reconexión y recuperación en pausa tras reiniciar el servidor.
 
@@ -43,11 +43,11 @@ Para otros dispositivos en la misma red, usar la dirección IP del host y el pue
 
 La [Entrega 1 de concurrencia](07-entrega-1-concurrencia.md) reemplaza la ráfaga agregada por dos solicitudes individuales sobre una unidad del SKU LAST-UNIT. QA Concurrencia y producción usan el mismo ejecutor, con inventario, resultados y contexto persistentes e independientes. Read, Write, Atomic y Payment se ejecutan por solicitud; las demás piezas de backend alcanzables se rechazan explícitamente en ese escenario hasta implementar su semántica.
 
-El tráfico ordinario y las demás suites conservan el motor agregado con fixtures de inventario y seguridad; todavía no se ejecutan 5,000 clientes individuales. La transición visual de color continúa sin un historial de fidelidad por cliente entre visitas. Los límites de caché, locks, colas, pagos repetidos y métricas agregadas fuera del escenario siguen pendientes.
+La [Entrega 2](08-entrega-2-trafico-colas.md) migra el tráfico ordinario y QA Carga al ejecutor individual con capacidad, FIFO, deadlines, resultados y contabilidad. Concurrencia conserva LAST-UNIT; Regresión, Seguridad e Integración todavía usan fixtures agregados. No se ejecuta una base de 5,000 clientes con fidelización persistente entre visitas. Queue como pieza configurable, caché, locks, retries y resolución automática de transacciones pendientes siguen sin implementarse; la cola básica de infraestructura sí es real.
 
 Los costos actuales cubren servidores, publicaciones, ventas y compensaciones simuladas. La cotización independiente de operación por pieza y el aprovisionamiento diferido de servidores pertenecen a la siguiente iteración. El escalamiento actual es inmediato dentro del presupuesto autorizado.
 
-Producto tiene una vista de métricas y eventos. Propuestas comerciales, rollback, Blue-Green, autoscaling, múltiples salas y rotación de credenciales desde la consola quedan pendientes. El journal completo con replay determinista se sustituye en este corte por un snapshot persistido cada segundo y por cada comando confirmado; tras una caída pueden perderse hasta un segundo de ticks, sin perder comandos confirmados.
+Producto tiene una vista de métricas y eventos. Propuestas comerciales, rollback, Blue-Green, autoscaling, múltiples salas y rotación de credenciales desde la consola quedan pendientes. No hay journal completo de ticks: se persiste cada segundo real y por comando confirmado. Una caída pierde lo posterior al último snapshot; a 20× esto puede representar unos 20 segundos simulados, además de retrasos del host. Snapshot, recibos y deduplicación de comandos se confirman en una misma transacción.
 
 ## Verificación
 
