@@ -41,7 +41,9 @@ Para otros dispositivos en la misma red, usar la dirección IP del host y el pue
 
 ## Límites actuales respecto al diseño objetivo
 
-El motor usa tráfico agregado con fixtures de inventario y seguridad, en lugar de ejecutar y persistir 5,000 agentes individuales. Las conexiones y el orden de las piezas afectan la simulación; algunos parámetros avanzados, como expiración de caché y locks por solicitud, están simplificados. La transición visual de color representa un recorrido satisfactorio; todavía no conserva un historial de fidelidad por cliente entre visitas.
+La [Entrega 1 de concurrencia](07-entrega-1-concurrencia.md) reemplaza la ráfaga agregada por dos solicitudes individuales sobre una unidad del SKU LAST-UNIT. QA Concurrencia y producción usan el mismo ejecutor, con inventario, resultados y contexto persistentes e independientes. Read, Write, Atomic y Payment se ejecutan por solicitud; las demás piezas de backend alcanzables se rechazan explícitamente en ese escenario hasta implementar su semántica.
+
+El tráfico ordinario y las demás suites conservan el motor agregado con fixtures de inventario y seguridad; todavía no se ejecutan 5,000 clientes individuales. La transición visual de color continúa sin un historial de fidelidad por cliente entre visitas. Los límites de caché, locks, colas, pagos repetidos y métricas agregadas fuera del escenario siguen pendientes.
 
 Los costos actuales cubren servidores, publicaciones, ventas y compensaciones simuladas. La cotización independiente de operación por pieza y el aprovisionamiento diferido de servidores pertenecen a la siguiente iteración. El escalamiento actual es inmediato dentro del presupuesto autorizado.
 

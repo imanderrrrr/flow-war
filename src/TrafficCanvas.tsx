@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { PublicCompany, Snapshot } from '../shared/types';
-import { MAP_WIDTH as W, MAP_HEIGHT as H, SERVICES, ROAD_PATHS, SERVICE_CONNECTIONS, particlePath, particlePosition, type Path } from './trafficGeometry';
+import { MAP_WIDTH as W, MAP_HEIGHT as H, SERVICES, ROAD_PATHS, SERVICE_CONNECTIONS, particlePath, particlePosition, particleProgress, type Path } from './trafficGeometry';
 
 const { ENTRY, GATE, WEB, AUTH, CHECK, STOCK, PAY, OUT } = SERVICES;
 function blend(a: string, b: string, t: number) { const aa = a.match(/\w\w/g)!, bb = b.match(/\w\w/g)!; return '#' + aa.map((v, i) => Math.round(parseInt(v, 16) * (1 - t) + parseInt(bb[i], 16) * t).toString(16).padStart(2, '0')).join(''); }
@@ -58,7 +58,8 @@ export default function TrafficCanvas({ company, snapshot, zoom }: { company: Pu
       text('WEB STORE', WEB[0], WEB[1] - 68, c.color, 12); text('HTTP / FRONTEND', WEB[0], WEB[1] + 70, '#718299', 9);
       text('AUTH', AUTH[0], AUTH[1] - 55, '#b9aedc', 12); text('SESIONES', AUTH[0], AUTH[1] + 59, '#718299', 9);
       text('CHECKOUT', CHECK[0], CHECK[1] - 62, '#d4dbea', 12); text(`COLA ${Math.ceil(c.queue).toString().padStart(2,'0')}`, CHECK[0], CHECK[1] + 66, c.queue > 20 ? '#f27e79' : '#718299', 10);
-      text('INVENTARIO', STOCK[0], STOCK[1] - 64, '#dbb383', 12); text(`STOCK ${Math.floor(c.stock)}`, STOCK[0], STOCK[1] + 65, '#718299', 10);
+      const inventory = c.concurrency.inventory;
+      text(inventory ? 'SKU LAST-UNIT' : 'INVENTARIO', STOCK[0], STOCK[1] - 64, '#dbb383', 12); text(inventory ? `STOCK ${inventory.stock} / COMP. ${inventory.committed}` : `STOCK ${Math.floor(c.stock)}`, STOCK[0], STOCK[1] + 65, '#718299', 10);
       text('PAGOS', PAY[0], PAY[1] - 56, '#8cceaa', 12); text('PAYMENT GATEWAY', PAY[0], PAY[1] + 60, '#718299', 9);
       text('APP SERVERS', 425, 433, '#8ca0bc', 10); text(`${c.servers} NODO${c.servers > 1 ? 'S' : ''} / ${c.balancer ? 'BALANCEADO' : 'DIRECTO'}`, 425, 531, '#718299', 9);
       text('SALIDA', OUT[0], OUT[1] - 44, '#a8b3c4', 11); text('RESPONSE', OUT[0], OUT[1] + 49, '#627186', 9);
@@ -66,7 +67,7 @@ export default function TrafficCanvas({ company, snapshot, zoom }: { company: Pu
       for (let i=0; i<count; i++) { rect(CHECK[0] - 72 - i*9, CHECK[1] + 14, 5, 8, c.queue > 20 ? '#f27e79' : c.color); rect(CHECK[0] - 71 - i*9, CHECK[1] + 10, 3, 3, '#f2e8c8'); }
       const particles = s.tick < 3 && c.particles.length === 0 ? [{ id: 'initial', born: 0, duration: 9, color: c.color, kind: 'success' as const, route: 'purchase' as const, seed: .5 }] : c.particles;
       for (const p of particles) {
-        const progress = Math.max(0, Math.min(1, (now - p.born) / p.duration));
+        const progress = particleProgress(p, now);
         const [x,y] = particlePosition(particlePath(p), progress, p.seed); const color = p.color !== c.color && p.kind === 'success' ? blend(p.color, c.color, Math.min(.85, progress * .85)) : p.color;
         if (p.kind === 'attack') { rect(x-4,y-4,8,8,color); rect(x-2,y-2,4,4,'#0d1420'); }
         else { rect(x-2,y-6,4,4,'#e3dac5'); rect(x-3,y-1,6,6,color); rect(x-3,y+5,2,3,color); rect(x+1,y+5,2,3,color); }

@@ -7,6 +7,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { Server } from 'socket.io';
 import { ROLES, type Identity, type GameState, type Command } from '../shared/types.js';
 import { applyCommand, createGame, project, step } from './engine.js';
+import { recoverGame } from './persistence.js';
 
 const directory = resolve(process.env.FLOW_DATA_DIR ?? '.local');
 mkdirSync(directory, { recursive: true, mode: 0o700 });
@@ -24,8 +25,12 @@ const identities = new Map(credentials.map(c => [hash(c.code), c.identity]));
 const db = new DatabaseSync(resolve(directory, 'game.sqlite'));
 db.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS game (id INTEGER PRIMARY KEY, state TEXT NOT NULL); CREATE TABLE IF NOT EXISTS commands (identity TEXT NOT NULL, id TEXT NOT NULL, digest TEXT NOT NULL, result TEXT NOT NULL, PRIMARY KEY(identity,id)); CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, identity TEXT NOT NULL, expires INTEGER NOT NULL);');
 const saved = db.prepare('SELECT state FROM game WHERE id=1').get() as { state: string } | undefined;
-let game: GameState = saved ? JSON.parse(saved.state) : createGame();
-if (game.status === 'RUNNING') game.status = 'PAUSED';
+// Keep the original v1 snapshot before the first upgraded snapshot is written.
+if (saved && JSON.parse(saved.state).schema === 1) {
+  db.exec('CREATE TABLE IF NOT EXISTS game_migrations (schema INTEGER PRIMARY KEY, state TEXT NOT NULL)');
+  db.prepare('INSERT OR IGNORE INTO game_migrations (schema,state) VALUES (1,?)').run(saved.state);
+}
+let game: GameState = saved ? recoverGame(saved.state) : createGame();
 const save = db.prepare('INSERT INTO game (id,state) VALUES (1,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state');
 const persist = () => save.run(JSON.stringify(game));
 persist();

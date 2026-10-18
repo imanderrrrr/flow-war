@@ -1,3 +1,7 @@
+import { advanceConcurrency, cancelConcurrency, concurrencyParticles, concurrencyReport, createConcurrencyRun, isRunFinished, runConcurrencyFixture } from './requests.js';
+import { initialConcurrency, productionContext, settleConcurrency, stepConcurrency } from './scenarios.js';
+import { route, evaluateSecurity } from './graphs.js';
+export { route, evaluateSecurity } from './graphs.js';
 import { BLOCKS, SUITES, type Company, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
 
 const NAMES = ['NOVA', 'VERTEX', 'BYTE', 'EMBER', 'ORBIT'];
@@ -13,27 +17,14 @@ export function createGame(duration = 1500, seed = 7357): GameState {
     id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
     servers: 1, balancer: false, infraBudget: duration * .5, reserved: 0, version: 1, deployments: 0, active: 1, requests: 0, successes: 0, errors: 0, breaches: 0, oversold: 0, duplicates: 0,
     lostRevenue: 0, revenue: 0, latency: 180, utilization: .08, queue: 0, migratedIn: 0, migratedOut: 0, eliminated: false, crisisTicks: 0, deadTicks: 0, bankruptTicks: 0, concurrencyUntil: 0,
-    backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100,
+    backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration),
   }));
-  return { schema: 1, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
+  return { schema: 2, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
 }
 function rng(g: GameState) { g.seed = (Math.imul(g.seed, 1664525) + 1013904223) >>> 0; return g.seed / 4294967296; }
 export function event(g: GameState, companyId: number | null, text: string, tone: 'good' | 'bad' | 'neutral' = 'neutral', category = 'SISTEMA') {
   g.events.unshift({ id: ++g.eventSeq, at: g.tick, companyId, text, tone, category });
   g.events.length = Math.min(g.events.length, 60);
-}
-export function route(graph: Graph): Graph['nodes'] {
-  const start = graph.nodes.find(n => n.type === 'entry');
-  const path: Graph['nodes'] = [];
-  const visited = new Set<string>();
-  let node = start;
-  while (node && !visited.has(node.id)) {
-    visited.add(node.id); path.push(node);
-    if (node.type === 'exit') break;
-    const edge = graph.edges.find(e => e.source === node!.id);
-    node = graph.nodes.find(n => n.id === edge?.target);
-  }
-  return path;
 }
 export function validateGraph(input: unknown, domain: 'backend' | 'security' | 'product', complete = true): Graph {
   if (!input || typeof input !== 'object') throw new Error('Grafo inválido.');
@@ -46,6 +37,7 @@ export function validateGraph(input: unknown, domain: 'backend' | 'security' | '
     if (typeof n.id !== 'string' || n.id.length > 100 || ids.has(n.id) || !allowed.has(n.type) || !n.position || !Number.isFinite(n.position.x) || !Number.isFinite(n.position.y)) throw new Error('Nodo inválido.');
     ids.add(n.id);
     const block = catalog.find(b => b.type === n.type);
+    if (n.type === 'atomic' && (!Number.isInteger(Number(n.data?.value ?? block!.value)) || Number(n.data?.value ?? block!.value) < 1 || Number(n.data?.value ?? block!.value) > 120)) throw new Error('Atomic Update requiere una cantidad entera entre 1 y 120.');
     n.data = { label: block?.label ?? ({ entry: 'Request IN', exit: 'Response OUT', read: 'Read Stock', write: 'Write Stock', payment: 'Payment' }[n.type] ?? n.type), ...(block ? { value: clamp(Number(n.data?.value ?? block.value) || block.value, 1, n.type === 'lock' ? 5000 : 120) } : {}) };
   }
   for (const type of ['entry', 'exit', ...(domain === 'backend' ? ['read', 'write', 'payment'] : [])]) if (graph.nodes.filter(n => n.type === type).length !== 1) throw new Error(`El grafo requiere un módulo ${type}.`);
@@ -64,18 +56,6 @@ export function validateGraph(input: unknown, domain: 'backend' | 'security' | '
   if (complete && domain === 'backend' && !['read', 'write', 'payment'].every(t => path.some(n => n.type === t))) throw new Error('La ruta debe atravesar inventario y pagos.');
   return graph;
 }
-export function evaluateSecurity(graph: Graph, kind: 'valid' | 'forged' | 'injection' | 'bot', ordinal = 0) {
-  let authenticated = false;
-  for (const n of route(graph)) {
-    if (n.type === 'auth') { if (kind === 'forged') return false; authenticated = true; }
-    if (n.type === 'role' && !authenticated) return false;
-    if (n.type === 'waf' && kind === 'injection') return false;
-    if (n.type === 'ip' && kind === 'bot' && ordinal % 2 === 0) return false;
-    if (n.type === 'bot' && kind === 'bot' && ordinal % 100 < Number(n.data.value ?? 65)) return false;
-    if (n.type === 'rate' && ordinal % 25 >= Number(n.data.value ?? 12)) return false;
-  }
-  return true;
-}
 export function inventoryBatch(graph: Graph, demand: number, stock: number): { completed: number; oversold: number; duplicates: number; remaining: number } {
   const p = route(graph).map(n => n.type), write = p.indexOf('write'), payment = p.indexOf('payment');
   const atomic = p.indexOf('atomic') >= 0 && p.indexOf('atomic') < write;
@@ -87,11 +67,12 @@ export function inventoryBatch(graph: Graph, demand: number, stock: number): { c
 }
 export function reportFor(g: GameState, change: Change, suite: string): Report {
   const company = g.companies[change.companyId];
+  if (suite === 'Concurrencia') return concurrencyReport(runConcurrencyFixture(change.context ?? { backend: change.domain === 'backend' ? change.graph : company.backend, security: change.domain === 'security' ? change.graph : company.security, executionVersion: change.baseVersion }), g.tick);
   const backend = change.domain === 'backend' ? change.graph : company.backend;
   const security = change.domain === 'security' ? change.graph : company.security;
   const load = suite === 'Carga' ? 400 : 100;
   const valid = Array.from({ length: load }, (_, i) => evaluateSecurity(security, 'valid', i)).filter(Boolean).length;
-  const batches = suite === 'Concurrencia' || suite === 'Integración' ? inventoryBatch(backend, valid, 20) : inventoryBatch(backend, valid, load);
+  const batches = suite === 'Integración' ? inventoryBatch(backend, valid, 20) : inventoryBatch(backend, valid, load);
   let breaches = 0;
   if (suite === 'Seguridad' || suite === 'Integración') for (let i = 0; i < 60; i++) if (evaluateSecurity(security, (['forged', 'injection', 'bot'] as const)[i % 3], i)) breaches++;
   return { suite, requests: load, completed: batches.completed, rejected: load - batches.completed, oversold: batches.oversold, breaches, duplicates: batches.duplicates, latency: Math.round(180 + route(backend).length * 12 + (suite === 'Carga' ? load / Math.max(1, company.servers) * 4 : 0)), tick: g.tick };
@@ -110,7 +91,7 @@ export function applyCommand(g: GameState, identity: Identity | null, command: C
     if (command.type === 'room.reset') { const duration = Number(command.payload?.duration) === 1200 ? 1200 : 1500; Object.assign(g, createGame(duration)); return { ok: true }; }
     if (command.type === 'room.start') { if (g.status === 'FINISHED') return { ok: false, error: 'La partida ha finalizado.' }; g.status = 'RUNNING'; event(g, null, 'SIMULACIÓN EN CURSO', 'good'); }
     if (command.type === 'room.pause' && g.status === 'RUNNING') { g.status = 'PAUSED'; event(g, null, 'Simulación pausada.'); }
-    if (command.type === 'room.finish') { g.status = 'FINISHED'; event(g, null, 'PARTIDA FINALIZADA'); }
+    if (command.type === 'room.finish') { finishRequests(g); g.status = 'FINISHED'; event(g, null, 'PARTIDA FINALIZADA'); }
     if (command.type === 'room.speed') g.speed = [1, 5, 20].includes(Number(command.payload?.speed)) ? Number(command.payload?.speed) : 1;
     return { ok: true };
   }
@@ -129,7 +110,7 @@ export function applyCommand(g: GameState, identity: Identity | null, command: C
       c.drafts[domain] = { graph, revision: current + 1 };
       if (command.type === 'change.submit') {
         const cost = 100 + graph.nodes.reduce((sum, n) => sum + (BLOCKS[domain].find(b => b.type === n.type)?.cost ?? 0), 0);
-        const change: Change = { id: `CH-${String(g.changes.length + 1).padStart(3, '0')}`, companyId: c.id, domain, name: `${domain === 'backend' ? 'Lógica' : 'Seguridad'} · revisión ${current + 1}`, graph: structuredClone(graph), status: 'QA_PENDING', cost, reserved: 0, baseVersion: c.version, created: g.tick, reports: [], actorId: identity.id };
+        const change: Change = { id: `CH-${String(g.changes.length + 1).padStart(3, '0')}`, companyId: c.id, domain, name: `${domain === 'backend' ? 'Lógica' : 'Seguridad'} · revisión ${current + 1}`, graph: structuredClone(graph), status: 'QA_PENDING', cost, reserved: 0, baseVersion: c.version, created: g.tick, reports: [], actorId: identity.id, context: { backend: structuredClone(domain === 'backend' ? graph : c.backend), security: structuredClone(domain === 'security' ? graph : c.security), executionVersion: c.version } };
         g.changes.unshift(change); event(g, c.id, `${change.id} enviado a QA.`, 'neutral', 'PIPELINE');
       }
       return { ok: true };
@@ -152,8 +133,9 @@ export function applyCommand(g: GameState, identity: Identity | null, command: C
     if (command.type === 'qa.run') {
       if (ch.status !== 'QA_PENDING' || !SUITES.includes(String(p.suite))) throw new Error('No se puede ejecutar esa suite en este estado.');
       ch.status = 'QA_RUNNING'; ch.runningSuite = String(p.suite); ch.due = g.tick + 4;
+      if (p.suite === 'Concurrencia') ch.qaScenario = createConcurrencyRun(`${ch.id}-QA${ch.reports.length + 1}`, ch.context ?? productionContext(c), g.tick);
     } else if (command.type === 'qa.approve') {
-      if (ch.status !== 'QA_PENDING' || !ch.reports.length) throw new Error('Se requiere una prueba terminada.');
+      if (ch.status !== 'QA_PENDING' || !ch.reports.some(report => !report.obsolete)) throw new Error('Se requiere una prueba terminada.');
       ch.status = 'CTO_PENDING'; event(g, c.id, `${ch.id} aprobado por QA.`, 'neutral', 'PIPELINE');
     } else if (command.type === 'qa.reject') {
       if (ch.status !== 'QA_PENDING') throw new Error('Estado de cambio inválido.'); ch.status = 'QA_REJECTED';
@@ -178,7 +160,16 @@ function jobs(g: GameState) {
   for (const ch of g.changes) {
     const c = g.companies[ch.companyId];
     if (ch.status === 'AUTHORIZED' && g.tick > (ch.expires ?? Infinity)) { ch.status = 'EXPIRED'; releaseReservation(c, ch); }
-    if (ch.status === 'QA_RUNNING' && g.tick >= (ch.due ?? Infinity)) { ch.reports.push(reportFor(g, ch, ch.runningSuite!)); ch.status = 'QA_PENDING'; event(g, c.id, `${ch.id} · ${ch.runningSuite} completada.`, 'neutral', 'QA'); }
+    if (ch.status === 'QA_RUNNING') {
+      if (ch.qaScenario) advanceConcurrency(ch.qaScenario, g.tick);
+      const completed = ch.qaScenario ? isRunFinished(ch.qaScenario) : g.tick >= (ch.due ?? Infinity);
+      if (completed) {
+        ch.reports.push(ch.qaScenario ? concurrencyReport(ch.qaScenario, g.tick) : reportFor(g, ch, ch.runningSuite!));
+        delete ch.qaScenario;
+        ch.status = 'QA_PENDING';
+        event(g, c.id, `${ch.id} · ${ch.runningSuite} completada.`, 'neutral', 'QA');
+      }
+    }
     if (ch.status === 'DEPLOYING' && g.tick >= (ch.due ?? Infinity)) {
       c[ch.domain] = structuredClone(ch.graph); c.version++; c.deployments++; c.capital -= ch.cost; releaseReservation(c, ch); ch.status = 'DEPLOYED';
       event(g, c.id, `${ch.id} EN PRODUCCIÓN · v${c.version}`, 'good', 'DEPLOY');
@@ -211,6 +202,13 @@ export function step(g: GameState, dt = .1) {
     let capacity = (c.balancer ? c.servers : Math.min(1, c.servers)) * 12 * (cached ? 1.35 : 1);
     if (!paid || (deploying?.strategy === 'restart')) capacity = 0;
     else if (deploying) capacity *= c.servers === 1 ? .12 : (c.servers - 1) / c.servers;
+    const scenario = stepConcurrency(c, g.tick, capacity > 0);
+    if (scenario.started) event(g, c.id, 'SKU LAST-UNIT · 2 compras / 1 unidad.', 'neutral', 'CONCURRENCIA');
+    if (scenario.oversold) c.concurrencyUntil = g.tick + 20;
+    if (scenario.finished) {
+      const report = concurrencyReport(c.concurrency.run!, g.tick);
+      event(g, c.id, `LAST-UNIT · ${report.completed} completadas / ${report.rejected} rechazadas / ${report.abandoned} abandonadas / ${report.oversold} sobreventas.`, report.oversold ? 'bad' : 'neutral', 'CONCURRENCIA');
+    }
     const traffic = lambda * legitimateAllowed + attackRate * attackAllowed;
     c.utilization = capacity > 0 ? traffic / capacity : traffic > 0 ? 3 : 0;
     const queueMax = 40 + Number(queueNode?.data.value ?? 0);
@@ -218,7 +216,7 @@ export function step(g: GameState, dt = .1) {
     c.latency = Math.round(180 + backendPath.length * 10 + securityPath.length * 6 + (capacity ? c.queue / capacity * 1000 : 2820));
     const errorFraction = clamp((1 - legitimateAllowed) + Math.max(0, 1 - capacity / Math.max(traffic, .01)) + (c.latency > 3000 ? .25 : 0), 0, 1);
     const breachesPerSec = attackRate * (Number(evaluateSecurity(c.security, 'forged', previousSecond)) + Number(evaluateSecurity(c.security, 'injection', previousSecond))) / 3;
-    c.active = Math.round(Math.min(c.customers, lambda * c.latency / 1000 + c.queue));
+    c.active = Math.round(Math.min(c.customers, lambda * c.latency / 1000 + c.queue)) + (c.concurrency.run?.requests.filter(request => !request.result).length ?? 0);
     c.arrivalRemainder += lambda * dt;
     const arrivals = Math.floor(c.arrivalRemainder); c.arrivalRemainder -= arrivals;
     c.requests += arrivals;
@@ -236,11 +234,6 @@ export function step(g: GameState, dt = .1) {
       const breaches = Math.floor(breachesPerSec + rng(g)); c.breaches += breaches;
       if (breaches && previousSecond % 12 === 0) event(g, c.id, `${breaches} accesos indebidos · SECURITY BREACH`, 'bad', 'SECURITY');
       if (securityIncident && attackAllowed) c.particles.push({ id: `attack-${c.id}-${previousSecond}`, born: g.tick, duration: 5, color: '#f27e79', kind: 'attack', route: 'purchase', seed: rng(g) });
-      if (concurrencyIncident && previousSecond % 45 === 0) {
-        const burst = inventoryBatch(c.backend, 40, 20); c.oversold += burst.oversold; c.duplicates += burst.duplicates; c.errors += 40 - burst.completed; c.requests += 40;
-        c.capital -= burst.oversold * 8 + burst.duplicates * 5;
-        if (burst.oversold || burst.duplicates) { c.concurrencyUntil = g.tick + 20; event(g, c.id, `${burst.oversold} sobreventas · ${burst.duplicates} cobros duplicados`, 'bad', 'CONCURRENCIA'); }
-      }
       c.stock = Math.min(200, c.stock + 12);
       if (previousSecond % 10 === 0) { c.history.push(c.customers / 50); c.history = c.history.slice(-24); }
     }
@@ -259,7 +252,7 @@ export function step(g: GameState, dt = .1) {
   }
   if (second) migrate(g);
   const removed = g.companies.filter(c => !c.eliminated && (c.deadTicks >= 90 || c.crisisTicks >= 30 || c.bankruptTicks >= 30));
-  for (const c of removed) { c.eliminated = true; c.eliminatedAt = g.tick; c.active = 0; c.particles = []; event(g, c.id, 'EMPRESA FUERA DEL MERCADO', 'bad', 'COLAPSO'); }
+  for (const c of removed) { if (c.concurrency.run) { cancelConcurrency(c.concurrency.run, g.tick, 'COMPANY_ELIMINATED'); settleConcurrency(c); } c.eliminated = true; c.eliminatedAt = g.tick; c.active = 0; c.particles = []; event(g, c.id, 'EMPRESA FUERA DEL MERCADO', 'bad', 'COLAPSO'); }
   if (removed.length) {
     const survivors = g.companies.filter(c => !c.eliminated);
     for (const c of removed) {
@@ -270,8 +263,13 @@ export function step(g: GameState, dt = .1) {
       c.infraBudget = 0;
     }
   }
-  if (g.tick >= g.duration || g.companies.every(c => c.eliminated)) { g.status = 'FINISHED'; event(g, null, 'PARTIDA FINALIZADA', 'neutral', 'SISTEMA'); }
+  if (g.tick >= g.duration || g.companies.every(c => c.eliminated)) { finishRequests(g); g.status = 'FINISHED'; event(g, null, 'PARTIDA FINALIZADA', 'neutral', 'SISTEMA'); }
   g.migrations = g.migrations.filter(m => g.tick - m.at < 20).slice(-30);
+}
+function finishRequests(g: GameState) {
+  for (const company of g.companies) {
+    if (company.concurrency.run) { cancelConcurrency(company.concurrency.run, g.tick, 'ROOM_FINISHED'); settleConcurrency(company); }
+  }
 }
 function migrate(g: GameState) {
   const companies = g.companies.filter(c => !c.eliminated);
@@ -302,8 +300,8 @@ export function project(g: GameState, identity: Identity | null): Snapshot {
   return {
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
     companies: g.companies.map(c => {
-      const { drafts, backend, security, product, migrationRemainder, arrivalRemainder, processedRemainder, crisisTicks, deadTicks, bankruptTicks, concurrencyUntil, ...pub } = c;
-      return { ...pub, modules: [...route(backend), ...route(security)].map(n => n.type), pipelineCounts: [['QA_PENDING', 'QA_RUNNING'], ['CTO_PENDING'], ['AUTHORIZED', 'DEPLOYING'], ['DEPLOYED']].map(states => g.changes.filter(ch => ch.companyId === c.id && states.includes(ch.status)).length) };
+      const { drafts, backend, security, product, migrationRemainder, arrivalRemainder, processedRemainder, crisisTicks, deadTicks, bankruptTicks, concurrencyUntil, concurrency, ...pub } = c;
+      return { ...pub, concurrency: { runId: concurrency.run?.id, inventory: concurrency.run && { ...concurrency.run.inventory }, totals: { ...concurrency.totals } }, particles: [...c.particles, ...concurrencyParticles(concurrency.run, c.color, g.tick)], modules: [...route(backend), ...route(security)].map(n => n.type), pipelineCounts: [['QA_PENDING', 'QA_RUNNING'], ['CTO_PENDING'], ['AUTHORIZED', 'DEPLOYING'], ['DEPLOYED']].map(states => g.changes.filter(ch => ch.companyId === c.id && states.includes(ch.status)).length) };
     }),
     events: g.events, migrations: g.migrations, unserved: g.unserved, privateCompany: privateC,
     changes: identity?.role === 'operator' ? g.changes : g.changes.filter(ch => ch.companyId === identity?.companyId),

@@ -22,6 +22,8 @@ Abrir [http://localhost:4173](http://localhost:4173). Las credenciales locales s
 | [Motor de simulación](docs/03-motor.md) | Tráfico, semántica de bloques, incidentes, migración, economía, métricas y final de partida. |
 | [Etapas y criterios de aceptación](docs/04-implementacion.md) | Orden de construcción, alcance del primer prototipo, verificaciones y límites. |
 | [Ejecutar el prototipo](docs/05-prototipo.md) | Inicio, acceso por rol, funciones implementadas, limitaciones y verificación. |
+| [Auditoría de fidelidad](docs/06-auditoria-fidelidad.md) | Hallazgos verificados y orden de mejora progresiva del motor. |
+| [Entrega 1: concurrencia](docs/07-entrega-1-concurrencia.md) | Escenario de solicitudes individuales, persistencia, límites y verificación manual por roles. |
 
 ## Decisiones centrales
 

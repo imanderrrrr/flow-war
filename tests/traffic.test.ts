@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ROAD_PATHS, SERVICES, TRAFFIC_PATHS, particlePath, particlePosition, type Point } from '../src/trafficGeometry.js';
+import { ROAD_PATHS, SERVICES, TRAFFIC_PATHS, particlePath, particlePosition, particleProgress, type Point } from '../src/trafficGeometry.js';
+import { createGame } from '../server/engine.js';
+import { advanceConcurrency, concurrencyParticles } from '../server/requests.js';
+import { startConcurrency } from '../server/scenarios.js';
+import { insertBlock } from './helpers.js';
 
 function onDrawnRoad([x, y]: Point): boolean {
   return ROAD_PATHS.some(path => path.slice(1).some(([bx, by], i) => {
@@ -38,4 +42,22 @@ test('navigation exits from the storefront without going through checkout, stock
 test('a failed browsing request stops at the storefront instead of completing the exit route', () => {
   assert.deepEqual(particlePath({ route: 'browse', kind: 'error' }).at(-1), SERVICES.WEB);
   assert.deepEqual(particlePosition(TRAFFIC_PATHS.browse, 2), particlePosition(TRAFFIC_PATHS.browse, 1));
+});
+
+test('real request journeys wait at stock and finish at the confirmed result location', () => {
+  const company = createGame().companies[0]; company.backend = insertBlock('atomic'); startConcurrency(company, 0);
+  const run = company.concurrency.run!;
+  for (let tick = 1; tick <= 40; tick++) {
+    const now = tick / 10; advanceConcurrency(run, now);
+    for (const particle of concurrencyParticles(run, company.color, now)) {
+      const path = particlePath(particle);
+      for (let progress = 0; progress <= 1; progress += .05) assert.ok(onDrawnRoad(particlePosition(path, progress, particle.seed)));
+      if (particle.status === 'REJECTED') {
+        assert.deepEqual(path.at(-1), SERVICES.STOCK);
+        assert.deepEqual(particlePosition(path, particleProgress(particle, now + 10), .5), SERVICES.STOCK);
+      }
+      if (particle.status === 'COMPLETED') assert.deepEqual(path.at(-1), SERVICES.OUT);
+    }
+  }
+  assert.equal(concurrencyParticles(run, company.color, 20).length, 0);
 });

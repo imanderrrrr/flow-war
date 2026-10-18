@@ -1,5 +1,7 @@
 # FLOW WAR — motor de simulación
 
+Estado de implementación: este documento describe el diseño objetivo completo. La [Entrega 1](07-entrega-1-concurrencia.md) implementa un corte de dos compras/una unidad con solicitudes individuales y ejecutor común QA/producción; la ráfaga objetivo 40/20 y el resto del intérprete completo siguen pendientes.
+
 ## 1. Principios y unidades
 
 El motor será una función de estado, comando/tick y PRNG con semilla. No consulta el DOM, el reloj del navegador ni servicios externos para decidir un resultado. La misma versión de motor, escenario, semilla y secuencia de comandos produce el mismo estado.

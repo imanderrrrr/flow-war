@@ -24,11 +24,23 @@ export const SERVICE_CONNECTIONS: Path[] = [
 // The renderer draws the same paths used by moving clients. No hidden exits.
 export const ROAD_PATHS: Path[] = Object.values(TRAFFIC_PATHS);
 
-export function particlePath(particle: Pick<FlowParticle, 'route' | 'kind'>): Path {
+export function particlePath(particle: Pick<FlowParticle, 'route' | 'kind' | 'journey'>): Path {
+  if (particle.journey) {
+    const points = { entry: ENTRY, security: GATE, checkout: CHECK, inventory: STOCK, payment: PAY, exit: OUT };
+    const path: Path = TRAFFIC_PATHS.purchase;
+    const from = path.indexOf(points[particle.journey.from]), to = path.indexOf(points[particle.journey.to]);
+    return from <= to ? path.slice(from, to + 1) : path.slice(to, from + 1).reverse();
+  }
   const path: Path = TRAFFIC_PATHS[particle.route];
   if (particle.kind !== 'error') return path;
   const stop = particle.route === 'browse' ? WEB : CHECK;
   return path.slice(0, path.indexOf(stop) + 1);
+}
+
+export function particleProgress(particle: FlowParticle, now: number): number {
+  const born = particle.journey?.at ?? particle.born;
+  const duration = particle.journey?.duration ?? particle.duration;
+  return Math.max(0, Math.min(1, (now - born) / duration));
 }
 
 export function particlePosition(path: Path, progress: number, seed = .5): Point {
