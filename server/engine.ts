@@ -1,3 +1,5 @@
+import { advanceLoadRun, createLoadRun, loadReport, runLoadFixture } from './load.js';
+import { initialTraffic, issueInitialTraffic, generateTraffic, serviceRates, advanceTraffic, restockTraffic, cancelTraffic, trafficParticles, trafficView } from './traffic.js';
 import { advanceConcurrency, cancelConcurrency, concurrencyParticles, concurrencyReport, createConcurrencyRun, isRunFinished, runConcurrencyFixture } from './requests.js';
 import { initialConcurrency, productionContext, settleConcurrency, stepConcurrency } from './scenarios.js';
 import { route, evaluateSecurity } from './graphs.js';
@@ -12,16 +14,15 @@ export function initialGraph(domain: 'backend' | 'security' | 'product'): Graph 
   const labels: Record<string, string> = { entry: 'Request IN', read: 'Read Stock', write: 'Write Stock', payment: 'Payment', exit: 'Response OUT' };
   return { nodes: types.map((type, i) => ({ id: `${domain}-${type}`, type, position: { x: i * 190, y: 160 }, data: { label: labels[type] } })), edges: types.slice(1).map((type, i) => ({ id: `${domain}-e${i}`, source: `${domain}-${types[i]}`, target: `${domain}-${type}` })) };
 }
-export function createGame(duration = 1500, seed = 7357): GameState {
+export function createGame(duration = 1500, seed = 7357, generation = 0): GameState {
   const companies: Company[] = NAMES.map((name, id) => ({
     id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
-    servers: 1, balancer: false, infraBudget: duration * .5, reserved: 0, version: 1, deployments: 0, active: 1, requests: 0, successes: 0, errors: 0, breaches: 0, oversold: 0, duplicates: 0,
-    lostRevenue: 0, revenue: 0, latency: 180, utilization: .08, queue: 0, migratedIn: 0, migratedOut: 0, eliminated: false, crisisTicks: 0, deadTicks: 0, bankruptTicks: 0, concurrencyUntil: 0,
-    backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration),
+    servers: 1, balancer: false, infraBudget: duration * .5, reserved: 0, version: 1, deployments: 0, active: 0, requests: 0, successes: 0, errors: 0, breaches: 0, oversold: 0, duplicates: 0,
+    lostRevenue: 0, revenue: 0, latency: 0, utilization: 0, queue: 0, migratedIn: 0, migratedOut: 0, eliminated: false, crisisTicks: 0, deadTicks: 0, bankruptTicks: 0, concurrencyUntil: 0,
+    backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
   }));
-  return { schema: 2, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
+  return { schema: 3, generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
 }
-function rng(g: GameState) { g.seed = (Math.imul(g.seed, 1664525) + 1013904223) >>> 0; return g.seed / 4294967296; }
 export function event(g: GameState, companyId: number | null, text: string, tone: 'good' | 'bad' | 'neutral' = 'neutral', category = 'SISTEMA') {
   g.events.unshift({ id: ++g.eventSeq, at: g.tick, companyId, text, tone, category });
   g.events.length = Math.min(g.events.length, 60);
@@ -68,14 +69,15 @@ export function inventoryBatch(graph: Graph, demand: number, stock: number): { c
 export function reportFor(g: GameState, change: Change, suite: string): Report {
   const company = g.companies[change.companyId];
   if (suite === 'Concurrencia') return concurrencyReport(runConcurrencyFixture(change.context ?? { backend: change.domain === 'backend' ? change.graph : company.backend, security: change.domain === 'security' ? change.graph : company.security, executionVersion: change.baseVersion }), g.tick);
+  if (suite === 'Carga') return runLoadFixture(company, change.context ?? productionContext(company), g.tick);
   const backend = change.domain === 'backend' ? change.graph : company.backend;
   const security = change.domain === 'security' ? change.graph : company.security;
-  const load = suite === 'Carga' ? 400 : 100;
+  const load = 100;
   const valid = Array.from({ length: load }, (_, i) => evaluateSecurity(security, 'valid', i)).filter(Boolean).length;
   const batches = suite === 'Integración' ? inventoryBatch(backend, valid, 20) : inventoryBatch(backend, valid, load);
   let breaches = 0;
   if (suite === 'Seguridad' || suite === 'Integración') for (let i = 0; i < 60; i++) if (evaluateSecurity(security, (['forged', 'injection', 'bot'] as const)[i % 3], i)) breaches++;
-  return { suite, requests: load, completed: batches.completed, rejected: load - batches.completed, oversold: batches.oversold, breaches, duplicates: batches.duplicates, latency: Math.round(180 + route(backend).length * 12 + (suite === 'Carga' ? load / Math.max(1, company.servers) * 4 : 0)), tick: g.tick };
+  return { suite, requests: load, completed: batches.completed, rejected: load - batches.completed, oversold: batches.oversold, breaches, duplicates: batches.duplicates, latency: Math.round(180 + route(backend).length * 12), tick: g.tick };
 }
 function releaseReservation(c: Company, change: Change) { c.reserved = Math.max(0, c.reserved - change.reserved); change.reserved = 0; }
 const permission: Record<string, string[]> = {
@@ -88,8 +90,8 @@ const permission: Record<string, string[]> = {
 export function applyCommand(g: GameState, identity: Identity | null, command: Command): Result {
   if (!identity || !permission[command.type]?.includes(identity.role)) return { ok: false, code: 'FORBIDDEN', error: 'Acción no autorizada para este rol.' };
   if (identity.role === 'operator') {
-    if (command.type === 'room.reset') { const duration = Number(command.payload?.duration) === 1200 ? 1200 : 1500; Object.assign(g, createGame(duration)); return { ok: true }; }
-    if (command.type === 'room.start') { if (g.status === 'FINISHED') return { ok: false, error: 'La partida ha finalizado.' }; g.status = 'RUNNING'; event(g, null, 'SIMULACIÓN EN CURSO', 'good'); }
+    if (command.type === 'room.reset') { const duration = Number(command.payload?.duration) === 1200 ? 1200 : 1500; finishRequests(g); const receipts = g.companies.map(company => company.traffic.outbox); Object.assign(g, createGame(duration, 7357, g.generation + 1)); for (const company of g.companies) company.traffic.outbox = receipts[company.id]; return { ok: true }; }
+    if (command.type === 'room.start') { if (g.status === 'FINISHED') return { ok: false, error: 'La partida ha finalizado.' }; if (g.status === 'LOBBY') for (const company of g.companies) issueInitialTraffic(company, g.tick); g.status = 'RUNNING'; event(g, null, 'SIMULACIÓN EN CURSO', 'good'); }
     if (command.type === 'room.pause' && g.status === 'RUNNING') { g.status = 'PAUSED'; event(g, null, 'Simulación pausada.'); }
     if (command.type === 'room.finish') { finishRequests(g); g.status = 'FINISHED'; event(g, null, 'PARTIDA FINALIZADA'); }
     if (command.type === 'room.speed') g.speed = [1, 5, 20].includes(Number(command.payload?.speed)) ? Number(command.payload?.speed) : 1;
@@ -133,6 +135,7 @@ export function applyCommand(g: GameState, identity: Identity | null, command: C
     if (command.type === 'qa.run') {
       if (ch.status !== 'QA_PENDING' || !SUITES.includes(String(p.suite))) throw new Error('No se puede ejecutar esa suite en este estado.');
       ch.status = 'QA_RUNNING'; ch.runningSuite = String(p.suite); ch.due = g.tick + 4;
+      if (p.suite === 'Carga') ch.qaLoad = createLoadRun(c, ch.context ?? productionContext(c), g.tick);
       if (p.suite === 'Concurrencia') ch.qaScenario = createConcurrencyRun(`${ch.id}-QA${ch.reports.length + 1}`, ch.context ?? productionContext(c), g.tick);
     } else if (command.type === 'qa.approve') {
       if (ch.status !== 'QA_PENDING' || !ch.reports.some(report => !report.obsolete)) throw new Error('Se requiere una prueba terminada.');
@@ -162,10 +165,10 @@ function jobs(g: GameState) {
     if (ch.status === 'AUTHORIZED' && g.tick > (ch.expires ?? Infinity)) { ch.status = 'EXPIRED'; releaseReservation(c, ch); }
     if (ch.status === 'QA_RUNNING') {
       if (ch.qaScenario) advanceConcurrency(ch.qaScenario, g.tick);
-      const completed = ch.qaScenario ? isRunFinished(ch.qaScenario) : g.tick >= (ch.due ?? Infinity);
+      const completed = ch.qaLoad ? advanceLoadRun(ch.qaLoad) : ch.qaScenario ? isRunFinished(ch.qaScenario) : g.tick >= (ch.due ?? Infinity);
       if (completed) {
-        ch.reports.push(ch.qaScenario ? concurrencyReport(ch.qaScenario, g.tick) : reportFor(g, ch, ch.runningSuite!));
-        delete ch.qaScenario;
+        ch.reports.push(ch.qaLoad ? loadReport(ch.qaLoad, g.tick) : ch.qaScenario ? concurrencyReport(ch.qaScenario, g.tick) : reportFor(g, ch, ch.runningSuite!));
+        delete ch.qaScenario; delete ch.qaLoad;
         ch.status = 'QA_PENDING';
         event(g, c.id, `${ch.id} · ${ch.runningSuite} completada.`, 'neutral', 'QA');
       }
@@ -179,29 +182,25 @@ function jobs(g: GameState) {
 }
 export function step(g: GameState, dt = .1) {
   if (g.status !== 'RUNNING') return;
+  if (dt > .1) { for (let remaining = dt; remaining > .00001; remaining = Math.round((remaining - .1) * 1e6) / 1e6) step(g, Math.min(.1, remaining)); return; }
   const previousSecond = Math.floor(g.tick);
   g.tick = Math.min(g.duration, Math.round((g.tick + dt) * 1000) / 1000);
   jobs(g);
   const second = Math.floor(g.tick) !== previousSecond;
-  const demand = 5 + 295 * (g.tick / g.duration) ** 1.25;
   const securityIncident = g.tick >= g.duration * .12;
   const concurrencyIncident = g.tick >= g.duration * .24;
   if (g.tick - dt < g.duration * .12 && securityIncident) event(g, null, 'Tráfico anómalo detectado en las cinco empresas.', 'bad', 'SECURITY');
   if (g.tick - dt < g.duration * .24 && concurrencyIncident) event(g, null, 'Ráfagas de compra sobre inventario compartido.', 'bad', 'CONCURRENCIA');
   for (const c of g.companies) {
     if (c.eliminated) continue;
-    const backendPath = route(c.backend), securityPath = route(c.security);
-    const lambda = demand * c.customers / 5000;
-    const attackRate = securityIncident ? 2 + 18 * (g.tick / g.duration) : 0;
-    const attackAllowed = attackRate ? (['forged', 'injection', 'bot'] as const).reduce((sum, k, i) => sum + Number(evaluateSecurity(c.security, k, previousSecond + i)), 0) / 3 : 0;
-    const legitimateAllowed = evaluateSecurity(c.security, 'valid', previousSecond) ? 1 : .12;
-    const cached = backendPath.some(n => n.type === 'cache' && Number(n.data.value) > 0);
-    const queueNode = backendPath.find(n => n.type === 'queue');
     const deploying = g.changes.find(ch => ch.companyId === c.id && ch.status === 'DEPLOYING');
-    const paid = c.infraBudget > 0 && c.capital > 0;
-    let capacity = (c.balancer ? c.servers : Math.min(1, c.servers)) * 12 * (cached ? 1.35 : 1);
-    if (!paid || (deploying?.strategy === 'restart')) capacity = 0;
-    else if (deploying) capacity *= c.servers === 1 ? .12 : (c.servers - 1) / c.servers;
+    const rates = serviceRates(c, deploying);
+    const capacity = rates.web;
+    generateTraffic(c, g.tick, dt, g.duration);
+    if (second) restockTraffic(c);
+    const breachesBefore = c.breaches;
+    advanceTraffic(c, g.tick, rates);
+    if (c.breaches > breachesBefore && second && previousSecond % 12 === 0) event(g, c.id, `${c.breaches - breachesBefore} accesos indebidos · SECURITY BREACH`, 'bad', 'SECURITY');
     const scenario = stepConcurrency(c, g.tick, capacity > 0);
     if (scenario.started) event(g, c.id, 'SKU LAST-UNIT · 2 compras / 1 unidad.', 'neutral', 'CONCURRENCIA');
     if (scenario.oversold) c.concurrencyUntil = g.tick + 20;
@@ -209,39 +208,15 @@ export function step(g: GameState, dt = .1) {
       const report = concurrencyReport(c.concurrency.run!, g.tick);
       event(g, c.id, `LAST-UNIT · ${report.completed} completadas / ${report.rejected} rechazadas / ${report.abandoned} abandonadas / ${report.oversold} sobreventas.`, report.oversold ? 'bad' : 'neutral', 'CONCURRENCIA');
     }
-    const traffic = lambda * legitimateAllowed + attackRate * attackAllowed;
-    c.utilization = capacity > 0 ? traffic / capacity : traffic > 0 ? 3 : 0;
-    const queueMax = 40 + Number(queueNode?.data.value ?? 0);
-    c.queue = clamp(c.queue + (traffic - capacity) * dt, 0, queueMax);
-    c.latency = Math.round(180 + backendPath.length * 10 + securityPath.length * 6 + (capacity ? c.queue / capacity * 1000 : 2820));
-    const errorFraction = clamp((1 - legitimateAllowed) + Math.max(0, 1 - capacity / Math.max(traffic, .01)) + (c.latency > 3000 ? .25 : 0), 0, 1);
-    const breachesPerSec = attackRate * (Number(evaluateSecurity(c.security, 'forged', previousSecond)) + Number(evaluateSecurity(c.security, 'injection', previousSecond))) / 3;
-    c.active = Math.round(Math.min(c.customers, lambda * c.latency / 1000 + c.queue)) + (c.concurrency.run?.requests.filter(request => !request.result).length ?? 0);
-    c.arrivalRemainder += lambda * dt;
-    const arrivals = Math.floor(c.arrivalRemainder); c.arrivalRemainder -= arrivals;
-    c.requests += arrivals;
-    if (arrivals) {
-      const failed = Math.min(arrivals, Math.floor(arrivals * errorFraction + rng(g)));
-      c.errors += failed; c.successes += arrivals - failed;
-      c.processedRemainder += Math.max(0, arrivals - failed) * .3;
-      const purchases = Math.floor(c.processedRemainder); c.processedRemainder -= purchases;
-      const purchase = inventoryBatch(c.backend, purchases, c.stock);
-      c.stock = purchase.remaining; c.oversold += purchase.oversold; c.duplicates += purchase.duplicates;
-      c.capital += purchase.completed * 3; c.revenue += purchase.completed * 45; c.lostRevenue += (Math.floor(failed * .3) + purchases - purchase.completed) * 45;
-      for (let a = 0; a < Math.min(arrivals, 3); a++) c.particles.push({ id: `${c.id}-${g.tick}-${a}`, born: g.tick, duration: 6 + Math.min(4, c.queue / 10), color: c.color, kind: a < failed ? 'error' : 'success', route: (g.tick * 10 + a) % 3 < 1 ? 'browse' : 'purchase', seed: rng(g) });
-    }
-    if (second) {
-      const breaches = Math.floor(breachesPerSec + rng(g)); c.breaches += breaches;
-      if (breaches && previousSecond % 12 === 0) event(g, c.id, `${breaches} accesos indebidos · SECURITY BREACH`, 'bad', 'SECURITY');
-      if (securityIncident && attackAllowed) c.particles.push({ id: `attack-${c.id}-${previousSecond}`, born: g.tick, duration: 5, color: '#f27e79', kind: 'attack', route: 'purchase', seed: rng(g) });
-      c.stock = Math.min(200, c.stock + 12);
-      if (previousSecond % 10 === 0) { c.history.push(c.customers / 50); c.history = c.history.slice(-24); }
-    }
+    c.active += c.concurrency.run?.requests.filter(request => !request.result).length ?? 0;
+    if (second && previousSecond % 10 === 0) { c.history.push(c.customers / 50); c.history = c.history.slice(-24); }
     const concurrencyRisk = g.tick < c.concurrencyUntil ? .45 : 0;
-    const fraud = clamp(breachesPerSec / 5, 0, 1);
-    const health = errorFraction < .02 && fraud === 0 && c.latency < 500 && c.utilization < .9 && !concurrencyRisk ? 1 : 0;
-    c.pressure = clamp(c.pressure + dt * (.8 * errorFraction + .4 * clamp((c.latency - 500) / 2500, 0, 1) + .5 * clamp(c.utilization - 1, 0, 1) + 1.2 * fraud + concurrencyRisk - .35 * health - .002 * c.pressure), 0, 300);
-    c.reputation = clamp(c.reputation + dt * (.04 * health - .15 * errorFraction - .30 * fraud - .06 * concurrencyRisk), 0, 100);
+    const observed = c.traffic.metrics, errorFraction = observed.errorRate;
+    const fraud = observed.fraudRate;
+    const quality = c.traffic.config.quality;
+    const health = observed.legitimateTerminated > 0 && errorFraction < .02 && fraud === 0 && c.latency < quality.healthyLatencyMs && c.utilization < .9 && !concurrencyRisk && capacity > 0 ? 1 : 0;
+    c.pressure = clamp(c.pressure + dt * (.8 * errorFraction + .4 * clamp((c.latency - quality.healthyLatencyMs) / (quality.latencyCeilingMs - quality.healthyLatencyMs), 0, 1) + .5 * clamp(c.utilization - 1, 0, 1) + 1.2 * fraud + .2 * observed.unavailable + concurrencyRisk - .35 * health - .002 * c.pressure), 0, 300);
+    c.reputation = clamp(c.reputation + dt * (.04 * health - .15 * errorFraction - .30 * fraud - .1 * observed.unavailable - .06 * concurrencyRisk), 0, 100);
     const operation = Math.min(c.infraBudget, c.servers * .5 * dt); c.infraBudget -= operation; c.capital -= operation;
     for (const ch of g.changes) if (ch.companyId === c.id && ch.status === 'AUTHORIZED' && c.capital < c.reserved + c.infraBudget) { releaseReservation(c, ch); ch.status = 'EXPIRED'; }
     if (c.capital < c.reserved + c.infraBudget) c.infraBudget = Math.max(0, c.capital - c.reserved);
@@ -252,7 +227,7 @@ export function step(g: GameState, dt = .1) {
   }
   if (second) migrate(g);
   const removed = g.companies.filter(c => !c.eliminated && (c.deadTicks >= 90 || c.crisisTicks >= 30 || c.bankruptTicks >= 30));
-  for (const c of removed) { if (c.concurrency.run) { cancelConcurrency(c.concurrency.run, g.tick, 'COMPANY_ELIMINATED'); settleConcurrency(c); } c.eliminated = true; c.eliminatedAt = g.tick; c.active = 0; c.particles = []; event(g, c.id, 'EMPRESA FUERA DEL MERCADO', 'bad', 'COLAPSO'); }
+  for (const c of removed) { cancelTraffic(c, g.tick, 'COMPANY_ELIMINATED'); if (c.concurrency.run) { cancelConcurrency(c.concurrency.run, g.tick, 'COMPANY_ELIMINATED'); settleConcurrency(c); } c.eliminated = true; c.eliminatedAt = g.tick; c.active = 0; c.particles = []; event(g, c.id, 'EMPRESA FUERA DEL MERCADO', 'bad', 'COLAPSO'); }
   if (removed.length) {
     const survivors = g.companies.filter(c => !c.eliminated);
     for (const c of removed) {
@@ -268,6 +243,7 @@ export function step(g: GameState, dt = .1) {
 }
 function finishRequests(g: GameState) {
   for (const company of g.companies) {
+    cancelTraffic(company, g.tick, 'ROOM_FINISHED');
     if (company.concurrency.run) { cancelConcurrency(company.concurrency.run, g.tick, 'ROOM_FINISHED'); settleConcurrency(company); }
   }
 }
@@ -275,10 +251,12 @@ function migrate(g: GameState) {
   const companies = g.companies.filter(c => !c.eliminated);
   const quota = new Map(companies.map(c => [c.id, Math.max(1, Math.floor(c.customers * .01 * clamp(1 - c.utilization, .05, 1)))]));
   const transfers: { from: Company; to: Company; count: number }[] = [];
-  for (const c of companies) {
+  const rotation = (Math.floor(g.tick) + g.seed) % companies.length;
+  const proposals = [...companies.slice(rotation), ...companies.slice(0, rotation)];
+  for (const c of proposals) {
     c.migrationRemainder += c.customers * (1 - Math.exp(-.002 * c.pressure / 100));
     let count = Math.min(c.customers - 1, Math.floor(c.migrationRemainder)); c.migrationRemainder -= Math.floor(c.migrationRemainder);
-    const candidates = companies.filter(x => x.id !== c.id).sort((a, b) => (b.reputation * clamp(1 - b.utilization, .05, 1)) - (a.reputation * clamp(1 - a.utilization, .05, 1)));
+    const candidates = companies.filter(x => x.id !== c.id).sort((a, b) => (b.reputation * clamp(1 - b.utilization, .05, 1)) - (a.reputation * clamp(1 - a.utilization, .05, 1)) || ((a.id - c.id - Math.floor(g.tick)) % 5 + 5) % 5 - ((b.id - c.id - Math.floor(g.tick)) % 5 + 5) % 5);
     for (const to of candidates) {
       const n = Math.min(count, quota.get(to.id) ?? 0); if (n <= 0) continue;
       quota.set(to.id, (quota.get(to.id) ?? 0) - n); count -= n; transfers.push({ from: c, to, count: n });
@@ -287,12 +265,12 @@ function migrate(g: GameState) {
   for (const { from, to, count } of transfers) {
     from.customers -= count; to.customers += count; from.migratedOut += count; to.migratedIn += count;
     const id = `m-${g.tick}-${from.id}-${to.id}`; g.migrations.push({ id, from: from.id, to: to.id, count, at: g.tick, color: from.color });
-    to.particles.push({ id, born: g.tick, duration: 15, color: from.color, kind: 'success', route: 'purchase', seed: rng(g) });
     if (count >= 2 || Math.floor(g.tick) % 10 === 0) event(g, to.id, `+${count} CLIENTES · desde ${from.name}`, 'good', 'MERCADO');
   }
 }
 export function project(g: GameState, identity: Identity | null): Snapshot {
-  const privateC = identity?.companyId != null ? structuredClone(g.companies[identity.companyId]) : undefined;
+  const ownCompany = identity?.companyId != null ? g.companies[identity.companyId] : undefined;
+  const privateC = ownCompany ? structuredClone({ ...ownCompany, traffic: trafficView(ownCompany.traffic) }) : undefined;
   if (privateC) {
     const ownDraft = identity?.role === 'backend' || identity?.role === 'security' ? identity.role : null;
     privateC.drafts = ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {};
@@ -300,10 +278,10 @@ export function project(g: GameState, identity: Identity | null): Snapshot {
   return {
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
     companies: g.companies.map(c => {
-      const { drafts, backend, security, product, migrationRemainder, arrivalRemainder, processedRemainder, crisisTicks, deadTicks, bankruptTicks, concurrencyUntil, concurrency, ...pub } = c;
-      return { ...pub, concurrency: { runId: concurrency.run?.id, inventory: concurrency.run && { ...concurrency.run.inventory }, totals: { ...concurrency.totals } }, particles: [...c.particles, ...concurrencyParticles(concurrency.run, c.color, g.tick)], modules: [...route(backend), ...route(security)].map(n => n.type), pipelineCounts: [['QA_PENDING', 'QA_RUNNING'], ['CTO_PENDING'], ['AUTHORIZED', 'DEPLOYING'], ['DEPLOYED']].map(states => g.changes.filter(ch => ch.companyId === c.id && states.includes(ch.status)).length) };
+      const { drafts, backend, security, product, migrationRemainder, arrivalRemainder, processedRemainder, crisisTicks, deadTicks, bankruptTicks, concurrencyUntil, concurrency, traffic, ...pub } = c;
+      return { ...pub, traffic: trafficView(traffic), concurrency: { runId: concurrency.run?.id, inventory: concurrency.run && { ...concurrency.run.inventory }, totals: { ...concurrency.totals } }, particles: [...trafficParticles(c, g.tick), ...concurrencyParticles(concurrency.run, c.color, g.tick)], modules: [...route(backend), ...route(security)].map(n => n.type), pipelineCounts: [['QA_PENDING', 'QA_RUNNING'], ['CTO_PENDING'], ['AUTHORIZED', 'DEPLOYING'], ['DEPLOYED']].map(states => g.changes.filter(ch => ch.companyId === c.id && states.includes(ch.status)).length) };
     }),
     events: g.events, migrations: g.migrations, unserved: g.unserved, privateCompany: privateC,
-    changes: identity?.role === 'operator' ? g.changes : g.changes.filter(ch => ch.companyId === identity?.companyId),
+    changes: (identity?.role === 'operator' ? g.changes : g.changes.filter(ch => ch.companyId === identity?.companyId)).map(({ qaLoad, ...change }) => change),
   };
 }

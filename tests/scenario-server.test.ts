@@ -67,6 +67,7 @@ test('real server resumes a saved race, preserves sessions and enforces the comp
     assert.equal((await run(operator.socket, { type: 'room.start' })).ok, true);
     assert.equal((await run(operator.socket, { type: 'room.speed', payload: { speed: 20 } })).ok, true);
     const settled = await waitState(backend.socket, snapshot => snapshot.companies[0].concurrency.totals.completed === 2);
+    const ordinaryId = settled.companies[0].particles.find(particle => particle.requestId && !particle.requestId.startsWith('C0-CC'))!.requestId!;
     assert.equal(settled.companies[0].concurrency.totals.oversold, 1); assert.equal(settled.companies[0].concurrency.totals.revenue, 45);
     assert.equal((await run(operator.socket, { type: 'room.pause' })).ok, true);
     for (const socket of sockets) socket.disconnect();
@@ -75,7 +76,8 @@ test('real server resumes a saved race, preserves sessions and enforces the comp
     const recovered = await waitState(be, snapshot => snapshot.status === 'PAUSED');
     assert.deepEqual(recovered.privateCompany!.concurrency.run!.requests.map(request => request.id), initialIds);
     assert.deepEqual(recovered.companies[0].concurrency.totals, settled.companies[0].concurrency.totals);
-    const qa = (await connect('qa', 0)).socket, cto = (await connect('cto', 0)).socket, devops = (await connect('devops', 0)).socket, other = (await connect('qa', 1)).socket;
+    const otherSession = await connect('qa', 1);
+    const qa = (await connect('qa', 0)).socket, cto = (await connect('cto', 0)).socket, devops = (await connect('devops', 0)).socket, other = otherSession.socket;
     assert.equal((await run(op, { type: 'room.start' })).ok, true);
     const submit = { id: 'atomic-submission', type: 'change.submit', companyId: 0, payload: { graph: insertBlock('atomic'), revision: 0 } };
     assert.equal((await run(be, submit)).ok, true); assert.equal((await run(be, submit)).ok, true);
@@ -106,6 +108,10 @@ test('real server resumes a saved race, preserves sessions and enforces the comp
     const publicSnapshot = await (await fetch(`${base}/api/snapshot`)).json() as Snapshot;
     assert.equal(publicSnapshot.changes.length, 0); assert.equal('run' in publicSnapshot.companies[0].concurrency, false);
     assert.ok(publicSnapshot.events.some(event => event.category === 'CONCURRENCIA'));
+    const receiptResponse = await fetch(`${base}/api/requests/${ordinaryId}`, {headers:{Cookie:backend.cookie}});
+    assert.equal(receiptResponse.status,200);const receipt=await receiptResponse.json();assert.equal(receipt.id,ordinaryId);assert.equal(receipt.companyId,0);assert.equal(receipt.accounted,true);
+    assert.equal((await fetch(`${base}/api/requests/${ordinaryId}`)).status,403);
+    assert.equal((await fetch(`${base}/api/requests/${ordinaryId}`,{headers:{Cookie:otherSession.cookie}})).status,404);
   } finally { for (const socket of sockets) socket.disconnect(); await stop(child); await rm(directory, { recursive: true, force: true }); }
 });
 
@@ -124,7 +130,7 @@ test('real server backs up a v1 snapshot before upgrading it', { timeout: 10000 
     db = new DatabaseSync(path);
     assert.equal((db.prepare('SELECT state FROM game_migrations WHERE schema=1').get() as {state:string}).state, serialized);
     const state = JSON.parse((db.prepare('SELECT state FROM game WHERE id=1').get() as {state:string}).state); db.close();
-    assert.equal(state.schema, 2); assert.equal(state.status, 'PAUSED'); assert.equal(state.tick, 200);
+    assert.equal(state.schema, 3); assert.equal(state.status, 'PAUSED'); assert.equal(state.tick, 200);
     assert.equal(state.companies[0].concurrency.totals.generated, 0);
   } finally { await stop(child); await rm(directory, { recursive: true, force: true }); }
 });

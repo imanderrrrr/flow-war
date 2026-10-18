@@ -1,3 +1,4 @@
+import { createGameWriter } from './storage.js';
 import express from 'express';
 import { createServer } from 'node:http';
 import { randomBytes, createHash } from 'node:crypto';
@@ -8,6 +9,7 @@ import { Server } from 'socket.io';
 import { ROLES, type Identity, type GameState, type Command } from '../shared/types.js';
 import { applyCommand, createGame, project, step } from './engine.js';
 import { recoverGame } from './persistence.js';
+import { trafficReceipt } from './traffic.js';
 
 const directory = resolve(process.env.FLOW_DATA_DIR ?? '.local');
 mkdirSync(directory, { recursive: true, mode: 0o700 });
@@ -25,14 +27,14 @@ const identities = new Map(credentials.map(c => [hash(c.code), c.identity]));
 const db = new DatabaseSync(resolve(directory, 'game.sqlite'));
 db.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS game (id INTEGER PRIMARY KEY, state TEXT NOT NULL); CREATE TABLE IF NOT EXISTS commands (identity TEXT NOT NULL, id TEXT NOT NULL, digest TEXT NOT NULL, result TEXT NOT NULL, PRIMARY KEY(identity,id)); CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, identity TEXT NOT NULL, expires INTEGER NOT NULL);');
 const saved = db.prepare('SELECT state FROM game WHERE id=1').get() as { state: string } | undefined;
-// Keep the original v1 snapshot before the first upgraded snapshot is written.
-if (saved && JSON.parse(saved.state).schema === 1) {
+// Keep the original legacy snapshot before the first upgraded snapshot is written.
+if (saved && [1, 2].includes(JSON.parse(saved.state).schema)) {
   db.exec('CREATE TABLE IF NOT EXISTS game_migrations (schema INTEGER PRIMARY KEY, state TEXT NOT NULL)');
-  db.prepare('INSERT OR IGNORE INTO game_migrations (schema,state) VALUES (1,?)').run(saved.state);
+  db.prepare('INSERT OR IGNORE INTO game_migrations (schema,state) VALUES (?,?)').run(JSON.parse(saved.state).schema, saved.state);
 }
 let game: GameState = saved ? recoverGame(saved.state) : createGame();
-const save = db.prepare('INSERT INTO game (id,state) VALUES (1,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state');
-const persist = () => save.run(JSON.stringify(game));
+const writeGame = createGameWriter(db);
+const persist = (command?: {identity: string; id: string; digest: string; result: string}) => writeGame(game, command);
 persist();
 const sessionLookup = db.prepare('SELECT identity,expires FROM sessions WHERE token=?');
 function session(cookie?: string): Identity | null {
@@ -72,6 +74,19 @@ app.post('/api/logout', (req, res) => {
 });
 app.get('/api/health', (_req, res) => res.json({ ok: true, room: 'FW-001' }));
 app.get('/api/snapshot', (req, res) => { res.setHeader('Cache-Control', 'no-store'); res.json(project(game, session(req.headers.cookie))); });
+app.get('/api/requests/:id', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const identity = session(req.headers.cookie);
+  if (!identity) return res.sendStatus(403);
+  for (const company of game.companies) {
+    if (identity.role !== 'operator' && identity.companyId !== company.id) continue;
+    const request = company.traffic.requests[req.params.id];
+    if (request) return res.json(trafficReceipt(request));
+  }
+  const row = db.prepare('SELECT companyId,receipt FROM request_receipts WHERE id=?').get(req.params.id) as {companyId: number; receipt: string} | undefined;
+  if (!row || (identity.role !== 'operator' && identity.companyId !== row.companyId)) return res.sendStatus(404);
+  res.json(JSON.parse(row.receipt));
+});
 app.get('/api/access', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (session(req.headers.cookie)?.role !== 'operator') return res.status(403).json({ error: 'Acceso denegado.' });
@@ -96,10 +111,9 @@ io.on('connection', socket => {
     const before = structuredClone(game);
     const result = applyCommand(game, identity, command);
     try {
-      db.exec('BEGIN'); persist();
-      db.prepare('INSERT INTO commands (identity,id,digest,result) VALUES (?,?,?,?)').run(identity.id, command.id, digest, JSON.stringify(result));
-      db.exec('COMMIT'); ack(result); broadcast();
-    } catch { db.exec('ROLLBACK'); game = before; ack({ ok: false, error: 'No se pudo confirmar el comando.' }); }
+      persist({ identity: identity.id, id: command.id, digest, result: JSON.stringify(result) });
+      ack(result); broadcast();
+    } catch { game = before; ack({ ok: false, error: 'No se pudo confirmar el comando.' }); }
   });
 });
 function broadcast() {

@@ -49,31 +49,35 @@ export default function TrafficCanvas({ company, snapshot, zoom }: { company: Pu
       platform(...STOCK, '#e1ac67', 120, 96);
       for (const [dx,dy] of [[-31,-21],[6,-21],[-31,14],[6,14]]) { rect(STOCK[0] + dx, STOCK[1] + dy, 27, 27, '#a87846'); rect(STOCK[0] + dx + 2, STOCK[1] + dy + 2, 23, 23, '#cd9b60'); rect(STOCK[0] + dx + 12, STOCK[1] + dy + 2, 3, 23, '#8b623b'); rect(STOCK[0] + dx + 2, STOCK[1] + dy + 11, 23, 3, '#8b623b'); }
       platform(...PAY, '#68dca2', 108, 82); rect(PAY[0] - 34, PAY[1] - 23, 68, 44, '#46745f'); rect(PAY[0] - 31, PAY[1] - 20, 62, 38, '#94cba7'); rect(PAY[0] - 31, PAY[1] - 10, 62, 8, '#233d35'); rect(PAY[0] - 23, PAY[1] + 6, 14, 5, '#48755b'); rect(PAY[0] + 10, PAY[1] + 6, 13, 5, '#48755b');
-      platform(425, 465, '#758ba7', 96, 64); server(425, 468, '#68dca2', 2);
-      for (let i = 0; i < Math.min(c.servers, 4); i++) rect(395 + i*18, 502, 10, 4, '#68dca2');
+      const serviceColor = c.traffic.queues.some(queue => queue.id === 'web' && queue.rate > 0) ? '#68dca2' : '#f27e79';
+      platform(425, 465, '#758ba7', 96, 64); server(425, 468, serviceColor, 2);
+      for (let i = 0; i < Math.min(c.servers, 4); i++) rect(395 + i*18, 502, 10, 4, serviceColor);
       // Entrance and exit terminals.
       for (const [x, y] of [ENTRY, OUT]) { rect(x - 15, y - 26, 30, 52, '#1b2635'); rect(x - 15, y - 26, 30, 3, '#55657a'); rect(x - 7, y - 12, 14, 24, '#0a111c'); rect(x - 3, y - 4, 6, 8, c.color); }
       text('ENTRADA', ENTRY[0], ENTRY[1] - 44, '#a8b3c4', 11); text('INTERNET', ENTRY[0], ENTRY[1] + 49, '#627186', 9);
       text('SECURITY', GATE[0], GATE[1] - 61, '#b3bdcc', 12); text(`${c.modules.filter(m => ['auth','waf','rate','role','bot','ip'].includes(m)).length} CONTROLES`, GATE[0], GATE[1] + 64, '#718299', 9);
-      text('WEB STORE', WEB[0], WEB[1] - 68, c.color, 12); text('HTTP / FRONTEND', WEB[0], WEB[1] + 70, '#718299', 9);
+      const webQueue = c.traffic.queues.find(queue => queue.id === 'web')!.depth;
+      text('WEB STORE', WEB[0], WEB[1] - 68, c.color, 12); text(webQueue ? `HTTP / COLA ${webQueue}` : 'HTTP / FRONTEND', WEB[0], WEB[1] + 70, '#718299', 9);
       text('AUTH', AUTH[0], AUTH[1] - 55, '#b9aedc', 12); text('SESIONES', AUTH[0], AUTH[1] + 59, '#718299', 9);
-      text('CHECKOUT', CHECK[0], CHECK[1] - 62, '#d4dbea', 12); text(`COLA ${Math.ceil(c.queue).toString().padStart(2,'0')}`, CHECK[0], CHECK[1] + 66, c.queue > 20 ? '#f27e79' : '#718299', 10);
+      const checkoutQueue = c.traffic.queues.find(queue => queue.id === 'checkout')!.depth;
+      text('CHECKOUT', CHECK[0], CHECK[1] - 62, '#d4dbea', 12); text(`COLA ${checkoutQueue.toString().padStart(2,'0')}`, CHECK[0], CHECK[1] + 66, checkoutQueue > 20 ? '#f27e79' : '#718299', 10);
       const inventory = c.concurrency.inventory;
-      text(inventory ? 'SKU LAST-UNIT' : 'INVENTARIO', STOCK[0], STOCK[1] - 64, '#dbb383', 12); text(inventory ? `STOCK ${inventory.stock} / COMP. ${inventory.committed}` : `STOCK ${Math.floor(c.stock)}`, STOCK[0], STOCK[1] + 65, '#718299', 10);
+      text('INVENTARIO', STOCK[0], STOCK[1] - 64, '#dbb383', 12); text(inventory ? `REG ${Math.floor(c.stock)} / LAST ${inventory.stock}` : `STOCK ${Math.floor(c.stock)}`, STOCK[0], STOCK[1] + 65, '#718299', 10);
+      if (inventory) text(`COMP. LAST ${inventory.committed}`, STOCK[0], STOCK[1] + 80, '#718299', 9);
       text('PAGOS', PAY[0], PAY[1] - 56, '#8cceaa', 12); text('PAYMENT GATEWAY', PAY[0], PAY[1] + 60, '#718299', 9);
       text('APP SERVERS', 425, 433, '#8ca0bc', 10); text(`${c.servers} NODO${c.servers > 1 ? 'S' : ''} / ${c.balancer ? 'BALANCEADO' : 'DIRECTO'}`, 425, 531, '#718299', 9);
       text('SALIDA', OUT[0], OUT[1] - 44, '#a8b3c4', 11); text('RESPONSE', OUT[0], OUT[1] + 49, '#627186', 9);
-      const count = Math.min(10, Math.ceil(c.queue / 3));
-      for (let i=0; i<count; i++) { rect(CHECK[0] - 72 - i*9, CHECK[1] + 14, 5, 8, c.queue > 20 ? '#f27e79' : c.color); rect(CHECK[0] - 71 - i*9, CHECK[1] + 10, 3, 3, '#f2e8c8'); }
-      const particles = s.tick < 3 && c.particles.length === 0 ? [{ id: 'initial', born: 0, duration: 9, color: c.color, kind: 'success' as const, route: 'purchase' as const, seed: .5 }] : c.particles;
+      const particles = c.particles;
       for (const p of particles) {
-        const progress = particleProgress(p, now);
+        if (p.status === 'ABANDONED' && p.finishedAt !== undefined) ctx.globalAlpha = Math.max(0, 1 - (now - p.finishedAt) / 3);
+        const progress = p.queue ? Math.min(particleProgress(p, now), Math.max(.15, .97 - (p.queue.position + 1) / Math.max(12, p.queue.depth) * .8)) : particleProgress(p, now);
         const [x,y] = particlePosition(particlePath(p), progress, p.seed); const color = p.color !== c.color && p.kind === 'success' ? blend(p.color, c.color, Math.min(.85, progress * .85)) : p.color;
         if (p.kind === 'attack') { rect(x-4,y-4,8,8,color); rect(x-2,y-2,4,4,'#0d1420'); }
         else { rect(x-2,y-6,4,4,'#e3dac5'); rect(x-3,y-1,6,6,color); rect(x-3,y+5,2,3,color); rect(x+1,y+5,2,3,color); }
         if (p.kind === 'error' && progress > .85) { text('×',x,y-15,'#f27e79',20); }
+        ctx.globalAlpha = 1;
       }
-      if (c.queue > 24) { rect(548, 191, 178, 27, '#48262a'); text('QUEUE OVERLOAD',637,209,'#f9a29a',11); }
+      if (c.queue > 24) { const busiest = [...c.traffic.queues].sort((a,b)=>b.depth-a.depth)[0]; rect(548, 191, 178, 27, '#48262a'); text(`${busiest.id.toUpperCase()} / COLA ${busiest.depth}`,637,209,'#f9a29a',11); }
       if (c.eliminated) { rect(430,240,280,80,'#291b26'); text('FUERA DEL MERCADO',570,286,'#f27e79',17); }
       animation = requestAnimationFrame(draw);
     }

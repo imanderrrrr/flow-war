@@ -5,6 +5,7 @@ import { createGame } from '../server/engine.js';
 import { advanceConcurrency, concurrencyParticles } from '../server/requests.js';
 import { startConcurrency } from '../server/scenarios.js';
 import { insertBlock } from './helpers.js';
+import { admitTraffic, advanceTraffic, trafficParticles } from '../server/traffic.js';
 
 function onDrawnRoad([x, y]: Point): boolean {
   return ROAD_PATHS.some(path => path.slice(1).some(([bx, by], i) => {
@@ -60,4 +61,16 @@ test('real request journeys wait at stock and finish at the confirmed result loc
     }
   }
   assert.equal(concurrencyParticles(run, company.color, 20).length, 0);
+});
+
+test('ordinary navigation and query journeys use existing roads and never imply a payment', () => {
+  const company=createGame().companies[0];admitTraffic(company,0,'browse');admitTraffic(company,0,'query');
+  for(let tick=1;tick<=30;tick++){
+    advanceTraffic(company,tick/10);
+    for(const particle of trafficParticles(company,tick/10)){
+      const path=particlePath(particle);
+      assert.ok(!path.some(([x,y])=>x===SERVICES.PAY[0]&&y===SERVICES.PAY[1]));
+      for(let progress=0;progress<=1;progress+=.05)assert.ok(onDrawnRoad(particlePosition(path,progress,particle.seed)));
+    }
+  }
 });

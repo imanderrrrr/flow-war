@@ -6,14 +6,15 @@ export type ChangeStatus = 'QA_PENDING' | 'QA_RUNNING' | 'QA_REJECTED' | 'CTO_PE
 export type GraphNode = { id: string; type: string; position: { x: number; y: number }; data: { label: string; value?: number } };
 export type GraphEdge = { id: string; source: string; target: string };
 export type Graph = { nodes: GraphNode[]; edges: GraphEdge[] };
-export type RequestStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'REJECTED' | 'ABANDONED' | 'FAILED';
-export type RequestStage = 'entry' | 'security' | 'checkout' | 'inventory' | 'payment' | 'exit';
-export type TerminalReason = 'OK' | 'OUT_OF_STOCK' | 'CONFLICT' | 'SECURITY_REJECTED' | 'UNSUPPORTED_BLOCK' | 'INVALID_FLOW' | 'DEADLINE' | 'ROOM_FINISHED' | 'COMPANY_ELIMINATED';
-export const TERMINAL_LABELS: Record<TerminalReason, string> = { OK: 'OK', OUT_OF_STOCK: 'Sin stock', CONFLICT: 'Conflicto', SECURITY_REJECTED: 'Seguridad', UNSUPPORTED_BLOCK: 'No ejecutable', INVALID_FLOW: 'Flujo inválido', DEADLINE: 'Vencida', ROOM_FINISHED: 'Fin de sala', COMPANY_ELIMINATED: 'Empresa cerrada' };
-export type RequestResult = { status: Exclude<RequestStatus, 'PENDING' | 'RUNNING'>; reason: TerminalReason; at: number; revenue: number; lostRevenue: number; capitalDelta: number };
+export type RequestStatus = 'PENDING' | 'RUNNING' | 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'REJECTED' | 'ABANDONED' | 'FAILED';
+export type RequestStage = 'entry' | 'security' | 'web' | 'checkout' | 'inventory' | 'payment' | 'exit';
+export type ServiceId = 'security' | 'web' | 'checkout' | 'inventory' | 'payment';
+export type TerminalReason = 'OK' | 'OUT_OF_STOCK' | 'CONFLICT' | 'SECURITY_REJECTED' | 'UNSUPPORTED_BLOCK' | 'INVALID_FLOW' | 'DEADLINE' | 'QUEUE_FULL' | 'ROOM_FINISHED' | 'COMPANY_ELIMINATED';
+export const TERMINAL_LABELS: Record<TerminalReason, string> = { OK: 'OK', OUT_OF_STOCK: 'Sin stock', CONFLICT: 'Conflicto', SECURITY_REJECTED: 'Seguridad', UNSUPPORTED_BLOCK: 'No ejecutable', INVALID_FLOW: 'Flujo inválido', DEADLINE: 'Vencida', QUEUE_FULL: 'Cola llena', ROOM_FINISHED: 'Fin de sala', COMPANY_ELIMINATED: 'Empresa cerrada' };
+export type RequestResult = { status: 'COMPLETED' | 'REJECTED' | 'ABANDONED' | 'FAILED'; reason: TerminalReason; at: number; revenue: number; lostRevenue: number; capitalDelta: number; service?: ServiceId; operation?: string };
 export type RequestJourney = { from: RequestStage; to: RequestStage; at: number; duration: number };
 export type PurchaseRequest = {
-  id: string; intentId: string; executionVersion: number; path: GraphNode[]; securityAllowed: boolean;
+  id: string; intentId?: string; executionVersion: number; path: GraphNode[]; securityAllowed: boolean; commercial?: boolean;
   arrivalAt: number; nextAt: number; deadline: number; cursor: number; status: RequestStatus;
   read?: { stock: number; version: number }; atomic: boolean; quantity: number;
   committed: number; oversold: number; paid: boolean; result?: RequestResult; accounted: boolean;
@@ -30,12 +31,38 @@ export type ConcurrencyRun = {
 export type ScenarioTotals = { generated: number; completed: number; rejected: number; abandoned: number; failed: number; committed: number; oversold: number; revenue: number; lostRevenue: number; capitalDelta: number };
 export type ConcurrencyState = { nextAt: number; sequence: number; totals: ScenarioTotals; run?: ConcurrencyRun; reportedRunId?: string };
 export type ConcurrencyView = { runId?: string; inventory?: ConcurrencyRun['inventory']; totals: ScenarioTotals };
+export type InventoryState = Omit<ConcurrencyRun['inventory'], 'sku'> & { sku: 'REGULAR' | 'LAST-UNIT'; supplied?: number };
+export type QueueVisit = { service: ServiceId; enteredAt: number; exitedAt?: number; position: number; exit?: 'SERVICE' | 'DEADLINE' | 'CANCELLED' };
+export type TrafficRequest = PurchaseRequest & {
+  companyId: number; customerId?: string; type: 'browse' | 'query' | 'purchase'; trafficClass: 'legitimate' | 'malicious';
+  attackKind?: 'forged' | 'injection' | 'bot'; attempt: number; admittedAt?: number; startedAt?: number; finishedAt?: number; latencyMs?: number;
+  queueEnteredAt?: number; queueExitedAt?: number; waits: QueueVisit[]; service: ServiceId; stage: RequestStage;
+  phase: 'security' | 'web' | 'checkout' | 'backend'; transaction: 'NONE' | 'RESERVED' | 'CONFIRMED' | 'PENDING_RESOLUTION'; breach: boolean;
+  trace: { type: string; at: number; stock?: number; version?: number }[];
+};
+export type ServiceQueue = { id: ServiceId; capacity: number; waiting: string[]; processing: string[]; credit: number; rate: number; started: number; offered: number };
+export type TrafficScenario = {
+  version: 'traffic-2.0'; restockPerSecond: number; quality: { healthyLatencyMs: number; latencyCeilingMs: number }; patience: Record<TrafficRequest['type'], number>; rates: Record<ServiceId, number>;
+  queues: Record<ServiceId, number>; delays: Record<ServiceId, number>; window: number; retention: number;
+};
+export type TrafficReceipt = Omit<TrafficRequest, 'path'> & { path: { id: string; type: string; value?: number }[] };
+export type TrafficMetrics = { legitimateTerminated: number; errors: number; rejected: number; abandoned: number; failed: number; latencyMs: number | null; errorRate: number; utilization: number; unavailable: number; fraudRate: number };
+export type TrafficState = {
+  namespace: string; seed: number; config: TrafficScenario; sequence: number; initialIssued: boolean; initialDebt: number;
+  arrivalRemainder: number; attackRemainder: number; attackSequence: number; lastTick: number;
+  inventory: InventoryState; paths: Record<number, GraphNode[]>; services: Record<ServiceId, ServiceQueue>; requests: Record<string, TrafficRequest>;
+  totals: ScenarioTotals; legitimate: ScenarioTotals; malicious: ScenarioTotals; metrics: TrafficMetrics;
+  observations: { at: number; legitimate: boolean; status: RequestResult['status']; latency: number; breach: boolean; oversold: number }[];
+  capacityWindow: { at: number; dt: number; utilization: number; unavailable: number }[];
+  outbox: TrafficReceipt[]; legacyMetrics?: { active: number; queue: number; latency: number; utilization: number }; unresolvedCount: number;
+};
+export type TrafficView = { scenario: string; totals: ScenarioTotals; legitimate: ScenarioTotals; malicious: ScenarioTotals; metrics: TrafficMetrics; inventory: InventoryState; queues: { id: ServiceId; capacity: number; depth: number; processing: number; rate: number }[]; pendingResolution: number };
 export type ScenarioEvidence = { engineVersion: string; fixture: string; backendHash: string; securityHash: string; executionVersion: number; seed: number; inventory: ConcurrencyRun['inventory']; outcomes: { requestId: string; status: RequestStatus; reason: TerminalReason; read?: PurchaseRequest['read']; committed: number; oversold: number }[] };
-export type Report = { suite: string; requests: number; completed: number; rejected: number; oversold: number; breaches: number; duplicates: number; latency: number; tick: number; abandoned?: number; failed?: number; evidence?: ScenarioEvidence; obsolete?: boolean };
-export type Change = { id: string; companyId: number; domain: Domain; name: string; graph: Graph; status: ChangeStatus; cost: number; reserved: number; baseVersion: number; created: number; reports: Report[]; runningSuite?: string; due?: number; strategy?: string; expires?: number; actorId: string; context?: ScenarioContext; qaScenario?: ConcurrencyRun };
+export type Report = { suite: string; requests: number; completed: number; rejected: number; oversold: number; breaches: number; duplicates: number; latency: number; tick: number; abandoned?: number; failed?: number; evidence?: ScenarioEvidence; obsolete?: boolean; loadEvidence?: { engineVersion: string; fixture: string; seed: number; maxQueue: number; pending: number } };
+export type Change = { id: string; companyId: number; domain: Domain; name: string; graph: Graph; status: ChangeStatus; cost: number; reserved: number; baseVersion: number; created: number; reports: Report[]; runningSuite?: string; due?: number; strategy?: string; expires?: number; actorId: string; context?: ScenarioContext; qaScenario?: ConcurrencyRun; qaLoad?: { company: Company; startedAt: number; elapsed: number; maxQueue: number; latencySum: number; terminated: number } };
 export type Migration = { id: string; from: number; to: number; count: number; at: number; color: string };
 export type GameEvent = { id: number; at: number; companyId: number | null; text: string; tone: 'good' | 'bad' | 'neutral'; category: string };
-export type FlowParticle = { id: string; born: number; duration: number; color: string; kind: 'success' | 'error' | 'attack'; route: 'browse' | 'purchase'; seed: number; requestId?: string; executionVersion?: number; status?: RequestStatus; reason?: TerminalReason; journey?: RequestJourney };
+export type FlowParticle = { id: string; born: number; duration: number; color: string; kind: 'success' | 'error' | 'attack'; route: 'browse' | 'purchase' | 'query'; seed: number; requestId?: string; companyId?: number; executionVersion?: number; status?: RequestStatus; reason?: TerminalReason; finishedAt?: number; journey?: RequestJourney; queue?: { service: ServiceId; position: number; enteredAt: number; depth: number } };
 export type Company = {
   id: number; name: string; tag: string; color: string; customers: number; capital: number; reputation: number; pressure: number;
   servers: number; balancer: boolean; infraBudget: number; reserved: number; version: number; deployments: number;
@@ -46,10 +73,11 @@ export type Company = {
   drafts: Partial<Record<Domain, { graph: Graph; revision: number }>>;
   migrationRemainder: number; arrivalRemainder: number; processedRemainder: number; history: number[]; stock: number;
   concurrency: ConcurrencyState;
+  traffic: TrafficState;
 };
-export type PrivateCompany = Omit<Company, 'drafts'> & { drafts: Company['drafts'] };
-export type PublicCompany = Omit<Company, 'drafts' | 'backend' | 'security' | 'product' | 'migrationRemainder' | 'arrivalRemainder' | 'processedRemainder' | 'crisisTicks' | 'deadTicks' | 'bankruptTicks' | 'concurrencyUntil' | 'concurrency'> & { modules: string[]; pipelineCounts: number[]; concurrency: ConcurrencyView };
-export type GameState = { schema: 2; tick: number; duration: number; status: 'LOBBY' | 'RUNNING' | 'PAUSED' | 'FINISHED'; seed: number; eventSeq: number; companies: Company[]; changes: Change[]; events: GameEvent[]; migrations: Migration[]; unserved: number; speed: number };
+export type PrivateCompany = Omit<Company, 'drafts' | 'traffic'> & { drafts: Company['drafts']; traffic: TrafficView };
+export type PublicCompany = Omit<Company, 'drafts' | 'backend' | 'security' | 'product' | 'migrationRemainder' | 'arrivalRemainder' | 'processedRemainder' | 'crisisTicks' | 'deadTicks' | 'bankruptTicks' | 'concurrencyUntil' | 'concurrency' | 'traffic'> & { modules: string[]; pipelineCounts: number[]; concurrency: ConcurrencyView; traffic: TrafficView };
+export type GameState = { schema: 3; generation: number; tick: number; duration: number; status: 'LOBBY' | 'RUNNING' | 'PAUSED' | 'FINISHED'; seed: number; eventSeq: number; companies: Company[]; changes: Change[]; events: GameEvent[]; migrations: Migration[]; unserved: number; speed: number };
 export type Snapshot = { tick: number; duration: number; status: GameState['status']; companies: PublicCompany[]; events: GameEvent[]; migrations: Migration[]; unserved: number; identity: Identity | null; privateCompany?: PrivateCompany; changes: Change[]; speed: number };
 export type Command = { id: string; type: string; companyId?: number; changeId?: string; payload?: Record<string, unknown> };
 export type Result = { ok: boolean; error?: string; code?: string };

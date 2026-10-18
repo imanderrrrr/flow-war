@@ -47,10 +47,14 @@ test('v1 migration preserves the old market, economy and stock, and never invent
   const legacy = JSON.parse(JSON.stringify(game)); legacy.schema = 1;
   for (const company of legacy.companies) delete company.concurrency;
   const serialized = JSON.stringify(legacy), recovered = recoverGame(serialized);
-  assert.equal(JSON.stringify(legacy), serialized); assert.equal(recovered.schema, 2); assert.equal(recovered.status, 'PAUSED');
+  assert.equal(JSON.stringify(legacy), serialized); assert.equal(recovered.schema, 3); assert.equal(recovered.status, 'PAUSED');
   for (const company of recovered.companies) {
-    const { concurrency, ...existing } = company;
-    assert.deepEqual(existing, legacy.companies[company.id]);
+    const { concurrency, active, queue, latency, utilization, ...existing } = company;
+    const { active: oldActive, queue: oldQueue, latency: oldLatency, utilization: oldUtilization, ...historical } = legacy.companies[company.id];
+    // Aggregate QoS remains historical; it must not fabricate new queued requests.
+    assert.deepEqual(existing, { ...historical, traffic: company.traffic });
+    assert.deepEqual(company.traffic.legacyMetrics, {active:oldActive,queue:oldQueue,latency:oldLatency,utilization:oldUtilization});
+    assert.equal(queue,0);assert.equal(latency,0);
     assert.equal(concurrency.totals.generated, 0); assert.equal(concurrency.run, undefined); assert.equal(concurrency.nextAt, 540);
   }
   command(recovered, 'operator', 'room.start'); advanceGame(recovered, 1);

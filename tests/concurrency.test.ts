@@ -87,7 +87,7 @@ test('Atomic rejection records one lost intention and one sale, never both for t
 test('no service produces deadlines and no ghost inventory operations', () => {
   const company = createGame().companies[0]; company.concurrency.nextAt = 0;
   for (let tick = 0; tick <= 170; tick++) stepConcurrency(company, tick / 10, false);
-  assert.equal(company.concurrency.totals.abandoned, 2); assert.equal(company.lostRevenue, 90);
+  assert.equal(company.concurrency.totals.abandoned, 2); assert.equal(company.concurrency.totals.lostRevenue, 90); assert.equal(company.lostRevenue, 90 + company.traffic.totals.lostRevenue);
   assert.equal(company.revenue, 0); assert.equal(company.concurrency.run!.inventory.committed, 0);
   assert.equal(company.concurrency.run!.operations.length, 0);
 });
@@ -137,7 +137,7 @@ test('scheduled incident admits two new requests, replaces the old burst, and is
   for (const company of game.companies) company.pressure = 0;
   advanceGame(game, 4);
   const company = game.companies[0];
-  assert.equal(company.requests, 2); assert.equal(company.successes, 2); assert.equal(company.errors, 0); assert.equal(company.oversold, 1);
+  assert.equal(company.requests, 2 + company.traffic.totals.generated); assert.equal(company.concurrency.totals.completed, 2); assert.equal(company.concurrency.totals.rejected, 0); assert.equal(company.concurrency.totals.oversold, 1);
   assert.equal(company.concurrency.sequence, 1); assert.equal(company.concurrency.run!.inventory.stock, 0);
   assert.equal(company.concurrency.run!.inventory.committed, 2);
   assert.ok(company.stock > 1);
@@ -184,7 +184,7 @@ test('all role and pipeline barriers remain authoritative before publishing', ()
 test('public journeys represent real requests and terminal points without leaking execution paths', () => {
   const game = createGame(); game.status = 'RUNNING'; game.companies[0].backend = insertBlock('atomic');
   startConcurrency(game.companies[0], 0); advanceGame(game, 4);
-  const view = project(game, null).companies[0], particles = view.particles.filter(p => p.requestId);
+  const view = project(game, null).companies[0], particles = view.particles.filter(p => p.requestId?.startsWith('C0-CC'));
   assert.equal(particles.length, 2);
   assert.equal(particles.find(p => p.status === 'REJECTED')?.journey?.to, 'inventory');
   assert.equal(particles.find(p => p.status === 'COMPLETED')?.journey?.to, 'exit');
@@ -197,7 +197,7 @@ test('finish cancels and settles pending requests exactly once; pause advances n
   const game = createGame(); game.status = 'RUNNING'; startConcurrency(game.companies[0], 0); advanceGame(game, 1);
   command(game, 'operator', 'room.pause'); const paused = structuredClone(game); advanceGame(game, 10); assert.deepEqual(game, paused);
   command(game, 'operator', 'room.finish'); const company = game.companies[0];
-  assert.equal(company.concurrency.totals.abandoned, 2); assert.equal(company.lostRevenue, 90);
+  assert.equal(company.concurrency.totals.abandoned, 2); assert.equal(company.concurrency.totals.lostRevenue, 90); assert.equal(company.lostRevenue, 90 + company.traffic.totals.lostRevenue);
   assert.equal(company.concurrency.run!.inventory.committed, 0);
   const before = structuredClone(company); command(game, 'operator', 'room.finish'); assert.deepEqual(company, before);
 });

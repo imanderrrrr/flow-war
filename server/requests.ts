@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { ConcurrencyRun, FlowParticle, PurchaseRequest, Report, RequestResult, RequestStage, ScenarioContext } from '../shared/types.js';
+import type { ConcurrencyRun, FlowParticle, PurchaseRequest, Report, RequestResult, RequestStage, ScenarioContext, InventoryState } from '../shared/types.js';
 import { evaluateSecurity, route } from './graphs.js';
 
 export const REQUEST_ENGINE_VERSION = 'requests-1' as const;
@@ -31,20 +31,21 @@ export function createConcurrencyRun(id: string, context: ScenarioContext, at: n
 
 export function isRunFinished(run: ConcurrencyRun) { return run.requests.every(request => request.result !== undefined); }
 
-function move(request: PurchaseRequest, stage: RequestStage, at: number) {
+export function moveRequest(request: PurchaseRequest, stage: RequestStage, at: number) {
   if (request.journey.to === stage) return;
   request.journey = { from: request.journey.to, to: stage, at, duration: OPERATION_SECONDS };
 }
 
-function finish(request: PurchaseRequest, status: RequestResult['status'], reason: RequestResult['reason'], at: number) {
+export function finishRequest(request: PurchaseRequest, status: RequestResult['status'], reason: RequestResult['reason'], at: number) {
   if (request.result) return;
-  const legitimateUnits = request.paid ? request.committed - request.oversold : 0;
+  const commercial = request.commercial !== false;
+  const legitimateUnits = commercial && request.paid ? request.committed - request.oversold : 0;
   request.status = status;
   request.result = {
     status, reason, at,
     revenue: legitimateUnits * 45,
     capitalDelta: legitimateUnits * 3 - request.oversold * 8,
-    lostRevenue: request.paid ? 0 : request.quantity * 45,
+    lostRevenue: !commercial || request.paid ? 0 : request.quantity * 45,
   };
 }
 
@@ -55,61 +56,13 @@ function finish(request: PurchaseRequest, status: RequestResult['status'], reaso
 export function advanceConcurrency(run: ConcurrencyRun, now: number, available = true) {
   for (const request of run.requests) {
     if (request.result || now < request.arrivalAt) continue;
-    if (now >= request.deadline) { finish(request, 'ABANDONED', 'DEADLINE', now); continue; }
+    if (now >= request.deadline) { finishRequest(request, 'ABANDONED', 'DEADLINE', now); continue; }
     if (!available || now < request.nextAt) continue;
     request.status = 'RUNNING';
     const node = request.path[request.cursor];
-    if (!node) { finish(request, 'FAILED', 'INVALID_FLOW', now); continue; }
+    if (!node) { finishRequest(request, 'FAILED', 'INVALID_FLOW', now); continue; }
     const inventory = run.inventory;
-    switch (node.type) {
-      case 'entry':
-        move(request, 'security', now);
-        if (!request.securityAllowed) finish(request, 'REJECTED', 'SECURITY_REJECTED', now);
-        break;
-      case 'read':
-        move(request, 'inventory', now);
-        request.read = { stock: inventory.stock, version: inventory.version };
-        break;
-      case 'atomic':
-        // A late Atomic node cannot undo an already committed write.
-        if (!request.committed) {
-          request.atomic = true;
-          request.quantity = Number(node.data.value ?? 1);
-          if (!Number.isInteger(request.quantity) || request.quantity < 1 || request.quantity > 120) finish(request, 'FAILED', 'INVALID_FLOW', now);
-        }
-        break;
-      case 'write': {
-        move(request, 'inventory', now);
-        if (!request.read || request.committed) { finish(request, 'FAILED', 'INVALID_FLOW', now); break; }
-        const stock = request.atomic ? inventory.stock : request.read.stock;
-        if (stock < request.quantity) { finish(request, 'REJECTED', 'OUT_OF_STOCK', now); break; }
-        if (request.atomic && request.read.version !== inventory.version) { finish(request, 'REJECTED', 'CONFLICT', now); break; }
-        const previousOversold = inventory.oversold;
-        // Unsafe write uses the value actually read by this request. Atomic checks
-        // and updates the current version in this same indivisible operation.
-        inventory.stock = stock - request.quantity;
-        inventory.version++;
-        inventory.committed += request.quantity;
-        inventory.oversold = Math.max(0, inventory.committed - inventory.initialStock);
-        request.committed = request.quantity;
-        request.oversold = inventory.oversold - previousOversold;
-        break;
-      }
-      case 'payment':
-        move(request, 'payment', now);
-        if (!request.committed || request.paid) finish(request, 'FAILED', 'INVALID_FLOW', now);
-        else request.paid = true;
-        break;
-      case 'exit':
-        move(request, 'exit', now);
-        finish(request, request.paid ? 'COMPLETED' : 'FAILED', request.paid ? 'OK' : 'INVALID_FLOW', now);
-        break;
-      default:
-        // Advanced pieces remain on the aggregate engine outside this fixture.
-        // Here they must never silently confer a protection we have not executed.
-        move(request, request.read ? 'inventory' : 'checkout', now);
-        finish(request, 'REJECTED', 'UNSUPPORTED_BLOCK', now);
-    }
+    executePurchaseOperation(request, run.inventory, now);
     run.operations.push({ requestId: request.id, nodeId: node.id, type: node.type, at: now, stock: inventory.stock, version: inventory.version });
     request.cursor++;
     request.nextAt = roundTime(now + OPERATION_SECONDS);
@@ -117,7 +70,7 @@ export function advanceConcurrency(run: ConcurrencyRun, now: number, available =
 }
 
 export function cancelConcurrency(run: ConcurrencyRun, at: number, reason: 'ROOM_FINISHED' | 'COMPANY_ELIMINATED') {
-  for (const request of run.requests) finish(request, 'ABANDONED', reason, at);
+  for (const request of run.requests) finishRequest(request, 'ABANDONED', reason, at);
 }
 
 export function concurrencyReport(run: ConcurrencyRun, tick: number): Report {
@@ -150,4 +103,58 @@ export function concurrencyParticles(run: ConcurrencyRun | undefined, color: str
     kind: request.result && (request.status !== 'COMPLETED' || request.oversold > 0) ? 'error' : 'success',
     journey: structuredClone(request.journey),
   }));
+}
+
+/** Shared inventory/payment interpreter used by both individual traffic cohorts. */
+export function executePurchaseOperation(request: PurchaseRequest, inventory: InventoryState, now: number) {
+  const node = request.path[request.cursor];
+  if (!node) { finishRequest(request, 'FAILED', 'INVALID_FLOW', now); return; }
+  switch (node.type) {
+      case 'entry':
+        moveRequest(request, 'security', now);
+        if (!request.securityAllowed) finishRequest(request, 'REJECTED', 'SECURITY_REJECTED', now);
+        break;
+      case 'read':
+        moveRequest(request, 'inventory', now);
+        request.read = { stock: inventory.stock, version: inventory.version };
+        break;
+      case 'atomic':
+        // A late Atomic node cannot undo an already committed write.
+        if (!request.committed) {
+          request.atomic = true;
+          request.quantity = Number(node.data.value ?? 1);
+          if (!Number.isInteger(request.quantity) || request.quantity < 1 || request.quantity > 120) finishRequest(request, 'FAILED', 'INVALID_FLOW', now);
+        }
+        break;
+      case 'write': {
+        moveRequest(request, 'inventory', now);
+        if (!request.read || request.committed) { finishRequest(request, 'FAILED', 'INVALID_FLOW', now); break; }
+        const stock = request.atomic ? inventory.stock : request.read.stock;
+        if (stock < request.quantity) { finishRequest(request, 'REJECTED', 'OUT_OF_STOCK', now); break; }
+        const excess = Math.max(0, request.quantity - inventory.stock);
+        // Unsafe write uses the value actually read by this request. Atomic checks
+        // and updates the current stock/version in this same indivisible operation.
+        // An older preliminary read is not a conflict when current stock suffices.
+        inventory.stock = Math.max(0, inventory.stock - request.quantity);
+        inventory.version++;
+        inventory.committed += request.quantity;
+        inventory.oversold += excess;
+        request.committed = request.quantity;
+        request.oversold = excess;
+        break;
+      }
+      case 'payment':
+        moveRequest(request, 'payment', now);
+        if (!request.committed || request.paid) finishRequest(request, 'FAILED', 'INVALID_FLOW', now);
+        else request.paid = true;
+        break;
+      case 'exit':
+        moveRequest(request, 'exit', now);
+        finishRequest(request, request.paid ? 'COMPLETED' : 'FAILED', request.paid ? 'OK' : 'INVALID_FLOW', now);
+        break;
+      default:
+        // Unimplemented blocks never confer a protection we have not executed.
+        moveRequest(request, request.read ? 'inventory' : 'checkout', now);
+        finishRequest(request, 'REJECTED', 'UNSUPPORTED_BLOCK', now);
+    }
 }

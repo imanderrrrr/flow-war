@@ -16,6 +16,9 @@ export const TRAFFIC_PATHS = {
   browse: [ENTRY, GATE, WEB, [550, 295], [550, 70], [1040, 70], OUT],
 } satisfies Record<string, Path>;
 
+// Read-only queries return over the existing roads, without visiting payments.
+const queryOut = [...TRAFFIC_PATHS.purchase.slice(0, 7), ...TRAFFIC_PATHS.purchase.slice(2, 6).reverse(), ...TRAFFIC_PATHS.browse.slice(3)];
+
 export const SERVICE_CONNECTIONS: Path[] = [
   [WEB, AUTH, [635, 115], CHECK],
   [GATE, [240, 465], [425, 465], WEB],
@@ -24,14 +27,15 @@ export const SERVICE_CONNECTIONS: Path[] = [
 // The renderer draws the same paths used by moving clients. No hidden exits.
 export const ROAD_PATHS: Path[] = Object.values(TRAFFIC_PATHS);
 
-export function particlePath(particle: Pick<FlowParticle, 'route' | 'kind' | 'journey'>): Path {
+export function particlePath(particle: Pick<FlowParticle, 'route' | 'kind' | 'journey' | 'queue'>): Path {
   if (particle.journey) {
-    const points = { entry: ENTRY, security: GATE, checkout: CHECK, inventory: STOCK, payment: PAY, exit: OUT };
-    const path: Path = TRAFFIC_PATHS.purchase;
-    const from = path.indexOf(points[particle.journey.from]), to = path.indexOf(points[particle.journey.to]);
+    const points = { entry: ENTRY, security: GATE, web: WEB, checkout: CHECK, inventory: STOCK, payment: PAY, exit: OUT };
+    const path: Path = particle.route === 'browse' ? TRAFFIC_PATHS.browse : particle.route === 'query' ? queryOut : TRAFFIC_PATHS.purchase;
+    const from = path.indexOf(points[particle.journey.from]), to = particle.journey.to === 'exit' ? path.length - 1 : path.indexOf(points[particle.journey.to]);
+    if (particle.queue && from === to && to > 0) return path.slice(to - 1, to + 1);
     return from <= to ? path.slice(from, to + 1) : path.slice(to, from + 1).reverse();
   }
-  const path: Path = TRAFFIC_PATHS[particle.route];
+  const path: Path = particle.route === 'query' ? queryOut : TRAFFIC_PATHS[particle.route];
   if (particle.kind !== 'error') return path;
   const stop = particle.route === 'browse' ? WEB : CHECK;
   return path.slice(0, path.indexOf(stop) + 1);
