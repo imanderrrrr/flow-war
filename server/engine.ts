@@ -1,3 +1,4 @@
+import { postChat } from './chat.js';
 import { slackFact, sampleTelemetry } from './flowslack.js';
 import { updateCrisis } from './crisis.js';
 import { serializeGame } from './persistence.js';
@@ -97,7 +98,8 @@ function releaseReservation(c: Company, change: Change) { c.reserved = Math.max(
 export function applyCommand(g: GameState, identity: Identity | null, command: Command, context: { receivedAt?: number } = {}): Result {
   if (command.type === 'agent.fixture') return runLocalAgent(g, identity, command.payload, effective => applyCommand(g, identity, effective));
   const receivedAt = context.receivedAt ?? Date.now();
-  const result = dispatchCommand(g, identity, command, effective => executeCommand(g, identity!, effective));
+  bindObservability(g,f=>slackFact(g,f));
+  const result = command.type === 'chat.send' ? postChat(g,identity,command,receivedAt) : dispatchCommand(g, identity, command, effective => executeCommand(g, identity!, effective));
   if (identity) {
     if (command.type === 'room.reset' && result.ok) clearBuffer(g);
     recordInput(g, { identity, command, receivedAt });

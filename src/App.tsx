@@ -1,3 +1,4 @@
+import FlowSlack from './FlowSlack';
 import Crisis from './Crisis';
 import OperationsPanel, { EmployeeAdministration } from './OperationsPanel';
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
@@ -108,6 +109,7 @@ function Workspace() {
         {role==='devops' && <div className="deploy-actions"><label>ESTRATEGIA<select value={strategy} onChange={e=>setStrategy(e.target.value)}><option value="rolling">Rolling · 6 s</option><option value="restart">Restart Replace · 3 s</option></select></label><span className="muted">{change.status==='AUTHORIZED'?`AUTORIZACIÓN: ${Math.ceil(Math.max(0,(change.expires??0)-s.tick))} s`:STATUS_LABELS[change.status]}</span><button className="primary-button small" disabled={!active||change.status!=='AUTHORIZED'} onClick={()=>void act('deploy.start',{strategy})}><Icon name="play" size={14}/>{change.status==='DEPLOYING'?'DESPLEGANDO…':'DEPLOY'}</button></div>}
       </> : <div className="empty-state detail-empty"><Icon name={role==='qa'?'flask':role==='cto'?'crown':'server'} size={42}/><strong>0 CAMBIOS PENDIENTES</strong></div>}</section><section className="panel"><div className="panel-title">EVENTOS DE {c.name}</div><EventRows companyId={c.id}/></section>
     </div></div>}
+    <FlowSlack/>
     <OperationsPanel active={active} changeId={change?.id}/>
   </main>;
 }

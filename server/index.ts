@@ -1,3 +1,6 @@
+import { CHANNELS } from '../shared/observability.js';
+import { checkpoint, observe } from './observability.js';
+import { serializeGame } from './persistence.js';
 import { createGameWriter } from './storage.js';
 import express from 'express';
 import { createServer } from 'node:http';
@@ -33,6 +36,7 @@ if (saved && [1, 2, 3, 4, 5].includes(JSON.parse(saved.state).schema)) {
   db.prepare('INSERT OR IGNORE INTO game_migrations (schema,state) VALUES (?,?)').run(JSON.parse(saved.state).schema, saved.state);
 }
 let game: GameState = saved ? recoverGame(saved.state) : createGame();
+if (saved) { observe(game,'server.recovered',null,{status:game.status}); checkpoint(game,serializeGame,true); }
 const writeGame = createGameWriter(db);
 const persist = (command?: {identity: string; id: string; digest: string; result: string}) => writeGame(game, command);
 persist();
@@ -87,6 +91,14 @@ app.get('/api/requests/:id', (req, res) => {
   const row = db.prepare('SELECT companyId,receipt FROM request_receipts WHERE id=?').get(req.params.id) as {companyId: number; receipt: string} | undefined;
   if (!row || (identity.role !== 'operator' && identity.companyId !== row.companyId)) return res.sendStatus(404);
   res.json(JSON.parse(row.receipt));
+});
+app.get('/api/flowslack', (req,res)=>{
+ res.setHeader('Cache-Control','no-store');const identity=session(req.headers.cookie);
+ if(!identity||identity.companyId===null||(req.query.companyId!==undefined&&Number(req.query.companyId)!==identity.companyId))return res.sendStatus(403);
+ const channel=String(req.query.channel??'general');if(!CHANNELS.includes(channel as any))return res.sendStatus(400);
+ const before=Number(req.query.before??Number.MAX_SAFE_INTEGER);if(!Number.isSafeInteger(before)||before<1)return res.sendStatus(400);
+ const rows=db.prepare('SELECT body FROM slack_messages WHERE generation=? AND companyId=? AND channel=? AND seq<? ORDER BY seq DESC LIMIT 80').all(game.generation,identity.companyId,channel,before) as {body:string}[];
+ res.json({messages:rows.map(r=>JSON.parse(r.body)).reverse()});
 });
 app.get('/api/access', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');

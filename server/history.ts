@@ -13,6 +13,8 @@ export function historySchema(db: DatabaseSync) {
  CREATE TABLE IF NOT EXISTS history_inputs (generation INTEGER, seq INTEGER, at REAL, body TEXT, PRIMARY KEY(generation,seq));
  CREATE TABLE IF NOT EXISTS history_checkpoints (generation INTEGER, seq INTEGER, at REAL, state BLOB, digest TEXT, PRIMARY KEY(generation,seq));
  CREATE INDEX IF NOT EXISTS history_checkpoint_time ON history_checkpoints(generation,at);
+ CREATE TABLE IF NOT EXISTS slack_messages (generation INTEGER, id TEXT, seq INTEGER, companyId INTEGER, channel TEXT, body TEXT, PRIMARY KEY(generation,id));
+ CREATE INDEX IF NOT EXISTS slack_tenant ON slack_messages(generation,companyId,channel,seq);
  CREATE TABLE IF NOT EXISTS history_points (generation INTEGER, at REAL, body TEXT, PRIMARY KEY(generation,at));`);
 }
 export function writeHistory(db: DatabaseSync, g: GameState) {
@@ -21,7 +23,7 @@ export function writeHistory(db: DatabaseSync, g: GameState) {
  db.prepare('INSERT INTO history_games VALUES (?,?,?,?,?,?) ON CONFLICT(generation) DO UPDATE SET tick=excluded.tick,status=excluded.status').run(g.generation,g.observability.startTick,g.tick,g.duration,g.status,g.observability.version);
  const p=buffer(g);
  const event=db.prepare('INSERT OR IGNORE INTO history_events VALUES (?,?,?,?,?,?)');
- for(const e of p.events) event.run(g.generation,e.id,e.at,e.companyId,e.kind,JSON.stringify(e));
+ for(const e of p.events) { event.run(g.generation,e.id,e.at,e.companyId,e.kind,JSON.stringify(e)); if(e.kind==='slack.message'){const m=e.data.message as import('../shared/observability.js').SlackMessage;db.prepare('INSERT OR IGNORE INTO slack_messages VALUES (?,?,?,?,?,?)').run(g.generation,m.id,m.sequence,m.companyId,m.channel,JSON.stringify(m));} }
  const input=db.prepare('INSERT OR IGNORE INTO history_inputs VALUES (?,?,?,?)');
  for(const i of p.commands) input.run(g.generation,i.id,i.at,JSON.stringify(i));
  const point=db.prepare('INSERT OR REPLACE INTO history_points VALUES (?,?,?)');
