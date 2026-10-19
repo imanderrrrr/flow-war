@@ -1,0 +1,23 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { DatabaseSync } from 'node:sqlite';
+import { createGame, step } from '../server/engine.js';
+import { createGameWriter } from '../server/storage.js';
+import { reconstruct, historyAccess } from '../server/history.js';
+import { command, advanceGame } from './helpers.js';
+import { assertMarket } from '../server/market.js';
+function setup(){const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE commands(identity TEXT,id TEXT,digest TEXT,result TEXT)');return {db,write:createGameWriter(db)};}
+test('D01-D07 deterministic checkpoints and commands reconstruct actual historical versions and money',()=>{
+ const {db,write}=setup(),g=createGame(1200);write(g);command(g,'operator','room.start');advanceGame(g,30);write(g);
+ command(g,'cto','cto.budget',{amount:250});write(g);advanceGame(g,20);const expected=structuredClone(g.companies.map(c=>({capital:c.capital,customers:c.customers,version:c.version})));write(g);
+ advanceGame(g,20);command(g,'operator','room.finish');write(g);const original=JSON.stringify(g);const historical=reconstruct(db,0,50);
+ assert.deepEqual(historical.companies.map(c=>({capital:c.capital,customers:c.customers,version:c.version})),expected);assertMarket(historical);assert.equal(JSON.stringify(g),original);assert.equal(reconstruct(db,0,20).tick,20);db.close();
+});
+test('D16-D19 history requires finished session and rejects missing legacy intervals',()=>{
+ const {db,write}=setup(),g=createGame();g.observability.startTick=100;g.tick=100;write(g);
+ assert.throws(()=>historyAccess(db,0,null));assert.throws(()=>historyAccess(db,0,{id:'op',role:'operator',companyId:null}));assert.throws(()=>reconstruct(db,0,20));db.close();
+});
+test('D13-D15 finished checkpoint survives reopening storage and ordered queries are immutable',()=>{
+ const {db,write}=setup(),g=createGame();write(g);command(g,'operator','room.start');for(let i=0;i<50;i++)step(g);command(g,'operator','room.finish');write(g);
+ const rebuilt=reconstruct(db,0,5);assert.equal(rebuilt.status,'FINISHED');assertMarket(rebuilt);assert.equal(historyAccess(db,0,{id:'op',role:'operator',companyId:null}).tick,5);db.close();
+});

@@ -1,4 +1,5 @@
-import { initialObservability, bindObservability, observe, observeCompany } from './observability.js';
+import { serializeGame } from './persistence.js';
+import { initialObservability, bindObservability, observe, observeCompany, recordInput, checkpoint, sampleHistory, clearBuffer } from './observability.js';
 import { runLocalAgent } from './agents.js';
 import { initialActionState, dispatchCommand, correctEmployee, auditCompletion } from './discipline.js';
 import { businessCommand, advanceCampaigns } from './business.js';
@@ -34,7 +35,7 @@ export function createGame(duration = 1500, seed = 7357, generation = 0): GameSt
     backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
   }));
   const game: GameState = { actions: initialActionState(), schema: 6, observability: initialObservability(), slack: { sequence: 0, messages: [], receipts: {}, buckets: {}, groups: {}, automaticCount: 0, sampledCount: 0 }, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
-  bindMarket(game); bindObservability(game); assertMarket(game); return game;
+  bindMarket(game); bindObservability(game); assertMarket(game); checkpoint(game, serializeGame, true); return game;
 }
 export function event(g: GameState, companyId: number | null, text: string, tone: 'good' | 'bad' | 'neutral' = 'neutral', category = 'SISTEMA') {
   observe(g, category.toLowerCase(), companyId, { text, tone });
@@ -91,9 +92,17 @@ export function reportFor(g: GameState, change: Change, suite: string): Report {
   return testReport(job, g.tick);
 }
 function releaseReservation(c: Company, change: Change) { c.reserved = Math.max(0, c.reserved - change.reserved); change.reserved = 0; }
-export function applyCommand(g: GameState, identity: Identity | null, command: Command): Result {
+export function applyCommand(g: GameState, identity: Identity | null, command: Command, context: { receivedAt?: number } = {}): Result {
   if (command.type === 'agent.fixture') return runLocalAgent(g, identity, command.payload, effective => applyCommand(g, identity, effective));
-  return dispatchCommand(g, identity, command, effective => executeCommand(g, identity!, effective));
+  const receivedAt = context.receivedAt ?? Date.now();
+  const result = dispatchCommand(g, identity, command, effective => executeCommand(g, identity!, effective));
+  if (identity) {
+    if (command.type === 'room.reset' && result.ok) clearBuffer(g);
+    recordInput(g, { identity, command, receivedAt });
+    sampleHistory(g);
+    if (command.type === 'room.reset' || command.type === 'room.finish') checkpoint(g, serializeGame, true);
+  }
+  return result;
 }
 function executeCommand(g: GameState, identity: Identity, command: Command): Result {
   bindMarket(g);
@@ -281,6 +290,7 @@ export function step(g: GameState, dt = .1) {
   }
   if (g.tick >= g.duration || g.companies.every(c => c.eliminated)) { finishRequests(g); g.status = 'FINISHED'; event(g, null, 'PARTIDA FINALIZADA', 'neutral', 'SISTEMA'); }
   g.migrations = g.migrations.filter(m => g.tick - m.at < 20).slice(-30);
+  sampleHistory(g); checkpoint(g, serializeGame, g.status === 'FINISHED');
 }
 function finishRequests(g: GameState) {
   for (const company of g.companies) {
