@@ -1,3 +1,4 @@
+import { initialObservability, bindObservability, observe, observeCompany } from './observability.js';
 import { runLocalAgent } from './agents.js';
 import { initialActionState, dispatchCommand, correctEmployee, auditCompletion } from './discipline.js';
 import { businessCommand, advanceCampaigns } from './business.js';
@@ -27,15 +28,16 @@ export function initialGraph(domain: 'backend' | 'security' | 'product'): Graph 
 }
 export function createGame(duration = 1500, seed = 7357, generation = 0): GameState {
   const companies: Company[] = NAMES.map((name, id) => ({
-    runtime: initialRuntime(), infrastructure: initialInfrastructure(), id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
+    crisis: { active: false, episode: 0, lastReputation: 80 }, serviceMode: { mode: 'OPERATING', since: 0 }, runtime: initialRuntime(), infrastructure: initialInfrastructure(), id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
     servers: 1, balancer: false, infraBudget: duration * .5, reserved: 0, version: 1, deployments: 0, active: 0, requests: 0, successes: 0, errors: 0, breaches: 0, oversold: 0, duplicates: 0,
     lostRevenue: 0, revenue: 0, latency: 0, utilization: 0, queue: 0, migratedIn: 0, migratedOut: 0, eliminated: false, crisisTicks: 0, deadTicks: 0, bankruptTicks: 0, concurrencyUntil: 0,
     backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
   }));
-  const game: GameState = { actions: initialActionState(), schema: 5, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
-  bindMarket(game); assertMarket(game); return game;
+  const game: GameState = { actions: initialActionState(), schema: 6, observability: initialObservability(), slack: { sequence: 0, messages: [], receipts: {}, buckets: {}, groups: {}, automaticCount: 0, sampledCount: 0 }, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
+  bindMarket(game); bindObservability(game); assertMarket(game); return game;
 }
 export function event(g: GameState, companyId: number | null, text: string, tone: 'good' | 'bad' | 'neutral' = 'neutral', category = 'SISTEMA') {
+  observe(g, category.toLowerCase(), companyId, { text, tone });
   g.events.unshift({ id: ++g.eventSeq, at: g.tick, companyId, text, tone, category });
   g.events.length = Math.min(g.events.length, 60);
 }
@@ -220,7 +222,7 @@ function jobs(g: GameState) {
 }
 export function step(g: GameState, dt = .1) {
   if (g.status !== 'RUNNING') return;
-  bindMarket(g);
+  bindMarket(g); bindObservability(g);
   if (dt > .1) { for (let remaining = dt; remaining > .00001; remaining = Math.round((remaining - .1) * 1e6) / 1e6) step(g, Math.min(.1, remaining)); return; }
   const previousSecond = Math.floor(g.tick);
   g.tick = Math.min(g.duration, Math.round((g.tick + dt) * 1000) / 1000);

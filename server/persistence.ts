@@ -1,3 +1,4 @@
+import { initialObservability, bindObservability } from './observability.js';
 import { initialActionState } from './discipline.js';
 import { initialRuntime } from './artifacts.js';
 import { syncInfrastructure } from './infrastructure.js';
@@ -10,7 +11,7 @@ import { initialTraffic } from './traffic.js';
 export function recoverGame(serialized: string): GameState {
   const saved = JSON.parse(serialized);
   const originalSchema = saved.schema;
-  if (![1, 2, 3, 4, 5].includes(saved.schema)) throw new Error('Versión de partida no soportada.');
+  if (![1, 2, 3, 4, 5, 6].includes(saved.schema)) throw new Error('Versión de partida no soportada.');
   if (saved.schema === 1) {
     for (const company of saved.companies) company.concurrency = initialConcurrency(saved.duration, saved.tick);
     for (const change of saved.changes) {
@@ -82,9 +83,11 @@ export function recoverGame(serialized: string): GameState {
       }
     }
   }
+  if (saved.schema === 5) { saved.schema = 6; saved.observability = initialObservability(saved.tick); saved.slack = { sequence: 0, messages: [], receipts: {}, buckets: {}, groups: {}, automaticCount: 0, sampledCount: 0 }; }
+  for (const company of saved.companies) { company.crisis ??= { active: false, episode: 0, lastReputation: company.reputation }; company.serviceMode ??= { mode: 'OPERATING', since: saved.tick }; }
   if (saved.market.config.version !== 'market-3.0') throw new Error('Versión de mercado no soportada.');
   for (const company of saved.companies) { company.runtime ??= initialRuntime(); syncInfrastructure(company); }
-  bindMarket(saved); assertMarket(saved);
+  bindMarket(saved); bindObservability(saved); assertMarket(saved);
   if (saved.status === 'RUNNING') saved.status = 'PAUSED';
   return saved as GameState;
 }

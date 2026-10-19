@@ -1,0 +1,13 @@
+import type { Command, Identity } from './types.js';
+export const OBSERVABILITY_VERSION = 'flow-observability-5.1' as const;
+export const CHANNELS = ['general', 'alertas-sistema', 'soporte-clientes', 'equipo-interno'] as const;
+export type Channel = typeof CHANNELS[number];
+export type ServiceMode = 'OPERATING' | 'ORDERS_PAUSED' | 'FULL_MAINTENANCE';
+export type CrisisState = { active: boolean; enteredAt?: number; exitedAt?: number; episode: number; lastReputation: number };
+export type Observation = { id: number; at: number; companyId: number | null; kind: string; refs: string[]; data: Record<string, unknown> };
+export type JournalCommand = { id: number; at: number; identity: Identity; command: Command; receivedAt: number };
+export type SlackMessage = { id: string; sequence: number; companyId: number; channel: Channel; source: 'human' | 'customer' | 'system'; author: string; role?: Identity['role']; at: number; receivedAt?: number; cause: number; dedup: string; text: string; refs: string[]; mentions: string[] };
+export type SlackState = { sequence: number; messages: SlackMessage[]; receipts: Record<string, { digest: string; id: string }>; buckets: Record<string, { at: number; count: number }>; groups: Record<string, { count: number; emitted: number; at: number }>; automaticCount: number; sampledCount: number };
+export type ObservabilityState = { version: typeof OBSERVABILITY_VERSION; startTick: number; sequence: number; checkpointAt: number; sampleAt: number };
+export type HistoricalPoint = { at: number; companies: { id: number; customers: number; capital: number; reputation: number; revenue: number; errors: number; servers: number; version: number; mode: ServiceMode; queue: number }[]; unserved: number };
+export const MODE_LABELS: Record<ServiceMode, string> = { OPERATING: 'OPERATIVO', ORDERS_PAUSED: 'OPERACIONES SUSPENDIDAS', FULL_MAINTENANCE: 'MANTENIMIENTO TOTAL' };

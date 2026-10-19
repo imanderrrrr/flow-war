@@ -1,3 +1,4 @@
+import type { CrisisState, ObservabilityState, ServiceMode, SlackState, SlackMessage } from './observability.js';
 import type { BlockConfiguration } from './blocks.js';
 import type { ActionState, TestEvidence, DefectCode, OperationRuntime, CompanyRuntime, ExecutionRelease, ModuleRef, OperationsView, TestJob } from './simulation.js';
 export const ROLES = ['backend', 'security', 'qa', 'cto', 'devops', 'product'] as const;
@@ -11,8 +12,8 @@ export type Graph = { nodes: GraphNode[]; edges: GraphEdge[] };
 export type RequestStatus = 'PENDING' | 'RUNNING' | 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'REJECTED' | 'ABANDONED' | 'FAILED';
 export type RequestStage = 'entry' | 'security' | 'web' | 'checkout' | 'inventory' | 'payment' | 'exit';
 export type ServiceId = 'security' | 'web' | 'checkout' | 'inventory' | 'payment';
-export type TerminalReason = 'OK' | 'OUT_OF_STOCK' | 'CONFLICT' | 'SECURITY_REJECTED' | 'UNSUPPORTED_BLOCK' | 'INVALID_FLOW' | 'DEADLINE' | 'QUEUE_FULL' | 'ROOM_FINISHED' | 'COMPANY_ELIMINATED';
-export const TERMINAL_LABELS: Record<TerminalReason, string> = { OK: 'OK', OUT_OF_STOCK: 'Sin stock', CONFLICT: 'Conflicto', SECURITY_REJECTED: 'Seguridad', UNSUPPORTED_BLOCK: 'No ejecutable', INVALID_FLOW: 'Flujo inválido', DEADLINE: 'Vencida', QUEUE_FULL: 'Cola llena', ROOM_FINISHED: 'Fin de sala', COMPANY_ELIMINATED: 'Empresa cerrada' };
+export type TerminalReason = 'OK' | 'OUT_OF_STOCK' | 'CONFLICT' | 'SECURITY_REJECTED' | 'UNSUPPORTED_BLOCK' | 'INVALID_FLOW' | 'DEADLINE' | 'QUEUE_FULL' | 'ROOM_FINISHED' | 'COMPANY_ELIMINATED' | 'MAINTENANCE' | 'ORDERS_PAUSED';
+export const TERMINAL_LABELS: Record<TerminalReason, string> = { MAINTENANCE: 'Mantenimiento · 503', ORDERS_PAUSED: 'Operaciones suspendidas · 503', OK: 'OK', OUT_OF_STOCK: 'Sin stock', CONFLICT: 'Conflicto', SECURITY_REJECTED: 'Seguridad', UNSUPPORTED_BLOCK: 'No ejecutable', INVALID_FLOW: 'Flujo inválido', DEADLINE: 'Vencida', QUEUE_FULL: 'Cola llena', ROOM_FINISHED: 'Fin de sala', COMPANY_ELIMINATED: 'Empresa cerrada' };
 export type RequestResult = { status: 'COMPLETED' | 'REJECTED' | 'ABANDONED' | 'FAILED'; reason: TerminalReason; at: number; revenue: number; lostRevenue: number; capitalDelta: number; service?: ServiceId; operation?: string };
 export type RequestJourney = { from: RequestStage; to: RequestStage; at: number; duration: number };
 export type PurchaseRequest = {
@@ -89,6 +90,7 @@ export type GameEvent = { id: number; at: number; companyId: number | null; text
 export type FlowParticle = { id: string; born: number; duration: number; color: string; customerId?: string; kind: 'success' | 'error' | 'attack'; route: 'browse' | 'purchase' | 'query'; seed: number; requestId?: string; companyId?: number; executionVersion?: number; status?: RequestStatus; reason?: TerminalReason; finishedAt?: number; journey?: RequestJourney; queue?: { service: ServiceId; position: number; enteredAt: number; depth: number } };
 export type Infrastructure = { instances: { id: number; status: 'UP' | 'RESTARTING'; readyAt?: number }[]; stoppedServices: ServiceId[] };
 export type Company = {
+  crisis: CrisisState; serviceMode: { mode: ServiceMode; since: number };
   runtime: CompanyRuntime; infrastructure: Infrastructure;
   id: number; name: string; tag: string; color: string; customers: number; capital: number; reputation: number; pressure: number;
   servers: number; balancer: boolean; infraBudget: number; reserved: number; version: number; deployments: number;
@@ -103,8 +105,8 @@ export type Company = {
 };
 export type PrivateCompany = Omit<Company, 'drafts' | 'traffic' | 'runtime'> & { drafts: Company['drafts']; traffic: TrafficView };
 export type PublicCompany = Omit<Company, 'runtime' | 'drafts' | 'backend' | 'security' | 'product' | 'migrationRemainder' | 'arrivalRemainder' | 'processedRemainder' | 'crisisTicks' | 'deadTicks' | 'bankruptTicks' | 'concurrencyUntil' | 'concurrency' | 'traffic'> & { modules: string[]; pipelineCounts: number[]; concurrency: ConcurrencyView; traffic: TrafficView };
-export type GameState = { actions: ActionState; schema: 5; market: MarketState; generation: number; tick: number; duration: number; status: 'LOBBY' | 'RUNNING' | 'PAUSED' | 'FINISHED'; seed: number; eventSeq: number; companies: Company[]; changes: Change[]; events: GameEvent[]; migrations: Migration[]; unserved: number; speed: number };
-export type Snapshot = { operations?: OperationsView; tick: number; duration: number; status: GameState['status']; companies: PublicCompany[]; events: GameEvent[]; migrations: Migration[]; unserved: number; identity: Identity | null; privateCompany?: PrivateCompany; changes: Change[]; speed: number };
+export type GameState = { actions: ActionState; schema: 6; observability: ObservabilityState; slack: SlackState; market: MarketState; generation: number; tick: number; duration: number; status: 'LOBBY' | 'RUNNING' | 'PAUSED' | 'FINISHED'; seed: number; eventSeq: number; companies: Company[]; changes: Change[]; events: GameEvent[]; migrations: Migration[]; unserved: number; speed: number };
+export type Snapshot = { slack?: SlackMessage[]; operations?: OperationsView; tick: number; duration: number; status: GameState['status']; companies: PublicCompany[]; events: GameEvent[]; migrations: Migration[]; unserved: number; identity: Identity | null; privateCompany?: PrivateCompany; changes: Change[]; speed: number };
 export type Command = { id: string; type: string; companyId?: number; changeId?: string; payload?: Record<string, unknown> };
 export type Result = { refs?: string[]; ok: boolean; error?: string; code?: string };
 

@@ -1,3 +1,4 @@
+import { observe } from './observability.js';
 import type { Company, GameState, MarketConfig, MarketCustomer, MarketState, PurchaseRequest, TrafficRequest } from '../shared/types.js';
 
 export const MARKET_CONFIG: MarketConfig = {
@@ -199,6 +200,7 @@ export function flushMigrations(game: GameState) {
     if (from !== null) game.companies[from].migratedOut++;
     if (to !== null) game.companies[to].migratedIn++;
     game.migrations.push({ ...migration, count: 1, customerId: customer.id });
+    observe(game, 'customer.migrated', from, { ...migration, customerId: customer.id }, [migration.id, customer.id]);
   }
   for (const company of game.companies) company.customers = market.members[company.id].length;
   game.unserved = market.members.unserved.length;

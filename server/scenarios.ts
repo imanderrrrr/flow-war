@@ -1,3 +1,4 @@
+import { observeCompany } from './observability.js';
 import { admitSecurity } from './security.js';
 import { executionFor } from './artifacts.js';
 import { attachCustomer, recordCustomerExperience, selectCustomer } from './market.js';
@@ -51,6 +52,7 @@ export function settleConcurrency(company: Company) {
     newOversold += request.oversold;
     recordCustomerExperience(company, request, 'purchase', (result.at - request.arrivalAt) * 1000);
     request.accounted = true;
+    observeCompany(company, 'request.settled', { requestId: request.id, customerId: request.customerId, trafficClass: 'legitimate', type: 'purchase', version: request.executionVersion, result, duplicates: request.duplicates ?? 0, oversold: request.oversold, defects: request.effectCodes ?? [], modules: request.execution?.modules.map(m => ({ id: m.id, version: m.version, defects: m.defects.filter(d => request.effectCodes?.includes(d.code)).map(d => d.code) })) ?? [], latencyMs: (result.at - request.arrivalAt) * 1000 }, [request.id]);
   }
   return newOversold;
 }
