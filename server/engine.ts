@@ -1,3 +1,5 @@
+import { createTestJob, advanceTestJob, testReport, scenarioForSuite } from './qa.js';
+import { testScenario } from './action-validation.js';
 import { initialRuntime, executionFor, releaseFor, prepareArtifact } from './artifacts.js';
 import { initialInfrastructure, syncInfrastructure, advanceInfrastructure, restart, setService } from './infrastructure.js';
 import { parseAction, validateParameters } from './action-validation.js';
@@ -106,7 +108,7 @@ export function applyCommand(g: GameState, identity: Identity | null, command: C
   if (command.companyId !== identity.companyId) return { ok: false, code: 'FORBIDDEN', error: 'Empresa no autorizada.' };
   const c = g.companies[identity.companyId!];
   if (c.eliminated) return { ok: false, error: 'La empresa está fuera de la partida.' };
-  const ch = g.changes.find(x => x.id === command.changeId && x.companyId === c.id);
+  const ch = g.changes.find(x => x.id === (command.changeId ?? command.payload?.changeId) && x.companyId === c.id);
   const p = command.payload ?? {};
   try {
     if (['module.create','module.revise','security.prepare'].includes(command.type)) {
@@ -147,8 +149,17 @@ export function applyCommand(g: GameState, identity: Identity | null, command: C
     if (command.type === 'infra.balancer') { c.balancer = Boolean(p.enabled); event(g, c.id, `Balanceador ${c.balancer ? 'activo' : 'desactivado'}.`, 'neutral', 'DEVOPS'); return { ok: true }; }
     if (!ch) throw new Error('Cambio no encontrado.');
     if (ch.baseVersion !== c.version && !['DEPLOYED', 'QA_REJECTED', 'CTO_REJECTED'].includes(ch.status)) throw new Error('La versión base cambió.');
+    if (command.type === 'qa.execute') {
+      validateParameters(command.type, p);
+      if (ch.status !== 'QA_PENDING') throw new Error('QA requiere un cambio pendiente.');
+      const job = createTestJob(c, ch, testScenario(p.scenario));
+      ch.testJob = job; ch.status = 'QA_RUNNING'; ch.runningSuite = job.scenario.suite; return { ok: true };
+    }
     if (command.type === 'qa.run') {
       if (ch.status !== 'QA_PENDING' || !SUITES.includes(String(p.suite))) throw new Error('No se puede ejecutar esa suite en este estado.');
+      if (ch.context?.execution?.modules.length || ch.context?.execution?.security || p.suite === 'Unitarias') {
+        ch.testJob = createTestJob(c, ch, scenarioForSuite(String(p.suite))); ch.status = 'QA_RUNNING'; ch.runningSuite = String(p.suite); return { ok: true };
+      }
       ch.status = 'QA_RUNNING'; ch.runningSuite = String(p.suite); ch.due = g.tick + 4;
       if (p.suite === 'Carga') ch.qaLoad = createLoadRun(c, ch.context ?? productionContext(c), g.tick);
       if (p.suite === 'Concurrencia') ch.qaScenario = createConcurrencyRun(`${ch.id}-QA${ch.reports.length + 1}`, ch.context ?? productionContext(c), g.tick);
@@ -180,10 +191,10 @@ function jobs(g: GameState) {
     if (ch.status === 'AUTHORIZED' && g.tick > (ch.expires ?? Infinity)) { ch.status = 'EXPIRED'; releaseReservation(c, ch); }
     if (ch.status === 'QA_RUNNING') {
       if (ch.qaScenario) advanceConcurrency(ch.qaScenario, g.tick);
-      const completed = ch.qaLoad ? advanceLoadRun(ch.qaLoad) : ch.qaScenario ? isRunFinished(ch.qaScenario) : g.tick >= (ch.due ?? Infinity);
+      const completed = ch.testJob ? advanceTestJob(ch.testJob) : ch.qaLoad ? advanceLoadRun(ch.qaLoad) : ch.qaScenario ? isRunFinished(ch.qaScenario) : g.tick >= (ch.due ?? Infinity);
       if (completed) {
-        ch.reports.push(ch.qaLoad ? loadReport(ch.qaLoad, g.tick) : ch.qaScenario ? concurrencyReport(ch.qaScenario, g.tick) : reportFor(g, ch, ch.runningSuite!));
-        delete ch.qaScenario; delete ch.qaLoad;
+        ch.reports.push(ch.testJob ? testReport(ch.testJob, g.tick) : ch.qaLoad ? loadReport(ch.qaLoad, g.tick) : ch.qaScenario ? concurrencyReport(ch.qaScenario, g.tick) : reportFor(g, ch, ch.runningSuite!));
+        delete ch.qaScenario; delete ch.qaLoad; delete ch.testJob;
         ch.status = 'QA_PENDING';
         event(g, c.id, `${ch.id} · ${ch.runningSuite} completada.`, 'neutral', 'QA');
       }
