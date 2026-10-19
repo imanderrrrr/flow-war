@@ -1,0 +1,63 @@
+{
+  "measuredCodeCommit": "1d29aee66706f001dfc1599f67b2c87a674b7468",
+  "sourceDigest": "b8531edace82afd7fb50a7afbc8bd4b5f5390f22bfd5430c100bbfe7faaec7d3",
+  "tests": {
+    "command": "npm test",
+    "exitCode": 0,
+    "passed": 213,
+    "retained": 181,
+    "added": 32,
+    "durationMs": 40177.555541
+  },
+  "build": {
+    "command": "npm run build",
+    "exitCode": 0,
+    "viteMs": 630,
+    "mainJsKB": 524.94,
+    "warning": "Vite: JavaScript chunk exceeds 500 kB"
+  },
+  "benchmarks": {
+    "traffic": {
+      "command": "npm run bench:traffic",
+      "exitCode": 0,
+      "cases": 24
+    },
+    "actions": {
+      "command": "npm run bench:actions",
+      "exitCode": 0,
+      "cases": 18,
+      "independentlyVerified": true
+    },
+    "connections": {
+      "command": "npm run bench:connections",
+      "exitCode": 0,
+      "connections": 27
+    },
+    "chat": {
+      "command": "npm run bench:chat",
+      "exitCode": 0,
+      "connections": 27,
+      "messages": 125,
+      "isolation": true,
+      "restart": true
+    },
+    "delivery5": {
+      "command": "npm run bench:entrega5",
+      "exitCode": 0,
+      "fullGames": 22,
+      "durations": [
+        1200,
+        1500
+      ],
+      "exactRebuilds": 176,
+      "populationChecks": 29700
+    }
+  },
+  "main": {
+    "before": "ded62dcba370b899b5295e4e81837a7276b0bc65",
+    "after": "ded62dcba370b899b5295e4e81837a7276b0bc65",
+    "merges": false
+  },
+  "anthropicIntegration": "absent",
+  "rufloUsed": false
+}
