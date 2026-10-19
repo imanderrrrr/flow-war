@@ -1,0 +1,43 @@
+{
+  "purpose": "Exploratory codec CPU study, concurrent with full benchmark; not a server latency comparison",
+  "receipts": 200,
+  "iterations": 15,
+  "results": [
+    {
+      "options": {},
+      "ms": 41.145083,
+      "bytes": 1182375
+    },
+    {
+      "options": {
+        "level": 1
+      },
+      "ms": 31.133749999999964,
+      "bytes": 1228230
+    },
+    {
+      "options": {
+        "level": 1,
+        "memLevel": 4
+      },
+      "ms": 31.57558400000005,
+      "bytes": 1230000
+    },
+    {
+      "options": {
+        "level": 1,
+        "memLevel": 1
+      },
+      "ms": 49.17870799999997,
+      "bytes": 1407495
+    },
+    {
+      "options": {
+        "level": 3,
+        "memLevel": 4
+      },
+      "ms": 31.04958300000004,
+      "bytes": 1214160
+    }
+  ]
+}

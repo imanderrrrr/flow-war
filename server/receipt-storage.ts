@@ -12,14 +12,28 @@ export function receiptSchema(db:DatabaseSync){
  if(!columns.some(c=>c.name==='detailDigest'))db.exec('ALTER TABLE request_receipts ADD COLUMN detailDigest TEXT');
  db.exec('CREATE INDEX IF NOT EXISTS receipts_generation ON request_receipts(generation);CREATE INDEX IF NOT EXISTS commands_generation ON commands(generation)');
 }
-export function encodeReceipt(db:DatabaseSync,generation:number,receipt:TrafficReceipt){
+type PreparedReceipt={rawPath:string;pathDigest:string;receipt:string;details:Buffer|null;detailDigest:string|null};
+const prepared=new WeakMap<TrafficReceipt,PreparedReceipt>();
+const pathStatements=new WeakMap<DatabaseSync,ReturnType<DatabaseSync['prepare']>>();
+function freezeEvidence(value:unknown){if(value&&typeof value==='object'&&!Object.isFrozen(value)){for(const child of Object.values(value))freezeEvidence(child);Object.freeze(value);}}
+/** Distribute codec work over actual settlements, without adding state to the simulation. */
+export function prepareReceipt(receipt:TrafficReceipt):PreparedReceipt{
+ const cached=prepared.get(receipt);if(cached)return cached;
  const {path,...rest}=receipt,rawPath=JSON.stringify(path),pathDigest=hash(rawPath),hot:Record<string,any>={},details:Record<string,any>={...rest};
  for(const key of HOT){if(key in rest)hot[key]=rest[key];delete details[key];}
  const raw=JSON.stringify(details);
- db.prepare('INSERT OR IGNORE INTO receipt_paths VALUES (?,?,?)').run(generation,pathDigest,rawPath);
- // Preserve oversized/future legacy details inline rather than creating a receipt we cannot decode.
- if(Buffer.byteLength(raw)>4*1024*1024)return{receipt:JSON.stringify({...rest,pathRef:pathDigest}),details:null,detailDigest:null};
- return {receipt:JSON.stringify({...hot,pathRef:pathDigest,encoding:'receipt-zlib-1'}),details:deflateSync(raw),detailDigest:hash(raw)};
+ const packed:PreparedReceipt=Buffer.byteLength(raw)>4*1024*1024
+  ?{rawPath,pathDigest,receipt:JSON.stringify({...rest,pathRef:pathDigest}),details:null,detailDigest:null}
+  :{rawPath,pathDigest,receipt:JSON.stringify({...hot,pathRef:pathDigest,encoding:'receipt-zlib-1'}),details:deflateSync(raw),detailDigest:hash(raw)};
+ // A receipt is a frozen evidence copy; the request itself remains mutable and independent.
+ freezeEvidence(receipt);prepared.set(receipt,packed);return packed;
+}
+export function encodeReceipt(db:DatabaseSync,generation:number,receipt:TrafficReceipt){
+ const packed=prepareReceipt(receipt);
+ let statement=pathStatements.get(db);if(!statement){statement=db.prepare('INSERT OR IGNORE INTO receipt_paths VALUES (?,?,?)');pathStatements.set(db,statement);}
+ // Always execute inside the caller's transaction, including after rollback; no durable-write cache.
+ statement.run(generation,packed.pathDigest,packed.rawPath);
+ return {receipt:packed.receipt,details:packed.details,detailDigest:packed.detailDigest};
 }
 export type StoredReceipt={receipt:string;generation:number|null;details?:Uint8Array|null;detailDigest?:string|null};
 export function decodeReceipt(db:DatabaseSync,row:StoredReceipt):TrafficReceipt{

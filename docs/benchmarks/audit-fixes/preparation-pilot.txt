@@ -1,0 +1,1 @@
+{"name":"B-recovery","duration":1200,"finalTick":1200,"tick":{"p50":1.066,"p95":2.676,"p99":3.734},"persist":{"p50":29.924,"p95":50.243,"p99":63.237},"dbMiB":425.7,"seekMax":985.984}

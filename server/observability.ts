@@ -21,3 +21,6 @@ export function clearBuffer(g: GameState) { pending.delete(g); }
 
 /** Preserve uncommitted facts when the authoritative command state rolls back. */
 export function copyHistoryBuffer(from:GameState,to:GameState){const p=buffer(from);pending.set(to,{closed:[...p.closed],events:[...p.events],commands:[...p.commands],points:[...p.points],checkpoints:[...p.checkpoints]});}
+
+/** Only live production evidence needs durable receipt preparation; replays and isolated QA do not. */
+export function isLiveEvidence(c:Company){const owner=owners.get(c);return c.traffic.scope!=='qa'&&!!owner&&!silent.has(owner);}

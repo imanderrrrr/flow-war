@@ -1,3 +1,4 @@
+import {decodeReceipt} from '../server/receipt-storage.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
@@ -30,7 +31,7 @@ test('H1 failed transaction preserves all buffers, rolls back both generations a
  const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE commands(identity TEXT,id TEXT,digest TEXT,result TEXT)');const write=createGameWriter(db),g=createGame();write(g);command(g,'operator','room.start');advanceGame(g,2);observe(g,'not-yet-written',0);const before=structuredClone(g);copyHistoryBuffer(g,before);
  command(g,'operator','room.reset');db.exec("CREATE TRIGGER fail_reset BEFORE INSERT ON history_games WHEN NEW.generation=1 BEGIN SELECT RAISE(ABORT,'injected disk failure'); END;");
  assert.throws(()=>write(g,{identity:'operator',id:'reset',digest:'x',result:'{"ok":true}'}));assert.equal(db.prepare('SELECT count(*) AS n FROM history_games').get()!.n,1);assert.equal(db.prepare('SELECT status FROM history_games').get()!.status,'LOBBY');assert.equal(db.prepare('SELECT count(*) AS n FROM commands').get()!.n,0);assert(buffer(g).closed[0]);assert(buffer(before).events.some(e=>e.kind==='not-yet-written'));assert.equal(before.tick,2);
- db.exec('DROP TRIGGER fail_reset');write(g);assert.equal(historyAccess(db,0,op).status,'ABORTED');assert(db.prepare("SELECT 1 FROM history_events WHERE kind='not-yet-written'").get());db.close();
+ db.exec('DROP TRIGGER fail_reset');write(g);assert.equal(historyAccess(db,0,op).status,'ABORTED');assert(db.prepare("SELECT 1 FROM history_events WHERE kind='not-yet-written'").get());assert(decodeReceipt(db,db.prepare('SELECT * FROM request_receipts LIMIT 1').get() as any).path.length>0);db.close();
 });
 test('H1 student reset is denied and cannot close or replace a generation',()=>{const g=createGame();const r=command(g,'backend','room.reset');assert.equal(r.ok,false);assert.equal(g.generation,0);assert.equal(buffer(g).closed.length,0);});
 test('H1 legacy unclosed generation is sealed only through its durable tick',()=>{const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE commands(identity TEXT,id TEXT,digest TEXT,result TEXT)');const write=createGameWriter(db),g=createGame();write(g);command(g,'operator','room.start');advanceGame(g,2);write(g);const next=createGame(1200,7357,1);write(next);sealLegacyGenerations(db,1);const old=reconstruct(db,0,2);assert.equal(old.status,'ABORTED');assert.equal(old.closure?.reason,'LEGACY_UNCLOSED');assert.equal(old.closure?.actor,null);assert.throws(()=>reconstruct(db,0,2.1));db.close();});

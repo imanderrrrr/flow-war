@@ -1,3 +1,5 @@
+import {prepareReceipt} from './receipt-storage.js';
+import {isLiveEvidence} from './observability.js';
 import { visibleRequest } from './projections.js';
 import { admissionReason } from './maintenance.js';
 import { observeCompany } from './observability.js';
@@ -147,7 +149,7 @@ export function trafficReceipt(request: TrafficRequest): ReturnType<typeof visib
 export function trafficReceipt(request: TrafficRequest, internal = false) {
   if (!internal) return visibleRequest(request);
   // Releases remain durable in checkpoints; preserve diagnostic evidence in the private ledger.
-  const { execution, ...original } = request;
+  const { execution, path, ...original } = request;
   return { ...structuredClone(original), path: request.path.map(node => ({ id: node.id, type: node.type, ...(node.data.value !== undefined ? { value: node.data.value } : {}) })) };
 }
 
@@ -173,7 +175,9 @@ export function settleTraffic(company: Company, now: number) {
     observeCompany(company, 'request.settled', { requestId: request.id, customerId: request.customerId, trafficClass: request.trafficClass, type: request.type, version: request.executionVersion, result: request.result, transaction: request.transaction, duplicates: request.duplicates ?? 0, oversold: request.oversold, defects: request.effectCodes ?? [], modules: request.execution?.modules.map(m => ({ id: m.id, version: m.version, defects: m.defects.filter(d => request.effectCodes?.includes(d.code)).map(d => d.code) })) ?? [], latencyMs: request.latencyMs }, [request.id]);
     if (request.transaction === 'PENDING_RESOLUTION') state.unresolvedCount++;
     state.observations.push({ at: now, legitimate: request.trafficClass === 'legitimate', status: result.status, latency: request.latencyMs!, breach: request.breach, oversold: request.oversold });
-    state.outbox.push(trafficReceipt(request, true));
+    const receipt=trafficReceipt(request, true);
+    state.outbox.push(receipt);
+    if(isLiveEvidence(company))prepareReceipt(receipt);
   }
 }
 
