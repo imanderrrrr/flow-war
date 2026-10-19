@@ -318,6 +318,7 @@ export function project(g: GameState, identity: Identity | null): Snapshot {
   }
   return {
     operations: identity ? { modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
+    generation: g.generation,
     slack: ownCompany ? structuredClone(g.slack.messages.filter(m=>m.companyId===ownCompany.id)) : undefined,
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
     companies: g.companies.map(c => {

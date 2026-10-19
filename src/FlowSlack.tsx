@@ -6,7 +6,7 @@ export default function FlowSlack(){const {snapshot:s,connected}=useGame();const
  const companyId=s?.identity?.companyId;
  useEffect(()=>{let live=true;if(companyId==null)return;void fetch(`/api/flowslack?channel=${channel}`).then(r=>r.ok?r.json():{messages:[]}).then(d=>{if(live)setHistory(d.messages);});setUnread(u=>({...u,[channel]:0}));return()=>{live=false;};},[channel,companyId,connected]);
  useEffect(()=>{const newer=(s?.slack??[]).filter(m=>m.sequence>last.current);if(last.current)setUnread(u=>{const next={...u};for(const m of newer)if(m.channel!==channel)next[m.channel]=(next[m.channel]??0)+1;return next;});last.current=Math.max(last.current,...(s?.slack??[]).map(m=>m.sequence));},[s?.slack,channel]);
- useEffect(()=>{bottom.current?.scrollIntoView({block:'nearest'});},[s?.slack?.at(-1)?.id,channel]);
+ useEffect(()=>{const list=bottom.current?.parentElement;if(list)list.scrollTo({top:list.scrollHeight});},[s?.slack?.at(-1)?.id,channel]);
  if(!s||companyId==null)return null;
  const messages=[...new Map([...history,...(s.slack??[])].filter(m=>m.channel===channel&&m.companyId===companyId).map(m=>[m.id,m])).values()].sort((a,b)=>a.sequence-b.sequence);
  const canWrite=['general','equipo-interno'].includes(channel)&&s.status!=='FINISHED'&&connected&&s.operations?.employees.some(e=>e.role===s.identity?.role&&e.status==='ACTIVE');

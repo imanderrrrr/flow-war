@@ -1,6 +1,6 @@
 import { installDvr } from './dvr.js';
 import { CHANNELS } from '../shared/observability.js';
-import { checkpoint, observe } from './observability.js';
+import { checkpoint, observe, copyHistoryBuffer } from './observability.js';
 import { serializeGame } from './persistence.js';
 import { createGameWriter } from './storage.js';
 import express from 'express';
@@ -124,7 +124,7 @@ io.on('connection', socket => {
     const prior = db.prepare('SELECT digest,result FROM commands WHERE identity=? AND id=?').get(identity.id, command.id) as { digest: string; result: string } | undefined;
     if (prior) return ack(prior.digest === digest ? JSON.parse(prior.result) : { ok: false, error: 'ID de comando ya utilizado.' });
     if (command.type === 'room.reset') persist();
-    const before = structuredClone(game);
+    const before = structuredClone(game); copyHistoryBuffer(game,before);
     const result = applyCommand(game, identity, command);
     try {
       persist({ identity: identity.id, id: command.id, digest, result: JSON.stringify(result) });

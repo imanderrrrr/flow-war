@@ -18,3 +18,6 @@ export function projectHistoryPoint(g: GameState): HistoricalPoint { return { at
 export function sampleHistory(g: GameState) { if (g.tick - g.observability.sampleAt >= 5 || g.status === 'FINISHED') { g.observability.sampleAt = g.tick; if (!silent.has(g)) buffer(g).points.push(projectHistoryPoint(g)); } }
 export function checkpoint(g: GameState, serialize: (g: GameState) => string, force = false) { if (silent.has(g)) return; if (force || g.tick - g.observability.checkpointAt >= 60) { g.observability.checkpointAt = g.tick; buffer(g).checkpoints.push({ at: g.tick, sequence: g.observability.sequence, state: serialize(g) }); } }
 export function clearBuffer(g: GameState) { pending.delete(g); }
+
+/** Preserve uncommitted facts when the authoritative command state rolls back. */
+export function copyHistoryBuffer(from:GameState,to:GameState){const p=buffer(from);pending.set(to,{events:[...p.events],commands:[...p.commands],points:[...p.points],checkpoints:[...p.checkpoints]});}
