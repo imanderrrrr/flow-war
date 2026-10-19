@@ -1,4 +1,4 @@
-import type { CompanyRuntime, ExecutionRelease, ModuleRef, OperationsView, TestJob } from './simulation.js';
+import type { DefectCode, OperationRuntime, CompanyRuntime, ExecutionRelease, ModuleRef, OperationsView, TestJob } from './simulation.js';
 export const ROLES = ['backend', 'security', 'qa', 'cto', 'devops', 'product'] as const;
 export type Role = typeof ROLES[number];
 export type Identity = { id: string; role: Role | 'operator'; companyId: number | null };
@@ -15,6 +15,7 @@ export const TERMINAL_LABELS: Record<TerminalReason, string> = { OK: 'OK', OUT_O
 export type RequestResult = { status: 'COMPLETED' | 'REJECTED' | 'ABANDONED' | 'FAILED'; reason: TerminalReason; at: number; revenue: number; lostRevenue: number; capitalDelta: number; service?: ServiceId; operation?: string };
 export type RequestJourney = { from: RequestStage; to: RequestStage; at: number; duration: number };
 export type PurchaseRequest = {
+  effectCodes?: DefectCode[]; loadDepth?: number; delayedNodes?: string[]; deferUntil?: number; discountApplied?: boolean; releaseOnInterrupt?: boolean; reservationSettled?: boolean;
   execution?: ExecutionRelease; newCustomer?: boolean; couponCount?: number; invalidInput?: boolean; price?: number; duplicates?: number; retryCount?: number; waitOperation?: boolean;
   id: string; intentId?: string; customerId?: string; customerSource?: 'market' | 'qa' | 'legacy'; customerColor?: string; executionVersion: number; path: GraphNode[]; securityAllowed: boolean; commercial?: boolean;
   arrivalAt: number; nextAt: number; deadline: number; cursor: number; status: RequestStatus;
@@ -23,7 +24,7 @@ export type PurchaseRequest = {
   journey: RequestJourney;
 };
 export type ScenarioContext = { backend: Graph; security: Graph; executionVersion: number; execution?: ExecutionRelease };
-export type ConcurrencyRun = {
+export type ConcurrencyRun = { operationsState?: OperationRuntime;
   id: string; engineVersion: 'requests-1'; fixture: 'last-unit-1'; startedAt: number;
   backendHash: string; securityHash: string;
   inventory: { sku: 'LAST-UNIT'; initialStock: number; stock: number; version: number; committed: number; oversold: number };
@@ -49,7 +50,7 @@ export type TrafficScenario = {
 };
 export type TrafficReceipt = Omit<TrafficRequest, 'path'> & { path: { id: string; type: string; value?: number }[] };
 export type TrafficMetrics = { legitimateTerminated: number; errors: number; rejected: number; abandoned: number; failed: number; latencyMs: number | null; errorRate: number; utilization: number; unavailable: number; fraudRate: number };
-export type TrafficState = {
+export type TrafficState = { operations?: OperationRuntime;
   scope?: 'qa'; namespace: string; seed: number; config: TrafficScenario; sequence: number; initialIssued: boolean; initialDebt: number;
   arrivalRemainder: number; attackRemainder: number; attackSequence: number; lastTick: number;
   inventory: InventoryState; paths: Record<number, GraphNode[]>; services: Record<ServiceId, ServiceQueue>; requests: Record<string, TrafficRequest>;

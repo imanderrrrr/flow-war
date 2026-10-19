@@ -14,7 +14,7 @@ export function route(graph: Graph): Graph['nodes'] {
   return path;
 }
 
-export function evaluateSecurity(graph: Graph, kind: 'valid' | 'forged' | 'injection' | 'bot', ordinal = 0) {
+export function evaluateSecurity(graph: Graph, kind: 'valid' | 'forged' | 'injection' | 'bot', ordinal = 0, context?: { now: number; origin: string; customerId?: string; type: string; buckets: Record<string, { start: number; count: number }>; release: number }) {
   let authenticated = false;
   for (const n of route(graph)) {
     if (n.type === 'auth') { if (kind === 'forged') return false; authenticated = true; }
@@ -22,7 +22,15 @@ export function evaluateSecurity(graph: Graph, kind: 'valid' | 'forged' | 'injec
     if (n.type === 'waf' && kind === 'injection') return false;
     if (n.type === 'ip' && kind === 'bot' && ordinal % 2 === 0) return false;
     if (n.type === 'bot' && kind === 'bot' && ordinal % 100 < Number(n.data.value ?? 65)) return false;
-    if (n.type === 'rate' && ordinal % 25 >= Number(n.data.value ?? 12)) return false;
+    if (n.type === 'rate') {
+      if (!context) { if (ordinal % 25 >= Number(n.data.value ?? 12)) return false; }
+      else {
+        const key = `${context.release}:${n.id}:${context.origin}`, start = Math.floor(context.now);
+        let bucket = context.buckets[key];
+        if (!bucket || bucket.start !== start) bucket = context.buckets[key] = { start, count: 0 };
+        if (++bucket.count > Number(n.data.value ?? 12)) return false;
+      }
+    }
   }
   return true;
 }

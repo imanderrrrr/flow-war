@@ -268,7 +268,7 @@ export function project(g: GameState, identity: Identity | null): Snapshot {
   const { runtime: _runtime, ...ownVisible } = ownCompany ?? {} as Company;
   const privateC = ownCompany ? structuredClone({ ...ownVisible, particles: trafficParticles(ownCompany, g.tick), traffic: trafficView(ownCompany.traffic) }) : undefined;
   if (privateC) {
-    for (const request of privateC.concurrency.run?.requests ?? []) delete request.execution;
+    for (const request of privateC.concurrency.run?.requests ?? []) { delete request.execution; delete request.effectCodes; }
     const ownDraft = identity?.role === 'backend' || identity?.role === 'security' ? identity.role : null;
     privateC.drafts = ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {};
   }

@@ -1,3 +1,6 @@
+import { executeModule, settleReservation } from './module-execution.js';
+import { initialOperations } from './artifacts.js';
+import type { OperationRuntime } from '../shared/simulation.js';
 import { customerColor } from './market.js';
 import { createHash } from 'node:crypto';
 import type { Company, ConcurrencyRun, FlowParticle, PurchaseRequest, Report, RequestResult, RequestStage, ScenarioContext, InventoryState } from '../shared/types.js';
@@ -40,12 +43,12 @@ export function moveRequest(request: PurchaseRequest, stage: RequestStage, at: n
 export function finishRequest(request: PurchaseRequest, status: RequestResult['status'], reason: RequestResult['reason'], at: number) {
   if (request.result) return;
   const commercial = request.commercial !== false;
-  const legitimateUnits = commercial && request.paid ? request.committed - request.oversold : 0;
+  const legitimateUnits = commercial && request.paid && !request.duplicates ? request.committed - request.oversold : 0;
   request.status = status;
   request.result = {
     status, reason, at,
     revenue: legitimateUnits * (request.price ?? 45),
-    capitalDelta: legitimateUnits * ((request.price ?? 45) - 42) - request.oversold * 8,
+    capitalDelta: legitimateUnits * ((request.price ?? 45) - 42) - request.oversold * 8 - (request.duplicates ?? 0) * 8,
     lostRevenue: !commercial || request.paid ? 0 : request.quantity * 45,
   };
 }
@@ -63,15 +66,16 @@ export function advanceConcurrency(run: ConcurrencyRun, now: number, available =
     const node = request.path[request.cursor];
     if (!node) { finishRequest(request, 'FAILED', 'INVALID_FLOW', now); continue; }
     const inventory = run.inventory;
-    executePurchaseOperation(request, run.inventory, now);
+    executePurchaseOperation(request, run.inventory, now, run.operationsState ??= initialOperations());
     run.operations.push({ requestId: request.id, nodeId: node.id, type: node.type, at: now, stock: inventory.stock, version: inventory.version });
-    request.cursor++;
+    if (!request.waitOperation) request.cursor++;
     request.nextAt = roundTime(now + OPERATION_SECONDS);
   }
+  for (const request of run.requests) settleReservation(request, run.inventory);
 }
 
 export function cancelConcurrency(run: ConcurrencyRun, at: number, reason: 'ROOM_FINISHED' | 'COMPANY_ELIMINATED') {
-  for (const request of run.requests) finishRequest(request, 'ABANDONED', reason, at);
+  for (const request of run.requests) { finishRequest(request, 'ABANDONED', reason, at); settleReservation(request, run.inventory); }
 }
 
 export function concurrencyReport(run: ConcurrencyRun, tick: number): Report {
@@ -108,7 +112,8 @@ export function concurrencyParticles(run: ConcurrencyRun | undefined, color: str
 }
 
 /** Shared inventory/payment interpreter used by both individual traffic cohorts. */
-export function executePurchaseOperation(request: PurchaseRequest, inventory: InventoryState, now: number) {
+export function executePurchaseOperation(request: PurchaseRequest, inventory: InventoryState, now: number, ops: OperationRuntime = initialOperations()) {
+  request.waitOperation = false;
   const node = request.path[request.cursor];
   if (!node) { finishRequest(request, 'FAILED', 'INVALID_FLOW', now); return; }
   switch (node.type) {
@@ -148,16 +153,20 @@ export function executePurchaseOperation(request: PurchaseRequest, inventory: In
       case 'module': {
         const module = request.execution?.modules.find(m => m.id === node.data.module?.id && m.version === node.data.module?.version);
         if (!module) { finishRequest(request, 'FAILED', 'INVALID_FLOW', now); break; }
-        const config = module.configuration;
-        if ((config.kind === 'discount' || config.kind === 'coupon') && (config.audience === 'all' || request.newCustomer) && (config.kind !== 'coupon' || (request.couponCount ?? 1) > 0)) request.price = Math.round((request.price ?? 45) * (1 - config.percent / 100) * 100) / 100;
-        if (config.kind === 'inventory' && (request.read?.stock ?? inventory.stock) < config.minimum) finishRequest(request, 'REJECTED', 'OUT_OF_STOCK', now);
-        if (config.kind === 'concurrency' && config.strategy === 'atomic' && !request.committed) request.atomic = true;
+        const result = executeModule(request, module, inventory, now, ops);
+        if (result === 'INVALID') finishRequest(request, 'REJECTED', 'INVALID_FLOW', now);
+        if (result === 'STOCK') finishRequest(request, 'REJECTED', 'OUT_OF_STOCK', now);
+        if (result === 'DUPLICATE') finishRequest(request, 'COMPLETED', 'OK', now);
         break;
       }
       case 'payment':
         moveRequest(request, 'payment', now);
         if (!request.committed || request.paid) finishRequest(request, 'FAILED', 'INVALID_FLOW', now);
-        else request.paid = true;
+        else {
+          const key = `payment:${request.intentId ?? request.id}`, seen = ops.payments[key];
+          if (seen && seen.until > now && seen.owner !== request.id) { request.duplicates = (request.duplicates ?? 0) + 1; ops.counters.duplicates++; }
+          ops.payments[key] = { until: now + 300, owner: request.id }; request.paid = true;
+        }
         break;
       case 'exit':
         moveRequest(request, 'exit', now);

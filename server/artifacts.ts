@@ -1,9 +1,10 @@
+import { generateDefects } from './defects.js';
 import type { Company, GameState, Graph, Identity, Change } from '../shared/types.js';
 import type { CompanyRuntime, ExecutionRelease, ModuleVersion } from '../shared/simulation.js';
 import { moduleConfiguration, securityConfiguration, validateParameters } from './action-validation.js';
 import { route } from './graphs.js';
 
-export function initialOperations(): CompanyRuntime['operations'] { return { locks: {}, queues: {}, intents: {}, cache: {}, counters: { lockWaits: 0, cacheHits: 0, cacheMisses: 0, retries: 0, duplicates: 0, activations: {} } }; }
+export function initialOperations(): CompanyRuntime['operations'] { return { payments: {}, locks: {}, queues: {}, intents: {}, cache: {}, counters: { lockWaits: 0, cacheHits: 0, cacheMisses: 0, retries: 0, duplicates: 0, activations: {} } }; }
 export function initialRuntime(): CompanyRuntime { return { modules: {}, releases: {}, campaigns: [], proposals: [], priority: 'concurrency', rateBuckets: {}, operations: initialOperations() }; }
 export const refKey = (ref: { id: string; version: number }) => `${ref.id}@${ref.version}`;
 export function releaseFor(c: Company, backend = c.backend, security = c.runtime.releases[c.version]?.security): ExecutionRelease {
@@ -46,6 +47,7 @@ export function prepareArtifact(g: GameState, c: Company, actor: Identity, type:
   if (versions && versions.at(-1)!.configuration.kind !== configuration.kind) throw new Error('La revisión debe conservar el tipo.');
   const dependencies = (p.dependencies as string[]).map(dep => { const v = c.runtime.modules[dep]?.at(-1); if (!v || dep === id) throw new Error('Dependencia inválida.'); return { id: v.id, version: v.version }; });
   const module: ModuleVersion = { id, version: (versions?.length ?? 0) + 1, companyId: c.id, name: String(p.name), configuration, dependencies, defects: [], profile: 'defects-1', createdBy: actor.id, createdAt: g.tick, changeId, graph: { nodes: [], edges: [] } };
+  module.defects = generateDefects(g.seed, module);
   const graph = appendModule(c.backend, module);
   if (graph.nodes.length > 25 || graph.edges.length > 30) throw new Error('Límite de piezas alcanzado.');
   // Resolve the entire candidate before committing the artifact or change.

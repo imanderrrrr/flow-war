@@ -1,3 +1,6 @@
+import { admitSecurity } from './security.js';
+import { settleReservation } from './module-execution.js';
+import { initialOperations } from './artifacts.js';
 import { executionFor } from './artifacts.js';
 import { effectiveServers } from './infrastructure.js';
 import { attachCustomer, customerColor, recordCustomerExperience, selectCustomer } from './market.js';
@@ -63,7 +66,7 @@ export function admitTraffic(company: Company, now: number, type: TrafficRequest
     id, ...(type === 'purchase' ? { intentId: `${id}-intent` } : {}), companyId: company.id,
     ...(trafficClass === 'legitimate' && state.scope === 'qa' ? { customerId: `qa-${company.id}-${ordinal}`, customerSource: 'qa' as const } : {}),
     type, trafficClass, ...(attackKind ? { attackKind } : {}), attempt: 0, commercial: type === 'purchase' && trafficClass === 'legitimate',
-    execution: executionFor(company), newCustomer: customer ? customer.successfulVisits === 0 : true, couponCount: 1, executionVersion: company.version, path, securityAllowed: evaluateSecurity(company.security, trafficClass === 'legitimate' ? 'valid' : attackKind ?? 'bot', ordinal - 1),
+    loadDepth: state.services.web.waiting.length + state.services.checkout.waiting.length, execution: executionFor(company), newCustomer: customer ? customer.successfulVisits === 0 : true, couponCount: 1, executionVersion: company.version, path, securityAllowed: admitSecurity(company, executionFor(company), trafficClass === 'legitimate' ? 'valid' : attackKind ?? 'bot', ordinal - 1, now, `sim-${trafficClass === 'malicious' ? 64 + ordinal % 16 : customer ? customer.cohort % 64 : ordinal % 64}`, customer?.id, type),
     arrivalAt: now, nextAt: now, deadline: round(now + state.config.patience[type]), cursor: 1,
     status: 'PENDING', atomic: false, quantity: 1, committed: 0, oversold: 0, paid: false, accounted: false,
     service: 'security', stage: 'entry', phase: 'security', transaction: 'NONE', breach: false, waits: [], trace: [],
@@ -118,7 +121,7 @@ function completeOperation(company: Company, request: TrafficRequest, now: numbe
       return;
     }
     const type = request.path[request.cursor]?.type;
-    executePurchaseOperation(request, state.inventory, now);
+    executePurchaseOperation(request, state.inventory, now, state.operations ??= initialOperations());
     const trace = request.trace.at(-1)!; trace.stock = state.inventory.stock; trace.version = state.inventory.version;
     if (type === 'write' && request.committed && request.trafficClass === 'malicious' && request.attackKind !== 'bot') request.breach = true;
     request.transaction = request.oversold ? 'PENDING_RESOLUTION' : request.paid ? 'CONFIRMED' : request.committed ? 'RESERVED' : 'NONE';
@@ -126,12 +129,12 @@ function completeOperation(company: Company, request: TrafficRequest, now: numbe
       // The shared interpreter finalizes the result; add queue/transport metadata.
       const result = request.result;
       terminate(request, result.status, result.reason, now);
-    } else { request.cursor++; enqueue(company, request, backendService(request), now); }
+    } else { if (!request.waitOperation) request.cursor++; enqueue(company, request, backendService(request), now); }
   }
 }
 
 export function trafficReceipt(request: TrafficRequest): TrafficReceipt {
-  const { execution, ...visible } = request;
+  const { execution, effectCodes, ...visible } = request;
   return { ...structuredClone(visible), path: request.path.map(node => ({ id: node.id, type: node.type, ...(node.data.value !== undefined ? { value: node.data.value } : {}) })) };
 }
 
@@ -139,7 +142,10 @@ export function settleTraffic(company: Company, now: number) {
   const state = company.traffic;
   for (const request of Object.values(state.requests)) {
     if (!request.result || request.accounted) continue;
+    settleReservation(request, state.inventory);
     const result = request.result;
+    company.duplicates += request.duplicates ?? 0;
+    for (const code of request.effectCodes ?? []) { const counters = (state.operations ??= initialOperations()).counters; counters.activations[code] = (counters.activations[code] ?? 0) + 1; }
     const key = { COMPLETED: 'completed', REJECTED: 'rejected', ABANDONED: 'abandoned', FAILED: 'failed' } as const;
     for (const totals of [state.totals, state[request.trafficClass]]) {
       totals[key[result.status]]++; totals.committed += request.committed; totals.oversold += request.oversold;

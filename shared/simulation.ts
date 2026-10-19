@@ -9,6 +9,7 @@ export type ModuleVersion = ModuleRef & { companyId: number; name: string; confi
 export type ExecutionRelease = { modules: ModuleVersion[]; security?: SecurityConfiguration };
 export type Campaign = { id: string; configuration: CampaignConfiguration; status: 'PROPOSED' | 'AUTHORIZED' | 'ACTIVE' | 'COMPLETED' | 'REJECTED' | 'EXPIRED'; createdBy: string; createdAt: number; reserved: number; expires?: number; activatedAt?: number; endsAt?: number; authorizedBy?: string };
 export type OperationRuntime = {
+  payments: Record<string, { until: number; owner: string }>;
   locks: Record<string, { owner: string; until: number }>;
   queues: Record<string, string[]>;
   intents: Record<string, { until: number; owner: string }>;
