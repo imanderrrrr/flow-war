@@ -1,3 +1,4 @@
+import { postmortem } from './postmortem.js';
 import type {Express,Request} from 'express';
 import type {DatabaseSync} from 'node:sqlite';
 import type {Identity,GameState} from '../shared/types.js';
@@ -26,6 +27,7 @@ export function installDvr(app:Express,db:DatabaseSync,identityFor:(req:Request)
  res.json({meta,at:g.tick,points,markers,historical,unserved:g.unserved,population:g.companies.reduce((s,c)=>s+c.customers,0)+g.unserved});
  }catch(e){res.status(403).json({error:(e as Error).message});}
  });
+ app.get('/api/dvr/:generation/metrics',(req,res)=>{res.setHeader('Cache-Control','no-store');const identity=identityFor(req);try{const generation=Number(req.params.generation),meta=historyAccess(db,generation,identity),companyId=Number(req.query.companyId??identity!.companyId??0);if(!Number.isInteger(companyId)||companyId<0||companyId>4)return res.sendStatus(400);if(identity!.role!=='operator'&&companyId!==identity!.companyId)return res.sendStatus(403);res.json(postmortem(db,generation,companyId,reconstruct(db,generation,meta.tick)));}catch(e){res.status(403).json({error:(e as Error).message});}});
  app.get('/api/dvr/:generation/requests/:id',(req,res)=>{
  res.setHeader('Cache-Control','no-store');const identity=identityFor(req);try{const generation=Number(req.params.generation);historyAccess(db,generation,identity);
  const row=db.prepare("SELECT body FROM history_events WHERE generation=? AND kind='request.settled' AND json_extract(body,'$.data.requestId')=? AND (?=1 OR companyId=?) ORDER BY seq LIMIT 1").get(generation,req.params.id,identity!.role==='operator'?1:0,identity!.companyId) as {body:string}|undefined;
