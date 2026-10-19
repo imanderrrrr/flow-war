@@ -22,7 +22,7 @@ export function createTestJob(c: Company, ch: Change, scenario: TestScenario): T
     const r = structuredClone(template.requests[0]), at = Math.floor(index / scenario.concurrency) * spacing;
     r.id = `qa-${ch.id}-${ch.reports.length}-R${index + 1}`; r.intentId = scenario.duplicateIntent ? 'qa-shared-payment' : `${r.id}-intent`;
     r.arrivalAt = at; r.nextAt = at + .5; r.deadline = at + 16; r.journey.at = at;
-    r.newCustomer = scenario.newCustomer; r.couponCount = scenario.coupons; r.invalidInput = scenario.invalidInput;
+    r.transportFailures = scenario.retries; r.newCustomer = scenario.newCustomer; r.couponCount = scenario.coupons; r.invalidInput = scenario.invalidInput;
     r.securityAllowed = admitSecurity(staging, r.execution ?? { modules: [] }, scenario.attack === 'none' ? 'valid' : scenario.attack, index, at, 'sim-1', `qa-${index}`, 'purchase');
     return r;
   });
@@ -36,7 +36,7 @@ export function advanceTestJob(job: TestJob) {
       const target = Math.min(job.scenario.requests, Math.floor(job.elapsed * job.scenario.concurrency));
       while (job.next < target) {
         const r = admitTraffic(job.staging, job.elapsed, 'purchase', job.scenario.attack === 'none' ? 'legitimate' : 'malicious', job.scenario.attack === 'none' ? undefined : job.scenario.attack);
-        r.couponCount = job.scenario.coupons; r.newCustomer = job.scenario.newCustomer; r.invalidInput = job.scenario.invalidInput;
+        r.transportFailures = job.scenario.retries; r.couponCount = job.scenario.coupons; r.newCustomer = job.scenario.newCustomer; r.invalidInput = job.scenario.invalidInput;
         if (job.scenario.duplicateIntent) r.intentId = 'qa-shared-payment';
         job.next++;
       }
@@ -66,7 +66,7 @@ export function testReport(job: TestJob, at: number): Report {
   const requests = job.scenario.suite === 'load' ? job.finished! : job.requests;
   if (requests.length !== job.scenario.requests || requests.some(r => !r.result)) throw new Error('Cantidad QA incompleta.');
   const sum = (fn: (r: typeof requests[number]) => number) => requests.reduce((total,r) => total + fn(r), 0);
-  const paid = sum(r => Number(r.paid && !r.duplicates && r.committed > r.oversold));
+  const paid = sum(r => Number(r.paid && !r.duplicateBusiness && r.committed > r.oversold));
   const observed = { revenue: Math.round(sum(r => r.result!.revenue) * 100) / 100, committed: sum(r => r.committed), accepted: paid, duplicates: sum(r => r.duplicates ?? 0), pendingReservations: sum(r => Number(r.committed > 0 && !r.paid)) };
   const expected = { revenue: Math.round(paid * expectedPrice(job) * 100) / 100, maxCommitted: Math.min(job.scenario.requests, job.scenario.stock), accepted: job.scenario.attack !== 'none' || job.scenario.invalidInput || job.scenario.interrupt ? 0 : paid };
   if (job.scenario.duplicateIntent) expected.maxCommitted = Math.min(1, job.scenario.stock);

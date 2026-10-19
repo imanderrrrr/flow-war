@@ -1,3 +1,4 @@
+import { releaseResources, pruneOperations } from './blocks.js';
 import { admitSecurity } from './security.js';
 import { settleReservation } from './module-execution.js';
 import { initialOperations } from './artifacts.js';
@@ -100,7 +101,7 @@ function terminate(request: TrafficRequest, status: RequestResult['status'], rea
 
 function backendService(request: TrafficRequest): ServiceId {
   const type = request.path[request.cursor]?.type;
-  return type === 'payment' ? 'payment' : ['read', 'write', 'atomic', 'validation', 'lock'].includes(type) ? 'inventory' : 'checkout';
+  return type === 'read' && request.cachedRead ? 'checkout' : type === 'payment' ? 'payment' : ['read', 'write', 'atomic', 'validation', 'lock'].includes(type) ? 'inventory' : 'checkout';
 }
 
 function completeOperation(company: Company, request: TrafficRequest, now: number) {
@@ -143,6 +144,7 @@ export function settleTraffic(company: Company, now: number) {
   for (const request of Object.values(state.requests)) {
     if (!request.result || request.accounted) continue;
     settleReservation(request, state.inventory);
+    if (state.operations) releaseResources(request, state.operations);
     const result = request.result;
     company.duplicates += request.duplicates ?? 0;
     for (const code of request.effectCodes ?? []) { const counters = (state.operations ??= initialOperations()).counters; counters.activations[code] = (counters.activations[code] ?? 0) + 1; }
@@ -165,7 +167,8 @@ export function settleTraffic(company: Company, now: number) {
 export function advanceTraffic(company: Company, now: number, rates = serviceRates(company)) {
   const state = company.traffic;
   if (now <= state.lastTick) { settleTraffic(company, now); return; }
-  const dt = round(now - state.lastTick); state.lastTick = now;
+  const dt = round(now - state.lastTick); const prune = Math.floor(now) !== Math.floor(state.lastTick); state.lastTick = now;
+  if (prune && state.operations) pruneOperations(state.operations, now);
   for (const request of Object.values(state.requests)) if (!request.result && now >= request.deadline) terminate(request, 'ABANDONED', 'DEADLINE', now);
   // Complete the prior tick's operations first. New work never executes in this tick.
   const completed = SERVICE_IDS.flatMap(id => rates[id] > 0 ? state.services[id].processing.filter(key => state.requests[key].nextAt <= now) : []);

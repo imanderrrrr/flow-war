@@ -50,8 +50,8 @@ test('Atomic quantity is executed rather than treated as a protection flag', () 
   assert.throws(() => validateGraph(insertBlock('atomic', 'write', 1.5), 'backend'), /cantidad entera/);
 });
 
-test('an advanced reachable piece rejects explicitly; a disconnected one has no effect', () => {
-  const run = runConcurrencyFixture(context(insertBlock('lock', 'read', 1000)));
+test('an unknown reachable piece rejects explicitly; a disconnected one has no effect', () => {
+  const run = runConcurrencyFixture(context(insertBlock('unimplemented', 'read', 1000)));
   assert.ok(run.requests.every(request => request.result?.reason === 'UNSUPPORTED_BLOCK'));
   assert.equal(run.inventory.committed, 0);
 });

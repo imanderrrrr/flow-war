@@ -1,3 +1,4 @@
+import { blockConfiguration } from './blocks.js';
 import { createTestJob, advanceTestJob, testReport, scenarioForSuite } from './qa.js';
 import { testScenario } from './action-validation.js';
 import { initialRuntime, executionFor, releaseFor, prepareArtifact } from './artifacts.js';
@@ -47,8 +48,9 @@ export function validateGraph(input: unknown, domain: 'backend' | 'security' | '
     ids.add(n.id);
     const block = catalog.find(b => b.type === n.type);
     if (n.type === 'atomic' && (!Number.isInteger(Number(n.data?.value ?? block!.value)) || Number(n.data?.value ?? block!.value) < 1 || Number(n.data?.value ?? block!.value) > 120)) throw new Error('Atomic Update requiere una cantidad entera entre 1 y 120.');
+    const config = blockConfiguration(n);
     const moduleRef = n.data?.module;
-    n.data = { ...(n.type === 'module' ? { module: moduleRef } : {}), label: block?.label ?? ({ entry: 'Request IN', exit: 'Response OUT', read: 'Read Stock', write: 'Write Stock', payment: 'Payment' }[n.type] ?? n.type), ...(block ? { value: clamp(Number(n.data?.value ?? block.value) || block.value, 1, n.type === 'lock' ? 5000 : 120) } : {}) };
+    n.data = { ...(n.data?.config && config ? { config } : {}), ...(n.type === 'module' ? { module: moduleRef } : {}), label: block?.label ?? ({ entry: 'Request IN', exit: 'Response OUT', read: 'Read Stock', write: 'Write Stock', payment: 'Payment' }[n.type] ?? n.type), ...(block ? { value: clamp(Number(n.data?.value ?? block.value) || block.value, 1, n.type === 'lock' ? 5000 : 120) } : {}) };
   }
   for (const type of ['entry', 'exit', ...(domain === 'backend' ? ['read', 'write', 'payment'] : [])]) if (graph.nodes.filter(n => n.type === type).length !== 1) throw new Error(`El grafo requiere un módulo ${type}.`);
   const out = new Set<string>(), edgeIds = new Set<string>();

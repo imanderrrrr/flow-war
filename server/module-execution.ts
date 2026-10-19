@@ -1,5 +1,6 @@
 import type { InventoryState, PurchaseRequest } from '../shared/types.js';
 import type { ModuleVersion, OperationRuntime, DefectCode } from '../shared/simulation.js';
+import { executeBlock } from './blocks.js';
 import { hasDefect } from './defects.js';
 
 export function activation(r: PurchaseRequest, code: DefectCode) { if (!r.effectCodes?.includes(code)) (r.effectCodes ??= []).push(code); }
@@ -23,6 +24,10 @@ export function executeModule(r: PurchaseRequest, m: ModuleVersion, inventory: I
   if (c.kind === 'concurrency' && c.strategy === 'atomic' && !r.committed) {
     if (!hasDefect(m, 'D01')) r.atomic = true; else activation(r, 'D01');
   }
+  if (c.kind === 'concurrency' && c.strategy === 'lock' && !r.committed) {
+    if (hasDefect(m, 'D01')) activation(r, 'D01');
+    else executeBlock(r, { id: m.id, type: 'lock', position: { x: 0, y: 0 }, data: { label: 'Lock', value: 5000 } }, inventory, now, ops);
+  }
   if (c.kind === 'purchase') {
     r.releaseOnInterrupt = !hasDefect(m, 'D07');
     if (c.idempotent) {
@@ -30,7 +35,7 @@ export function executeModule(r: PurchaseRequest, m: ModuleVersion, inventory: I
       else {
         const key = `purchase:${r.intentId ?? r.id}`, seen = ops.intents[key];
         if (seen && seen.until > now && seen.owner !== r.id) return 'DUPLICATE';
-        ops.intents[key] = { until: now + 300, owner: r.id };
+        ops.intents[key] = { until: now + 300, owner: r.id }; r.idempotentUntil = now + 300;
       }
     }
   }

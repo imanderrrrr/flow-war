@@ -1,3 +1,4 @@
+import { executeBlock, releaseResources } from './blocks.js';
 import { executeModule, settleReservation } from './module-execution.js';
 import { initialOperations } from './artifacts.js';
 import type { OperationRuntime } from '../shared/simulation.js';
@@ -43,7 +44,7 @@ export function moveRequest(request: PurchaseRequest, stage: RequestStage, at: n
 export function finishRequest(request: PurchaseRequest, status: RequestResult['status'], reason: RequestResult['reason'], at: number) {
   if (request.result) return;
   const commercial = request.commercial !== false;
-  const legitimateUnits = commercial && request.paid && !request.duplicates ? request.committed - request.oversold : 0;
+  const legitimateUnits = commercial && request.paid && !request.duplicateBusiness ? request.committed - request.oversold : 0;
   request.status = status;
   request.result = {
     status, reason, at,
@@ -71,11 +72,11 @@ export function advanceConcurrency(run: ConcurrencyRun, now: number, available =
     if (!request.waitOperation) request.cursor++;
     request.nextAt = roundTime(now + OPERATION_SECONDS);
   }
-  for (const request of run.requests) settleReservation(request, run.inventory);
+  for (const request of run.requests) { settleReservation(request, run.inventory); if (request.result && run.operationsState) releaseResources(request, run.operationsState); }
 }
 
 export function cancelConcurrency(run: ConcurrencyRun, at: number, reason: 'ROOM_FINISHED' | 'COMPANY_ELIMINATED') {
-  for (const request of run.requests) { finishRequest(request, 'ABANDONED', reason, at); settleReservation(request, run.inventory); }
+  for (const request of run.requests) { finishRequest(request, 'ABANDONED', reason, at); settleReservation(request, run.inventory); if (run.operationsState) releaseResources(request, run.operationsState); }
 }
 
 export function concurrencyReport(run: ConcurrencyRun, tick: number): Report {
@@ -123,7 +124,7 @@ export function executePurchaseOperation(request: PurchaseRequest, inventory: In
         break;
       case 'read':
         moveRequest(request, 'inventory', now);
-        request.read = { stock: inventory.stock, version: inventory.version };
+        request.read = request.cachedRead ?? { stock: inventory.stock, version: inventory.version };
         break;
       case 'atomic':
         // A late Atomic node cannot undo an already committed write.
@@ -148,6 +149,8 @@ export function executePurchaseOperation(request: PurchaseRequest, inventory: In
         inventory.oversold += excess;
         request.committed = request.quantity;
         request.oversold = excess;
+        releaseResources(request, ops, 'stock');
+        if (request.invalidateCache) ops.cache = {};
         break;
       }
       case 'module': {
@@ -159,15 +162,34 @@ export function executePurchaseOperation(request: PurchaseRequest, inventory: In
         if (result === 'DUPLICATE') finishRequest(request, 'COMPLETED', 'OK', now);
         break;
       }
-      case 'payment':
-        moveRequest(request, 'payment', now);
-        if (!request.committed || request.paid) finishRequest(request, 'FAILED', 'INVALID_FLOW', now);
-        else {
-          const key = `payment:${request.intentId ?? request.id}`, seen = ops.payments[key];
-          if (seen && seen.until > now && seen.owner !== request.id) { request.duplicates = (request.duplicates ?? 0) + 1; ops.counters.duplicates++; }
-          ops.payments[key] = { until: now + 300, owner: request.id }; request.paid = true;
-        }
+      case 'lock': case 'queue': case 'retry': case 'idempotency': case 'cache': case 'validation': {
+        const result = executeBlock(request, node, inventory, now, ops);
+        if (result === 'INVALID') finishRequest(request, 'REJECTED', 'INVALID_FLOW', now);
+        if (result === 'STOCK') finishRequest(request, 'REJECTED', 'OUT_OF_STOCK', now);
+        if (result === 'FULL') finishRequest(request, 'REJECTED', 'QUEUE_FULL', now);
+        if (result === 'DUPLICATE') finishRequest(request, 'COMPLETED', 'OK', now);
         break;
+      }
+      case 'payment': {
+        moveRequest(request, 'payment', now);
+        if (request.deferUntil && now < request.deferUntil) { request.waitOperation = true; break; }
+        if (!request.committed || (request.paid && !request.retryingPayment)) { finishRequest(request, 'FAILED', 'INVALID_FLOW', now); break; }
+        const key = `payment:${request.intentId ?? request.id}`, seen = ops.payments[key];
+        if (!(seen && seen.until > now && (request.idempotentUntil ?? 0) > now)) {
+          if (seen && seen.until > now) { if (seen.owner !== request.id) request.duplicateBusiness = true; request.duplicates = (request.duplicates ?? 0) + 1; ops.counters.duplicates++; }
+          ops.payments[key] = { until: now + 300, owner: request.id };
+        }
+        request.paid = true;
+        if ((request.transportFailures ?? 0) > 0) {
+          request.transportFailures!--;
+          const policy = request.retryPolicy, count = request.retryCount ?? 0;
+          if (policy && count + 1 < policy.maxAttempts && now + policy.delayMs / 1000 < request.deadline) {
+            request.retryCount = count + 1; ops.counters.retries++; request.retryingPayment = true;
+            request.deferUntil = now + policy.delayMs / 1000; request.waitOperation = true;
+          } else finishRequest(request, 'FAILED', 'DEADLINE', now);
+        } else { request.retryingPayment = false; releaseResources(request, ops, 'payment'); }
+        break;
+      }
       case 'exit':
         moveRequest(request, 'exit', now);
         finishRequest(request, request.paid ? 'COMPLETED' : 'FAILED', request.paid ? 'OK' : 'INVALID_FLOW', now);

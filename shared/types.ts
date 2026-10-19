@@ -1,10 +1,11 @@
+import type { BlockConfiguration } from './blocks.js';
 import type { TestEvidence, DefectCode, OperationRuntime, CompanyRuntime, ExecutionRelease, ModuleRef, OperationsView, TestJob } from './simulation.js';
 export const ROLES = ['backend', 'security', 'qa', 'cto', 'devops', 'product'] as const;
 export type Role = typeof ROLES[number];
 export type Identity = { id: string; role: Role | 'operator'; companyId: number | null };
 export type Domain = 'backend' | 'security' | 'product';
 export type ChangeStatus = 'QA_PENDING' | 'QA_RUNNING' | 'QA_REJECTED' | 'CTO_PENDING' | 'CTO_REJECTED' | 'AUTHORIZED' | 'DEPLOYING' | 'DEPLOYED' | 'DEPLOY_FAILED' | 'EXPIRED' | 'STALE';
-export type GraphNode = { id: string; type: string; position: { x: number; y: number }; data: { label: string; value?: number; module?: ModuleRef } };
+export type GraphNode = { id: string; type: string; position: { x: number; y: number }; data: { label: string; value?: number; module?: ModuleRef; config?: BlockConfiguration } };
 export type GraphEdge = { id: string; source: string; target: string };
 export type Graph = { nodes: GraphNode[]; edges: GraphEdge[] };
 export type RequestStatus = 'PENDING' | 'RUNNING' | 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'REJECTED' | 'ABANDONED' | 'FAILED';
@@ -15,7 +16,7 @@ export const TERMINAL_LABELS: Record<TerminalReason, string> = { OK: 'OK', OUT_O
 export type RequestResult = { status: 'COMPLETED' | 'REJECTED' | 'ABANDONED' | 'FAILED'; reason: TerminalReason; at: number; revenue: number; lostRevenue: number; capitalDelta: number; service?: ServiceId; operation?: string };
 export type RequestJourney = { from: RequestStage; to: RequestStage; at: number; duration: number };
 export type PurchaseRequest = {
-  effectCodes?: DefectCode[]; loadDepth?: number; delayedNodes?: string[]; deferUntil?: number; discountApplied?: boolean; releaseOnInterrupt?: boolean; reservationSettled?: boolean;
+  duplicateBusiness?: boolean; lockKeys?: string[]; queueKeys?: string[]; acquireAt?: number; retryPolicy?: { maxAttempts: number; delayMs: number }; transportFailures?: number; retryingPayment?: boolean; idempotentUntil?: number; cachedRead?: { stock: number; version: number }; invalidateCache?: boolean; effectCodes?: DefectCode[]; loadDepth?: number; delayedNodes?: string[]; deferUntil?: number; discountApplied?: boolean; releaseOnInterrupt?: boolean; reservationSettled?: boolean;
   execution?: ExecutionRelease; newCustomer?: boolean; couponCount?: number; invalidInput?: boolean; price?: number; duplicates?: number; retryCount?: number; waitOperation?: boolean;
   id: string; intentId?: string; customerId?: string; customerSource?: 'market' | 'qa' | 'legacy'; customerColor?: string; executionVersion: number; path: GraphNode[]; securityAllowed: boolean; commercial?: boolean;
   arrivalAt: number; nextAt: number; deadline: number; cursor: number; status: RequestStatus;
