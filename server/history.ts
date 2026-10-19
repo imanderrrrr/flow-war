@@ -18,11 +18,12 @@ export function historySchema(db: DatabaseSync) {
  CREATE TABLE IF NOT EXISTS history_points (generation INTEGER, at REAL, body TEXT, PRIMARY KEY(generation,at));`);
  const columns = db.prepare('PRAGMA table_info(history_games)').all() as {name:string}[];
  if (!columns.some(c=>c.name==='closure')) db.exec('ALTER TABLE history_games ADD COLUMN closure TEXT');
+ if (!columns.some(c=>c.name==='closedAt')) db.exec('ALTER TABLE history_games ADD COLUMN closedAt INTEGER');
 }
 export function writeHistory(db: DatabaseSync, g: GameState) {
  const meta = db.prepare('SELECT generation FROM history_games WHERE generation=?').get(g.generation);
  if (!meta && !buffer(g).checkpoints.length) checkpoint(g,serializeGame,true);
- db.prepare('INSERT INTO history_games (generation,start,tick,duration,status,version,closure) VALUES (?,?,?,?,?,?,?) ON CONFLICT(generation) DO UPDATE SET tick=excluded.tick,status=excluded.status,closure=excluded.closure').run(g.generation,g.observability.startTick,g.tick,g.duration,g.status,g.observability.version,g.closure?JSON.stringify(g.closure):null);
+ db.prepare('INSERT INTO history_games (generation,start,tick,duration,status,version,closure,closedAt) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(generation) DO UPDATE SET tick=excluded.tick,status=excluded.status,closure=excluded.closure,closedAt=coalesce(history_games.closedAt,excluded.closedAt)').run(g.generation,g.observability.startTick,g.tick,g.duration,g.status,g.observability.version,g.closure?JSON.stringify(g.closure):null,['FINISHED','ABORTED'].includes(g.status)?Date.now():null);
  const p=buffer(g);
  const event=db.prepare('INSERT OR IGNORE INTO history_events VALUES (?,?,?,?,?,?)');
  for(const e of p.events) { event.run(g.generation,e.id,e.at,e.companyId,e.kind,JSON.stringify(e)); if(e.kind==='slack.message'){const m=e.data.message as import('../shared/observability.js').SlackMessage;db.prepare('INSERT OR IGNORE INTO slack_messages VALUES (?,?,?,?,?,?)').run(g.generation,m.id,m.sequence,m.companyId,m.channel,JSON.stringify(m));} }

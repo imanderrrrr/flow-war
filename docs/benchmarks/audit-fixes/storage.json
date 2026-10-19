@@ -1,0 +1,1782 @@
+{
+  "hardware": {
+    "node": "v25.9.0",
+    "cpu": "Apple M5"
+  },
+  "scenario": "Three complete 60-second educational fixtures; exact same evidence before/after format migration",
+  "growth": [
+    {
+      "generations": [
+        {
+          "generation": 0,
+          "tables": {
+            "history_games": {
+              "rows": 1
+            },
+            "history_events": {
+              "rows": 11570
+            },
+            "history_inputs": {
+              "rows": 1
+            },
+            "history_checkpoints": {
+              "rows": 2
+            },
+            "history_points": {
+              "rows": 13
+            },
+            "slack_messages": {
+              "rows": 55
+            },
+            "request_receipts": {
+              "rows": 11355
+            },
+            "receipt_paths": {
+              "rows": 1
+            },
+            "commands": {
+              "rows": 0
+            }
+          }
+        }
+      ],
+      "sqliteBytes": 27860992,
+      "walBytes": 0,
+      "shmBytes": 32768,
+      "pageSize": 4096,
+      "freePages": 903,
+      "freeBytes": 3698688,
+      "pages": [
+        {
+          "name": "request_receipts",
+          "type": "table",
+          "tableName": "request_receipts",
+          "physicalBytes": 13127680,
+          "payloadBytes": 11456758
+        },
+        {
+          "name": "history_events",
+          "type": "table",
+          "tableName": "history_events",
+          "physicalBytes": 5836800,
+          "payloadBytes": 5241425
+        },
+        {
+          "name": "game",
+          "type": "table",
+          "tableName": "game",
+          "physicalBytes": 4108288,
+          "payloadBytes": 4104133
+        },
+        {
+          "name": "sqlite_autoindex_request_receipts_1",
+          "type": "index",
+          "tableName": "request_receipts",
+          "physicalBytes": 241664,
+          "payloadBytes": 176017
+        },
+        {
+          "name": "history_checkpoints",
+          "type": "table",
+          "tableName": "history_checkpoints",
+          "physicalBytes": 241664,
+          "payloadBytes": 234291
+        },
+        {
+          "name": "history_events_time",
+          "type": "index",
+          "tableName": "history_events",
+          "physicalBytes": 237568,
+          "payloadBytes": 169418
+        },
+        {
+          "name": "sqlite_autoindex_history_events_1",
+          "type": "index",
+          "tableName": "history_events",
+          "physicalBytes": 147456,
+          "payloadBytes": 92305
+        },
+        {
+          "name": "receipts_generation",
+          "type": "index",
+          "tableName": "request_receipts",
+          "physicalBytes": 106496,
+          "payloadBytes": 56647
+        },
+        {
+          "name": "slack_messages",
+          "type": "table",
+          "tableName": "slack_messages",
+          "physicalBytes": 24576,
+          "payloadBytes": 18246
+        },
+        {
+          "name": "history_points",
+          "type": "table",
+          "tableName": "history_points",
+          "physicalBytes": 20480,
+          "payloadBytes": 11184
+        },
+        {
+          "name": "sqlite_autoindex_slack_messages_1",
+          "type": "index",
+          "tableName": "slack_messages",
+          "physicalBytes": 4096,
+          "payloadBytes": 595
+        },
+        {
+          "name": "sqlite_autoindex_receipt_paths_1",
+          "type": "index",
+          "tableName": "receipt_paths",
+          "physicalBytes": 4096,
+          "payloadBytes": 69
+        },
+        {
+          "name": "sqlite_autoindex_history_points_1",
+          "type": "index",
+          "tableName": "history_points",
+          "physicalBytes": 4096,
+          "payloadBytes": 76
+        },
+        {
+          "name": "sqlite_autoindex_history_inputs_1",
+          "type": "index",
+          "tableName": "history_inputs",
+          "physicalBytes": 4096,
+          "payloadBytes": 5
+        },
+        {
+          "name": "sqlite_autoindex_history_checkpoints_1",
+          "type": "index",
+          "tableName": "history_checkpoints",
+          "physicalBytes": 4096,
+          "payloadBytes": 11
+        },
+        {
+          "name": "sqlite_autoindex_commands_1",
+          "type": "index",
+          "tableName": "commands",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "slack_tenant",
+          "type": "index",
+          "tableName": "slack_messages",
+          "physicalBytes": 4096,
+          "payloadBytes": 1336
+        },
+        {
+          "name": "receipt_paths",
+          "type": "table",
+          "tableName": "receipt_paths",
+          "physicalBytes": 4096,
+          "payloadBytes": 261
+        },
+        {
+          "name": "history_protection",
+          "type": "table",
+          "tableName": "history_protection",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "history_policy",
+          "type": "table",
+          "tableName": "history_policy",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "history_inputs",
+          "type": "table",
+          "tableName": "history_inputs",
+          "physicalBytes": 4096,
+          "payloadBytes": 189
+        },
+        {
+          "name": "history_games",
+          "type": "table",
+          "tableName": "history_games",
+          "physicalBytes": 4096,
+          "payloadBytes": 47
+        },
+        {
+          "name": "history_checkpoint_time",
+          "type": "index",
+          "tableName": "history_checkpoints",
+          "physicalBytes": 4096,
+          "payloadBytes": 10
+        },
+        {
+          "name": "history_archives",
+          "type": "table",
+          "tableName": "history_archives",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "commands_generation",
+          "type": "index",
+          "tableName": "commands",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "commands",
+          "type": "table",
+          "tableName": "commands",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        }
+      ],
+      "unassignedLegacyReceipts": {
+        "rows": 0
+      },
+      "evidence": {
+        "logicalJsonBytes": 4863587
+      },
+      "checkpoints": {
+        "compressedBytes": 234142
+      },
+      "policy": {
+        "keepGenerations": null,
+        "olderThanDays": null,
+        "deleteEnabled": false
+      }
+    },
+    {
+      "generations": [
+        {
+          "generation": 0,
+          "tables": {
+            "history_games": {
+              "rows": 1
+            },
+            "history_events": {
+              "rows": 11570
+            },
+            "history_inputs": {
+              "rows": 1
+            },
+            "history_checkpoints": {
+              "rows": 2
+            },
+            "history_points": {
+              "rows": 13
+            },
+            "slack_messages": {
+              "rows": 55
+            },
+            "request_receipts": {
+              "rows": 11355
+            },
+            "receipt_paths": {
+              "rows": 1
+            },
+            "commands": {
+              "rows": 0
+            }
+          }
+        },
+        {
+          "generation": 1,
+          "tables": {
+            "history_games": {
+              "rows": 1
+            },
+            "history_events": {
+              "rows": 11526
+            },
+            "history_inputs": {
+              "rows": 2
+            },
+            "history_checkpoints": {
+              "rows": 3
+            },
+            "history_points": {
+              "rows": 13
+            },
+            "slack_messages": {
+              "rows": 55
+            },
+            "request_receipts": {
+              "rows": 11365
+            },
+            "receipt_paths": {
+              "rows": 1
+            },
+            "commands": {
+              "rows": 0
+            }
+          }
+        }
+      ],
+      "sqliteBytes": 47910912,
+      "walBytes": 0,
+      "shmBytes": 32768,
+      "pageSize": 4096,
+      "freePages": 897,
+      "freeBytes": 3674112,
+      "pages": [
+        {
+          "name": "request_receipts",
+          "type": "table",
+          "tableName": "request_receipts",
+          "physicalBytes": 26284032,
+          "payloadBytes": 22930739
+        },
+        {
+          "name": "history_events",
+          "type": "table",
+          "tableName": "history_events",
+          "physicalBytes": 11673600,
+          "payloadBytes": 10472179
+        },
+        {
+          "name": "game",
+          "type": "table",
+          "tableName": "game",
+          "physicalBytes": 4136960,
+          "payloadBytes": 4129771
+        },
+        {
+          "name": "history_checkpoints",
+          "type": "table",
+          "tableName": "history_checkpoints",
+          "physicalBytes": 540672,
+          "payloadBytes": 529899
+        },
+        {
+          "name": "sqlite_autoindex_request_receipts_1",
+          "type": "index",
+          "tableName": "request_receipts",
+          "physicalBytes": 479232,
+          "payloadBytes": 352322
+        },
+        {
+          "name": "history_events_time",
+          "type": "index",
+          "tableName": "history_events",
+          "physicalBytes": 466944,
+          "payloadBytes": 338549
+        },
+        {
+          "name": "sqlite_autoindex_history_events_1",
+          "type": "index",
+          "tableName": "history_events",
+          "physicalBytes": 294912,
+          "payloadBytes": 184387
+        },
+        {
+          "name": "receipts_generation",
+          "type": "index",
+          "tableName": "request_receipts",
+          "physicalBytes": 212992,
+          "payloadBytes": 113472
+        },
+        {
+          "name": "slack_messages",
+          "type": "table",
+          "tableName": "slack_messages",
+          "physicalBytes": 45056,
+          "payloadBytes": 36492
+        },
+        {
+          "name": "history_points",
+          "type": "table",
+          "tableName": "history_points",
+          "physicalBytes": 32768,
+          "payloadBytes": 22359
+        },
+        {
+          "name": "sqlite_autoindex_slack_messages_1",
+          "type": "index",
+          "tableName": "slack_messages",
+          "physicalBytes": 4096,
+          "payloadBytes": 1191
+        },
+        {
+          "name": "sqlite_autoindex_receipt_paths_1",
+          "type": "index",
+          "tableName": "receipt_paths",
+          "physicalBytes": 4096,
+          "payloadBytes": 139
+        },
+        {
+          "name": "sqlite_autoindex_history_points_1",
+          "type": "index",
+          "tableName": "history_points",
+          "physicalBytes": 4096,
+          "payloadBytes": 153
+        },
+        {
+          "name": "sqlite_autoindex_history_inputs_1",
+          "type": "index",
+          "tableName": "history_inputs",
+          "physicalBytes": 4096,
+          "payloadBytes": 17
+        },
+        {
+          "name": "sqlite_autoindex_history_checkpoints_1",
+          "type": "index",
+          "tableName": "history_checkpoints",
+          "physicalBytes": 4096,
+          "payloadBytes": 29
+        },
+        {
+          "name": "sqlite_autoindex_commands_1",
+          "type": "index",
+          "tableName": "commands",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "slack_tenant",
+          "type": "index",
+          "tableName": "slack_messages",
+          "physicalBytes": 4096,
+          "payloadBytes": 2673
+        },
+        {
+          "name": "receipt_paths",
+          "type": "table",
+          "tableName": "receipt_paths",
+          "physicalBytes": 4096,
+          "payloadBytes": 522
+        },
+        {
+          "name": "history_protection",
+          "type": "table",
+          "tableName": "history_protection",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "history_policy",
+          "type": "table",
+          "tableName": "history_policy",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "history_inputs",
+          "type": "table",
+          "tableName": "history_inputs",
+          "physicalBytes": 4096,
+          "payloadBytes": 567
+        },
+        {
+          "name": "history_games",
+          "type": "table",
+          "tableName": "history_games",
+          "physicalBytes": 4096,
+          "payloadBytes": 94
+        },
+        {
+          "name": "history_checkpoint_time",
+          "type": "index",
+          "tableName": "history_checkpoints",
+          "physicalBytes": 4096,
+          "payloadBytes": 26
+        },
+        {
+          "name": "history_archives",
+          "type": "table",
+          "tableName": "history_archives",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "commands_generation",
+          "type": "index",
+          "tableName": "commands",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "commands",
+          "type": "table",
+          "tableName": "commands",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        }
+      ],
+      "unassignedLegacyReceipts": {
+        "rows": 0
+      },
+      "evidence": {
+        "logicalJsonBytes": 9717718
+      },
+      "checkpoints": {
+        "compressedBytes": 529527
+      },
+      "policy": {
+        "keepGenerations": null,
+        "olderThanDays": null,
+        "deleteEnabled": false
+      }
+    },
+    {
+      "generations": [
+        {
+          "generation": 0,
+          "tables": {
+            "history_games": {
+              "rows": 1
+            },
+            "history_events": {
+              "rows": 11570
+            },
+            "history_inputs": {
+              "rows": 1
+            },
+            "history_checkpoints": {
+              "rows": 2
+            },
+            "history_points": {
+              "rows": 13
+            },
+            "slack_messages": {
+              "rows": 55
+            },
+            "request_receipts": {
+              "rows": 11355
+            },
+            "receipt_paths": {
+              "rows": 1
+            },
+            "commands": {
+              "rows": 0
+            }
+          }
+        },
+        {
+          "generation": 1,
+          "tables": {
+            "history_games": {
+              "rows": 1
+            },
+            "history_events": {
+              "rows": 11526
+            },
+            "history_inputs": {
+              "rows": 2
+            },
+            "history_checkpoints": {
+              "rows": 3
+            },
+            "history_points": {
+              "rows": 13
+            },
+            "slack_messages": {
+              "rows": 55
+            },
+            "request_receipts": {
+              "rows": 11365
+            },
+            "receipt_paths": {
+              "rows": 1
+            },
+            "commands": {
+              "rows": 0
+            }
+          }
+        },
+        {
+          "generation": 2,
+          "tables": {
+            "history_games": {
+              "rows": 1
+            },
+            "history_events": {
+              "rows": 11526
+            },
+            "history_inputs": {
+              "rows": 2
+            },
+            "history_checkpoints": {
+              "rows": 3
+            },
+            "history_points": {
+              "rows": 13
+            },
+            "slack_messages": {
+              "rows": 55
+            },
+            "request_receipts": {
+              "rows": 11365
+            },
+            "receipt_paths": {
+              "rows": 1
+            },
+            "commands": {
+              "rows": 0
+            }
+          }
+        }
+      ],
+      "sqliteBytes": 68046848,
+      "walBytes": 0,
+      "shmBytes": 32768,
+      "pageSize": 4096,
+      "freePages": 897,
+      "freeBytes": 3674112,
+      "pages": [
+        {
+          "name": "request_receipts",
+          "type": "table",
+          "tableName": "request_receipts",
+          "physicalBytes": 39473152,
+          "payloadBytes": 34416654
+        },
+        {
+          "name": "history_events",
+          "type": "table",
+          "tableName": "history_events",
+          "physicalBytes": 17518592,
+          "payloadBytes": 15714429
+        },
+        {
+          "name": "game",
+          "type": "table",
+          "tableName": "game",
+          "physicalBytes": 4136960,
+          "payloadBytes": 4129741
+        },
+        {
+          "name": "history_checkpoints",
+          "type": "table",
+          "tableName": "history_checkpoints",
+          "physicalBytes": 839680,
+          "payloadBytes": 825518
+        },
+        {
+          "name": "history_events_time",
+          "type": "index",
+          "tableName": "history_events",
+          "physicalBytes": 716800,
+          "payloadBytes": 521061
+        },
+        {
+          "name": "sqlite_autoindex_request_receipts_1",
+          "type": "index",
+          "tableName": "request_receipts",
+          "physicalBytes": 712704,
+          "payloadBytes": 529945
+        },
+        {
+          "name": "sqlite_autoindex_history_events_1",
+          "type": "index",
+          "tableName": "history_events",
+          "physicalBytes": 454656,
+          "payloadBytes": 289850
+        },
+        {
+          "name": "receipts_generation",
+          "type": "index",
+          "tableName": "request_receipts",
+          "physicalBytes": 331776,
+          "payloadBytes": 182980
+        },
+        {
+          "name": "slack_messages",
+          "type": "table",
+          "tableName": "slack_messages",
+          "physicalBytes": 65536,
+          "payloadBytes": 54763
+        },
+        {
+          "name": "history_points",
+          "type": "table",
+          "tableName": "history_points",
+          "physicalBytes": 45056,
+          "payloadBytes": 33547
+        },
+        {
+          "name": "slack_tenant",
+          "type": "index",
+          "tableName": "slack_messages",
+          "physicalBytes": 12288,
+          "payloadBytes": 4103
+        },
+        {
+          "name": "sqlite_autoindex_slack_messages_1",
+          "type": "index",
+          "tableName": "slack_messages",
+          "physicalBytes": 4096,
+          "payloadBytes": 1880
+        },
+        {
+          "name": "sqlite_autoindex_receipt_paths_1",
+          "type": "index",
+          "tableName": "receipt_paths",
+          "physicalBytes": 4096,
+          "payloadBytes": 210
+        },
+        {
+          "name": "sqlite_autoindex_history_points_1",
+          "type": "index",
+          "tableName": "history_points",
+          "physicalBytes": 4096,
+          "payloadBytes": 243
+        },
+        {
+          "name": "sqlite_autoindex_history_inputs_1",
+          "type": "index",
+          "tableName": "history_inputs",
+          "physicalBytes": 4096,
+          "payloadBytes": 31
+        },
+        {
+          "name": "sqlite_autoindex_history_checkpoints_1",
+          "type": "index",
+          "tableName": "history_checkpoints",
+          "physicalBytes": 4096,
+          "payloadBytes": 50
+        },
+        {
+          "name": "sqlite_autoindex_commands_1",
+          "type": "index",
+          "tableName": "commands",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "receipt_paths",
+          "type": "table",
+          "tableName": "receipt_paths",
+          "physicalBytes": 4096,
+          "payloadBytes": 784
+        },
+        {
+          "name": "history_protection",
+          "type": "table",
+          "tableName": "history_protection",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "history_policy",
+          "type": "table",
+          "tableName": "history_policy",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "history_inputs",
+          "type": "table",
+          "tableName": "history_inputs",
+          "physicalBytes": 4096,
+          "payloadBytes": 947
+        },
+        {
+          "name": "history_games",
+          "type": "table",
+          "tableName": "history_games",
+          "physicalBytes": 4096,
+          "payloadBytes": 141
+        },
+        {
+          "name": "history_checkpoint_time",
+          "type": "index",
+          "tableName": "history_checkpoints",
+          "physicalBytes": 4096,
+          "payloadBytes": 45
+        },
+        {
+          "name": "history_archives",
+          "type": "table",
+          "tableName": "history_archives",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "commands_generation",
+          "type": "index",
+          "tableName": "commands",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "commands",
+          "type": "table",
+          "tableName": "commands",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        }
+      ],
+      "unassignedLegacyReceipts": {
+        "rows": 0
+      },
+      "evidence": {
+        "logicalJsonBytes": 14571814
+      },
+      "checkpoints": {
+        "compressedBytes": 824920
+      },
+      "policy": {
+        "keepGenerations": null,
+        "olderThanDays": null,
+        "deleteEnabled": false
+      }
+    }
+  ],
+  "inline": {
+    "sqliteBytes": 77778944,
+    "walBytes": 0,
+    "shmBytes": 163840,
+    "pageSize": 4096,
+    "freePages": 0,
+    "freeBytes": 0,
+    "pages": [
+      {
+        "name": "request_receipts",
+        "type": "table",
+        "tableName": "request_receipts",
+        "physicalBytes": 53133312,
+        "payloadBytes": 45255281
+      },
+      {
+        "name": "history_events",
+        "type": "table",
+        "tableName": "history_events",
+        "physicalBytes": 17518592,
+        "payloadBytes": 15714429
+      },
+      {
+        "name": "game",
+        "type": "table",
+        "tableName": "game",
+        "physicalBytes": 4136960,
+        "payloadBytes": 4129741
+      },
+      {
+        "name": "history_checkpoints",
+        "type": "table",
+        "tableName": "history_checkpoints",
+        "physicalBytes": 839680,
+        "payloadBytes": 825518
+      },
+      {
+        "name": "sqlite_autoindex_request_receipts_1",
+        "type": "index",
+        "tableName": "request_receipts",
+        "physicalBytes": 638976,
+        "payloadBytes": 529945
+      },
+      {
+        "name": "history_events_time",
+        "type": "index",
+        "tableName": "history_events",
+        "physicalBytes": 630784,
+        "payloadBytes": 521061
+      },
+      {
+        "name": "sqlite_autoindex_history_events_1",
+        "type": "index",
+        "tableName": "history_events",
+        "physicalBytes": 401408,
+        "payloadBytes": 289850
+      },
+      {
+        "name": "receipts_generation",
+        "type": "index",
+        "tableName": "request_receipts",
+        "physicalBytes": 290816,
+        "payloadBytes": 182980
+      },
+      {
+        "name": "slack_messages",
+        "type": "table",
+        "tableName": "slack_messages",
+        "physicalBytes": 65536,
+        "payloadBytes": 54763
+      },
+      {
+        "name": "history_points",
+        "type": "table",
+        "tableName": "history_points",
+        "physicalBytes": 45056,
+        "payloadBytes": 33547
+      },
+      {
+        "name": "slack_tenant",
+        "type": "index",
+        "tableName": "slack_messages",
+        "physicalBytes": 12288,
+        "payloadBytes": 4103
+      },
+      {
+        "name": "sqlite_autoindex_slack_messages_1",
+        "type": "index",
+        "tableName": "slack_messages",
+        "physicalBytes": 4096,
+        "payloadBytes": 1880
+      },
+      {
+        "name": "sqlite_autoindex_receipt_paths_1",
+        "type": "index",
+        "tableName": "receipt_paths",
+        "physicalBytes": 4096,
+        "payloadBytes": 0
+      },
+      {
+        "name": "sqlite_autoindex_history_points_1",
+        "type": "index",
+        "tableName": "history_points",
+        "physicalBytes": 4096,
+        "payloadBytes": 243
+      },
+      {
+        "name": "sqlite_autoindex_history_inputs_1",
+        "type": "index",
+        "tableName": "history_inputs",
+        "physicalBytes": 4096,
+        "payloadBytes": 31
+      },
+      {
+        "name": "sqlite_autoindex_history_checkpoints_1",
+        "type": "index",
+        "tableName": "history_checkpoints",
+        "physicalBytes": 4096,
+        "payloadBytes": 50
+      },
+      {
+        "name": "sqlite_autoindex_commands_1",
+        "type": "index",
+        "tableName": "commands",
+        "physicalBytes": 4096,
+        "payloadBytes": 0
+      },
+      {
+        "name": "receipt_paths",
+        "type": "table",
+        "tableName": "receipt_paths",
+        "physicalBytes": 4096,
+        "payloadBytes": 0
+      },
+      {
+        "name": "history_protection",
+        "type": "table",
+        "tableName": "history_protection",
+        "physicalBytes": 4096,
+        "payloadBytes": 0
+      },
+      {
+        "name": "history_policy",
+        "type": "table",
+        "tableName": "history_policy",
+        "physicalBytes": 4096,
+        "payloadBytes": 0
+      },
+      {
+        "name": "history_inputs",
+        "type": "table",
+        "tableName": "history_inputs",
+        "physicalBytes": 4096,
+        "payloadBytes": 947
+      },
+      {
+        "name": "history_games",
+        "type": "table",
+        "tableName": "history_games",
+        "physicalBytes": 4096,
+        "payloadBytes": 141
+      },
+      {
+        "name": "history_checkpoint_time",
+        "type": "index",
+        "tableName": "history_checkpoints",
+        "physicalBytes": 4096,
+        "payloadBytes": 45
+      },
+      {
+        "name": "history_archives",
+        "type": "table",
+        "tableName": "history_archives",
+        "physicalBytes": 4096,
+        "payloadBytes": 0
+      },
+      {
+        "name": "commands_generation",
+        "type": "index",
+        "tableName": "commands",
+        "physicalBytes": 4096,
+        "payloadBytes": 0
+      },
+      {
+        "name": "commands",
+        "type": "table",
+        "tableName": "commands",
+        "physicalBytes": 4096,
+        "payloadBytes": 0
+      }
+    ],
+    "generations": [
+      {
+        "generation": 0,
+        "tables": {
+          "history_games": {
+            "rows": 1
+          },
+          "history_events": {
+            "rows": 11570
+          },
+          "history_inputs": {
+            "rows": 1
+          },
+          "history_checkpoints": {
+            "rows": 2
+          },
+          "history_points": {
+            "rows": 13
+          },
+          "slack_messages": {
+            "rows": 55
+          },
+          "request_receipts": {
+            "rows": 11355
+          },
+          "receipt_paths": {
+            "rows": 0
+          },
+          "commands": {
+            "rows": 0
+          }
+        }
+      },
+      {
+        "generation": 1,
+        "tables": {
+          "history_games": {
+            "rows": 1
+          },
+          "history_events": {
+            "rows": 11526
+          },
+          "history_inputs": {
+            "rows": 2
+          },
+          "history_checkpoints": {
+            "rows": 3
+          },
+          "history_points": {
+            "rows": 13
+          },
+          "slack_messages": {
+            "rows": 55
+          },
+          "request_receipts": {
+            "rows": 11365
+          },
+          "receipt_paths": {
+            "rows": 0
+          },
+          "commands": {
+            "rows": 0
+          }
+        }
+      },
+      {
+        "generation": 2,
+        "tables": {
+          "history_games": {
+            "rows": 1
+          },
+          "history_events": {
+            "rows": 11526
+          },
+          "history_inputs": {
+            "rows": 2
+          },
+          "history_checkpoints": {
+            "rows": 3
+          },
+          "history_points": {
+            "rows": 13
+          },
+          "slack_messages": {
+            "rows": 55
+          },
+          "request_receipts": {
+            "rows": 11365
+          },
+          "receipt_paths": {
+            "rows": 0
+          },
+          "commands": {
+            "rows": 0
+          }
+        }
+      }
+    ],
+    "unassignedLegacyReceipts": {
+      "rows": 0
+    },
+    "evidence": {
+      "logicalJsonBytes": 14571814
+    },
+    "checkpoints": {
+      "compressedBytes": 824920
+    },
+    "policy": {
+      "keepGenerations": null,
+      "olderThanDays": null,
+      "deleteEnabled": false
+    }
+  },
+  "compact": {
+    "sqliteBytes": 64802816,
+    "walBytes": 0,
+    "shmBytes": 163840,
+    "pageSize": 4096,
+    "freePages": 0,
+    "freeBytes": 0,
+    "pages": [
+      {
+        "name": "request_receipts",
+        "type": "table",
+        "tableName": "request_receipts",
+        "physicalBytes": 39473152,
+        "payloadBytes": 34416654
+      },
+      {
+        "name": "history_events",
+        "type": "table",
+        "tableName": "history_events",
+        "physicalBytes": 17518592,
+        "payloadBytes": 15714429
+      },
+      {
+        "name": "game",
+        "type": "table",
+        "tableName": "game",
+        "physicalBytes": 4136960,
+        "payloadBytes": 4129741
+      },
+      {
+        "name": "history_checkpoints",
+        "type": "table",
+        "tableName": "history_checkpoints",
+        "physicalBytes": 839680,
+        "payloadBytes": 825518
+      },
+      {
+        "name": "history_request_id",
+        "type": "index",
+        "tableName": "history_events",
+        "physicalBytes": 684032,
+        "payloadBytes": 576190
+      },
+      {
+        "name": "sqlite_autoindex_request_receipts_1",
+        "type": "index",
+        "tableName": "request_receipts",
+        "physicalBytes": 638976,
+        "payloadBytes": 529945
+      },
+      {
+        "name": "history_events_time",
+        "type": "index",
+        "tableName": "history_events",
+        "physicalBytes": 630784,
+        "payloadBytes": 521061
+      },
+      {
+        "name": "sqlite_autoindex_history_events_1",
+        "type": "index",
+        "tableName": "history_events",
+        "physicalBytes": 401408,
+        "payloadBytes": 289850
+      },
+      {
+        "name": "receipts_generation",
+        "type": "index",
+        "tableName": "request_receipts",
+        "physicalBytes": 290816,
+        "payloadBytes": 182980
+      },
+      {
+        "name": "slack_messages",
+        "type": "table",
+        "tableName": "slack_messages",
+        "physicalBytes": 65536,
+        "payloadBytes": 54763
+      },
+      {
+        "name": "history_points",
+        "type": "table",
+        "tableName": "history_points",
+        "physicalBytes": 45056,
+        "payloadBytes": 33547
+      },
+      {
+        "name": "slack_tenant",
+        "type": "index",
+        "tableName": "slack_messages",
+        "physicalBytes": 12288,
+        "payloadBytes": 4103
+      },
+      {
+        "name": "sqlite_autoindex_slack_messages_1",
+        "type": "index",
+        "tableName": "slack_messages",
+        "physicalBytes": 4096,
+        "payloadBytes": 1880
+      },
+      {
+        "name": "sqlite_autoindex_receipt_paths_1",
+        "type": "index",
+        "tableName": "receipt_paths",
+        "physicalBytes": 4096,
+        "payloadBytes": 210
+      },
+      {
+        "name": "sqlite_autoindex_history_points_1",
+        "type": "index",
+        "tableName": "history_points",
+        "physicalBytes": 4096,
+        "payloadBytes": 243
+      },
+      {
+        "name": "sqlite_autoindex_history_inputs_1",
+        "type": "index",
+        "tableName": "history_inputs",
+        "physicalBytes": 4096,
+        "payloadBytes": 31
+      },
+      {
+        "name": "sqlite_autoindex_history_checkpoints_1",
+        "type": "index",
+        "tableName": "history_checkpoints",
+        "physicalBytes": 4096,
+        "payloadBytes": 50
+      },
+      {
+        "name": "sqlite_autoindex_commands_1",
+        "type": "index",
+        "tableName": "commands",
+        "physicalBytes": 4096,
+        "payloadBytes": 0
+      },
+      {
+        "name": "receipt_paths",
+        "type": "table",
+        "tableName": "receipt_paths",
+        "physicalBytes": 4096,
+        "payloadBytes": 784
+      },
+      {
+        "name": "history_protection",
+        "type": "table",
+        "tableName": "history_protection",
+        "physicalBytes": 4096,
+        "payloadBytes": 0
+      },
+      {
+        "name": "history_policy",
+        "type": "table",
+        "tableName": "history_policy",
+        "physicalBytes": 4096,
+        "payloadBytes": 0
+      },
+      {
+        "name": "history_inputs",
+        "type": "table",
+        "tableName": "history_inputs",
+        "physicalBytes": 4096,
+        "payloadBytes": 947
+      },
+      {
+        "name": "history_games",
+        "type": "table",
+        "tableName": "history_games",
+        "physicalBytes": 4096,
+        "payloadBytes": 141
+      },
+      {
+        "name": "history_checkpoint_time",
+        "type": "index",
+        "tableName": "history_checkpoints",
+        "physicalBytes": 4096,
+        "payloadBytes": 45
+      },
+      {
+        "name": "history_archives",
+        "type": "table",
+        "tableName": "history_archives",
+        "physicalBytes": 4096,
+        "payloadBytes": 0
+      },
+      {
+        "name": "commands_generation",
+        "type": "index",
+        "tableName": "commands",
+        "physicalBytes": 4096,
+        "payloadBytes": 0
+      },
+      {
+        "name": "commands",
+        "type": "table",
+        "tableName": "commands",
+        "physicalBytes": 4096,
+        "payloadBytes": 0
+      }
+    ],
+    "generations": [
+      {
+        "generation": 0,
+        "tables": {
+          "history_games": {
+            "rows": 1
+          },
+          "history_events": {
+            "rows": 11570
+          },
+          "history_inputs": {
+            "rows": 1
+          },
+          "history_checkpoints": {
+            "rows": 2
+          },
+          "history_points": {
+            "rows": 13
+          },
+          "slack_messages": {
+            "rows": 55
+          },
+          "request_receipts": {
+            "rows": 11355
+          },
+          "receipt_paths": {
+            "rows": 1
+          },
+          "commands": {
+            "rows": 0
+          }
+        }
+      },
+      {
+        "generation": 1,
+        "tables": {
+          "history_games": {
+            "rows": 1
+          },
+          "history_events": {
+            "rows": 11526
+          },
+          "history_inputs": {
+            "rows": 2
+          },
+          "history_checkpoints": {
+            "rows": 3
+          },
+          "history_points": {
+            "rows": 13
+          },
+          "slack_messages": {
+            "rows": 55
+          },
+          "request_receipts": {
+            "rows": 11365
+          },
+          "receipt_paths": {
+            "rows": 1
+          },
+          "commands": {
+            "rows": 0
+          }
+        }
+      },
+      {
+        "generation": 2,
+        "tables": {
+          "history_games": {
+            "rows": 1
+          },
+          "history_events": {
+            "rows": 11526
+          },
+          "history_inputs": {
+            "rows": 2
+          },
+          "history_checkpoints": {
+            "rows": 3
+          },
+          "history_points": {
+            "rows": 13
+          },
+          "slack_messages": {
+            "rows": 55
+          },
+          "request_receipts": {
+            "rows": 11365
+          },
+          "receipt_paths": {
+            "rows": 1
+          },
+          "commands": {
+            "rows": 0
+          }
+        }
+      }
+    ],
+    "unassignedLegacyReceipts": {
+      "rows": 0
+    },
+    "evidence": {
+      "logicalJsonBytes": 14571814
+    },
+    "checkpoints": {
+      "compressedBytes": 824920
+    },
+    "policy": {
+      "keepGenerations": null,
+      "olderThanDays": null,
+      "deleteEnabled": false
+    }
+  },
+  "savedPhysicalBytes": 12976128,
+  "savedPercent": 16.68334298804571,
+  "migration": {
+    "linked": 0,
+    "compacted": 34085
+  },
+  "rawReceiptBytes": 44592455,
+  "evaluatedZlibReceiptBytes": 20561381,
+  "receiptDigest": "12a2ff5531575d5fa7ffc19566d2d681bf235c77d4883b3e18818629188ea12b",
+  "archive": {
+    "bytes": 19607552,
+    "digest": "10e5feadaf78278d037546e882d35e7edc97efcb74c863863c77dbc380ace88d"
+  },
+  "economy": [
+    {
+      "tick": 60,
+      "status": "FINISHED",
+      "population": 5000,
+      "unserved": 45,
+      "transfers": 90,
+      "companies": [
+        {
+          "id": 0,
+          "customers": 991,
+          "share": 19.82,
+          "pressure": 52.793443498736465,
+          "reputation": 75.39240920147705,
+          "utilization": 1.9700000000000055,
+          "queue": 0,
+          "latencyMs": 970,
+          "arrived": 1632,
+          "abandoned": 49,
+          "rejected": 1003,
+          "migratedIn": 9,
+          "migratedOut": 18,
+          "servers": 1,
+          "webRate": 12,
+          "eliminated": false,
+          "capital": 10460.000000000437,
+          "revenue": 7470
+        },
+        {
+          "id": 1,
+          "customers": 991,
+          "share": 19.82,
+          "pressure": 52.793443498736465,
+          "reputation": 75.39240920147705,
+          "utilization": 1.9700000000000055,
+          "queue": 0,
+          "latencyMs": 970,
+          "arrived": 1632,
+          "abandoned": 49,
+          "rejected": 1003,
+          "migratedIn": 9,
+          "migratedOut": 18,
+          "servers": 1,
+          "webRate": 12,
+          "eliminated": false,
+          "capital": 10460.000000000437,
+          "revenue": 7470
+        },
+        {
+          "id": 2,
+          "customers": 991,
+          "share": 19.82,
+          "pressure": 52.793443498736465,
+          "reputation": 75.39240920147705,
+          "utilization": 1.9700000000000055,
+          "queue": 0,
+          "latencyMs": 970,
+          "arrived": 1632,
+          "abandoned": 49,
+          "rejected": 1003,
+          "migratedIn": 9,
+          "migratedOut": 18,
+          "servers": 1,
+          "webRate": 12,
+          "eliminated": false,
+          "capital": 10460.000000000437,
+          "revenue": 7470
+        },
+        {
+          "id": 3,
+          "customers": 991,
+          "share": 19.82,
+          "pressure": 52.793443498736465,
+          "reputation": 75.39240920147705,
+          "utilization": 1.9700000000000055,
+          "queue": 0,
+          "latencyMs": 970,
+          "arrived": 1632,
+          "abandoned": 49,
+          "rejected": 1003,
+          "migratedIn": 9,
+          "migratedOut": 18,
+          "servers": 1,
+          "webRate": 12,
+          "eliminated": false,
+          "capital": 10460.000000000437,
+          "revenue": 7470
+        },
+        {
+          "id": 4,
+          "customers": 991,
+          "share": 19.82,
+          "pressure": 52.793443498736465,
+          "reputation": 75.39240920147705,
+          "utilization": 1.9700000000000055,
+          "queue": 0,
+          "latencyMs": 970,
+          "arrived": 1632,
+          "abandoned": 49,
+          "rejected": 1003,
+          "migratedIn": 9,
+          "migratedOut": 18,
+          "servers": 1,
+          "webRate": 12,
+          "eliminated": false,
+          "capital": 10460.000000000437,
+          "revenue": 7470
+        }
+      ]
+    },
+    {
+      "tick": 60,
+      "status": "FINISHED",
+      "population": 5000,
+      "unserved": 35,
+      "transfers": 70,
+      "companies": [
+        {
+          "id": 0,
+          "customers": 993,
+          "share": 19.86,
+          "pressure": 44.356654440476824,
+          "reputation": 75.92871270037,
+          "utilization": 1.9700000000000055,
+          "queue": 0,
+          "latencyMs": 986,
+          "arrived": 1634,
+          "abandoned": 50,
+          "rejected": 1005,
+          "migratedIn": 7,
+          "migratedOut": 14,
+          "servers": 1,
+          "webRate": 12,
+          "eliminated": false,
+          "capital": 10471.000000000437,
+          "revenue": 7515
+        },
+        {
+          "id": 1,
+          "customers": 993,
+          "share": 19.86,
+          "pressure": 44.356654440476824,
+          "reputation": 75.92871270037,
+          "utilization": 1.9700000000000055,
+          "queue": 0,
+          "latencyMs": 986,
+          "arrived": 1634,
+          "abandoned": 50,
+          "rejected": 1005,
+          "migratedIn": 7,
+          "migratedOut": 14,
+          "servers": 1,
+          "webRate": 12,
+          "eliminated": false,
+          "capital": 10471.000000000437,
+          "revenue": 7515
+        },
+        {
+          "id": 2,
+          "customers": 993,
+          "share": 19.86,
+          "pressure": 44.356654440476824,
+          "reputation": 75.92871270037,
+          "utilization": 1.9700000000000055,
+          "queue": 0,
+          "latencyMs": 986,
+          "arrived": 1634,
+          "abandoned": 50,
+          "rejected": 1005,
+          "migratedIn": 7,
+          "migratedOut": 14,
+          "servers": 1,
+          "webRate": 12,
+          "eliminated": false,
+          "capital": 10471.000000000437,
+          "revenue": 7515
+        },
+        {
+          "id": 3,
+          "customers": 993,
+          "share": 19.86,
+          "pressure": 44.356654440476824,
+          "reputation": 75.92871270037,
+          "utilization": 1.9700000000000055,
+          "queue": 0,
+          "latencyMs": 986,
+          "arrived": 1634,
+          "abandoned": 50,
+          "rejected": 1005,
+          "migratedIn": 7,
+          "migratedOut": 14,
+          "servers": 1,
+          "webRate": 12,
+          "eliminated": false,
+          "capital": 10471.000000000437,
+          "revenue": 7515
+        },
+        {
+          "id": 4,
+          "customers": 993,
+          "share": 19.86,
+          "pressure": 44.356654440476824,
+          "reputation": 75.92871270037,
+          "utilization": 1.9700000000000055,
+          "queue": 0,
+          "latencyMs": 986,
+          "arrived": 1634,
+          "abandoned": 50,
+          "rejected": 1005,
+          "migratedIn": 7,
+          "migratedOut": 14,
+          "servers": 1,
+          "webRate": 12,
+          "eliminated": false,
+          "capital": 10471.000000000437,
+          "revenue": 7515
+        }
+      ]
+    },
+    {
+      "tick": 60,
+      "status": "FINISHED",
+      "population": 5000,
+      "unserved": 35,
+      "transfers": 70,
+      "companies": [
+        {
+          "id": 0,
+          "customers": 993,
+          "share": 19.86,
+          "pressure": 44.356654440476824,
+          "reputation": 75.92871270037,
+          "utilization": 1.9700000000000055,
+          "queue": 0,
+          "latencyMs": 986,
+          "arrived": 1634,
+          "abandoned": 50,
+          "rejected": 1005,
+          "migratedIn": 7,
+          "migratedOut": 14,
+          "servers": 1,
+          "webRate": 12,
+          "eliminated": false,
+          "capital": 10471.000000000437,
+          "revenue": 7515
+        },
+        {
+          "id": 1,
+          "customers": 993,
+          "share": 19.86,
+          "pressure": 44.356654440476824,
+          "reputation": 75.92871270037,
+          "utilization": 1.9700000000000055,
+          "queue": 0,
+          "latencyMs": 986,
+          "arrived": 1634,
+          "abandoned": 50,
+          "rejected": 1005,
+          "migratedIn": 7,
+          "migratedOut": 14,
+          "servers": 1,
+          "webRate": 12,
+          "eliminated": false,
+          "capital": 10471.000000000437,
+          "revenue": 7515
+        },
+        {
+          "id": 2,
+          "customers": 993,
+          "share": 19.86,
+          "pressure": 44.356654440476824,
+          "reputation": 75.92871270037,
+          "utilization": 1.9700000000000055,
+          "queue": 0,
+          "latencyMs": 986,
+          "arrived": 1634,
+          "abandoned": 50,
+          "rejected": 1005,
+          "migratedIn": 7,
+          "migratedOut": 14,
+          "servers": 1,
+          "webRate": 12,
+          "eliminated": false,
+          "capital": 10471.000000000437,
+          "revenue": 7515
+        },
+        {
+          "id": 3,
+          "customers": 993,
+          "share": 19.86,
+          "pressure": 44.356654440476824,
+          "reputation": 75.92871270037,
+          "utilization": 1.9700000000000055,
+          "queue": 0,
+          "latencyMs": 986,
+          "arrived": 1634,
+          "abandoned": 50,
+          "rejected": 1005,
+          "migratedIn": 7,
+          "migratedOut": 14,
+          "servers": 1,
+          "webRate": 12,
+          "eliminated": false,
+          "capital": 10471.000000000437,
+          "revenue": 7515
+        },
+        {
+          "id": 4,
+          "customers": 993,
+          "share": 19.86,
+          "pressure": 44.356654440476824,
+          "reputation": 75.92871270037,
+          "utilization": 1.9700000000000055,
+          "queue": 0,
+          "latencyMs": 986,
+          "arrived": 1634,
+          "abandoned": 50,
+          "rejected": 1005,
+          "migratedIn": 7,
+          "migratedOut": 14,
+          "servers": 1,
+          "webRate": 12,
+          "eliminated": false,
+          "capital": 10471.000000000437,
+          "revenue": 7515
+        }
+      ]
+    }
+  ]
+}

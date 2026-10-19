@@ -1,3 +1,5 @@
+import { acquireStorageLease } from './storage-lease.js';
+import { decodeReceipt } from './receipt-storage.js';
 import { visibleRequest } from './projections.js';
 import { sealLegacyGenerations } from './history.js';
 import { installDvr } from './dvr.js';
@@ -31,6 +33,7 @@ else {
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 const identities = new Map(credentials.map(c => [hash(c.code), c.identity]));
 const db = new DatabaseSync(resolve(directory, 'game.sqlite'));
+const releaseStorage = acquireStorageLease(db);
 db.exec('PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS game (id INTEGER PRIMARY KEY, state TEXT NOT NULL); CREATE TABLE IF NOT EXISTS commands (identity TEXT NOT NULL, id TEXT NOT NULL, digest TEXT NOT NULL, result TEXT NOT NULL, PRIMARY KEY(identity,id)); CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, identity TEXT NOT NULL, expires INTEGER NOT NULL);');
 const saved = db.prepare('SELECT state FROM game WHERE id=1').get() as { state: string } | undefined;
 // Keep the original legacy snapshot before the first upgraded snapshot is written.
@@ -92,9 +95,9 @@ app.get('/api/requests/:id', (req, res) => {
     const request = company.traffic.requests[req.params.id];
     if (request) return res.json(identity.role==='operator'?trafficReceipt(request,true):trafficReceipt(request));
   }
-  const row = db.prepare('SELECT companyId,receipt FROM request_receipts WHERE id=?').get(req.params.id) as {companyId: number; receipt: string} | undefined;
+  const row = db.prepare('SELECT companyId,receipt,generation,details,detailDigest FROM request_receipts WHERE id=?').get(req.params.id) as {companyId: number; receipt: string; generation:number|null; details:Uint8Array|null; detailDigest:string|null} | undefined;
   if (!row || (identity.role !== 'operator' && identity.companyId !== row.companyId)) return res.sendStatus(404);
-  res.json(identity.role==='operator'?JSON.parse(row.receipt):visibleRequest(JSON.parse(row.receipt)));
+  try { const receipt=decodeReceipt(db,row);res.json(identity.role==='operator'?receipt:visibleRequest(receipt)); } catch { res.status(503).json({error:'Evidencia temporalmente no disponible.'}); }
 });
 app.get('/api/flowslack', (req,res)=>{
  res.setHeader('Cache-Control','no-store');const identity=session(req.headers.cookie);
@@ -155,5 +158,5 @@ if (process.env.NODE_ENV === 'production') {
 }
 const port = Number(process.env.FLOW_PORT ?? 4173);
 http.listen(port, '0.0.0.0', () => console.log(`FLOW WAR listo: http://localhost:${port}\nCredenciales locales: ${accessFile}`));
-async function shutdown() { clearInterval(timer); persist(); await dvr.close(); io.close(); http.close(); db.close(); process.exit(0); }
+async function shutdown() { clearInterval(timer); persist(); await dvr.close(); io.close(); http.close(); releaseStorage(); db.close(); process.exit(0); }
 process.on('SIGINT', shutdown); process.on('SIGTERM', shutdown);
