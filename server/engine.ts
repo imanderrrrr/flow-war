@@ -3,7 +3,7 @@ import { postChat } from './chat.js';
 import { slackFact, sampleTelemetry } from './flowslack.js';
 import { updateCrisis } from './crisis.js';
 import { serializeGame } from './persistence.js';
-import { initialObservability, bindObservability, observe, observeCompany, recordInput, checkpoint, sampleHistory, clearBuffer } from './observability.js';
+import { initialObservability, bindObservability, observe, observeCompany, recordInput, checkpoint, sampleHistory, clearBuffer, buffer, copyHistoryBuffer, projectHistoryPoint } from './observability.js';
 import { runLocalAgent } from './agents.js';
 import { initialActionState, dispatchCommand, correctEmployee, auditCompletion } from './discipline.js';
 import { businessCommand, advanceCampaigns } from './business.js';
@@ -100,21 +100,37 @@ export function applyCommand(g: GameState, identity: Identity | null, command: C
   if (command.type === 'agent.fixture') return runLocalAgent(g, identity, command.payload, effective => applyCommand(g, identity, effective));
   const receivedAt = context.receivedAt ?? Date.now();
   bindObservability(g,f=>slackFact(g,f));
-  const result = command.type === 'chat.send' ? postChat(g,identity,command,receivedAt) : dispatchCommand(g, identity, command, effective => executeCommand(g, identity!, effective));
+  const result = command.type === 'chat.send' ? postChat(g,identity,command,receivedAt) : dispatchCommand(g, identity, command, effective => executeCommand(g, identity!, effective, receivedAt));
   if (identity) {
-    if (command.type === 'room.reset' && result.ok) clearBuffer(g);
     recordInput(g, { identity, command, receivedAt });
     sampleHistory(g);
     if (command.type === 'room.reset' || command.type === 'room.finish') checkpoint(g, serializeGame, true);
   }
   return result;
 }
-function executeCommand(g: GameState, identity: Identity, command: Command): Result {
+function executeCommand(g: GameState, identity: Identity, command: Command, receivedAt: number): Result {
   bindMarket(g);
   if (!identity || !allowedAction(command.type, identity.role)) return { ok: false, code: 'FORBIDDEN', error: 'Acción no autorizada para este rol.' };
   if (identity.role === 'operator') {
     if (command.type === 'employee.correct') return correctEmployee(g, command.payload ?? {});
-    if (command.type === 'room.reset') { const duration = Number(command.payload?.duration) === 1200 ? 1200 : 1500; finishRequests(g); const receipts = g.companies.map(company => company.traffic.outbox); Object.assign(g, createGame(duration, 7357, g.generation + 1)); for (const company of g.companies) company.traffic.outbox = receipts[company.id]; return { ok: true }; }
+    if (command.type === 'room.reset') {
+      const closed = structuredClone(g); copyHistoryBuffer(g, closed); bindObservability(closed);
+      if (closed.status !== 'FINISHED' && closed.status !== 'ABORTED') {
+        closed.closure = { generation: closed.generation, tick: closed.tick, previousStatus: closed.status, reason: 'TEACHER_RESET', actor: { ...identity }, receivedAt };
+        closed.status = 'ABORTED';
+        observe(closed, 'generation.interrupted', null, { ...closed.closure, commandId: command.id });
+        buffer(closed).points.push(projectHistoryPoint(closed));
+        checkpoint(closed, serializeGame, true);
+      }
+      // Keep both generations and all pending evidence until one durable transaction commits.
+      const earlier = buffer(closed).closed; buffer(closed).closed = [];
+      clearBuffer(g); delete g.closure;
+      Object.assign(g, createGame(Number(command.payload?.duration) === 1200 ? 1200 : 1500, 7357, g.generation + 1));
+      buffer(g).closed.push(...earlier, closed);
+      bindObservability(g, f => slackFact(g, f));
+      checkpoint(g, serializeGame, true);
+      return { ok: true };
+    }
     if (command.type === 'room.start') { if (g.status === 'FINISHED') return { ok: false, error: 'La partida ha finalizado.' }; if (g.status === 'LOBBY') for (const company of g.companies) issueInitialTraffic(company, g.tick); g.status = 'RUNNING'; event(g, null, 'SIMULACIÓN EN CURSO', 'good'); }
     if (command.type === 'room.pause' && g.status === 'RUNNING') { g.status = 'PAUSED'; event(g, null, 'Simulación pausada.'); }
     if (command.type === 'room.finish') { finishRequests(g); g.status = 'FINISHED'; event(g, null, 'PARTIDA FINALIZADA'); }

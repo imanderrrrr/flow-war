@@ -1,10 +1,10 @@
 import type { Company, GameState } from '../shared/types.js';
 import { OBSERVABILITY_VERSION, type Observation, type JournalCommand, type HistoricalPoint } from '../shared/observability.js';
 export const initialObservability = (at = 0) => ({ version: OBSERVABILITY_VERSION, startTick: at, sequence: 0, checkpointAt: at, sampleAt: at - 5 });
-type Pending = { events: Observation[]; commands: JournalCommand[]; points: HistoricalPoint[]; checkpoints: { at: number; sequence: number; state: string }[] };
+type Pending = { closed: GameState[]; events: Observation[]; commands: JournalCommand[]; points: HistoricalPoint[]; checkpoints: { at: number; sequence: number; state: string }[] };
 const pending = new WeakMap<GameState, Pending>(), owners = new WeakMap<Company, GameState>(), silent = new WeakSet<GameState>();
 const listeners = new WeakMap<GameState, (fact: Observation) => void>();
-export function buffer(g: GameState): Pending { let p = pending.get(g); if (!p) { p = { events: [], commands: [], points: [], checkpoints: [] }; pending.set(g, p); } return p; }
+export function buffer(g: GameState): Pending { let p = pending.get(g); if (!p) { p = { closed: [], events: [], commands: [], points: [], checkpoints: [] }; pending.set(g, p); } return p; }
 export function quietHistory(g: GameState) { silent.add(g); }
 export function bindObservability(g: GameState, listener?: (fact: Observation) => void) { for (const c of g.companies) owners.set(c, g); if (listener) listeners.set(g, listener); }
 export function observe(g: GameState, kind: string, companyId: number | null, data: Record<string, unknown> = {}, refs: string[] = []): Observation {
@@ -20,4 +20,4 @@ export function checkpoint(g: GameState, serialize: (g: GameState) => string, fo
 export function clearBuffer(g: GameState) { pending.delete(g); }
 
 /** Preserve uncommitted facts when the authoritative command state rolls back. */
-export function copyHistoryBuffer(from:GameState,to:GameState){const p=buffer(from);pending.set(to,{events:[...p.events],commands:[...p.commands],points:[...p.points],checkpoints:[...p.checkpoints]});}
+export function copyHistoryBuffer(from:GameState,to:GameState){const p=buffer(from);pending.set(to,{closed:[...p.closed],events:[...p.events],commands:[...p.commands],points:[...p.points],checkpoints:[...p.checkpoints]});}

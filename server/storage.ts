@@ -1,3 +1,4 @@
+import { buffer } from './observability.js';
 import { historySchema, writeHistory, commitHistory } from './history.js';
 import type { DatabaseSync } from 'node:sqlite';
 import { serializeGame } from './persistence.js';
@@ -10,14 +11,17 @@ export function createGameWriter(db: DatabaseSync) {
   const receiptStatement = db.prepare('INSERT OR IGNORE INTO request_receipts (id,companyId,receipt) VALUES (?,?,?)');
   const commandStatement = db.prepare('INSERT INTO commands (identity,id,digest,result) VALUES (?,?,?,?)');
   return (game: GameState, command?: {identity: string; id: string; digest: string; result: string}) => {
-    db.exec('BEGIN');
+    const generations = [...buffer(game).closed, game];
+    db.exec('BEGIN IMMEDIATE');
     try {
-      for (const company of game.companies) for (const receipt of company.traffic.outbox) receiptStatement.run(receipt.id, receipt.companyId, JSON.stringify(receipt));
-      writeHistory(db, game);
+      for (const state of generations) {
+      for (const company of state.companies) for (const receipt of company.traffic.outbox) receiptStatement.run(receipt.id, receipt.companyId, JSON.stringify(receipt));
+      writeHistory(db, state);
+      }
       save.run(serializeGame(game));
       if (command) commandStatement.run(command.identity, command.id, command.digest, command.result);
-      db.exec('COMMIT'); commitHistory(game);
-      for (const company of game.companies) company.traffic.outbox = [];
+      db.exec('COMMIT');
+      for (const state of generations) { commitHistory(state); for (const company of state.companies) company.traffic.outbox = []; }
     } catch (error) { db.exec('ROLLBACK'); throw error; }
   };
 }

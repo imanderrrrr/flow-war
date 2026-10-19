@@ -1,6 +1,7 @@
+import { sealLegacyGenerations } from './history.js';
 import { installDvr } from './dvr.js';
 import { CHANNELS } from '../shared/observability.js';
-import { checkpoint, observe, copyHistoryBuffer } from './observability.js';
+import { bindObservability, checkpoint, observe, copyHistoryBuffer } from './observability.js';
 import { serializeGame } from './persistence.js';
 import { createGameWriter } from './storage.js';
 import express from 'express';
@@ -29,7 +30,7 @@ else {
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 const identities = new Map(credentials.map(c => [hash(c.code), c.identity]));
 const db = new DatabaseSync(resolve(directory, 'game.sqlite'));
-db.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS game (id INTEGER PRIMARY KEY, state TEXT NOT NULL); CREATE TABLE IF NOT EXISTS commands (identity TEXT NOT NULL, id TEXT NOT NULL, digest TEXT NOT NULL, result TEXT NOT NULL, PRIMARY KEY(identity,id)); CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, identity TEXT NOT NULL, expires INTEGER NOT NULL);');
+db.exec('PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS game (id INTEGER PRIMARY KEY, state TEXT NOT NULL); CREATE TABLE IF NOT EXISTS commands (identity TEXT NOT NULL, id TEXT NOT NULL, digest TEXT NOT NULL, result TEXT NOT NULL, PRIMARY KEY(identity,id)); CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, identity TEXT NOT NULL, expires INTEGER NOT NULL);');
 const saved = db.prepare('SELECT state FROM game WHERE id=1').get() as { state: string } | undefined;
 // Keep the original legacy snapshot before the first upgraded snapshot is written.
 if (saved && [1, 2, 3, 4, 5].includes(JSON.parse(saved.state).schema)) {
@@ -39,6 +40,7 @@ if (saved && [1, 2, 3, 4, 5].includes(JSON.parse(saved.state).schema)) {
 let game: GameState = saved ? recoverGame(saved.state) : createGame();
 if (saved) { observe(game,'server.recovered',null,{status:game.status}); checkpoint(game,serializeGame,true); }
 const writeGame = createGameWriter(db);
+sealLegacyGenerations(db, game.generation);
 const persist = (command?: {identity: string; id: string; digest: string; result: string}) => writeGame(game, command);
 persist();
 const sessionLookup = db.prepare('SELECT identity,expires FROM sessions WHERE token=?');
@@ -123,13 +125,12 @@ io.on('connection', socket => {
     const digest = hash(JSON.stringify(command));
     const prior = db.prepare('SELECT digest,result FROM commands WHERE identity=? AND id=?').get(identity.id, command.id) as { digest: string; result: string } | undefined;
     if (prior) return ack(prior.digest === digest ? JSON.parse(prior.result) : { ok: false, error: 'ID de comando ya utilizado.' });
-    if (command.type === 'room.reset') persist();
     const before = structuredClone(game); copyHistoryBuffer(game,before);
     const result = applyCommand(game, identity, command);
     try {
       persist({ identity: identity.id, id: command.id, digest, result: JSON.stringify(result) });
       ack(result); broadcast();
-    } catch { game = before; ack({ ok: false, error: 'No se pudo confirmar el comando.' }); }
+    } catch { game = before; bindObservability(game); ack({ ok: false, error: 'No se pudo confirmar el comando.' }); }
   });
 });
 function broadcast() {

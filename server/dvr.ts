@@ -10,7 +10,7 @@ export function visibleFact(f:Observation,identity:Identity):Observation{
  const {defects,modules,attackKind,...data}=f.data; if(data.result&&typeof data.result==='object'){const {defectLoss,...result}=data.result as Record<string,unknown>;data.result=result;} return{...f,data};
 }
 export function installDvr(app:Express,db:DatabaseSync,identityFor:(req:Request)=>Identity|null){
- app.get('/api/dvr/games',(req,res)=>{res.setHeader('Cache-Control','no-store');if(!identityFor(req))return res.sendStatus(403);res.json(db.prepare("SELECT generation,start,tick,duration,status,version FROM history_games WHERE status='FINISHED' ORDER BY generation DESC").all());});
+ app.get('/api/dvr/games',(req,res)=>{res.setHeader('Cache-Control','no-store');if(!identityFor(req))return res.sendStatus(403);res.json(db.prepare("SELECT generation,start,tick,duration,status,version FROM history_games WHERE status IN ('FINISHED','ABORTED') ORDER BY generation DESC").all());});
  app.get('/api/dvr/:generation',(req,res)=>{
  res.setHeader('Cache-Control','no-store');const identity=identityFor(req);try{
  const generation=Number(req.params.generation);if(!Number.isSafeInteger(generation)||generation<0)return res.sendStatus(400);
