@@ -1,3 +1,4 @@
+import { updateCrisis } from './crisis.js';
 import { serializeGame } from './persistence.js';
 import { initialObservability, bindObservability, observe, observeCompany, recordInput, checkpoint, sampleHistory, clearBuffer } from './observability.js';
 import { runLocalAgent } from './agents.js';
@@ -290,7 +291,7 @@ export function step(g: GameState, dt = .1) {
   }
   if (g.tick >= g.duration || g.companies.every(c => c.eliminated)) { finishRequests(g); g.status = 'FINISHED'; event(g, null, 'PARTIDA FINALIZADA', 'neutral', 'SISTEMA'); }
   g.migrations = g.migrations.filter(m => g.tick - m.at < 20).slice(-30);
-  sampleHistory(g); checkpoint(g, serializeGame, g.status === 'FINISHED');
+  updateCrisis(g); sampleHistory(g); checkpoint(g, serializeGame, g.status === 'FINISHED');
 }
 function finishRequests(g: GameState) {
   for (const company of g.companies) {
