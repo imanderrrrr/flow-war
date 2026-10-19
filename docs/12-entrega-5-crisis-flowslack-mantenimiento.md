@@ -20,7 +20,7 @@ Esquema de partida **6**, contrato `flow-observability-5.1`. `server/observabili
 
 La arena y el espacio de trabajo muestran sirena SVG original, pila pixelada y luz ambiental roja en encabezados. El pulso dura 3.6 segundos. Colores corporativos y Canvas de clientes conservan sus pigmentos. Los papeles no reciben eventos de puntero y están fuera de las herramientas. `prefers-reduced-motion` y **REDUCIR PARPADEO** ofrecen presentación estática; pausar congela el pulso y muestra inmediatamente la pila existente. No hay sirena audible automática.
 
-Evidencia: [arena en crisis](images/entrega-5-crisis.png). `scripts/entrega5-demo.ts` crea una sala temporal con reputación inicial explícita 31.6; tras 60 segundos de motor se observa aproximadamente 34 y siete hojas. Es una fixture visual, no una caída fabricada dentro de una partida normal. Los benchmarks ejercitan además resultados operativos y crisis de partidas completas.
+Evidencia: [arena en crisis](images/entrega-5-crisis.jpg). `scripts/entrega5-demo.ts` crea una sala temporal con reputación inicial explícita 31.6; tras 60 segundos de motor se observa aproximadamente 34 y siete hojas. Es una fixture visual, no una caída fabricada dentro de una partida normal. Los benchmarks ejercitan además resultados operativos y crisis de partidas completas.
 
 ## FlowSlack
 
@@ -36,7 +36,7 @@ Reclamaciones deterministas: timeouts, rechazos/fallos, demora >3 segundos, dupl
 
 `symptoms-1`: muestreo de telemetría cada diez segundos simulados; errores ≥20% con al menos cinco resultados, cola >40, latencia >3,000 ms o indisponibilidad observada. La agrupación por síntoma/empresa permite una muestra cada 20 segundos y cuenta hechos suprimidos. No inventa CPU, no anuncia tipos de ataque, no recomienda mitigaciones ni revela defectos ocultos. Todos los eventos originales siguen en el journal.
 
-[Conversación privada](images/entrega-5-flowslack.png).
+[Conversación privada](images/entrega-5-flowslack.jpg).
 
 ## Mantenimiento de emergencia
 
@@ -50,7 +50,7 @@ Rechazos legítimos usan la experiencia negativa existente, presión, reputació
 
 Política de eliminación `admission-1`: el límite anterior de **90 segundos sin capacidad** se conserva, al igual que insolvencia y colapso de mercado. El cierre voluntario con infraestructura financiada admite **180 segundos continuos** antes de eliminar. Se separan capacidad física y admisión: mantenimiento no aumenta capacidad ni da inmunidad a una empresa que ya carece de ella. A los 180 segundos de cierre sostenido se pierde la empresa; no hay reapertura automática. La presión, abandono e insolvencia también pueden eliminar antes. Las pruebas comparan 10, 30, 60, 90, 120 y 181 segundos; el informe mide 60 frente a 120. Ese margen permite observar consecuencias reales y una decisión de reapertura antes de alcanzar el límite, en lugar de hacer inevitable la eliminación a los 90 segundos. Cambiar de modo deja transiciones explícitas en la auditoría.
 
-Controles discretos de DevOps muestran el estado confirmado y tiempo desde transición persistido. Las sesiones reales, control docente, chat y herramientas operativas siguen accesibles. [Consola de mantenimiento](images/entrega-5-mantenimiento.png).
+Controles discretos de DevOps muestran el estado confirmado y tiempo desde transición persistido. Las sesiones reales, control docente, chat y herramientas operativas siguen accesibles. [Consola de mantenimiento](images/entrega-5-mantenimiento.jpg).
 
 ## Persistencia y compatibilidad
 

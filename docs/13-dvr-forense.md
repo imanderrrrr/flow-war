@@ -78,7 +78,7 @@ Las salas nuevas capturan desde su condición inicial. Fixtures declaran reputac
 
 Selector de generación/empresa, scrubber de 100 ms, reproducción/pausa a 1×/5×/20×, ±10 segundos y marcadores. Transferencias se agrupan por diez segundos para evitar miles de botones. Gráficas de clientes, reputación y capital usan muestras históricas; las tarjetas del momento usan reconstrucción exacta. Marcadores no sustituyen evidencia detallada.
 
-Arquitectura, servidores, versiones y documentos corresponden al tiempo seleccionado. Chat histórico tiene paginación. Métricas post-mortem corresponden a la partida completa. [Captura del DVR al minuto uno](images/entrega-5-dvr.png) y [arquitectura histórica](images/entrega-5-dvr-arquitectura.png).
+Arquitectura, servidores, versiones y documentos corresponden al tiempo seleccionado. Chat histórico tiene paginación. Métricas post-mortem corresponden a la partida completa. [Captura del DVR al minuto uno](images/entrega-5-dvr.jpg) y [arquitectura histórica](images/entrega-5-dvr-arquitectura.jpg).
 
 ## Validación y costos
 

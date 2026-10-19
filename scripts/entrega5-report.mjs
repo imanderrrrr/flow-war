@@ -60,11 +60,11 @@ FlowSlack: **${chat.humans} jugadores + Docente + proyector**, **${chat.messages
 
 ## Capturas y prueba manual
 
-- [Sirena, reputación 34 y siete hojas](../images/entrega-5-crisis.png)
-- [FlowSlack privado](../images/entrega-5-flowslack.png)
-- [Mantenimiento confirmado y temporizador](../images/entrega-5-mantenimiento.png)
-- [DVR al minuto uno](../images/entrega-5-dvr.png)
-- [Gráficas, marcadores y arquitectura histórica](../images/entrega-5-dvr-arquitectura.png)
+- [Sirena, reputación 34 y siete hojas](../images/entrega-5-crisis.jpg)
+- [FlowSlack privado](../images/entrega-5-flowslack.jpg)
+- [Mantenimiento confirmado y temporizador](../images/entrega-5-mantenimiento.jpg)
+- [DVR al minuto uno](../images/entrega-5-dvr.jpg)
+- [Gráficas, marcadores y arquitectura histórica](../images/entrega-5-dvr-arquitectura.jpg)
 
 [Arquitectura, límites y pasos manuales](../12-entrega-5-crisis-flowslack-mantenimiento.md). [Diseño y validación del DVR](../13-dvr-forense.md). Las capturas usan la fixture local explícita, independiente de la sala existente del usuario.
 
