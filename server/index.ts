@@ -104,7 +104,7 @@ app.get('/api/flowslack', (req,res)=>{
  const rows=db.prepare('SELECT body FROM slack_messages WHERE generation=? AND companyId=? AND channel=? AND seq<? ORDER BY seq DESC LIMIT 80').all(game.generation,identity.companyId,channel,before) as {body:string}[];
  res.json({messages:rows.map(r=>JSON.parse(r.body)).reverse()});
 });
-installDvr(app,db,req=>session(req.headers.cookie));
+const dvr = installDvr(app,db,req=>session(req.headers.cookie));
 app.get('/api/access', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (session(req.headers.cookie)?.role !== 'operator') return res.status(403).json({ error: 'Acceso denegado.' });
@@ -155,5 +155,5 @@ if (process.env.NODE_ENV === 'production') {
 }
 const port = Number(process.env.FLOW_PORT ?? 4173);
 http.listen(port, '0.0.0.0', () => console.log(`FLOW WAR listo: http://localhost:${port}\nCredenciales locales: ${accessFile}`));
-function shutdown() { clearInterval(timer); persist(); io.close(); http.close(); db.close(); process.exit(0); }
+async function shutdown() { clearInterval(timer); persist(); await dvr.close(); io.close(); http.close(); db.close(); process.exit(0); }
 process.on('SIGINT', shutdown); process.on('SIGTERM', shutdown);
