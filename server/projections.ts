@@ -9,7 +9,7 @@ export function visibleResult(result: RequestResult) {
 }
 /** An explicit wire contract: unknown engine fields are private by default. */
 export function visibleRequest(request: PurchaseRequest | TrafficReceipt) {
- const value=pick(request,['id','intentId','companyId','customerId','executionVersion','type','arrivalAt','admittedAt','startedAt','finishedAt','latencyMs','deadline','status','quantity','committed','oversold','paid','duplicates','retryCount','transaction','stage','service']);
+ const value=pick(request,['id','intentId','companyId','customerId','executionVersion','type','arrivalAt','admittedAt','startedAt','finishedAt','latencyMs','deadline','status','quantity','committed','oversold','paid','accounted','duplicates','retryCount','transaction','stage','service']);
  value.path=request.path.map(node=>({id:node.id,type:node.type,...('data' in node && node.data.value!==undefined?{value:node.data.value}: 'value' in node?{value:node.value}:{})}));
  value.journey=pick(request.journey,['from','to','at','duration']);
  if ('waits' in request) value.waits=request.waits.map(wait=>pick(wait,['service','enteredAt','exitedAt','position','exit']));
