@@ -1,0 +1,186 @@
+{
+  "commit": "c86d32058f0fd1741e27e6397f6124a1f1a4b62b",
+  "hardware": {
+    "node": "v25.9.0",
+    "cpu": "Apple M5"
+  },
+  "H1": {
+    "previousStatus": "RUNNING",
+    "lastTick": 120,
+    "accessible": false
+  },
+  "H2": {
+    "exposed": [
+      "trafficClass",
+      "securityAllowed",
+      "breach"
+    ]
+  },
+  "H3": {
+    "concurrent": 1,
+    "sequentialQueries": 4,
+    "seeks": [
+      133.84308399999998,
+      123.57716600000003,
+      121.321958,
+      119.09491700000012
+    ],
+    "blockedTimerMs": 498.0094170000001,
+    "eventLoopMaxMs": 507.248639
+  },
+  "H4": {
+    "sqliteBytes": 7917568,
+    "pages": {
+      "commands": {
+        "bytes": 4096
+      },
+      "history_games": {
+        "bytes": 4096
+      },
+      "history_events": {
+        "bytes": 765952
+      },
+      "history_inputs": {
+        "bytes": 4096
+      },
+      "history_checkpoints": {
+        "bytes": 282624
+      },
+      "slack_messages": {
+        "bytes": 4096
+      },
+      "history_points": {
+        "bytes": 32768
+      },
+      "game": {
+        "bytes": 1691648
+      },
+      "request_receipts": {
+        "bytes": 2887680
+      }
+    },
+    "freePages": {
+      "freelist_count": 517
+    }
+  },
+  "tick": {
+    "p50": 0.06491599999998243,
+    "p95": 1.0295830000000024,
+    "p99": 1.3673339999999712
+  },
+  "persist": {
+    "p50": 8.213208000000009,
+    "p95": 15.613458999999978,
+    "p99": 15.613458999999978
+  },
+  "heapMiB": 14.895645141601562,
+  "economy": {
+    "tick": 120,
+    "status": "RUNNING",
+    "population": 5000,
+    "unserved": 0,
+    "transfers": 0,
+    "companies": [
+      {
+        "id": 0,
+        "customers": 1000,
+        "share": 20,
+        "pressure": 0,
+        "reputation": 84.78800000000585,
+        "utilization": 0.4975000000000011,
+        "queue": 0,
+        "latencyMs": 548,
+        "arrived": 297,
+        "abandoned": 0,
+        "rejected": 0,
+        "migratedIn": 0,
+        "migratedOut": 0,
+        "servers": 1,
+        "webRate": 12,
+        "eliminated": false,
+        "capital": 10204.000000000873,
+        "revenue": 3960
+      },
+      {
+        "id": 1,
+        "customers": 1000,
+        "share": 20,
+        "pressure": 0,
+        "reputation": 84.78800000000585,
+        "utilization": 0.4975000000000011,
+        "queue": 0,
+        "latencyMs": 548,
+        "arrived": 297,
+        "abandoned": 0,
+        "rejected": 0,
+        "migratedIn": 0,
+        "migratedOut": 0,
+        "servers": 1,
+        "webRate": 12,
+        "eliminated": false,
+        "capital": 10204.000000000873,
+        "revenue": 3960
+      },
+      {
+        "id": 2,
+        "customers": 1000,
+        "share": 20,
+        "pressure": 0,
+        "reputation": 84.78800000000585,
+        "utilization": 0.4975000000000011,
+        "queue": 0,
+        "latencyMs": 548,
+        "arrived": 297,
+        "abandoned": 0,
+        "rejected": 0,
+        "migratedIn": 0,
+        "migratedOut": 0,
+        "servers": 1,
+        "webRate": 12,
+        "eliminated": false,
+        "capital": 10204.000000000873,
+        "revenue": 3960
+      },
+      {
+        "id": 3,
+        "customers": 1000,
+        "share": 20,
+        "pressure": 0,
+        "reputation": 84.78800000000585,
+        "utilization": 0.4975000000000011,
+        "queue": 0,
+        "latencyMs": 548,
+        "arrived": 297,
+        "abandoned": 0,
+        "rejected": 0,
+        "migratedIn": 0,
+        "migratedOut": 0,
+        "servers": 1,
+        "webRate": 12,
+        "eliminated": false,
+        "capital": 10204.000000000873,
+        "revenue": 3960
+      },
+      {
+        "id": 4,
+        "customers": 1000,
+        "share": 20,
+        "pressure": 0,
+        "reputation": 84.78800000000585,
+        "utilization": 0.4975000000000011,
+        "queue": 0,
+        "latencyMs": 548,
+        "arrived": 297,
+        "abandoned": 0,
+        "rejected": 0,
+        "migratedIn": 0,
+        "migratedOut": 0,
+        "servers": 1,
+        "webRate": 12,
+        "eliminated": false,
+        "capital": 10204.000000000873,
+        "revenue": 3960
+      }
+    ]
+  }
+}
