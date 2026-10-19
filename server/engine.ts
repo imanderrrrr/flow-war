@@ -1,3 +1,4 @@
+import { slackFact, sampleTelemetry } from './flowslack.js';
 import { updateCrisis } from './crisis.js';
 import { serializeGame } from './persistence.js';
 import { initialObservability, bindObservability, observe, observeCompany, recordInput, checkpoint, sampleHistory, clearBuffer } from './observability.js';
@@ -36,7 +37,7 @@ export function createGame(duration = 1500, seed = 7357, generation = 0): GameSt
     backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
   }));
   const game: GameState = { actions: initialActionState(), schema: 6, observability: initialObservability(), slack: { sequence: 0, messages: [], receipts: {}, buckets: {}, groups: {}, automaticCount: 0, sampledCount: 0 }, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
-  bindMarket(game); bindObservability(game); assertMarket(game); checkpoint(game, serializeGame, true); return game;
+  bindMarket(game); bindObservability(game, f=>slackFact(game,f)); assertMarket(game); checkpoint(game, serializeGame, true); return game;
 }
 export function event(g: GameState, companyId: number | null, text: string, tone: 'good' | 'bad' | 'neutral' = 'neutral', category = 'SISTEMA') {
   observe(g, category.toLowerCase(), companyId, { text, tone });
@@ -232,7 +233,7 @@ function jobs(g: GameState) {
 }
 export function step(g: GameState, dt = .1) {
   if (g.status !== 'RUNNING') return;
-  bindMarket(g); bindObservability(g);
+  bindMarket(g); bindObservability(g,f=>slackFact(g,f));
   if (dt > .1) { for (let remaining = dt; remaining > .00001; remaining = Math.round((remaining - .1) * 1e6) / 1e6) step(g, Math.min(.1, remaining)); return; }
   const previousSecond = Math.floor(g.tick);
   g.tick = Math.min(g.duration, Math.round((g.tick + dt) * 1000) / 1000);
@@ -291,7 +292,7 @@ export function step(g: GameState, dt = .1) {
   }
   if (g.tick >= g.duration || g.companies.every(c => c.eliminated)) { finishRequests(g); g.status = 'FINISHED'; event(g, null, 'PARTIDA FINALIZADA', 'neutral', 'SISTEMA'); }
   g.migrations = g.migrations.filter(m => g.tick - m.at < 20).slice(-30);
-  updateCrisis(g); sampleHistory(g); checkpoint(g, serializeGame, g.status === 'FINISHED');
+  updateCrisis(g); sampleTelemetry(g); sampleHistory(g); checkpoint(g, serializeGame, g.status === 'FINISHED');
 }
 function finishRequests(g: GameState) {
   for (const company of g.companies) {
@@ -313,6 +314,7 @@ export function project(g: GameState, identity: Identity | null): Snapshot {
   }
   return {
     operations: identity ? { modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
+    slack: ownCompany ? structuredClone(g.slack.messages.filter(m=>m.companyId===ownCompany.id)) : undefined,
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
     companies: g.companies.map(c => {
       const { runtime, drafts, backend, security, product, migrationRemainder, arrivalRemainder, processedRemainder, crisisTicks, deadTicks, bankruptTicks, concurrencyUntil, concurrency, traffic, ...pub } = c;
