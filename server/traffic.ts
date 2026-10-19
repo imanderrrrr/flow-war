@@ -1,3 +1,4 @@
+import { activeCampaign } from './business.js';
 import { releaseResources, pruneOperations } from './blocks.js';
 import { admitSecurity } from './security.js';
 import { settleReservation } from './module-execution.js';
@@ -64,6 +65,7 @@ export function admitTraffic(company: Company, now: number, type: TrafficRequest
   const executionPath = state.paths[company.version] ??= structuredClone(route(company.backend));
   const path = type === 'query' ? executionPath.filter(node => ['entry', 'read', 'exit'].includes(node.type)) : executionPath;
   const request: TrafficRequest = {
+    ...(activeCampaign(company, now) ? { promotion: { percent: activeCampaign(company, now)!.configuration.percent, audience: activeCampaign(company, now)!.configuration.audience } } : {}),
     id, ...(type === 'purchase' ? { intentId: `${id}-intent` } : {}), companyId: company.id,
     ...(trafficClass === 'legitimate' && state.scope === 'qa' ? { customerId: `qa-${company.id}-${ordinal}`, customerSource: 'qa' as const } : {}),
     type, trafficClass, ...(attackKind ? { attackKind } : {}), attempt: 0, commercial: type === 'purchase' && trafficClass === 'legitimate',
@@ -220,7 +222,7 @@ function updateTrafficMetrics(company: Company, now: number, dt: number, rates: 
 export function generateTraffic(company: Company, at: number, dt: number, duration: number) {
   if (company.eliminated) return;
   const state = company.traffic;
-  const demand = (5 + 295 * (at / duration) ** 1.25) * company.customers / 5000;
+  const demand = (5 + 295 * (at / duration) ** 1.25) * company.customers / 5000 * (activeCampaign(company, at)?.configuration.demandMultiplier ?? 1);
   state.arrivalRemainder = round(state.arrivalRemainder + demand * dt);
   while (state.arrivalRemainder >= 1) {
     state.arrivalRemainder = round(state.arrivalRemainder - 1);

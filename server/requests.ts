@@ -174,6 +174,7 @@ export function executePurchaseOperation(request: PurchaseRequest, inventory: In
         moveRequest(request, 'payment', now);
         if (request.deferUntil && now < request.deferUntil) { request.waitOperation = true; break; }
         if (!request.committed || (request.paid && !request.retryingPayment)) { finishRequest(request, 'FAILED', 'INVALID_FLOW', now); break; }
+        if (request.promotion && !request.promotionApplied && (request.promotion.audience === 'all' || request.newCustomer)) { request.price = Math.round((request.price ?? 45) * (1 - request.promotion.percent / 100) * 100) / 100; request.promotionApplied = true; }
         const key = `payment:${request.intentId ?? request.id}`, seen = ops.payments[key];
         if (!(seen && seen.until > now && (request.idempotentUntil ?? 0) > now)) {
           if (seen && seen.until > now) { if (seen.owner !== request.id) request.duplicateBusiness = true; request.duplicates = (request.duplicates ?? 0) + 1; ops.counters.duplicates++; }

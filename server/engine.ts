@@ -1,3 +1,4 @@
+import { businessCommand, advanceCampaigns } from './business.js';
 import { blockConfiguration } from './blocks.js';
 import { createTestJob, advanceTestJob, testReport, scenarioForSuite } from './qa.js';
 import { testScenario } from './action-validation.js';
@@ -113,6 +114,7 @@ export function applyCommand(g: GameState, identity: Identity | null, command: C
   const ch = g.changes.find(x => x.id === (command.changeId ?? command.payload?.changeId) && x.companyId === c.id);
   const p = command.payload ?? {};
   try {
+    if (command.type.startsWith('campaign.') || command.type === 'product.propose') { const result = businessCommand(g, c, identity, command.type, p); event(g, c.id, command.type === 'campaign.activate' ? 'Campaña activada.' : 'Operación comercial registrada.', 'neutral', 'PRODUCTO'); return result; }
     if (['module.create','module.revise','security.prepare'].includes(command.type)) {
       const change = prepareArtifact(g, c, identity, command.type, p); event(g, c.id, `${change.id} preparado. Pendiente de pruebas QA.`, 'neutral', 'PIPELINE'); return { ok: true, refs: [change.id, ...(change.artifactRefs?.map(ref => `${ref.id}@${ref.version}`) ?? [])] };
     }
@@ -141,7 +143,7 @@ export function applyCommand(g: GameState, identity: Identity | null, command: C
       if (![250, 500, 1000].includes(amount) || c.capital - c.reserved - c.infraBudget < amount) throw new Error('Saldo disponible insuficiente.');
       c.infraBudget += amount; event(g, c.id, `Q${amount} de operación autorizados.`, 'neutral', 'CTO'); return { ok: true };
     }
-    if (command.type === 'cto.prioritize') { event(g, c.id, `Prioridad: ${p.incident === 'security' ? 'seguridad' : 'concurrencia'}.`, 'neutral', 'CTO'); return { ok: true }; }
+    if (command.type === 'cto.prioritize') { validateParameters(command.type, p); c.runtime.priority = p.incident as 'security' | 'concurrency'; event(g, c.id, `Prioridad: ${p.incident === 'security' ? 'seguridad' : 'concurrencia'}.`, 'neutral', 'CTO'); return { ok: true }; }
     if (command.type === 'infra.scale') {
       const delta = Number(p.delta); if (delta !== 1 && delta !== -1) throw new Error('Operación inválida.');
       if (c.servers + delta < 1 || c.servers + delta > 8) throw new Error('Rango de servidores: 1–8.');
@@ -188,10 +190,16 @@ export function applyCommand(g: GameState, identity: Identity | null, command: C
   } catch (e) { return { ok: false, error: e instanceof Error ? e.message : 'Comando inválido.' }; }
 }
 function jobs(g: GameState) {
-  for (const ch of g.changes) {
+  const qaSlots = new Set<number>();
+  const ordered = [...g.changes].sort((a,b) => {
+    const rank = (ch: Change) => (g.companies[ch.companyId].runtime.priority === 'security' ? ch.domain === 'security' : ch.domain === 'backend') ? 0 : 1;
+    return rank(a) - rank(b) || a.created - b.created || a.id.localeCompare(b.id);
+  });
+  for (const ch of ordered) {
     const c = g.companies[ch.companyId];
     if (ch.status === 'AUTHORIZED' && g.tick > (ch.expires ?? Infinity)) { ch.status = 'EXPIRED'; releaseReservation(c, ch); }
-    if (ch.status === 'QA_RUNNING') {
+    if (ch.status === 'QA_RUNNING' && !qaSlots.has(c.id)) {
+      qaSlots.add(c.id);
       if (ch.qaScenario) advanceConcurrency(ch.qaScenario, g.tick);
       const completed = ch.testJob ? advanceTestJob(ch.testJob) : ch.qaLoad ? advanceLoadRun(ch.qaLoad) : ch.qaScenario ? isRunFinished(ch.qaScenario) : g.tick >= (ch.due ?? Infinity);
       if (completed) {
@@ -222,7 +230,7 @@ export function step(g: GameState, dt = .1) {
   if (g.tick - dt < g.duration * .24 && concurrencyIncident) event(g, null, 'Ráfagas de compra sobre inventario compartido.', 'bad', 'CONCURRENCIA');
   for (const c of g.companies) {
     if (c.eliminated) continue;
-    advanceInfrastructure(c, g.tick);
+    advanceInfrastructure(c, g.tick); advanceCampaigns(c, g.tick);
     const deploying = g.changes.find(ch => ch.companyId === c.id && ch.status === 'DEPLOYING');
     const rates = serviceRates(c, deploying);
     const capacity = rates.web;
@@ -257,7 +265,7 @@ export function step(g: GameState, dt = .1) {
   }
   advanceMarket(g);
   const removed = g.companies.filter(c => !c.eliminated && (c.deadTicks >= 90 || c.crisisTicks >= 30 || c.bankruptTicks >= 30));
-  for (const c of removed) { cancelTraffic(c, g.tick, 'COMPANY_ELIMINATED'); if (c.concurrency.run) { cancelConcurrency(c.concurrency.run, g.tick, 'COMPANY_ELIMINATED'); settleConcurrency(c); } c.eliminated = true; c.eliminatedAt = g.tick; c.active = 0; c.particles = []; event(g, c.id, 'EMPRESA FUERA DEL MERCADO', 'bad', 'COLAPSO'); }
+  for (const c of removed) { cancelTraffic(c, g.tick, 'COMPANY_ELIMINATED'); if (c.concurrency.run) { cancelConcurrency(c.concurrency.run, g.tick, 'COMPANY_ELIMINATED'); settleConcurrency(c); } c.eliminated = true; advanceCampaigns(c, g.tick); c.eliminatedAt = g.tick; c.active = 0; c.particles = []; event(g, c.id, 'EMPRESA FUERA DEL MERCADO', 'bad', 'COLAPSO'); }
   if (removed.length) {
     evacuateEliminated(g);
     for (const c of removed) {
