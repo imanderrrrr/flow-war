@@ -22,6 +22,7 @@ export type ActionParameters = {
   'module.revise': { moduleId: string; name: string; configuration: ModuleConfiguration; dependencies: string[] };
   'security.prepare': SecurityConfiguration;
   'qa.execute': { changeId: string; scenario: TestScenario };
+  'infra.maintenance': { mode: 'OPERATING' | 'FULL_MAINTENANCE' };
   'infra.restart': { serverId: number; duration: number };
   'infra.restart_all': { duration: number };
   'infra.stop': { service: ServiceId };
@@ -52,6 +53,7 @@ const entry = (roles: (Role | 'operator')[], category: ActionCategory) => ({ rol
 export const ACTION_CATALOG = {
   'module.create': entry(['backend'], 'artifact'), 'module.revise': entry(['backend'], 'artifact'),
   'security.prepare': entry(['security'], 'preparation'), 'qa.execute': entry(['qa'], 'qa'),
+  'infra.maintenance': entry(['devops'], 'operation'),
   'infra.restart': entry(['devops'], 'operation'), 'infra.restart_all': entry(['devops'], 'operation'),
   'infra.stop': entry(['devops'], 'operation'), 'infra.recover': entry(['devops'], 'operation'),
   'campaign.prepare': entry(['product'], 'artifact'), 'campaign.authorize': entry(['cto'], 'finance'),

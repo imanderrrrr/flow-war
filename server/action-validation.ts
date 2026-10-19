@@ -49,6 +49,7 @@ export function validateParameters(type: string, input: unknown) {
       if (!Array.isArray(p.dependencies) || p.dependencies.length > 8) throw new ActionError('INVALID', 'Dependencias inválidas.'); p.dependencies.forEach(v => string(v)); break;
     case 'security.prepare': securityConfiguration(p); break;
     case 'qa.execute': keys(p, ['changeId','scenario']); string(p.changeId); testScenario(p.scenario); break;
+    case 'infra.maintenance': keys(p, ['mode']); oneOf(p.mode, ['OPERATING','FULL_MAINTENANCE']); break;
     case 'infra.restart': keys(p, ['serverId','duration']); integer(p.serverId, 1, 8); integer(p.duration, 1, 60); break;
     case 'infra.restart_all': keys(p, ['duration']); integer(p.duration, 1, 60); break;
     case 'infra.stop': case 'infra.recover': keys(p, ['service']); oneOf(p.service, ['security','web','checkout','inventory','payment']); break;

@@ -1,3 +1,5 @@
+import { admissionReason } from './maintenance.js';
+import { finishRequest } from './requests.js';
 import { observeCompany } from './observability.js';
 import { admitSecurity } from './security.js';
 import { executionFor } from './artifacts.js';
@@ -23,7 +25,7 @@ export function startConcurrency(company: Company, at: number) {
   if (customers.some(customer => !customer)) return false;
   settleConcurrency(company);
   state.run = createConcurrencyRun(`C${company.id}-CC${++state.sequence}`, productionContext(company), at);
-  state.run.requests.forEach((request, index) => { request.newCustomer = customers[index]!.successfulVisits === 0; request.securityAllowed = admitSecurity(company, productionContext(company).execution!, 'valid', index, at, `sim-${customers[index]!.cohort % 64}`, customers[index]!.id, 'purchase'); attachCustomer(company, request, customers[index]!); });
+  state.run.requests.forEach((request, index) => { request.newCustomer = customers[index]!.successfulVisits === 0; request.securityAllowed = admissionReason(company,'purchase') ? false : admitSecurity(company, productionContext(company).execution!, 'valid', index, at, `sim-${customers[index]!.cohort % 64}`, customers[index]!.id, 'purchase'); attachCustomer(company, request, customers[index]!); const blocked=admissionReason(company,'purchase'); if(blocked)finishRequest(request,'REJECTED',blocked,at); });
   state.totals.generated += state.run.requests.length;
   company.requests += state.run.requests.length;
   return true;

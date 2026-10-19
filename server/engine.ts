@@ -1,3 +1,4 @@
+import { setMaintenance, MAINTENANCE_POLICY } from './maintenance.js';
 import { postChat } from './chat.js';
 import { slackFact, sampleTelemetry } from './flowslack.js';
 import { updateCrisis } from './crisis.js';
@@ -132,6 +133,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command): Res
     if (['module.create','module.revise','security.prepare'].includes(command.type)) {
       const change = prepareArtifact(g, c, identity, command.type, p); event(g, c.id, `${change.id} preparado. Pendiente de pruebas QA.`, 'neutral', 'PIPELINE'); return { ok: true, refs: [change.id, ...(change.artifactRefs?.map(ref => `${ref.id}@${ref.version}`) ?? [])] };
     }
+    if (command.type === 'infra.maintenance') { setMaintenance(g,c,p.mode as import('../shared/observability.js').ServiceMode,identity.id); return {ok:true}; }
     if (['infra.restart','infra.restart_all','infra.stop','infra.recover'].includes(command.type)) {
       validateParameters(command.type, p);
       if (command.type.startsWith('infra.restart')) restart(c, g.tick, Number(p.duration), command.type === 'infra.restart' ? Number(p.serverId) : undefined);
@@ -283,7 +285,7 @@ export function step(g: GameState, dt = .1) {
     c.crisisTicks = c.customers < 50 && c.pressure >= 200 && !health ? c.crisisTicks + dt : 0;
   }
   advanceMarket(g);
-  const removed = g.companies.filter(c => !c.eliminated && (c.deadTicks >= 90 || c.crisisTicks >= 30 || c.bankruptTicks >= 30));
+  const removed = g.companies.filter(c => !c.eliminated && (c.deadTicks >= 90 || (c.serviceMode.mode === 'FULL_MAINTENANCE' && g.tick-c.serviceMode.since >= MAINTENANCE_POLICY.eliminationSeconds) || c.crisisTicks >= 30 || c.bankruptTicks >= 30));
   for (const c of removed) { cancelTraffic(c, g.tick, 'COMPANY_ELIMINATED'); if (c.concurrency.run) { cancelConcurrency(c.concurrency.run, g.tick, 'COMPANY_ELIMINATED'); settleConcurrency(c); } c.eliminated = true; advanceCampaigns(c, g.tick); c.eliminatedAt = g.tick; c.active = 0; c.particles = []; event(g, c.id, 'EMPRESA FUERA DEL MERCADO', 'bad', 'COLAPSO'); }
   if (removed.length) {
     evacuateEliminated(g);
