@@ -1,0 +1,51 @@
+import assert from 'node:assert/strict';
+import {DatabaseSync} from 'node:sqlite';
+import {createHash} from 'node:crypto';
+import {mkdtempSync,readFileSync,writeFileSync,rmSync,mkdirSync,statSync,readdirSync} from 'node:fs';
+import {tmpdir,cpus} from 'node:os';import {join} from 'node:path';import {performance} from 'node:perf_hooks';import {execFileSync} from 'node:child_process';
+import {applyCommand,step,project} from '../server/engine.js';import {createGameWriter} from '../server/storage.js';import {reconstruct,historyPoints} from '../server/history.js';import {clearBuffer,checkpoint} from '../server/observability.js';import {serializeGame,recoverGame} from '../server/persistence.js';import {assertMarket} from '../server/market.js';import {marketScenario,marketSample} from './market-scenarios.js';import {DEFAULT_TEST} from '../shared/actions.js';import type{GameState,Role}from '../shared/types.js';import {crisisVisual}from '../shared/crisis.js';import {postmortem}from '../server/postmortem.js';
+const cases=['A-crisis','B-recovery','C-complaints','D-hidden-traffic','E-maint60','F-maint120','G-orders','H-domino','J-replay','K-defect-maint','L-equivalent']as const;type Case=typeof cases[number];
+const percentile=(v:number[],p:number)=>{const s=[...v].sort((a,b)=>a-b);return+(s[Math.min(s.length-1,Math.floor(s.length*p))]??0).toFixed(3);};
+const digest=(g:GameState)=>createHash('sha256').update(JSON.stringify({tick:g.tick,companies:g.companies.map(({traffic,...c})=>({...c,traffic:{...traffic,outbox:[]}})),market:g.market,changes:g.changes,slack:g.slack,actions:g.actions})).digest('hex');
+const sourceFiles=['server','shared'].flatMap(d=>readdirSync(d).filter(f=>f.endsWith('.ts')).map(f=>`${d}/${f}`)).concat(['scripts/entrega5-benchmark.ts','scripts/market-scenarios.ts']).sort();const sourceDigest=()=>createHash('sha256').update(sourceFiles.map(f=>f+'\n'+readFileSync(f,'utf8')).join('\n')).digest('hex');const initialSource=sourceDigest();
+function run(duration:number,name:Case){
+ const strategy=name==='H-domino'?'D-domino':['A-crisis','C-complaints','D-hidden-traffic'].includes(name)?'B-deficient':'A-equivalent';const scenario=marketScenario(duration,strategy,8);const g=scenario.game;
+ // Explicit scenario initial condition; never an animation-driven mutation.
+ if(name==='A-crisis'||name==='B-recovery')g.companies[0].reputation=34;
+ clearBuffer(g);g.observability.startTick=g.tick;checkpoint(g,serializeGame,true);
+ const dir=mkdtempSync(join(tmpdir(),'flow5-bench-')),path=join(dir,'game.sqlite');let db=new DatabaseSync(path);db.exec('PRAGMA journal_mode=WAL;CREATE TABLE commands(identity TEXT,id TEXT,digest TEXT,result TEXT,PRIMARY KEY(identity,id))');const write=createGameWriter(db),ticks:number[]=[],saves:number[]=[],expected:{at:number;digest:string;summary:unknown}[]=[],samples:unknown[]=[],effects:unknown[]=[];let seq=0,peakHeap=0,maxSnapshot=0,crisis=false,recoveredCrisis=false,checks=0;const start=performance.now();
+ const save=()=>{const at=performance.now();write(g);saves.push(performance.now()-at);};save();
+ const command=(role:Role|'operator',type:string,payload:Record<string,unknown>={},changeId?:string,companyId=0)=>{const result=applyCommand(g,{id:role==='operator'?'operator':`${companyId}-${role}`,role,companyId:role==='operator'?null:companyId},{id:`delivery5-${++seq}`,type,companyId,changeId,payload},{receivedAt:100000+Math.round(g.tick*1000)});assert(result.ok,`${name}@${g.tick}: ${type}: ${result.error}`);effects.push({at:g.tick,type,payload,result});save();};
+ const targets=[20.5,59.5,60.5,100.5,510.5,600.5,duration-.5,duration];
+ try{while(g.status==='RUNNING'){
+ if(name!=='A-crisis')scenario.decide();
+ if(name==='K-defect-maint'&&g.tick===100){command('backend','module.create',{name:'Cupón con evidencia',configuration:{kind:'coupon',percent:20,audience:'all',stackable:false},dependencies:[]});const ch=g.changes[0];assert(ch.context?.execution?.modules.some(m=>m.defects.some(d=>d.code==='D02')));command('qa','qa.execute',{changeId:ch.id,scenario:{...DEFAULT_TEST,newCustomer:true}});}
+ if(name==='K-defect-maint'&&g.tick===105){const ch=g.changes.find(ch=>ch.artifactRefs?.length)!;command('qa','qa.approve',{},ch.id);command('cto','cto.authorize',{},ch.id);command('devops','deploy.start',{strategy:'rolling'},ch.id);}
+ if(['E-maint60','F-maint120','G-orders','K-defect-maint'].includes(name)&&g.tick===600)command('devops','infra.maintenance',{mode:name==='G-orders'?'ORDERS_PAUSED':'FULL_MAINTENANCE'});
+ if(['E-maint60','F-maint120','G-orders','K-defect-maint'].includes(name)&&g.tick===(name==='F-maint120'?720:660))command('devops','infra.maintenance',{mode:'OPERATING'});
+ if(name==='J-replay'&&g.tick===200){command('operator','room.pause');command('security','chat.send',{channel:'equipo-interno',text:'@Backend evidencia durante pausa',refs:[]});command('operator','room.start');}
+ const at=performance.now();step(g);ticks.push(performance.now()-at);
+ const active=g.companies[0].crisis.active;crisis||=active;recoveredCrisis||=crisis&&!active;
+ if(Number.isInteger(g.tick)){assertMarket(g);checks++;for(const c of g.companies){const t=c.traffic.totals;assert.equal(t.generated,t.completed+t.failed+t.rejected+t.abandoned+Object.values(c.traffic.requests).filter(r=>!r.result).length);assert(Math.abs(c.revenue-t.revenue-c.concurrency.totals.revenue)<.001);}}
+ if(targets.includes(g.tick))expected.push({at:g.tick,digest:digest(g),summary:{companies:marketSample(g).companies,papers:crisisVisual(g.companies[0].crisis,g.tick)}});
+ if(Math.round(g.tick*10)%100===0)save();
+ if(Math.round(g.tick*10)%300===0){peakHeap=Math.max(peakHeap,process.memoryUsage().heapUsed/1024**2);maxSnapshot=Math.max(maxSnapshot,Buffer.byteLength(JSON.stringify(project(g,{id:'0-backend',role:'backend',companyId:0}))));samples.push({...marketSample(g),crisis:g.companies[0].crisis,papers:crisisVisual(g.companies[0].crisis,g.tick).papers.length,mode:g.companies[0].serviceMode});}
+ }
+ save();assert.equal(g.tick,duration);assertMarket(g);if(name==='A-crisis')assert(crisis);if(name==='B-recovery')assert(recoveredCrisis);if(name==='L-equivalent')assert.equal(new Set(g.companies.map(c=>JSON.stringify([c.customers,c.capital,c.reputation]))).size,1);
+ const auto=(db.prepare("SELECT count(*) AS n FROM slack_messages WHERE json_extract(body,'$.source')!='human'").get()as{n:number}).n;assert(auto>0||name==='L-equivalent'||name==='B-recovery');
+ const bad=(db.prepare("SELECT count(*) AS n FROM slack_messages WHERE channel='alertas-sistema' AND (body LIKE '%DDoS%' OR body LIKE '%SQL Injection%' OR body LIKE '%D02%')").get()as{n:number}).n;assert.equal(bad,0);
+ const maintenanceRejections=(db.prepare("SELECT count(*) AS n FROM history_events WHERE generation=0 AND companyId=0 AND kind='request.settled' AND json_extract(body,'$.data.result.reason') IN ('MAINTENANCE','ORDERS_PAUSED')").get()as{n:number}).n;
+ if(['E-maint60','F-maint120','G-orders','K-defect-maint'].includes(name))assert(maintenanceRejections>0);
+ if(name==='G-orders')assert((db.prepare("SELECT count(*) AS n FROM request_receipts WHERE companyId=0 AND json_extract(receipt,'$.type')='query' AND json_extract(receipt,'$.arrivalAt')>=600 AND json_extract(receipt,'$.arrivalAt')<660 AND json_extract(receipt,'$.result.status')='COMPLETED'").get()as{n:number}).n>0);
+ if(name==='H-domino')assert(g.companies[0].migratedOut>0&&g.companies[1].migratedIn>0);
+ if(name==='K-defect-maint'){assert((g.companies[0].traffic.operations?.counters.activations.D02??0)>0);assert(g.companies[0].runtime.releases[g.companies[0].version].modules.some(m=>m.defects.some(d=>d.code==='D02')));}
+ const facts=(db.prepare('SELECT count(*) AS n FROM history_events').get()as{n:number}).n,receipts=(db.prepare('SELECT count(*) AS n FROM request_receipts').get()as{n:number}).n,inputs=(db.prepare('SELECT count(*) AS n FROM history_inputs').get()as{n:number}).n;
+ const pointsAt=performance.now();historyPoints(db,0);const loadDvrMs=performance.now()-pointsAt;
+ const forensic=postmortem(db,0,0,g);const recovered=recoverGame((db.prepare('SELECT state FROM game').get()as{state:string}).state);assert.deepEqual(recovered.market,g.market);assert.equal(recovered.status,'FINISHED');
+ db.exec('PRAGMA wal_checkpoint(TRUNCATE)');db.close();const dbBytes=statSync(path).size;db=new DatabaseSync(path);
+ const seeks=expected.map(e=>{const at=performance.now(),restored=reconstruct(db,0,e.at);assert.equal(digest(restored),e.digest,`${name} exact replay at ${e.at}`);assertMarket(restored);return{at:e.at,ms:+(performance.now()-at).toFixed(3),digest:e.digest};});
+ const journalBytes=(db.prepare("SELECT coalesce(sum(length(body)),0) AS n FROM history_events").get()as{n:number}).n+(db.prepare('SELECT coalesce(sum(length(state)),0) AS n FROM history_checkpoints').get()as{n:number}).n;
+ const result={name,duration,finalTick:g.tick,wallSeconds:+((performance.now()-start)/1000).toFixed(3),checks,tick:{p50:percentile(ticks,.5),p95:percentile(ticks,.95),p99:percentile(ticks,.99)},persist:{p50:percentile(saves,.5),p95:percentile(saves,.95),p99:percentile(saves,.99)},peakHeapMiB:+peakHeap.toFixed(2),maxSnapshotBytes:maxSnapshot,dbBytes,journalBytes,facts,inputs,receipts,maintenanceRejections,automaticMessages:auto,suppressed:g.slack.sampledCount,loadDvrMs:+loadDvrMs.toFixed(3),seeks,crisis,recoveredCrisis,final:marketSample(g),effects,samples,forensic};console.log(JSON.stringify({name,duration,finalTick:g.tick,tick:result.tick,persist:result.persist,dbMiB:+(dbBytes/1024**2).toFixed(1),seekMax:Math.max(...seeks.map(s=>s.ms))}));return result;
+ }finally{db.close();rmSync(dir,{recursive:true,force:true});}
+}
+const selected=cases.filter(c=>!process.env.FLOW_DELIVERY5_CASE||process.env.FLOW_DELIVERY5_CASE===c),durations=process.env.FLOW_DELIVERY5_DURATION?[Number(process.env.FLOW_DELIVERY5_DURATION)]:[1200,1500];const results=durations.flatMap(d=>selected.map(c=>run(d,c)));assert.equal(sourceDigest(),initialSource,'sources changed during measurement');mkdirSync('artifacts',{recursive:true});writeFileSync('artifacts/entrega5-benchmark.json',JSON.stringify({version:'delivery5-1',commit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),sourceFiles,sourceDigest:initialSource,hardware:{node:process.version,cpu:cpus()[0]?.model},results},null,2));
