@@ -1,3 +1,5 @@
+import { initialInfrastructure, syncInfrastructure, advanceInfrastructure, restart, setService } from './infrastructure.js';
+import { parseAction, validateParameters } from './action-validation.js';
 import { allowedAction } from '../shared/actions.js';
 import { advanceMarket, assertMarket, bindMarket, createMarket, evacuateEliminated, flushMigrations } from './market.js';
 import { advanceLoadRun, createLoadRun, loadReport, runLoadFixture } from './load.js';
@@ -18,7 +20,7 @@ export function initialGraph(domain: 'backend' | 'security' | 'product'): Graph 
 }
 export function createGame(duration = 1500, seed = 7357, generation = 0): GameState {
   const companies: Company[] = NAMES.map((name, id) => ({
-    id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
+    infrastructure: initialInfrastructure(), id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
     servers: 1, balancer: false, infraBudget: duration * .5, reserved: 0, version: 1, deployments: 0, active: 0, requests: 0, successes: 0, errors: 0, breaches: 0, oversold: 0, duplicates: 0,
     lostRevenue: 0, revenue: 0, latency: 0, utilization: 0, queue: 0, migratedIn: 0, migratedOut: 0, eliminated: false, crisisTicks: 0, deadTicks: 0, bankruptTicks: 0, concurrencyUntil: 0,
     backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
@@ -85,6 +87,10 @@ export function reportFor(g: GameState, change: Change, suite: string): Report {
 function releaseReservation(c: Company, change: Change) { c.reserved = Math.max(0, c.reserved - change.reserved); change.reserved = 0; }
 export function applyCommand(g: GameState, identity: Identity | null, command: Command): Result {
   bindMarket(g);
+  if (command.type === 'action.execute') {
+    try { const action = parseAction(command.payload?.action); return applyCommand(g, identity, { id: action.id, type: action.type, companyId: action.companyId, changeId: action.changeId, payload: action.parameters }); }
+    catch (e) { return { ok: false, code: 'INVALID', error: (e as Error).message }; }
+  }
   if (!identity || !allowedAction(command.type, identity.role)) return { ok: false, code: 'FORBIDDEN', error: 'Acción no autorizada para este rol.' };
   if (identity.role === 'operator') {
     if (command.type === 'room.reset') { const duration = Number(command.payload?.duration) === 1200 ? 1200 : 1500; finishRequests(g); const receipts = g.companies.map(company => company.traffic.outbox); Object.assign(g, createGame(duration, 7357, g.generation + 1)); for (const company of g.companies) company.traffic.outbox = receipts[company.id]; return { ok: true }; }
@@ -101,6 +107,12 @@ export function applyCommand(g: GameState, identity: Identity | null, command: C
   const ch = g.changes.find(x => x.id === command.changeId && x.companyId === c.id);
   const p = command.payload ?? {};
   try {
+    if (['infra.restart','infra.restart_all','infra.stop','infra.recover'].includes(command.type)) {
+      validateParameters(command.type, p);
+      if (command.type.startsWith('infra.restart')) restart(c, g.tick, Number(p.duration), command.type === 'infra.restart' ? Number(p.serverId) : undefined);
+      else setService(c, p.service as import('../shared/types.js').ServiceId, command.type === 'infra.stop');
+      event(g, c.id, command.type.startsWith('infra.restart') ? 'Reinicio iniciado.' : command.type === 'infra.stop' ? 'Servicio detenido.' : 'Servicio recuperado.', 'neutral', 'DEVOPS'); return { ok: true };
+    }
     if (command.type === 'draft.save' || command.type === 'change.submit') {
       const domain = identity.role as 'backend' | 'security';
       const current = c.drafts[domain]?.revision ?? 0;
@@ -124,7 +136,7 @@ export function applyCommand(g: GameState, identity: Identity | null, command: C
       const delta = Number(p.delta); if (delta !== 1 && delta !== -1) throw new Error('Operación inválida.');
       if (c.servers + delta < 1 || c.servers + delta > 8) throw new Error('Rango de servidores: 1–8.');
       if (delta > 0 && c.infraBudget < (c.servers + 1) * 30) throw new Error('Presupuesto operativo insuficiente.');
-      c.servers += delta; event(g, c.id, `${delta > 0 ? '+1' : '-1'} SERVER · ${c.servers} en servicio.`, 'neutral', 'DEVOPS'); return { ok: true };
+      c.servers += delta; syncInfrastructure(c); event(g, c.id, `${delta > 0 ? '+1' : '-1'} SERVER · ${c.servers} en servicio.`, 'neutral', 'DEVOPS'); return { ok: true };
     }
     if (command.type === 'infra.balancer') { c.balancer = Boolean(p.enabled); event(g, c.id, `Balanceador ${c.balancer ? 'activo' : 'desactivado'}.`, 'neutral', 'DEVOPS'); return { ok: true }; }
     if (!ch) throw new Error('Cambio no encontrado.');
@@ -191,6 +203,7 @@ export function step(g: GameState, dt = .1) {
   if (g.tick - dt < g.duration * .24 && concurrencyIncident) event(g, null, 'Ráfagas de compra sobre inventario compartido.', 'bad', 'CONCURRENCIA');
   for (const c of g.companies) {
     if (c.eliminated) continue;
+    advanceInfrastructure(c, g.tick);
     const deploying = g.changes.find(ch => ch.companyId === c.id && ch.status === 'DEPLOYING');
     const rates = serviceRates(c, deploying);
     const capacity = rates.web;

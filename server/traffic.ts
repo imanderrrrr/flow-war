@@ -1,3 +1,4 @@
+import { effectiveServers } from './infrastructure.js';
 import { attachCustomer, customerColor, recordCustomerExperience, selectCustomer } from './market.js';
 import type { MarketCustomer, ServiceQueue, Company, FlowParticle, InventoryState, RequestResult, ScenarioTotals, ServiceId, TrafficMetrics, TrafficReceipt, TrafficRequest, TrafficScenario, TrafficState, TrafficView } from '../shared/types.js';
 import { evaluateSecurity, route } from './graphs.js';
@@ -28,11 +29,13 @@ export function initialTraffic(stock = 100, seed = 7357, namespace = 'g0', tick 
 export function serviceRates(company: Company, deployment?: { strategy?: string }): Record<ServiceId, number> {
   const config = company.traffic.config;
   const paid = company.infraBudget > 0 && company.capital > 0 && !company.eliminated;
-  let servers = company.balancer ? company.servers : Math.min(1, company.servers);
+  let servers = effectiveServers(company);
   if (!paid || deployment?.strategy === 'restart') servers = 0;
   else if (deployment) servers *= company.servers === 1 ? .12 : (company.servers - 1) / company.servers;
   const available = servers > 0;
-  return { security: available ? config.rates.security : 0, web: config.rates.web * servers, checkout: config.rates.checkout * servers, inventory: available ? config.rates.inventory : 0, payment: available ? config.rates.payment : 0 };
+  const rates = { security: available ? config.rates.security : 0, web: config.rates.web * servers, checkout: config.rates.checkout * servers, inventory: available ? config.rates.inventory : 0, payment: available ? config.rates.payment : 0 };
+  for (const service of company.infrastructure?.stoppedServices ?? []) rates[service] = 0;
+  return rates;
 }
 
 function enqueue(company: Company, request: TrafficRequest, service: ServiceId, now: number) {

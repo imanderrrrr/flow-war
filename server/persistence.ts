@@ -1,3 +1,4 @@
+import { syncInfrastructure } from './infrastructure.js';
 import { assertMarket, bindMarket, importLegacyMarket } from './market.js';
 import type { GameState } from '../shared/types.js';
 import { initialConcurrency } from './scenarios.js';
@@ -63,6 +64,7 @@ export function recoverGame(serialized: string): GameState {
   }
   if (saved.schema === 3) { importLegacyMarket(saved); saved.schema = 4; }
   if (saved.market.config.version !== 'market-3.0') throw new Error('Versión de mercado no soportada.');
+  for (const company of saved.companies) syncInfrastructure(company);
   bindMarket(saved); assertMarket(saved);
   if (saved.status === 'RUNNING') saved.status = 'PAUSED';
   return saved as GameState;

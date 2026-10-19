@@ -83,7 +83,9 @@ export type MarketState = {
 };
 export type GameEvent = { id: number; at: number; companyId: number | null; text: string; tone: 'good' | 'bad' | 'neutral'; category: string };
 export type FlowParticle = { id: string; born: number; duration: number; color: string; customerId?: string; kind: 'success' | 'error' | 'attack'; route: 'browse' | 'purchase' | 'query'; seed: number; requestId?: string; companyId?: number; executionVersion?: number; status?: RequestStatus; reason?: TerminalReason; finishedAt?: number; journey?: RequestJourney; queue?: { service: ServiceId; position: number; enteredAt: number; depth: number } };
+export type Infrastructure = { instances: { id: number; status: 'UP' | 'RESTARTING'; readyAt?: number }[]; stoppedServices: ServiceId[] };
 export type Company = {
+  infrastructure: Infrastructure;
   id: number; name: string; tag: string; color: string; customers: number; capital: number; reputation: number; pressure: number;
   servers: number; balancer: boolean; infraBudget: number; reserved: number; version: number; deployments: number;
   active: number; requests: number; successes: number; errors: number; breaches: number; oversold: number; duplicates: number;
