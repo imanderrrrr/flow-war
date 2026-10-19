@@ -1,3 +1,4 @@
+import { runLocalAgent } from './agents.js';
 import { initialActionState, dispatchCommand, correctEmployee } from './discipline.js';
 import { businessCommand, advanceCampaigns } from './business.js';
 import { blockConfiguration } from './blocks.js';
@@ -94,6 +95,7 @@ export function reportFor(g: GameState, change: Change, suite: string): Report {
 }
 function releaseReservation(c: Company, change: Change) { c.reserved = Math.max(0, c.reserved - change.reserved); change.reserved = 0; }
 export function applyCommand(g: GameState, identity: Identity | null, command: Command): Result {
+  if (command.type === 'agent.fixture') return runLocalAgent(g, identity, command.payload, effective => applyCommand(g, identity, effective));
   return dispatchCommand(g, identity, command, effective => executeCommand(g, identity!, effective));
 }
 function executeCommand(g: GameState, identity: Identity, command: Command): Result {
