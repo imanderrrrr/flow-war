@@ -1,3 +1,4 @@
+import {queryDvr} from './dvr-query.js';
 import {DatabaseSync} from 'node:sqlite';
 import {createHash,timingSafeEqual,randomUUID} from 'node:crypto';
 import {readFileSync,existsSync,statSync,openSync,closeSync,fsyncSync,linkSync,unlinkSync} from 'node:fs';
@@ -101,3 +102,10 @@ export function deleteArchivedGeneration(db:DatabaseSync,generation:number,confi
  }catch(e){db.exec('ROLLBACK');throw e;}
 }
 export function readArchive(path:string,at?:number){const verified=verifyArchive(path);const db=new DatabaseSync(path,{readOnly:true});try{return{...verified,snapshot:project(reconstruct(db,verified.manifest.generation,at??verified.lastTick),{id:'operator',role:'operator',companyId:null})};}finally{db.close();}}
+
+/** Inspect all DVR evidence in an independent archive without importing it into the live room. */
+export function queryArchive(path:string,query:Omit<import('./dvr-query.js').DvrQuery,'identity'|'generation'>){
+ if(!query||!['games','frame','chat','metrics','request'].includes(query.kind))throw Error('Consulta de archivo inválida.');
+ const verified=verifyArchive(path),db=new DatabaseSync(path,{readOnly:true});
+ try{return queryDvr(db,{...query,generation:verified.manifest.generation,identity:{id:'operator',role:'operator',companyId:null}});}finally{db.close();}
+}

@@ -3,7 +3,7 @@ import {resolve} from 'node:path';
 import {createGameWriter} from '../server/storage.js';
 import {acquireStorageLease} from '../server/storage-lease.js';
 import {compactReceipts} from '../server/receipt-storage.js';
-import {authorizeAdmin,adminSchema,storageUsage,retentionPreview,setRetentionPolicy,protectGeneration,exportGeneration,verifyArchive,deleteArchivedGeneration,readArchive} from '../server/history-admin.js';
+import {authorizeAdmin,adminSchema,storageUsage,retentionPreview,setRetentionPolicy,protectGeneration,exportGeneration,verifyArchive,deleteArchivedGeneration,readArchive,queryArchive} from '../server/history-admin.js';
 const [action='usage',...args]=process.argv.slice(2),directory=resolve(process.env.FLOW_DATA_DIR??'.local');
 try{
  authorizeAdmin(directory,process.env.FLOW_ADMIN_CODE);
@@ -19,6 +19,7 @@ try{
    case 'unprotect':protectGeneration(db,Number(args[0]),null);result={unprotected:Number(args[0])};break;
    case 'export':if(!args[1])throw Error('Indica generación y ruta de exportación.');result=exportGeneration(db,Number(args[0]),args[1]);break;
    case 'verify':if(!args[0])throw Error('Indica ruta de archivo.');result=verifyArchive(resolve(args[0]),args[1]);break;
+   case 'query':if(!args[0]||!args[1])throw Error('Indica archivo y consulta JSON.');result=queryArchive(resolve(args[0]),JSON.parse(args[1]));break;
    case 'read':if(!args[0])throw Error('Indica ruta de archivo.');result=readArchive(resolve(args[0]),args[1]===undefined?undefined:Number(args[1]));break;
    case 'delete':if(args[1]!=='--confirm-generation')throw Error('Requiere --confirm-generation <n>.');result=deleteArchivedGeneration(db,Number(args[0]),Number(args[2]));break;
    case 'compact':result=compactReceipts(db);break;

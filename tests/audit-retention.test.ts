@@ -9,7 +9,7 @@ import {createGame,step} from '../server/engine.js';
 import {createGameWriter} from '../server/storage.js';
 import {historyAccess,reconstruct} from '../server/history.js';
 import {command} from './helpers.js';
-import {authorizeAdmin,adminSchema,storageUsage,retentionPreview,setRetentionPolicy,protectGeneration,exportGeneration,verifyArchive,deleteArchivedGeneration,readArchive} from '../server/history-admin.js';
+import {authorizeAdmin,adminSchema,storageUsage,retentionPreview,setRetentionPolicy,protectGeneration,exportGeneration,verifyArchive,deleteArchivedGeneration,readArchive,queryArchive} from '../server/history-admin.js';
 import {decodeReceipt,compactReceipts,encodeReceipt} from '../server/receipt-storage.js';
 import {acquireStorageLease} from '../server/storage-lease.js';
 const op={id:'operator',role:'operator',companyId:null} as const;
@@ -17,7 +17,7 @@ test('H4 complete generations export losslessly, verify, preview, protect, delet
  const dir=mkdtempSync(join(tmpdir(),'flow-retention-')),path=join(dir,'game.sqlite'),archive=join(dir,'generation-0.sqlite');let db=new DatabaseSync(path);
  try{
   db.exec('PRAGMA journal_mode=WAL;CREATE TABLE commands(identity TEXT,id TEXT,digest TEXT,result TEXT,PRIMARY KEY(identity,id))');const write=createGameWriter(db);adminSchema(db);const g=createGame(2);write(g);
-  for(let generation=0;generation<3;generation++){command(g,'operator','room.start');while(g.status==='RUNNING')step(g);assert.equal(g.status,'FINISHED');write(g);if(generation===0)write(g,{identity:'operator',id:'reset-tombstone',digest:'same',result:'{"ok":true}'});if(generation<2){command(g,'operator','room.reset');g.duration=2;write(g);}}
+  for(let generation=0;generation<3;generation++){command(g,'operator','room.start');command(g,'backend','chat.send',{channel:'equipo-interno',text:'evidencia en archivo',refs:[]});while(g.status==='RUNNING')step(g);assert.equal(g.status,'FINISHED');write(g);if(generation===0)write(g,{identity:'operator',id:'reset-tombstone',digest:'same',result:'{"ok":true}'});if(generation<2){command(g,'operator','room.reset');g.duration=2;write(g);}}
   assert.equal(storageUsage(db,path).generations.length,3);assert(retentionPreview(db).generations.every(g=>!g.eligibleForDeletion));
   const original=reconstruct(db,0,2);const expectedRow=db.prepare('SELECT * FROM request_receipts WHERE generation=0 LIMIT 1').get()as{receipt:string;generation:number};const originalReceipt=decodeReceipt(db,expectedRow);assert(!('path' in JSON.parse(expectedRow.receipt)));assert(originalReceipt.path.length);
   const exported=exportGeneration(db,0,archive);assert.equal(verifyArchive(archive,exported.digest).lastTick,2);assert.deepEqual(readArchive(archive).snapshot.companies[0],readArchive(archive,2).snapshot.companies[0]);
@@ -25,7 +25,7 @@ test('H4 complete generations export losslessly, verify, preview, protect, delet
   assert.throws(()=>deleteArchivedGeneration(db,0,0));setRetentionPolicy(db,{keepGenerations:1,olderThanDays:null,deleteEnabled:true});assert.equal(retentionPreview(db).generations.find(g=>g.generation===0)!.eligibleForDeletion,true);
   protectGeneration(db,0,'trabajo estudiantil');assert.throws(()=>deleteArchivedGeneration(db,0,0));protectGeneration(db,0,null);assert.throws(()=>deleteArchivedGeneration(db,2,2));assert.throws(()=>deleteArchivedGeneration(db,0,1));
   db.exec("CREATE TRIGGER reject_partial_delete BEFORE DELETE ON history_inputs WHEN OLD.generation=0 BEGIN SELECT RAISE(ABORT,'delete failure'); END;");assert.throws(()=>deleteArchivedGeneration(db,0,0));assert.equal(historyAccess(db,0,op).status,'FINISHED');assert.equal(reconstruct(db,0,2).tick,2);db.exec('DROP TRIGGER reject_partial_delete');
-  deleteArchivedGeneration(db,0,0);assert(db.prepare("SELECT 1 FROM commands WHERE id='reset-tombstone'").get());assert.throws(()=>historyAccess(db,0,op));assert.equal(reconstruct(db,1,2).tick,2);assert.equal(reconstruct(db,2,2).tick,2);assert.equal(readArchive(archive).snapshot.tick,2);
+  deleteArchivedGeneration(db,0,0);assert(db.prepare("SELECT 1 FROM commands WHERE id='reset-tombstone'").get());assert.throws(()=>historyAccess(db,0,op));assert.equal(reconstruct(db,1,2).tick,2);assert.equal(reconstruct(db,2,2).tick,2);assert.equal(readArchive(archive).snapshot.tick,2);assert.equal((queryArchive(archive,{kind:'chat',companyId:0}) as any).messages[0].text,'evidencia en archivo');
   db.close();db=new DatabaseSync(path);assert.equal(reconstruct(db,1,2).tick,2);assert.equal(readArchive(archive).snapshot.tick,2);
   const corrupt=join(dir,'corrupt.sqlite');writeFileSync(corrupt,readFileSync(archive));const tamper=new DatabaseSync(corrupt);tamper.exec('UPDATE history_games SET tick=3');tamper.close();assert.throws(()=>verifyArchive(corrupt));assert.throws(()=>verifyArchive(corrupt,exported.digest));
  }finally{db.close();rmSync(dir,{recursive:true,force:true});}
