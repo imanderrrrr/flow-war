@@ -20,3 +20,17 @@
 @media(max-width:760px){.company-name small{font-size:7px}.company-card-bottom{font-size:8px}.pressure-line{font-size:7px}.metric-label{font-size:7px}.metric-sub{font-size:7px}.editor-bottom>span{font-size:7px}.palette-block>span:not(.block-grip){font-size:9px}.map-toolbar{font-size:7px}.map-legend{font-size:6px}}
 @media(max-width:480px){.site-header{padding:0 12px}.brand strong{font-size:13px}.brand small{font-size:4px;letter-spacing:.7px}.brand-symbol{transform:scale(.65);width:21px}.brand{gap:6px}.header-right{gap:9px}.timer>span{font-size:12px}.timer>small{font-size:4px}.access-button{padding:8px}.map-toolbar>div>.map-legend:last-child{display:none}.arena-title-row h1{font-size:19px}.arena-title-row h1>span:not(.status){font-size:10px}.arena-title-row h1 .status{font-size:5px;padding:4px;margin-left:0}.ranking-row>span:first-child{gap:6px}.ranking-row svg{display:none}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}.arcade-popup{display:none}}
+
+/* Crisis lighting is an ambient layer; customer sprites and corporate pigments stay intact. */
+.crisis-surface{position:relative;isolation:isolate;transition:box-shadow 1.5s ease}
+.crisis-surface.in-crisis{box-shadow:inset 0 0 110px 10px #ed3d4528}
+.crisis-surface.in-crisis .panel-title,.crisis-surface.in-crisis .map-toolbar,.crisis-surface.in-crisis .workspace-heading,.crisis-surface.in-crisis .arena-title-row{animation:crisis-ambient 3.6s ease-in-out infinite}
+@keyframes crisis-ambient{0%,100%{box-shadow:inset 0 0 45px #e5474912}50%{box-shadow:inset 0 0 65px #e547494f}}
+.crisis-indicator{display:flex;align-items:center;gap:12px;position:relative;min-height:78px;margin:0 0 18px;border:1px solid #ee686872;padding:14px 150px 14px 16px;background:#ec464619;color:#ffb0a6;font-size:10px;pointer-events:none;overflow:hidden}
+.crisis-indicator strong{font-family:'Press Start 2P',monospace;font-size:9px;line-height:1.8}.crisis-indicator small{display:block;color:#d7aaa3;font-size:9px;margin-top:5px}.crisis-siren{width:30px;flex-shrink:0;color:#f27e79}.crisis-siren svg{display:block;width:100%;image-rendering:pixelated}
+.crisis-papers{position:absolute;right:24px;bottom:12px;width:100px;height:54px;pointer-events:none}.pixel-paper{display:block;position:absolute;width:23px;height:30px;background:#e7dcc3;border:2px solid #8a8185;box-shadow:3px 3px 0 #0b111c;image-rendering:pixelated;animation:paper-arrive .8s ease-out}.pixel-paper b{display:block;height:2px;margin:4px 3px 0;background:#817f87}.pixel-paper b:last-child{width:7px}.pixel-paper.variant-1{background:#d2ddd7}.pixel-paper.variant-2{background:#ead0ba}.recovering{opacity:.65;transition:opacity 1s}
+@keyframes paper-arrive{from{opacity:0;translate:0 -5px}to{opacity:1;translate:0 0}}
+[data-paused="true"] *{animation-play-state:paused!important}
+html[data-calm="true"] .crisis-surface *{animation:none!important}
+@media(prefers-reduced-motion:reduce){.crisis-surface *{animation:none!important;transition:none!important}.crisis-surface.in-crisis .panel-title,.crisis-surface.in-crisis .map-toolbar{box-shadow:inset 0 0 45px #e5474930}}
+@media(max-width:700px){.crisis-indicator{padding-right:125px}.crisis-indicator strong{font-size:7px}.header-right>.text-button{font-size:7px}}
