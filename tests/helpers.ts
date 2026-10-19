@@ -12,8 +12,9 @@ export function insertBlock(type: string, before = 'write', value = 1, graph = i
   return copy;
 }
 
+let commandSequence = 0;
 export function command(game: GameState, role: Role | 'operator', type: string, payload: Record<string, unknown> = {}, changeId?: string, companyId = 0) {
-  return applyCommand(game, { id: `${companyId}-${role}`, role, companyId: role === 'operator' ? null : companyId }, { id: 'test', type, companyId, changeId, payload });
+  return applyCommand(game, { id: `${companyId}-${role}`, role, companyId: role === 'operator' ? null : companyId }, { id: `test-${++commandSequence}`, type, companyId, changeId, payload });
 }
 
 export function advanceGame(game: GameState, seconds: number) { for (let i = 0; i < Math.round(seconds * 10); i++) step(game); }

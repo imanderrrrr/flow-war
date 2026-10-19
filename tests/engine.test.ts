@@ -3,14 +3,15 @@ import assert from 'node:assert/strict';
 import { applyCommand, createGame, evaluateSecurity, initialGraph, inventoryBatch, project, route, step, validateGraph } from '../server/engine.js';
 import type { Graph, Identity, Role, GameState } from '../shared/types.js';
 const identity=(role:Role|'operator',companyId:number|null=0):Identity=>({id:`${companyId}-${role}`,role,companyId});
-const command=(g:GameState,role:Role|'operator',type:string,payload:Record<string,unknown>={},changeId?:string,companyId=0)=>applyCommand(g,identity(role,role==='operator'?null:companyId),{id:'test',type,companyId,payload,changeId});
+let sequence=0;
+const command=(g:GameState,role:Role|'operator',type:string,payload:Record<string,unknown>={},changeId?:string,companyId=0)=>applyCommand(g,identity(role,role==='operator'?null:companyId),{id:`test-${++sequence}`,type,companyId,payload,changeId});
 function insert(graph:Graph,type:string,before:string):Graph {
   const g=structuredClone(graph),target=g.nodes.find(n=>n.type===before)!,edge=g.edges.find(e=>e.target===target.id)!;
   g.nodes.push({id:`node-${type}`,type,position:{x:200,y:300},data:{label:type,value:2}});
   g.edges=g.edges.filter(e=>e.id!==edge.id);g.edges.push({id:`${type}-in`,source:edge.source,target:`node-${type}`},{id:`${type}-out`,source:`node-${type}`,target:target.id});return g;
 }
 test('five companies begin with equal market and independent state',()=>{const g=createGame();assert.equal(g.companies.length,5);for(const c of g.companies){assert.equal(c.customers,1000);assert.equal(c.capital,10000);}g.companies[0].backend.nodes.pop();assert.equal(g.companies[1].backend.nodes.length,5);});
-test('permissions reject cross-role and cross-company commands',()=>{const g=createGame();g.status='RUNNING';const before=structuredClone(g);assert.equal(command(g,'backend','deploy.start').code,'FORBIDDEN');assert.equal(applyCommand(g,identity('qa',1),{id:'x',type:'qa.run',companyId:0}).code,'FORBIDDEN');assert.deepEqual(g,before);});
+test('permissions reject cross-role and cross-company commands',()=>{const g=createGame();g.status='RUNNING';const before=structuredClone(g);assert.equal(command(g,'backend','deploy.start').code,'FORBIDDEN');assert.equal(applyCommand(g,identity('qa',1),{id:'x',type:'qa.run',companyId:0}).code,'FORBIDDEN');assert.deepEqual(g.companies,before.companies);assert.equal(g.actions.employees['0-backend'].violations.length,1);});
 test('disconnected pieces have no runtime effect',()=>{const g=initialGraph('security');g.nodes.push({id:'unused-auth',type:'auth',position:{x:0,y:0},data:{label:'Auth'}});assert.equal(evaluateSecurity(g,'forged'),true);assert.equal(route(g).length,2);});
 test('security order and connection change actual request outcome',()=>{const proper=insert(insert(initialGraph('security'),'auth','exit'),'role','exit');const reversed=insert(insert(initialGraph('security'),'role','exit'),'auth','exit');assert.equal(evaluateSecurity(proper,'valid'),true);assert.equal(evaluateSecurity(proper,'forged'),false);assert.equal(evaluateSecurity(reversed,'valid'),false);});
 test('inventory fixture exposes a race and respects atomic writes',()=>{const plain=initialGraph('backend');assert.equal(inventoryBatch(plain,40,20).oversold,20);const atomic=insert(plain,'atomic','write');assert.equal(inventoryBatch(atomic,40,20).oversold,0);assert.equal(inventoryBatch(atomic,40,20).completed,20);const late=insert(plain,'atomic','payment');assert.equal(inventoryBatch(late,40,20).oversold,20);});

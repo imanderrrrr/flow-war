@@ -1,5 +1,5 @@
 import type { BlockConfiguration } from './blocks.js';
-import type { TestEvidence, DefectCode, OperationRuntime, CompanyRuntime, ExecutionRelease, ModuleRef, OperationsView, TestJob } from './simulation.js';
+import type { ActionState, TestEvidence, DefectCode, OperationRuntime, CompanyRuntime, ExecutionRelease, ModuleRef, OperationsView, TestJob } from './simulation.js';
 export const ROLES = ['backend', 'security', 'qa', 'cto', 'devops', 'product'] as const;
 export type Role = typeof ROLES[number];
 export type Identity = { id: string; role: Role | 'operator'; companyId: number | null };
@@ -103,7 +103,7 @@ export type Company = {
 };
 export type PrivateCompany = Omit<Company, 'drafts' | 'traffic' | 'runtime'> & { drafts: Company['drafts']; traffic: TrafficView };
 export type PublicCompany = Omit<Company, 'runtime' | 'drafts' | 'backend' | 'security' | 'product' | 'migrationRemainder' | 'arrivalRemainder' | 'processedRemainder' | 'crisisTicks' | 'deadTicks' | 'bankruptTicks' | 'concurrencyUntil' | 'concurrency' | 'traffic'> & { modules: string[]; pipelineCounts: number[]; concurrency: ConcurrencyView; traffic: TrafficView };
-export type GameState = { schema: 4; market: MarketState; generation: number; tick: number; duration: number; status: 'LOBBY' | 'RUNNING' | 'PAUSED' | 'FINISHED'; seed: number; eventSeq: number; companies: Company[]; changes: Change[]; events: GameEvent[]; migrations: Migration[]; unserved: number; speed: number };
+export type GameState = { actions: ActionState; schema: 5; market: MarketState; generation: number; tick: number; duration: number; status: 'LOBBY' | 'RUNNING' | 'PAUSED' | 'FINISHED'; seed: number; eventSeq: number; companies: Company[]; changes: Change[]; events: GameEvent[]; migrations: Migration[]; unserved: number; speed: number };
 export type Snapshot = { operations?: OperationsView; tick: number; duration: number; status: GameState['status']; companies: PublicCompany[]; events: GameEvent[]; migrations: Migration[]; unserved: number; identity: Identity | null; privateCompany?: PrivateCompany; changes: Change[]; speed: number };
 export type Command = { id: string; type: string; companyId?: number; changeId?: string; payload?: Record<string, unknown> };
 export type Result = { refs?: string[]; ok: boolean; error?: string; code?: string };

@@ -28,7 +28,7 @@ const db = new DatabaseSync(resolve(directory, 'game.sqlite'));
 db.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS game (id INTEGER PRIMARY KEY, state TEXT NOT NULL); CREATE TABLE IF NOT EXISTS commands (identity TEXT NOT NULL, id TEXT NOT NULL, digest TEXT NOT NULL, result TEXT NOT NULL, PRIMARY KEY(identity,id)); CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, identity TEXT NOT NULL, expires INTEGER NOT NULL);');
 const saved = db.prepare('SELECT state FROM game WHERE id=1').get() as { state: string } | undefined;
 // Keep the original legacy snapshot before the first upgraded snapshot is written.
-if (saved && [1, 2, 3].includes(JSON.parse(saved.state).schema)) {
+if (saved && [1, 2, 3, 4].includes(JSON.parse(saved.state).schema)) {
   db.exec('CREATE TABLE IF NOT EXISTS game_migrations (schema INTEGER PRIMARY KEY, state TEXT NOT NULL)');
   db.prepare('INSERT OR IGNORE INTO game_migrations (schema,state) VALUES (?,?)').run(JSON.parse(saved.state).schema, saved.state);
 }
@@ -61,6 +61,7 @@ app.post('/api/login', (req, res) => {
   if (++bucket.count > 30) return res.status(429).json({ error: 'Límite de intentos alcanzado. Espera un minuto.' });
   const code = typeof req.body.code === 'string' ? req.body.code.trim() : '';
   const identity = code.length < 100 ? identities.get(hash(code)) : undefined;
+  if (identity && game.actions.employees[identity.id]?.status === 'EXPELLED') return res.status(403).json({ error: 'Empleado expulsado. Puesto vacante.' });
   if (!identity) return res.status(401).json({ error: 'Credencial no válida.' });
   const token = randomBytes(32).toString('base64url');
   db.prepare('INSERT INTO sessions (token,identity,expires) VALUES (?,?,?)').run(hash(token), JSON.stringify(identity), now + 12 * 60 * 60 * 1000);

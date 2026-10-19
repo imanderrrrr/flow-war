@@ -1,3 +1,4 @@
+import { initialActionState, dispatchCommand, correctEmployee } from './discipline.js';
 import { businessCommand, advanceCampaigns } from './business.js';
 import { blockConfiguration } from './blocks.js';
 import { createTestJob, advanceTestJob, testReport, scenarioForSuite } from './qa.js';
@@ -30,7 +31,7 @@ export function createGame(duration = 1500, seed = 7357, generation = 0): GameSt
     lostRevenue: 0, revenue: 0, latency: 0, utilization: 0, queue: 0, migratedIn: 0, migratedOut: 0, eliminated: false, crisisTicks: 0, deadTicks: 0, bankruptTicks: 0, concurrencyUntil: 0,
     backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
   }));
-  const game: GameState = { schema: 4, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
+  const game: GameState = { actions: initialActionState(), schema: 5, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
   bindMarket(game); assertMarket(game); return game;
 }
 export function event(g: GameState, companyId: number | null, text: string, tone: 'good' | 'bad' | 'neutral' = 'neutral', category = 'SISTEMA') {
@@ -93,13 +94,13 @@ export function reportFor(g: GameState, change: Change, suite: string): Report {
 }
 function releaseReservation(c: Company, change: Change) { c.reserved = Math.max(0, c.reserved - change.reserved); change.reserved = 0; }
 export function applyCommand(g: GameState, identity: Identity | null, command: Command): Result {
+  return dispatchCommand(g, identity, command, effective => executeCommand(g, identity!, effective));
+}
+function executeCommand(g: GameState, identity: Identity, command: Command): Result {
   bindMarket(g);
-  if (command.type === 'action.execute') {
-    try { const action = parseAction(command.payload?.action); return applyCommand(g, identity, { id: action.id, type: action.type, companyId: action.companyId, changeId: action.changeId, payload: action.parameters }); }
-    catch (e) { return { ok: false, code: 'INVALID', error: (e as Error).message }; }
-  }
   if (!identity || !allowedAction(command.type, identity.role)) return { ok: false, code: 'FORBIDDEN', error: 'Acción no autorizada para este rol.' };
   if (identity.role === 'operator') {
+    if (command.type === 'employee.correct') return correctEmployee(g, command.payload ?? {});
     if (command.type === 'room.reset') { const duration = Number(command.payload?.duration) === 1200 ? 1200 : 1500; finishRequests(g); const receipts = g.companies.map(company => company.traffic.outbox); Object.assign(g, createGame(duration, 7357, g.generation + 1)); for (const company of g.companies) company.traffic.outbox = receipts[company.id]; return { ok: true }; }
     if (command.type === 'room.start') { if (g.status === 'FINISHED') return { ok: false, error: 'La partida ha finalizado.' }; if (g.status === 'LOBBY') for (const company of g.companies) issueInitialTraffic(company, g.tick); g.status = 'RUNNING'; event(g, null, 'SIMULACIÓN EN CURSO', 'good'); }
     if (command.type === 'room.pause' && g.status === 'RUNNING') { g.status = 'PAUSED'; event(g, null, 'Simulación pausada.'); }
@@ -114,6 +115,7 @@ export function applyCommand(g: GameState, identity: Identity | null, command: C
   const ch = g.changes.find(x => x.id === (command.changeId ?? command.payload?.changeId) && x.companyId === c.id);
   const p = command.payload ?? {};
   try {
+    validateParameters(command.type, p);
     if (command.type.startsWith('campaign.') || command.type === 'product.propose') { const result = businessCommand(g, c, identity, command.type, p); event(g, c.id, command.type === 'campaign.activate' ? 'Campaña activada.' : 'Operación comercial registrada.', 'neutral', 'PRODUCTO'); return result; }
     if (['module.create','module.revise','security.prepare'].includes(command.type)) {
       const change = prepareArtifact(g, c, identity, command.type, p); event(g, c.id, `${change.id} preparado. Pendiente de pruebas QA.`, 'neutral', 'PIPELINE'); return { ok: true, refs: [change.id, ...(change.artifactRefs?.map(ref => `${ref.id}@${ref.version}`) ?? [])] };

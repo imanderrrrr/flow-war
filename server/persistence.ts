@@ -1,3 +1,4 @@
+import { initialActionState } from './discipline.js';
 import { initialRuntime } from './artifacts.js';
 import { syncInfrastructure } from './infrastructure.js';
 import { assertMarket, bindMarket, importLegacyMarket } from './market.js';
@@ -8,7 +9,7 @@ import { initialTraffic } from './traffic.js';
 /** Upgrade only missing simulation state. Never infer historical requests/effects. */
 export function recoverGame(serialized: string): GameState {
   const saved = JSON.parse(serialized);
-  if (![1, 2, 3, 4].includes(saved.schema)) throw new Error('Versión de partida no soportada.');
+  if (![1, 2, 3, 4, 5].includes(saved.schema)) throw new Error('Versión de partida no soportada.');
   if (saved.schema === 1) {
     for (const company of saved.companies) company.concurrency = initialConcurrency(saved.duration, saved.tick);
     for (const change of saved.changes) {
@@ -64,6 +65,7 @@ export function recoverGame(serialized: string): GameState {
     }
   }
   if (saved.schema === 3) { importLegacyMarket(saved); saved.schema = 4; }
+  if (saved.schema === 4) { saved.schema = 5; saved.actions = initialActionState(); }
   if (saved.market.config.version !== 'market-3.0') throw new Error('Versión de mercado no soportada.');
   for (const company of saved.companies) { company.runtime ??= initialRuntime(); syncInfrastructure(company); }
   bindMarket(saved); assertMarket(saved);
