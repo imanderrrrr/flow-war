@@ -81,7 +81,7 @@ export function advanceConcurrency(run: ConcurrencyRun, now: number, available =
   for (const request of run.requests) { settleReservation(request, run.inventory); if (request.result && run.operationsState) releaseResources(request, run.operationsState); }
 }
 
-export function cancelConcurrency(run: ConcurrencyRun, at: number, reason: 'ROOM_FINISHED' | 'COMPANY_ELIMINATED') {
+export function cancelConcurrency(run: ConcurrencyRun, at: number, reason: 'ROOM_FINISHED' | 'ROOM_INTERRUPTED' | 'COMPANY_ELIMINATED') {
   for (const request of run.requests) { finishRequest(request, 'ABANDONED', reason, at); settleReservation(request, run.inventory); if (run.operationsState) releaseResources(request, run.operationsState); }
 }
 

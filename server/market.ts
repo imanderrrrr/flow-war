@@ -93,7 +93,7 @@ export function recordCustomerExperience(company: Company, request: PurchaseRequ
   if (!customer || customer.currentCompanyId !== company.id || customer.activeRequests <= 0) throw new Error('Experiencia de cliente inconsistente.');
   customer.activeRequests--;
   // Administrative finish/cancellation is observed as no service, never as a fabricated visit.
-  if (result.reason === 'ROOM_FINISHED' || result.reason === 'COMPANY_ELIMINATED') return;
+  if (result.reason === 'ROOM_FINISHED' || result.reason === 'ROOM_INTERRUPTED' || result.reason === 'COMPANY_ELIMINATED') return;
   const experience = customer.experiences[company.id] ??= { successes: 0, failures: 0 };
   const success = result.status === 'COMPLETED' && request.oversold === 0;
   if (success) { customer.successfulVisits++; customer.lastSuccessfulVisitTick = result.at; experience.successes++; }

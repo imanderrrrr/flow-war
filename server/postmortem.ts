@@ -5,7 +5,7 @@ import {historyPoints} from './history.js';
 type Incident={firstFailure:number;detectedAt:number|null;mitigatedAt:number|null;recoveredAt:number|null;mttrSeconds:number|null;definitiveCorrectionAt:number|null;status:'UNRESOLVED'|'RECOVERED';evidence:string[]};
 export function postmortem(db:DatabaseSync,generation:number,companyId:number,g:GameState){
  const c=g.companies[companyId];
- const failures=db.prepare("SELECT at,json_extract(body,'$.data.requestId') AS requestId FROM history_events WHERE generation=? AND companyId=? AND kind='request.settled' AND json_extract(body,'$.data.trafficClass')='legitimate' AND json_extract(body,'$.data.result.status')!='COMPLETED' AND json_extract(body,'$.data.result.reason') NOT IN ('ROOM_FINISHED','COMPANY_ELIMINATED') ORDER BY seq").all(generation,companyId) as {at:number;requestId:string}[];
+ const failures=db.prepare("SELECT at,json_extract(body,'$.data.requestId') AS requestId FROM history_events WHERE generation=? AND companyId=? AND kind='request.settled' AND json_extract(body,'$.data.trafficClass')='legitimate' AND json_extract(body,'$.data.result.status')!='COMPLETED' AND json_extract(body,'$.data.result.reason') NOT IN ('ROOM_FINISHED','ROOM_INTERRUPTED','COMPANY_ELIMINATED') ORDER BY seq").all(generation,companyId) as {at:number;requestId:string}[];
  const telemetry=(db.prepare("SELECT body FROM history_events WHERE generation=? AND companyId=? AND kind IN ('telemetry.sample','maintenance.changed') ORDER BY seq").all(generation,companyId) as {body:string}[]).map(r=>JSON.parse(r.body));
  const incidents:Incident[]=[];let index=0,incident:Incident|undefined,healthySince:number|undefined;
  for(const e of telemetry){

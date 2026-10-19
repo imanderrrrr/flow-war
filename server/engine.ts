@@ -115,8 +115,9 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
   if (identity.role === 'operator') {
     if (command.type === 'employee.correct') return correctEmployee(g, command.payload ?? {});
     if (command.type === 'room.reset') {
-      const closed = structuredClone(g); copyHistoryBuffer(g, closed); bindObservability(closed);
+      const closed = structuredClone(g); copyHistoryBuffer(g, closed); bindObservability(closed); bindMarket(closed);
       if (closed.status !== 'FINISHED' && closed.status !== 'ABORTED') {
+        finishRequests(closed, 'ROOM_INTERRUPTED');
         closed.closure = { generation: closed.generation, tick: closed.tick, previousStatus: closed.status, reason: 'TEACHER_RESET', actor: { ...identity }, receivedAt };
         closed.status = 'ABORTED';
         observe(closed, 'generation.interrupted', null, { ...closed.closure, commandId: command.id });
@@ -315,10 +316,10 @@ export function step(g: GameState, dt = .1) {
   g.migrations = g.migrations.filter(m => g.tick - m.at < 20).slice(-30);
   updateCrisis(g); sampleTelemetry(g); sampleHistory(g); checkpoint(g, serializeGame, g.status === 'FINISHED');
 }
-function finishRequests(g: GameState) {
+function finishRequests(g: GameState, reason: 'ROOM_FINISHED' | 'ROOM_INTERRUPTED' = 'ROOM_FINISHED') {
   for (const company of g.companies) {
-    cancelTraffic(company, g.tick, 'ROOM_FINISHED');
-    if (company.concurrency.run) { cancelConcurrency(company.concurrency.run, g.tick, 'ROOM_FINISHED'); settleConcurrency(company); }
+    cancelTraffic(company, g.tick, reason);
+    if (company.concurrency.run) { cancelConcurrency(company.concurrency.run, g.tick, reason); settleConcurrency(company); }
   }
   flushMigrations(g); assertMarket(g);
 }

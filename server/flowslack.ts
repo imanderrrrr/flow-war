@@ -24,7 +24,7 @@ function auto(g:GameState,f:Observation,channel:Channel,key:string,text:string,a
 function variant(g:GameState,f:Observation){let h=g.seed;for(const c of String(f.data.requestId??f.data.customerId??f.kind).replace(/C\d+/g,'C'))h=(Math.imul(h,31)+c.charCodeAt(0))>>>0;return h%2;}
 export function slackFact(g:GameState,f:Observation){
  if(f.kind==='request.settled'&&f.companyId!==null&&f.data.trafficClass==='legitimate'&&f.data.customerId){
- const r=f.data.result as {status:string;reason:string};if(['ROOM_FINISHED','COMPANY_ELIMINATED'].includes(r.reason))return;
+ const r=f.data.result as {status:string;reason:string};if(['ROOM_FINISHED','ROOM_INTERRUPTED','COMPANY_ELIMINATED'].includes(r.reason))return;
  const v=variant(g,f),author=`Cliente ${f.data.customerId}`;
  if(r.reason==='DEADLINE')auto(g,f,'soporte-clientes','timeout',v?'Mi solicitud venció antes de recibir una respuesta.':'Intenté completar mi operación y terminó por tiempo de espera.',author);
  else if(Number(f.data.duplicates)>0)auto(g,f,'soporte-clientes','duplicate','Mi operación aparece registrada más de una vez.',author);

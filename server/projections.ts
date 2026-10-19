@@ -14,6 +14,7 @@ export function visibleRequest(request: PurchaseRequest | TrafficReceipt) {
  value.journey=pick(request.journey,['from','to','at','duration']);
  if ('waits' in request) value.waits=request.waits.map(wait=>pick(wait,['service','enteredAt','exitedAt','position','exit']));
  if ('trace' in request) value.trace=request.trace.map(event=>pick(event,['type','at','stock','version']));
+ if (request.read) value.read=pick(request.read,['stock','version']);
  if (request.result) value.result=visibleResult(request.result);
  return value;
 }

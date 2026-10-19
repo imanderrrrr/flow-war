@@ -19,7 +19,9 @@ for(const status of ['RUNNING','PAUSED','FINISHED'] as const)test(`H1 reset ${st
  write(g,{identity:op.id,id:'reset',digest:'same',result:'{"ok":true}'});
  assert.equal(g.generation,1);assert.equal(g.status,'LOBBY');assert.equal(g.tick,0);
  const meta=historyAccess(db,0,op);assert.equal(meta.status,status==='FINISHED'?'FINISHED':'ABORTED');assert.equal(meta.tick,3.7);
- const restored=reconstruct(db,0,3.7);assert.deepEqual(JSON.parse(serializeGame(restored)).companies,JSON.parse(expected).companies);assert.deepEqual(restored.market,JSON.parse(expected).market);
+ const restored=reconstruct(db,0,3.7);const control=recoverGame(expected);if(status!=='FINISHED')command(control,'operator','room.finish');
+ assert.deepEqual(restored.companies.map(c=>[c.capital,c.revenue,c.traffic.totals,c.traffic.inventory]),control.companies.map(c=>[c.capital,c.revenue,c.traffic.totals,c.traffic.inventory]));assert.deepEqual(restored.market,control.market);assert.equal(restored.tick,3.7);
+ if(status!=='FINISHED')assert(restored.companies.every(c=>Object.values(c.traffic.requests).every(r=>r.result&&r.result.at<=3.7)));
  if(status!=='FINISHED'){assert.equal(restored.closure?.previousStatus,status);assert.equal(restored.closure?.receivedAt,123456);assert.deepEqual(restored.closure?.actor,op);}
  assert.throws(()=>reconstruct(db,0,3.8));assert(db.prepare("SELECT 1 FROM history_events WHERE kind='pending-evidence'").get());
  db.close();db=new DatabaseSync(path);assert.equal(historyAccess(db,0,op).tick,3.7);assert.equal(recoverGame((db.prepare('SELECT state FROM game').get()as{state:string}).state).generation,1);assert(db.prepare("SELECT result FROM commands WHERE id='reset'").get());assert.equal(reconstruct(db,1,0).status,'LOBBY');db.close();rmSync(dir,{recursive:true,force:true});

@@ -266,7 +266,7 @@ export function restockTraffic(company: Company, amount = company.traffic.config
   company.stock = inventory.stock;
 }
 
-export function cancelTraffic(company: Company, at: number, reason: 'ROOM_FINISHED' | 'COMPANY_ELIMINATED') {
+export function cancelTraffic(company: Company, at: number, reason: 'ROOM_FINISHED' | 'ROOM_INTERRUPTED' | 'COMPANY_ELIMINATED') {
   for (const request of Object.values(company.traffic.requests)) if (!request.result) terminate(request, 'ABANDONED', reason, at);
   for (const queue of Object.values(company.traffic.services)) { queue.waiting = []; queue.processing = []; }
   settleTraffic(company, at); updateTrafficMetrics(company, at, 0, serviceRates(company)); company.queue = 0; company.active = 0;
