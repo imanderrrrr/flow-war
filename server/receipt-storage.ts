@@ -17,6 +17,8 @@ export function encodeReceipt(db:DatabaseSync,generation:number,receipt:TrafficR
  for(const key of HOT){if(key in rest)hot[key]=rest[key];delete details[key];}
  const raw=JSON.stringify(details);
  db.prepare('INSERT OR IGNORE INTO receipt_paths VALUES (?,?,?)').run(generation,pathDigest,rawPath);
+ // Preserve oversized/future legacy details inline rather than creating a receipt we cannot decode.
+ if(Buffer.byteLength(raw)>4*1024*1024)return{receipt:JSON.stringify({...rest,pathRef:pathDigest}),details:null,detailDigest:null};
  return {receipt:JSON.stringify({...hot,pathRef:pathDigest,encoding:'receipt-zlib-1'}),details:deflateSync(raw),detailDigest:hash(raw)};
 }
 export type StoredReceipt={receipt:string;generation:number|null;details?:Uint8Array|null;detailDigest?:string|null};

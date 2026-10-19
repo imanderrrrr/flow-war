@@ -273,7 +273,8 @@ export function cancelTraffic(company: Company, at: number, reason: 'ROOM_FINISH
 }
 
 export function trafficView(state: TrafficState, internal = true): TrafficView {
-  return { scenario: state.config.version, totals: { ...state.totals }, ...(internal ? { legitimate: { ...state.legitimate }, malicious: { ...state.malicious } } : {}), metrics: { ...state.metrics }, inventory: { ...state.inventory },
+  const {fraudRate,...observableMetrics}=state.metrics;
+  return { scenario: state.config.version, totals: { ...state.totals }, ...(internal ? { legitimate: { ...state.legitimate }, malicious: { ...state.malicious } } : {}), metrics: internal ? { ...state.metrics } : observableMetrics, inventory: { ...state.inventory },
     queues: SERVICE_IDS.map(id => ({ id, capacity: state.services[id].capacity, depth: state.services[id].waiting.length, processing: state.services[id].processing.length, rate: state.services[id].rate })), pendingResolution: state.unresolvedCount };
 }
 

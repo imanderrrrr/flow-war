@@ -31,7 +31,7 @@ test('H1/H2 real sessions enforce private projections, durable reset deduplicati
  for(const row of db.prepare('SELECT id FROM request_receipts WHERE companyId=0').all() as {id:string}[]){const r=await get('/api/requests/'+row.id);assert(r.ok);noInternal(await r.json());}
  const own=await(await get('/api/requests/'+malicious.id)).json();noInternal(own);assert.equal(own.id,malicious.id);
  const original=await(await get('/api/requests/'+malicious.id,teacher.cookie)).json();assert.equal(original.trafficClass,'malicious');assert.equal(original.attackKind,'injection');assert('securityAllowed' in original);
- const snapshot=await(await get('/api/snapshot')).json();noInternal(snapshot);assert(!JSON.stringify(snapshot).includes('"kind":"attack"'));assert(!('malicious' in snapshot.companies[0].traffic));
+ const snapshot=await(await get('/api/snapshot')).json();noInternal(snapshot);assert(!JSON.stringify(snapshot).includes('"kind":"attack"'));assert(!('malicious' in snapshot.companies[0].traffic));assert(!('fraudRate' in snapshot.companies[0].traffic.metrics));assert(!('breaches' in snapshot.companies[0]));assert(!('breaches' in snapshot.privateCompany));
  const socketSnapshot=new Promise<any>(resolve=>student.socket.once('snapshot',resolve));await send(teacher.socket,{id:'speed',type:'room.speed',payload:{speed:1}});noInternal(await socketSnapshot);
  assert.equal((await send(student.socket,{id:'denied-reset',type:'room.reset'})).ok,false);
  db.exec("CREATE TRIGGER fail_admin_reset BEFORE INSERT ON history_games WHEN NEW.generation=1 BEGIN SELECT RAISE(ABORT,'disk injection'); END;");

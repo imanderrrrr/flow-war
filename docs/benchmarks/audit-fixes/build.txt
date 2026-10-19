@@ -21,4 +21,4 @@ dist/assets/index-BYjtB3T_.js                               525.61 kB │ gzip: 
 - Using dynamic import() to code-split the application
 - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
-✓ built in 698ms
+✓ built in 890ms

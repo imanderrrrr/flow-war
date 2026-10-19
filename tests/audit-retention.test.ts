@@ -10,7 +10,7 @@ import {createGameWriter} from '../server/storage.js';
 import {historyAccess,reconstruct} from '../server/history.js';
 import {command} from './helpers.js';
 import {authorizeAdmin,adminSchema,storageUsage,retentionPreview,setRetentionPolicy,protectGeneration,exportGeneration,verifyArchive,deleteArchivedGeneration,readArchive} from '../server/history-admin.js';
-import {decodeReceipt,compactReceipts} from '../server/receipt-storage.js';
+import {decodeReceipt,compactReceipts,encodeReceipt} from '../server/receipt-storage.js';
 import {acquireStorageLease} from '../server/storage-lease.js';
 const op={id:'operator',role:'operator',companyId:null} as const;
 test('H4 complete generations export losslessly, verify, preview, protect, delete atomically and remain readable after reopen',()=>{
@@ -36,7 +36,7 @@ test('H4 exact legacy references migrate without ID guessing or loss; active lea
   db.exec('CREATE TABLE commands(identity TEXT,id TEXT,digest TEXT,result TEXT);CREATE TABLE request_receipts(id TEXT PRIMARY KEY,companyId INTEGER,receipt TEXT)');const write=createGameWriter(db),g=createGame(2);command(g,'operator','room.start');while(g.status==='RUNNING')step(g);write(g);adminSchema(db);
   const row=db.prepare('SELECT * FROM request_receipts LIMIT 1').get()as any,receipt=decodeReceipt(db,row);db.prepare('UPDATE request_receipts SET receipt=?,generation=NULL WHERE id=?').run(JSON.stringify(receipt),row.id);
   db.prepare('INSERT INTO request_receipts(id,companyId,receipt) VALUES (?,?,?)').run('g999-looking-but-unknown',0,JSON.stringify({...receipt,id:'g999-looking-but-unknown'}));
-  const result=compactReceipts(db);assert.equal(result.linked,1);assert.deepEqual(decodeReceipt(db,db.prepare('SELECT * FROM request_receipts WHERE id=?').get(row.id)as any),receipt);assert.equal(db.prepare("SELECT generation FROM request_receipts WHERE id='g999-looking-but-unknown'").get()!.generation,null);
+  const result=compactReceipts(db);assert.equal(result.linked,1);const encoded=encodeReceipt(db,0,receipt);assert.throws(()=>decodeReceipt(db,{generation:0,...encoded,details:Buffer.from('corrupt-zlib')}));const large={...receipt,futureDetail:'x'.repeat(4*1024*1024+1)};const preserved=encodeReceipt(db,0,large);assert.equal(preserved.details,null);assert.equal((decodeReceipt(db,{generation:0,...preserved}) as any).futureDetail.length,large.futureDetail.length);assert.deepEqual(decodeReceipt(db,db.prepare('SELECT * FROM request_receipts WHERE id=?').get(row.id)as any),receipt);assert.equal(db.prepare("SELECT generation FROM request_receipts WHERE id='g999-looking-but-unknown'").get()!.generation,null);
   const release=acquireStorageLease(db);assert.throws(()=>acquireStorageLease(db));release();const again=acquireStorageLease(db);again();
   writeFileSync(join(dir,'access.json'),JSON.stringify({credentials:[{code:'teacher-secret',identity:op},{code:'student-secret',identity:{id:'0-backend',role:'backend',companyId:0}}]}));assert.throws(()=>authorizeAdmin(dir,undefined));assert.throws(()=>authorizeAdmin(dir,'student-secret'));authorizeAdmin(dir,'teacher-secret');
   const cli=(code:string)=>spawnSync(process.execPath,['--import','tsx','scripts/history-admin.ts','preview'],{env:{...process.env,FLOW_DATA_DIR:dir,FLOW_ADMIN_CODE:code},encoding:'utf8'});assert.equal(cli('student-secret').status,1);const lease=acquireStorageLease(db);assert.equal(cli('teacher-secret').status,1);lease();assert.equal(cli('teacher-secret').status,0);
