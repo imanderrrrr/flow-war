@@ -1,3 +1,4 @@
+import { allowedAction } from '../shared/actions.js';
 import { advanceMarket, assertMarket, bindMarket, createMarket, evacuateEliminated, flushMigrations } from './market.js';
 import { advanceLoadRun, createLoadRun, loadReport, runLoadFixture } from './load.js';
 import { initialTraffic, issueInitialTraffic, generateTraffic, serviceRates, advanceTraffic, restockTraffic, cancelTraffic, trafficParticles, trafficView } from './traffic.js';
@@ -82,16 +83,9 @@ export function reportFor(g: GameState, change: Change, suite: string): Report {
   return { suite, requests: load, completed: batches.completed, rejected: load - batches.completed, oversold: batches.oversold, breaches, duplicates: batches.duplicates, latency: Math.round(180 + route(backend).length * 12), tick: g.tick };
 }
 function releaseReservation(c: Company, change: Change) { c.reserved = Math.max(0, c.reserved - change.reserved); change.reserved = 0; }
-const permission: Record<string, string[]> = {
-  'draft.save': ['backend', 'security'], 'change.submit': ['backend', 'security'],
-  'qa.run': ['qa'], 'qa.approve': ['qa'], 'qa.reject': ['qa'],
-  'cto.authorize': ['cto'], 'cto.reject': ['cto'], 'cto.budget': ['cto'], 'cto.prioritize': ['cto'],
-  'infra.scale': ['devops'], 'infra.balancer': ['devops'], 'deploy.start': ['devops'],
-  'room.start': ['operator'], 'room.pause': ['operator'], 'room.reset': ['operator'], 'room.speed': ['operator'], 'room.finish': ['operator'],
-};
 export function applyCommand(g: GameState, identity: Identity | null, command: Command): Result {
   bindMarket(g);
-  if (!identity || !permission[command.type]?.includes(identity.role)) return { ok: false, code: 'FORBIDDEN', error: 'Acción no autorizada para este rol.' };
+  if (!identity || !allowedAction(command.type, identity.role)) return { ok: false, code: 'FORBIDDEN', error: 'Acción no autorizada para este rol.' };
   if (identity.role === 'operator') {
     if (command.type === 'room.reset') { const duration = Number(command.payload?.duration) === 1200 ? 1200 : 1500; finishRequests(g); const receipts = g.companies.map(company => company.traffic.outbox); Object.assign(g, createGame(duration, 7357, g.generation + 1)); for (const company of g.companies) company.traffic.outbox = receipts[company.id]; return { ok: true }; }
     if (command.type === 'room.start') { if (g.status === 'FINISHED') return { ok: false, error: 'La partida ha finalizado.' }; if (g.status === 'LOBBY') for (const company of g.companies) issueInitialTraffic(company, g.tick); g.status = 'RUNNING'; event(g, null, 'SIMULACIÓN EN CURSO', 'good'); }
