@@ -1,3 +1,4 @@
+import { installDvr } from './dvr.js';
 import { CHANNELS } from '../shared/observability.js';
 import { checkpoint, observe } from './observability.js';
 import { serializeGame } from './persistence.js';
@@ -100,6 +101,7 @@ app.get('/api/flowslack', (req,res)=>{
  const rows=db.prepare('SELECT body FROM slack_messages WHERE generation=? AND companyId=? AND channel=? AND seq<? ORDER BY seq DESC LIMIT 80').all(game.generation,identity.companyId,channel,before) as {body:string}[];
  res.json({messages:rows.map(r=>JSON.parse(r.body)).reverse()});
 });
+installDvr(app,db,req=>session(req.headers.cookie));
 app.get('/api/access', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (session(req.headers.cookie)?.role !== 'operator') return res.status(403).json({ error: 'Acceso denegado.' });
