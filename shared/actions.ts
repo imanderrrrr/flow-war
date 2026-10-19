@@ -22,7 +22,7 @@ export type ActionParameters = {
   'module.revise': { moduleId: string; name: string; configuration: ModuleConfiguration; dependencies: string[] };
   'security.prepare': SecurityConfiguration;
   'qa.execute': { changeId: string; scenario: TestScenario };
-  'infra.maintenance': { mode: 'OPERATING' | 'FULL_MAINTENANCE' };
+  'infra.maintenance': { mode: 'OPERATING' | 'ORDERS_PAUSED' | 'FULL_MAINTENANCE' };
   'infra.restart': { serverId: number; duration: number };
   'infra.restart_all': { duration: number };
   'infra.stop': { service: ServiceId };
