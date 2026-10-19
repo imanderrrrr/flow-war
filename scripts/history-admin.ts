@@ -7,6 +7,13 @@ import {authorizeAdmin,adminSchema,storageUsage,retentionPreview,setRetentionPol
 const [action='usage',...args]=process.argv.slice(2),directory=resolve(process.env.FLOW_DATA_DIR??'.local');
 try{
  authorizeAdmin(directory,process.env.FLOW_ADMIN_CODE);
+ if(['verify','read','query'].includes(action)){
+  if(!args[0])throw Error('Indica ruta de archivo.');
+  const file=resolve(args[0]);
+  if(action==='query'&&!args[1])throw Error('Indica consulta JSON.');
+  const result=action==='verify'?verifyArchive(file,args[1]):action==='query'?queryArchive(file,JSON.parse(args[1])):readArchive(file,args[1]===undefined?undefined:Number(args[1]));
+  console.log(JSON.stringify(result,null,2));
+ }else{
  const path=resolve(directory,'game.sqlite'),db=new DatabaseSync(path),release=acquireStorageLease(db);
  try{
   // Schema additions only; never save or advance a game during administration.
@@ -18,9 +25,6 @@ try{
    case 'protect':protectGeneration(db,Number(args[0]),args[1]??'Protegida por el docente');result={protected:Number(args[0])};break;
    case 'unprotect':protectGeneration(db,Number(args[0]),null);result={unprotected:Number(args[0])};break;
    case 'export':if(!args[1])throw Error('Indica generación y ruta de exportación.');result=exportGeneration(db,Number(args[0]),args[1]);break;
-   case 'verify':if(!args[0])throw Error('Indica ruta de archivo.');result=verifyArchive(resolve(args[0]),args[1]);break;
-   case 'query':if(!args[0]||!args[1])throw Error('Indica archivo y consulta JSON.');result=queryArchive(resolve(args[0]),JSON.parse(args[1]));break;
-   case 'read':if(!args[0])throw Error('Indica ruta de archivo.');result=readArchive(resolve(args[0]),args[1]===undefined?undefined:Number(args[1]));break;
    case 'delete':if(args[1]!=='--confirm-generation')throw Error('Requiere --confirm-generation <n>.');result=deleteArchivedGeneration(db,Number(args[0]),Number(args[2]));break;
    case 'compact':result=compactReceipts(db);break;
    case 'vacuum':db.exec('PRAGMA wal_checkpoint(TRUNCATE);VACUUM;PRAGMA wal_checkpoint(TRUNCATE)');result=storageUsage(db,path);break;
@@ -28,4 +32,5 @@ try{
   }
   console.log(JSON.stringify(result,null,2));
  }finally{release();db.close();}
+ }
 }catch(e){console.error((e as Error).message);process.exitCode=1;}
