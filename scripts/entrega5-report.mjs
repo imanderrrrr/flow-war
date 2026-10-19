@@ -4,7 +4,7 @@ assert.equal(delivery.results.length,22);assert.equal(actions.results.length+act
 const hash=crypto.createHash('sha256').update(delivery.sourceFiles.map(f=>f+'\n'+fs.readFileSync(f,'utf8')).join('\n')).digest('hex');assert.equal(hash,delivery.sourceDigest);
 let unchanged=0;for(const[a,b]of[[old.traffic,traffic],[old.market,market]])for(const r of[...b.results,...b.controls??[]]){const p=[...a.results,...a.controls??[]].find(x=>x.duration===r.duration&&x.strategy===r.strategy&&x.migrations===r.migrations);assert.deepEqual(r.companies,p.companies);unchanged++;}for(const r of[...actions.results,...actions.controls]){const p=[...oldActions.results,...oldActions.controls].find(x=>x.duration===r.duration&&x.strategy===r.strategy&&x.control===r.control);assert.deepEqual(r.final.companies,p.final.companies);unchanged++;}
 const summary=r=>({duration:r.duration,strategy:r.strategy,control:r.control,migrations:r.migrations,finalTick:r.finalTick,wallSeconds:r.wallSeconds,tickP95ms:r.tickP95ms,saveP95ms:r.saveP95ms,peak:r.peak,final:r.final?.companies??r.companies});
-const results=delivery.results.map(({samples,effects,...r})=>({...r,samples:samples.filter(s=>[30,60,120,600,660,720,r.duration].includes(s.tick)).map(({crisis,...s})=>({...s,crisis:structuredClone(crisis)})),effects:effects.filter(e=>['infra.maintenance','module.create','deploy.start','chat.send','room.pause'].includes(e.type))}));
+const results=delivery.results.map(({samples,effects,...r})=>({...r,samples:samples.filter(s=>[60,600,660,720,r.duration].includes(s.tick)).map(({crisis,companies,...s})=>({...s,crisis:structuredClone(crisis),companies:companies.map(({id,customers,capital,reputation,pressure,migratedIn,migratedOut,arrived,abandoned,rejected,servers,eliminated})=>({id,customers,capital,reputation,pressure,migratedIn,migratedOut,arrived,abandoned,rejected,servers,eliminated}))})),effects:effects.filter(e=>['infra.maintenance','module.create','deploy.start','chat.send','room.pause'].includes(e.type))}));
 const report={delivery:'5',base:'d4c26036b0c2663e584d7d4287f7ffbc5858cd22',measuredCommit:delivery.commit,sourceDigest:delivery.sourceDigest,sourceFiles:delivery.sourceFiles,hardware:delivery.hardware,tests:{retained:181,added:31,passed:212},inheritedBusinessOutcomesUnchanged:unchanged,traffic:{sourceCommit:'07102a72ed584f421a09b48d1e831dae7f7ba5ac',results:traffic.results.map(summary)},market:{sourceDigest:market.sourceDigest,results:[...market.results,...market.controls].map(summary)},actions:{sourceDigest:actions.sourceDigest,results:[...actions.results,...actions.controls].map(summary)},connections,chat,results};
 fs.writeFileSync('docs/benchmarks/entrega-5-resultados.json',JSON.stringify(report,null,2)+'\n');
 const round=n=>Number(n).toFixed(2),max=(arr,f)=>Math.max(...arr.map(f)),min=(arr,f)=>Math.min(...arr.map(f)),rows=results.map(r=>`| ${r.name} | ${r.duration/60} | ${round(r.tick.p95)} | ${round(r.persist.p95)} | ${round(r.dbBytes/1024**2)} | ${round(max(r.seeks,s=>s.ms))} |`);
@@ -48,9 +48,9 @@ A declara reputación inicial 34 y ninguna intervención; B declara la misma con
 
 Rechazos por mantenimiento de NOVA (20/25 min): total 60 s **${e.map(r=>r.maintenanceRejections).join(' / ')}**; total 120 s **${f.map(r=>r.maintenanceRejections).join(' / ')}**; selectivo **${g.map(r=>r.maintenanceRejections).join(' / ')}**. El cierre total comprueba cero admisiones nuevas a servicios protegidos en la ventana, sin borrar trabajo previo. Selectivo comprueba navegación terminada; el generador heredado emite browse/purchase, no query. La solicitud query explícita se prueba con el mismo motor en la suite y termina correctamente bajo suspensión selectiva.
 
-K demuestra que D02 permanece publicado y se activa antes y después de reabrir: ${k.map(r=>`${r.duration/60} min: ${r.defectWindows.before} antes / ${r.defectWindows.after} después`).join('; ')}. No se repara al cerrar el gateway. H conserva transferencias reales y crecimiento de demanda del receptor. J incluye pausa/chat, recuperación y comparación temporal completa.
+K interviene a los 200 segundos y reabre a los 260: la tentativa anterior a los 600 encontró la empresa ya insolvente por sus pérdidas reales. El escenario no altera capital ni reglas de eliminación. K demuestra que D02 permanece publicado y se activa antes y después de reabrir: ${k.map(r=>`${r.duration/60} min: ${r.defectWindows.before} antes / ${r.defectWindows.after} después`).join('; ')}. No se repara al cerrar el gateway. H conserva transferencias reales y crecimiento de demanda del receptor. J incluye pausa/chat, recuperación y comparación temporal completa.
 
-El primer intento integral se detuvo al exigir queries que el generador heredado nunca emite; se corrigió el escenario para contrastar tráfico de lectura generado y se repitió completo. También se congelaron las muestras con structuredClone. No se redujeron ni retiraron pruebas.
+El primer intento integral se detuvo al exigir queries que el generador heredado nunca emite; se corrigió el escenario para contrastar tráfico de lectura generado y se repitió completo. También se congelaron las muestras con structuredClone. La admisión se comprueba estrictamente después del tick del comando: solicitudes generadas en ese mismo tick antes de recibir el cierre son trabajo previo válido. No se redujeron ni retiraron pruebas.
 
 ## Conexiones y comunicación humana
 
@@ -71,6 +71,14 @@ FlowSlack: **${chat.humans} jugadores + Docente + proyector**, **${chat.messages
 Limitaciones: almacenamiento considerable, replay síncrono, compatibilidad por versión del motor, intervalos antiguos no reconstruibles y ventana de pérdida desde el último COMMIT. MTTR no confirmado queda nulo y la corrección definitiva no se inventa. No hay calificaciones académicas ni migración de negocio financiero.
 
 No se utilizó Anthropic, Claude, SDK, claves, créditos API ni Ruflo. Main permanece en \`ded62dcba370b899b5295e4e81837a7276b0bc65\`, sin merges.
+
+## Archivos modificados
+
+- Contratos y presentación derivada: shared/observability.ts, shared/crisis.ts, shared/types.ts y shared/actions.ts.
+- Hechos, captura y reconstrucción: server/observability.ts, history.ts, storage.ts, persistence.ts, engine.ts, traffic.ts, scenarios.ts, market.ts y discipline.ts.
+- Comunicación y operaciones: server/flowslack.ts, chat.ts, maintenance.ts, action-validation.ts, index.ts; costos demostrados en requests.ts y module-execution.ts.
+- Forense: server/dvr.ts, postmortem.ts; interfaz en src/Dvr.tsx, Crisis.tsx, FlowSlack.tsx, Maintenance.tsx, App.tsx y styles.css.
+- Validación: diez archivos nuevos de pruebas, cinco expectativas de esquema actualizadas; scripts chat-benchmark.ts, entrega5-benchmark.ts, entrega5-demo.ts y entrega5-report.mjs. README, documentos 12/13, informe, JSON resumido y cinco capturas.
 
 ## Commits por cortes
 
