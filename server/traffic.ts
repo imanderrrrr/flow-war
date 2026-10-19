@@ -1,3 +1,4 @@
+import { visibleRequest } from './projections.js';
 import { admissionReason } from './maintenance.js';
 import { observeCompany } from './observability.js';
 import { hasDefect } from './defects.js';
@@ -141,10 +142,13 @@ function completeOperation(company: Company, request: TrafficRequest, now: numbe
   }
 }
 
-export function trafficReceipt(request: TrafficRequest): TrafficReceipt {
-  const { execution, effectCodes, releaseOnInterrupt, contractPrice, ...visible } = request;
-  if(visible.result){const {defectLoss,...publicResult}=visible.result;visible.result=publicResult;}
-  return { ...structuredClone(visible), path: request.path.map(node => ({ id: node.id, type: node.type, ...(node.data.value !== undefined ? { value: node.data.value } : {}) })) };
+export function trafficReceipt(request: TrafficRequest, internal: true): TrafficReceipt;
+export function trafficReceipt(request: TrafficRequest): ReturnType<typeof visibleRequest>;
+export function trafficReceipt(request: TrafficRequest, internal = false) {
+  if (!internal) return visibleRequest(request);
+  // Releases remain durable in checkpoints; preserve diagnostic evidence in the private ledger.
+  const { execution, ...original } = request;
+  return { ...structuredClone(original), path: request.path.map(node => ({ id: node.id, type: node.type, ...(node.data.value !== undefined ? { value: node.data.value } : {}) })) };
 }
 
 export function settleTraffic(company: Company, now: number) {
@@ -169,7 +173,7 @@ export function settleTraffic(company: Company, now: number) {
     observeCompany(company, 'request.settled', { requestId: request.id, customerId: request.customerId, trafficClass: request.trafficClass, type: request.type, version: request.executionVersion, result: request.result, transaction: request.transaction, duplicates: request.duplicates ?? 0, oversold: request.oversold, defects: request.effectCodes ?? [], modules: request.execution?.modules.map(m => ({ id: m.id, version: m.version, defects: m.defects.filter(d => request.effectCodes?.includes(d.code)).map(d => d.code) })) ?? [], latencyMs: request.latencyMs }, [request.id]);
     if (request.transaction === 'PENDING_RESOLUTION') state.unresolvedCount++;
     state.observations.push({ at: now, legitimate: request.trafficClass === 'legitimate', status: result.status, latency: request.latencyMs!, breach: request.breach, oversold: request.oversold });
-    state.outbox.push(trafficReceipt(request));
+    state.outbox.push(trafficReceipt(request, true));
   }
 }
 
@@ -268,8 +272,8 @@ export function cancelTraffic(company: Company, at: number, reason: 'ROOM_FINISH
   settleTraffic(company, at); updateTrafficMetrics(company, at, 0, serviceRates(company)); company.queue = 0; company.active = 0;
 }
 
-export function trafficView(state: TrafficState): TrafficView {
-  return { scenario: state.config.version, totals: { ...state.totals }, legitimate: { ...state.legitimate }, malicious: { ...state.malicious }, metrics: { ...state.metrics }, inventory: { ...state.inventory },
+export function trafficView(state: TrafficState, internal = true): TrafficView {
+  return { scenario: state.config.version, totals: { ...state.totals }, ...(internal ? { legitimate: { ...state.legitimate }, malicious: { ...state.malicious } } : {}), metrics: { ...state.metrics }, inventory: { ...state.inventory },
     queues: SERVICE_IDS.map(id => ({ id, capacity: state.services[id].capacity, depth: state.services[id].waiting.length, processing: state.services[id].processing.length, rate: state.services[id].rate })), pendingResolution: state.unresolvedCount };
 }
 

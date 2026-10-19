@@ -1,3 +1,4 @@
+import { visibleRequest } from './projections.js';
 import { sealLegacyGenerations } from './history.js';
 import { installDvr } from './dvr.js';
 import { CHANNELS } from '../shared/observability.js';
@@ -89,11 +90,11 @@ app.get('/api/requests/:id', (req, res) => {
   for (const company of game.companies) {
     if (identity.role !== 'operator' && identity.companyId !== company.id) continue;
     const request = company.traffic.requests[req.params.id];
-    if (request) return res.json(trafficReceipt(request));
+    if (request) return res.json(identity.role==='operator'?trafficReceipt(request,true):trafficReceipt(request));
   }
   const row = db.prepare('SELECT companyId,receipt FROM request_receipts WHERE id=?').get(req.params.id) as {companyId: number; receipt: string} | undefined;
   if (!row || (identity.role !== 'operator' && identity.companyId !== row.companyId)) return res.sendStatus(404);
-  res.json(JSON.parse(row.receipt));
+  res.json(identity.role==='operator'?JSON.parse(row.receipt):visibleRequest(JSON.parse(row.receipt)));
 });
 app.get('/api/flowslack', (req,res)=>{
  res.setHeader('Cache-Control','no-store');const identity=session(req.headers.cookie);

@@ -5,10 +5,8 @@ import type {Identity,GameState} from '../shared/types.js';
 import type {Observation} from '../shared/observability.js';
 import {historyAccess,historyPoints,reconstruct} from './history.js';
 import {project} from './engine.js';
-export function visibleFact(f:Observation,identity:Identity):Observation{
- if(identity.role==='operator')return f;
- const {defects,modules,attackKind,...data}=f.data; if(data.result&&typeof data.result==='object'){const {defectLoss,...result}=data.result as Record<string,unknown>;data.result=result;} return{...f,data};
-}
+export { visibleFact } from './projections.js';
+import {visibleFact,visibleMetrics} from './projections.js';
 export function installDvr(app:Express,db:DatabaseSync,identityFor:(req:Request)=>Identity|null){
  app.get('/api/dvr/games',(req,res)=>{res.setHeader('Cache-Control','no-store');if(!identityFor(req))return res.sendStatus(403);res.json(db.prepare("SELECT generation,start,tick,duration,status,version FROM history_games WHERE status IN ('FINISHED','ABORTED') ORDER BY generation DESC").all());});
  app.get('/api/dvr/:generation',(req,res)=>{
@@ -28,7 +26,7 @@ export function installDvr(app:Express,db:DatabaseSync,identityFor:(req:Request)
  }catch(e){res.status(403).json({error:(e as Error).message});}
  });
  app.get('/api/dvr/:generation/chat',(req,res)=>{res.setHeader('Cache-Control','no-store');const identity=identityFor(req);try{const generation=Number(req.params.generation),meta=historyAccess(db,generation,identity),companyId=Number(req.query.companyId??identity!.companyId??0),at=Number(req.query.at??meta.tick),before=Number(req.query.before??Number.MAX_SAFE_INTEGER);if(!Number.isInteger(companyId)||companyId<0||companyId>4||!Number.isFinite(at)||at<meta.start||at>meta.tick||!Number.isSafeInteger(before)||before<1)return res.sendStatus(400);if(identity!.role!=='operator'&&companyId!==identity!.companyId)return res.sendStatus(403);const rows=db.prepare("SELECT body FROM slack_messages WHERE generation=? AND companyId=? AND seq<? AND json_extract(body,'$.at')<=? ORDER BY seq DESC LIMIT 80").all(generation,companyId,before,at)as{body:string}[];res.json({messages:rows.map(r=>JSON.parse(r.body)).reverse()});}catch(e){res.status(403).json({error:(e as Error).message});}});
- app.get('/api/dvr/:generation/metrics',(req,res)=>{res.setHeader('Cache-Control','no-store');const identity=identityFor(req);try{const generation=Number(req.params.generation),meta=historyAccess(db,generation,identity),companyId=Number(req.query.companyId??identity!.companyId??0);if(!Number.isInteger(companyId)||companyId<0||companyId>4)return res.sendStatus(400);if(identity!.role!=='operator'&&companyId!==identity!.companyId)return res.sendStatus(403);res.json(postmortem(db,generation,companyId,reconstruct(db,generation,meta.tick)));}catch(e){res.status(403).json({error:(e as Error).message});}});
+ app.get('/api/dvr/:generation/metrics',(req,res)=>{res.setHeader('Cache-Control','no-store');const identity=identityFor(req);try{const generation=Number(req.params.generation),meta=historyAccess(db,generation,identity),companyId=Number(req.query.companyId??identity!.companyId??0);if(!Number.isInteger(companyId)||companyId<0||companyId>4)return res.sendStatus(400);if(identity!.role!=='operator'&&companyId!==identity!.companyId)return res.sendStatus(403);res.json(visibleMetrics(postmortem(db,generation,companyId,reconstruct(db,generation,meta.tick)),identity!));}catch(e){res.status(403).json({error:(e as Error).message});}});
  app.get('/api/dvr/:generation/requests/:id',(req,res)=>{
  res.setHeader('Cache-Control','no-store');const identity=identityFor(req);try{const generation=Number(req.params.generation);historyAccess(db,generation,identity);
  const row=db.prepare("SELECT body FROM history_events WHERE generation=? AND kind='request.settled' AND json_extract(body,'$.data.requestId')=? AND (?=1 OR companyId=?) ORDER BY seq LIMIT 1").get(generation,req.params.id,identity!.role==='operator'?1:0,identity!.companyId) as {body:string}|undefined;

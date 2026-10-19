@@ -40,7 +40,7 @@ try {
   for(let sample=0;sample<30;sample++){const at=performance.now();await command('room.speed',{speed:20});latencies.push(performance.now()-at);await delay(200);}
   await command('room.pause');latencies.sort((a,b)=>a-b);
   const result={connections:sockets.length,snapshots,maxSnapshotBytes,wallSeconds:(performance.now()-before)/1000,ackP95ms:latencies[Math.floor(latencies.length*.95)],ackMaxMs:latencies.at(-1),finalTick:last?.tick,
-    companies:last?.companies.map(c=>({id:c.id,generated:c.traffic.totals.generated,pending:c.traffic.totals.generated-c.traffic.totals.completed-c.traffic.totals.rejected-c.traffic.totals.abandoned-c.traffic.totals.failed,queue:c.queue,legitimateAbandoned:c.traffic.legitimate.abandoned}))};
+    companies:last?.companies.map(c=>({id:c.id,generated:c.traffic.totals.generated,pending:c.traffic.totals.generated-c.traffic.totals.completed-c.traffic.totals.rejected-c.traffic.totals.abandoned-c.traffic.totals.failed,queue:c.queue,legitimateAbandoned:c.traffic.legitimate?.abandoned??null}))};
   await mkdir(resolve('artifacts'),{recursive:true});await writeFile(resolve('artifacts/connection-benchmark.json'),JSON.stringify(result,null,2));console.log(JSON.stringify(result));
 } finally {
   for(const socket of sockets)socket.disconnect();
