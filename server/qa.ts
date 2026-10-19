@@ -18,7 +18,7 @@ export function createTestJob(c: Company, ch: Change, scenario: TestScenario): T
   for (const key of ['requests','successes','errors','breaches','oversold','duplicates','revenue','lostRevenue'] as const) staging[key] = 0;
   const template = createConcurrencyRun(`qa-${ch.id}`, context, 0), spacing = Math.max(4, template.requests[0].path.length * .5 + 1);
   template.inventory.stock = template.inventory.initialStock = scenario.stock;
-  template.requests = Array.from({ length: scenario.requests }, (_, index) => {
+  template.requests = scenario.suite === 'load' ? [] : Array.from({ length: scenario.requests }, (_, index) => {
     const r = structuredClone(template.requests[0]), at = Math.floor(index / scenario.concurrency) * spacing;
     r.id = `qa-${ch.id}-${ch.reports.length}-R${index + 1}`; r.intentId = scenario.duplicateIntent ? 'qa-shared-payment' : `${r.id}-intent`;
     r.arrivalAt = at; r.nextAt = at + .5; r.deadline = at + 16; r.journey.at = at;
@@ -26,7 +26,7 @@ export function createTestJob(c: Company, ch: Change, scenario: TestScenario): T
     r.securityAllowed = admitSecurity(staging, r.execution ?? { modules: [] }, scenario.attack === 'none' ? 'valid' : scenario.attack, index, at, 'sim-1', `qa-${index}`, 'purchase');
     return r;
   });
-  return { finished: [], scenario: structuredClone(scenario), staging, elapsed: 0, next: 0, requests: template.requests, run: template, reports: [] };
+  return { finished: [], scenario: structuredClone(scenario), staging, elapsed: 0, next: 0, requests: scenario.suite === 'load' ? [] : template.requests, run: scenario.suite === 'load' ? undefined : template, reports: [] };
 }
 /** Ten 100ms rounds per room tick; pause freezes the entire persisted job. */
 export function advanceTestJob(job: TestJob) {
@@ -68,10 +68,15 @@ export function testReport(job: TestJob, at: number): Report {
   const sum = (fn: (r: typeof requests[number]) => number) => requests.reduce((total,r) => total + fn(r), 0);
   const paid = sum(r => Number(r.paid && !r.duplicateBusiness && r.committed > r.oversold));
   const observed = { revenue: Math.round(sum(r => r.result!.revenue) * 100) / 100, committed: sum(r => r.committed), accepted: paid, duplicates: sum(r => r.duplicates ?? 0), pendingReservations: sum(r => Number(r.committed > 0 && !r.paid)) };
-  const expected = { revenue: Math.round(paid * expectedPrice(job) * 100) / 100, maxCommitted: Math.min(job.scenario.requests, job.scenario.stock), accepted: job.scenario.attack !== 'none' || job.scenario.invalidInput || job.scenario.interrupt ? 0 : paid };
-  if (job.scenario.duplicateIntent) expected.maxCommitted = Math.min(1, job.scenario.stock);
+  const path = job.run?.requests[0]?.path ?? job.staging.backend.nodes;
+  const quantity = Number(path.find(n => n.type === 'atomic')?.data.value ?? 1);
+  const minimum = Math.max(1, ...(job.staging.runtime.releases[job.staging.version]?.modules ?? []).map(m => m.configuration.kind === 'inventory' ? m.configuration.minimum : 1));
+  const intentions = job.scenario.duplicateIntent ? 1 : job.scenario.requests;
+  const capacity = Math.max(0, Math.floor((job.scenario.stock - minimum + 1) / quantity));
+  const accepted = job.scenario.attack !== 'none' || job.scenario.invalidInput || job.scenario.interrupt ? 0 : Math.min(intentions, capacity);
+  const expected = { revenue: Math.round(accepted * quantity * expectedPrice(job) * 100) / 100, maxCommitted: job.scenario.interrupt ? 0 : Math.min(intentions * quantity, job.scenario.stock), accepted };
   const passed = observed.revenue === expected.revenue && observed.committed <= expected.maxCommitted && observed.duplicates === 0 && observed.pendingReservations === 0 && observed.accepted === expected.accepted && (job.scenario.suite !== 'load' || requests.every(r => r.result?.status === 'COMPLETED'));
-  const evidence: TestEvidence = { input: job.scenario, expected, observed, passed, outcomes: requests.map(r => ({ id: r.id, status: r.status, revenue: r.result!.revenue, committed: r.committed, price: r.price ?? 45, attempts: 1 + (r.retryCount ?? 0) })), graphHash: createHash('sha256').update(JSON.stringify([job.staging.backend, job.staging.security, job.staging.version])).digest('hex'), elapsed: job.elapsed };
+  const evidence: TestEvidence = { input: job.scenario, expected, observed, passed, outcomes: requests.map(r => ({ id: r.id, status: r.status, revenue: r.result!.revenue, committed: r.committed, price: r.price ?? 45, attempts: 1 + (r.retryCount ?? 0) })), graphHash: createHash('sha256').update(JSON.stringify([job.staging.backend, job.staging.security, job.staging.version, job.staging.runtime.releases[job.staging.version]])).digest('hex'), elapsed: job.elapsed };
   job.evidence = evidence;
   return { suite: job.scenario.suite, requests: requests.length, completed: sum(r => Number(r.status === 'COMPLETED')), rejected: sum(r => Number(r.status === 'REJECTED')), abandoned: sum(r => Number(r.status === 'ABANDONED')), failed: sum(r => Number(r.status === 'FAILED')), oversold: sum(r => r.oversold), duplicates: observed.duplicates, breaches: job.scenario.attack !== 'none' ? sum(r => Number(r.committed > 0)) : 0, latency: Math.round(sum(r => (r.result!.at - r.arrivalAt) * 1000) / requests.length), tick: at, testEvidence: evidence };
 }

@@ -62,7 +62,7 @@ test('T14/T16 private projections and foreign-role commands cannot expose or mut
   assert.equal(command(game,'backend','deploy.start').code,'FORBIDDEN');assert.equal(command(game,'qa','cto.budget',{amount:1000}).code,'FORBIDDEN');
   const anonymous=project(game,null),own=project(game,{id:'qa0',role:'qa',companyId:0});
   assert.equal('requests' in anonymous.companies[0].traffic,false);assert.equal('requests' in own.privateCompany!.traffic,false);assert.equal('services' in own.privateCompany!.traffic,false);
-  assert.deepEqual(game,before);
+  assert.deepEqual(game.companies,before.companies);assert.deepEqual(game.market,before.market);assert.deepEqual(game.changes,before.changes);assert.equal(game.actions.employees['0-backend'].violations.length,1);assert.equal(game.actions.employees['0-qa'].violations.length,1);
 });
 
 test('T15 same seed and commands are invariant to projection frequency, sprite limit and timestep batching', () => {

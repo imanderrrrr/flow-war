@@ -16,7 +16,7 @@ export const TERMINAL_LABELS: Record<TerminalReason, string> = { OK: 'OK', OUT_O
 export type RequestResult = { status: 'COMPLETED' | 'REJECTED' | 'ABANDONED' | 'FAILED'; reason: TerminalReason; at: number; revenue: number; lostRevenue: number; capitalDelta: number; service?: ServiceId; operation?: string };
 export type RequestJourney = { from: RequestStage; to: RequestStage; at: number; duration: number };
 export type PurchaseRequest = {
-  promotion?: { percent: number; audience: 'all' | 'new' }; promotionApplied?: boolean; duplicateBusiness?: boolean; lockKeys?: string[]; queueKeys?: string[]; acquireAt?: number; retryPolicy?: { maxAttempts: number; delayMs: number }; transportFailures?: number; retryingPayment?: boolean; idempotentUntil?: number; cachedRead?: { stock: number; version: number }; invalidateCache?: boolean; effectCodes?: DefectCode[]; loadDepth?: number; delayedNodes?: string[]; deferUntil?: number; discountApplied?: boolean; releaseOnInterrupt?: boolean; reservationSettled?: boolean;
+  promotion?: { percent: number; audience: 'all' | 'new' }; promotionApplied?: boolean; recoveryRetry?: boolean; duplicateBusiness?: boolean; lockKeys?: string[]; queueKeys?: string[]; acquireAt?: number; retryPolicy?: { maxAttempts: number; delayMs: number }; transportFailures?: number; retryingPayment?: boolean; idempotentUntil?: number; cachedRead?: { stock: number; version: number }; invalidateCache?: boolean; executor?: 'requests-1' | 'requests-4a'; effectCodes?: DefectCode[]; loadDepth?: number; delayedNodes?: string[]; deferUntil?: number; discountApplied?: boolean; releaseOnInterrupt?: boolean; reservationSettled?: boolean;
   execution?: ExecutionRelease; newCustomer?: boolean; couponCount?: number; invalidInput?: boolean; price?: number; duplicates?: number; retryCount?: number; waitOperation?: boolean;
   id: string; intentId?: string; customerId?: string; customerSource?: 'market' | 'qa' | 'legacy'; customerColor?: string; executionVersion: number; path: GraphNode[]; securityAllowed: boolean; commercial?: boolean;
   arrivalAt: number; nextAt: number; deadline: number; cursor: number; status: RequestStatus;
@@ -26,7 +26,7 @@ export type PurchaseRequest = {
 };
 export type ScenarioContext = { backend: Graph; security: Graph; executionVersion: number; execution?: ExecutionRelease };
 export type ConcurrencyRun = { operationsState?: OperationRuntime;
-  id: string; engineVersion: 'requests-1'; fixture: 'last-unit-1'; startedAt: number;
+  id: string; engineVersion: 'requests-1' | 'requests-4a'; fixture: 'last-unit-1'; startedAt: number;
   backendHash: string; securityHash: string;
   inventory: { sku: 'LAST-UNIT'; initialStock: number; stock: number; version: number; committed: number; oversold: number };
   requests: PurchaseRequest[];

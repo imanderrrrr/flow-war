@@ -53,3 +53,9 @@ Abrir [http://localhost:4173](http://localhost:4173). Las credenciales locales s
 | 9. Estructura de carpetas | Documento 01, sección 8 |
 
 Los diagramas usan Mermaid. Las fórmulas y valores de balance pertenecen a la documentación para desarrollo; no se presentan como instrucciones a los jugadores.
+
+## Entrega 4A
+
+Acciones estructuradas, artefactos con defectos persistentes, QA reproducible, operaciones DevOps, campañas y disciplina: [implementación y verificación](docs/10-entrega-4a-acciones-defectos.md). La frontera de Haiku, todavía sin llamadas API, está en [contrato de agentes](docs/11-contrato-agentes-ia.md).
+
+Ejecutar `npm test`, `npm run build`, `npm run bench:traffic` y `npm run bench:actions`.

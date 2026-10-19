@@ -15,6 +15,9 @@ export function restart(c: Company, now: number, duration: number, serverId?: nu
   if (!instances.length) throw new Error('Servidor no encontrado.');
   if (instances.some(s => s.status === 'RESTARTING')) throw new Error('Reinicio ya en curso.');
   for (const instance of instances) { instance.status = 'RESTARTING'; instance.readyAt = now + duration; }
+  if (effectiveServers(c) === 0) for (const request of Object.values(c.traffic.requests)) {
+    if (!request.result && request.paid && request.retryPolicy && (request.retryCount ?? 0) + 1 < request.retryPolicy.maxAttempts && now + duration + request.retryPolicy.delayMs / 1000 < request.deadline) request.recoveryRetry = true;
+  }
 }
 export function effectiveServers(c: Company) {
   const candidates = c.balancer ? Array.from({ length: c.servers }, (_, i) => i + 1) : [1];

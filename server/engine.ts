@@ -1,5 +1,5 @@
 import { runLocalAgent } from './agents.js';
-import { initialActionState, dispatchCommand, correctEmployee } from './discipline.js';
+import { initialActionState, dispatchCommand, correctEmployee, auditCompletion } from './discipline.js';
 import { businessCommand, advanceCampaigns } from './business.js';
 import { blockConfiguration } from './blocks.js';
 import { createTestJob, advanceTestJob, testReport, scenarioForSuite } from './qa.js';
@@ -84,14 +84,9 @@ export function reportFor(g: GameState, change: Change, suite: string): Report {
   const company = g.companies[change.companyId];
   if (suite === 'Concurrencia') return concurrencyReport(runConcurrencyFixture(change.context ?? { backend: change.domain === 'backend' ? change.graph : company.backend, security: change.domain === 'security' ? change.graph : company.security, executionVersion: change.baseVersion }), g.tick);
   if (suite === 'Carga') return runLoadFixture(company, change.context ?? productionContext(company), g.tick);
-  const backend = change.domain === 'backend' ? change.graph : company.backend;
-  const security = change.domain === 'security' ? change.graph : company.security;
-  const load = 100;
-  const valid = Array.from({ length: load }, (_, i) => evaluateSecurity(security, 'valid', i)).filter(Boolean).length;
-  const batches = suite === 'Integración' ? inventoryBatch(backend, valid, 20) : inventoryBatch(backend, valid, load);
-  let breaches = 0;
-  if (suite === 'Seguridad' || suite === 'Integración') for (let i = 0; i < 60; i++) if (evaluateSecurity(security, (['forged', 'injection', 'bot'] as const)[i % 3], i)) breaches++;
-  return { suite, requests: load, completed: batches.completed, rejected: load - batches.completed, oversold: batches.oversold, breaches, duplicates: batches.duplicates, latency: Math.round(180 + route(backend).length * 12), tick: g.tick };
+  const job = createTestJob(company, change, scenarioForSuite(suite));
+  while (!advanceTestJob(job)) { /* Bounded at 500 requests and 6 attempts. */ }
+  return testReport(job, g.tick);
 }
 function releaseReservation(c: Company, change: Change) { c.reserved = Math.max(0, c.reserved - change.reserved); change.reserved = 0; }
 export function applyCommand(g: GameState, identity: Identity | null, command: Command): Result {
@@ -134,11 +129,12 @@ function executeCommand(g: GameState, identity: Identity, command: Command): Res
       if (Number(p.revision) !== current) throw new Error('La revisión cambió. Recarga el borrador.');
       const graph = validateGraph(p.graph, domain, command.type === 'change.submit');
       const execution = releaseFor(c, domain === 'backend' ? graph : c.backend);
+      if (domain === 'security') delete execution.security;
       c.drafts[domain] = { graph, revision: current + 1 };
       if (command.type === 'change.submit') {
         const cost = 100 + graph.nodes.reduce((sum, n) => sum + (BLOCKS[domain].find(b => b.type === n.type)?.cost ?? 0), 0);
         const change: Change = { id: `CH-${String(g.changes.length + 1).padStart(3, '0')}`, companyId: c.id, domain, name: `${domain === 'backend' ? 'Lógica' : 'Seguridad'} · revisión ${current + 1}`, graph: structuredClone(graph), status: 'QA_PENDING', cost, reserved: 0, baseVersion: c.version, created: g.tick, reports: [], actorId: identity.id, context: { backend: structuredClone(domain === 'backend' ? graph : c.backend), security: structuredClone(domain === 'security' ? graph : c.security), executionVersion: c.version, execution } };
-        g.changes.unshift(change); event(g, c.id, `${change.id} enviado a QA.`, 'neutral', 'PIPELINE');
+        g.changes.unshift(change); event(g, c.id, `${change.id} enviado a QA.`, 'neutral', 'PIPELINE'); return { ok: true, refs: [change.id] };
       }
       return { ok: true };
     }
@@ -165,7 +161,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command): Res
     }
     if (command.type === 'qa.run') {
       if (ch.status !== 'QA_PENDING' || !SUITES.includes(String(p.suite))) throw new Error('No se puede ejecutar esa suite en este estado.');
-      if (ch.context?.execution?.modules.length || ch.context?.execution?.security || p.suite === 'Unitarias') {
+      if (ch.context?.execution?.modules.length || ch.context?.execution?.security || !['Concurrencia','Carga'].includes(String(p.suite))) {
         ch.testJob = createTestJob(c, ch, scenarioForSuite(String(p.suite))); ch.status = 'QA_RUNNING'; ch.runningSuite = String(p.suite); return { ok: true };
       }
       ch.status = 'QA_RUNNING'; ch.runningSuite = String(p.suite); ch.due = g.tick + 4;
@@ -210,11 +206,13 @@ function jobs(g: GameState) {
         ch.reports.push(ch.testJob ? testReport(ch.testJob, g.tick) : ch.qaLoad ? loadReport(ch.qaLoad, g.tick) : ch.qaScenario ? concurrencyReport(ch.qaScenario, g.tick) : reportFor(g, ch, ch.runningSuite!));
         delete ch.qaScenario; delete ch.qaLoad; delete ch.testJob;
         ch.status = 'QA_PENDING';
+        auditCompletion(g, c.id, 'qa.completed', [ch.id], [`requests.executed:${ch.reports.at(-1)!.requests}`, 'reports.added:1']);
         event(g, c.id, `${ch.id} · ${ch.runningSuite} completada.`, 'neutral', 'QA');
       }
     }
     if (ch.status === 'DEPLOYING' && g.tick >= (ch.due ?? Infinity)) {
       c[ch.domain] = structuredClone(ch.graph); c.version++; c.runtime.releases[c.version] = structuredClone(ch.context?.execution ?? releaseFor(c)); c.deployments++; c.capital -= ch.cost; releaseReservation(c, ch); ch.status = 'DEPLOYED';
+      auditCompletion(g, c.id, 'deploy.completed', [ch.id, ...(ch.artifactRefs?.map(ref=>`${ref.id}@${ref.version}`) ?? [])], [`production.version:${c.version}`, `capital.delta:${-ch.cost}`]);
       event(g, c.id, `${ch.id} EN PRODUCCIÓN · v${c.version}`, 'good', 'DEPLOY');
       for (const other of g.changes) if (other.companyId === c.id && other.id !== ch.id && ['QA_PENDING', 'QA_RUNNING', 'CTO_PENDING', 'AUTHORIZED', 'EXPIRED'].includes(other.status)) { other.status = 'STALE'; releaseReservation(c, other); }
     }
@@ -234,7 +232,9 @@ export function step(g: GameState, dt = .1) {
   if (g.tick - dt < g.duration * .24 && concurrencyIncident) event(g, null, 'Ráfagas de compra sobre inventario compartido.', 'bad', 'CONCURRENCIA');
   for (const c of g.companies) {
     if (c.eliminated) continue;
+    const recovered = c.infrastructure.instances.filter(instance=>instance.status==='RESTARTING'&&g.tick>=instance.readyAt!).map(instance=>`APP-${instance.id}`);
     advanceInfrastructure(c, g.tick); advanceCampaigns(c, g.tick);
+    if (recovered.length) auditCompletion(g, c.id, 'infra.recovered', recovered, ['availability.restored']);
     const deploying = g.changes.find(ch => ch.companyId === c.id && ch.status === 'DEPLOYING');
     const rates = serviceRates(c, deploying);
     const capacity = rates.web;
@@ -293,11 +293,13 @@ export function project(g: GameState, identity: Identity | null): Snapshot {
   const { runtime: _runtime, ...ownVisible } = ownCompany ?? {} as Company;
   const privateC = ownCompany ? structuredClone({ ...ownVisible, particles: trafficParticles(ownCompany, g.tick), traffic: trafficView(ownCompany.traffic) }) : undefined;
   if (privateC) {
-    for (const request of privateC.concurrency.run?.requests ?? []) { delete request.execution; delete request.effectCodes; }
+    if (privateC.concurrency.run) delete privateC.concurrency.run.operationsState;
+    for (const request of privateC.concurrency.run?.requests ?? []) { delete request.execution; delete request.effectCodes; delete request.releaseOnInterrupt; }
     const ownDraft = identity?.role === 'backend' || identity?.role === 'security' ? identity.role : null;
     privateC.drafts = ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {};
   }
   return {
+    operations: identity ? { modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
     companies: g.companies.map(c => {
       const { runtime, drafts, backend, security, product, migrationRemainder, arrivalRemainder, processedRemainder, crisisTicks, deadTicks, bankruptTicks, concurrencyUntil, concurrency, traffic, ...pub } = c;

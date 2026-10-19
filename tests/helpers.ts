@@ -12,9 +12,11 @@ export function insertBlock(type: string, before = 'write', value = 1, graph = i
   return copy;
 }
 
-let commandSequence = 0;
+const commandSequences = new WeakMap<GameState, number>();
 export function command(game: GameState, role: Role | 'operator', type: string, payload: Record<string, unknown> = {}, changeId?: string, companyId = 0) {
-  return applyCommand(game, { id: `${companyId}-${role}`, role, companyId: role === 'operator' ? null : companyId }, { id: `test-${++commandSequence}`, type, companyId, changeId, payload });
+  const prior = Math.max(0, ...Object.keys(game.actions.receipts).map(key => Number(key.match(/:test-(\d+)$/)?.[1] ?? 0)));
+  const sequence = Math.max(commandSequences.get(game) ?? 0, prior) + 1; commandSequences.set(game, sequence);
+  return applyCommand(game, { id: `${companyId}-${role}`, role, companyId: role === 'operator' ? null : companyId }, { id: `test-${sequence}`, type, companyId, changeId, payload });
 }
 
 export function advanceGame(game: GameState, seconds: number) { for (let i = 0; i < Math.round(seconds * 10); i++) step(game); }

@@ -4,6 +4,9 @@ import { initialGraph, validateGraph } from '../server/engine.js';
 import { advanceConcurrency, createConcurrencyRun } from '../server/requests.js';
 import { insertBlock } from './helpers.js';
 import type { Graph } from '../shared/types.js';
+import { createGame } from '../server/engine.js';
+import { admitTraffic, advanceTraffic } from '../server/traffic.js';
+import { restart, advanceInfrastructure } from '../server/infrastructure.js';
 
 function fixture(graph: Graph, offsets: [number,number] = [0,0], stock = 1) {
   const run = createConcurrencyRun('blocks', { backend: graph, security: initialGraph('security'), executionVersion: 1 }, 0, offsets);
@@ -53,4 +56,15 @@ test('4A T37 Validation checks the requested condition without granting atomicit
   const run = complete(fixture(insertBlock('validation','write',1))); assert.equal(run.inventory.oversold, 1); // Both validations execute before either write.
   const prior = complete(fixture(insertBlock('validation','read',1))); assert.equal(prior.inventory.oversold, 1);
   const invalid = insertBlock('lock','read',5000); invalid.nodes.find(n => n.type === 'lock')!.data.config = { kind: 'lock', resource: 'stock', ttlMs: -1, acquisitionMs: 0 }; assert.throws(() => validateGraph(invalid,'backend'));
+});
+test('4A production restart during an uncertain payment response can trigger the configured Retry and duplicate effects', () => {
+  for(const protectedPayment of [false,true]) {
+    const g=createGame(),c=g.companies[0];c.backend=insertBlock('retry','payment',2);
+    if(protectedPayment)c.backend=insertBlock('idempotency','payment',60,c.backend);
+    const r=admitTraffic(c,0,'purchase');let now=0;
+    while(!r.paid&&now<5){now=Math.round((now+.1)*10)/10;advanceTraffic(c,now);}
+    assert.equal(r.paid,true);assert.equal(r.result,undefined);restart(c,now,1);
+    for(let i=0;i<50;i++){now=Math.round((now+.1)*10)/10;advanceInfrastructure(c,now);advanceTraffic(c,now);}
+    assert.equal(r.retryCount,1);assert.equal(r.duplicates??0,protectedPayment?0:1);assert.equal(c.traffic.outbox.find(receipt=>receipt.id===r.id)?.result?.revenue,45);
+  }
 });

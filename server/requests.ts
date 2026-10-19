@@ -1,5 +1,6 @@
+import { hasDefect } from './defects.js';
 import { executeBlock, releaseResources } from './blocks.js';
-import { executeModule, settleReservation } from './module-execution.js';
+import { executeModule, settleReservation, activation } from './module-execution.js';
 import { initialOperations } from './artifacts.js';
 import type { OperationRuntime } from '../shared/simulation.js';
 import { customerColor } from './market.js';
@@ -7,7 +8,7 @@ import { createHash } from 'node:crypto';
 import type { Company, ConcurrencyRun, FlowParticle, PurchaseRequest, Report, RequestResult, RequestStage, ScenarioContext, InventoryState } from '../shared/types.js';
 import { evaluateSecurity, route } from './graphs.js';
 
-export const REQUEST_ENGINE_VERSION = 'requests-1' as const;
+export const REQUEST_ENGINE_VERSION = 'requests-4a' as const;
 export const OPERATION_SECONDS = .5;
 const roundTime = (time: number) => Math.round(time * 1000) / 1000;
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
@@ -23,7 +24,7 @@ export function createConcurrencyRun(id: string, context: ScenarioContext, at: n
       const arrivalAt = roundTime(at + offset);
       return {
         id: `${id}-R${index + 1}`, intentId: `${id}-purchase-${index + 1}`,
-        execution: context.execution && structuredClone(context.execution), newCustomer: true, couponCount: 1, executionVersion: context.executionVersion, path: structuredClone(route(context.backend)),
+        executor: 'requests-4a', execution: context.execution && structuredClone(context.execution), newCustomer: true, couponCount: 1, executionVersion: context.executionVersion, path: structuredClone(route(context.backend)),
         securityAllowed: evaluateSecurity(context.security, 'valid', index),
         arrivalAt, nextAt: roundTime(arrivalAt + OPERATION_SECONDS), deadline: roundTime(arrivalAt + 16),
         cursor: 0, status: 'PENDING', atomic: false, quantity: 1, committed: 0, oversold: 0,
@@ -84,7 +85,7 @@ export function concurrencyReport(run: ConcurrencyRun, tick: number): Report {
   const count = (status: PurchaseRequest['status']) => run.requests.filter(request => request.status === status).length;
   return {
     suite: 'Concurrencia', requests: run.requests.length, completed: count('COMPLETED'), rejected: count('REJECTED'),
-    abandoned: count('ABANDONED'), failed: count('FAILED'), oversold: run.inventory.oversold, breaches: 0, duplicates: 0,
+    abandoned: count('ABANDONED'), failed: count('FAILED'), oversold: run.inventory.oversold, breaches: 0, duplicates: run.requests.reduce((sum,r)=>sum+(r.duplicates??0),0),
     latency: Math.round(run.requests.reduce((sum, request) => sum + (request.result!.at - request.arrivalAt) * 1000, 0) / run.requests.length), tick,
     evidence: {
       engineVersion: run.engineVersion, fixture: run.fixture, backendHash: run.backendHash, securityHash: run.securityHash,
@@ -117,6 +118,7 @@ export function executePurchaseOperation(request: PurchaseRequest, inventory: In
   request.waitOperation = false;
   const node = request.path[request.cursor];
   if (!node) { finishRequest(request, 'FAILED', 'INVALID_FLOW', now); return; }
+  if (request.executor === 'requests-1' && ['lock','queue','retry','idempotency','cache','validation','module'].includes(node.type)) { finishRequest(request, 'REJECTED', 'UNSUPPORTED_BLOCK', now); return; }
   switch (node.type) {
       case 'entry':
         moveRequest(request, 'security', now);
@@ -149,6 +151,7 @@ export function executePurchaseOperation(request: PurchaseRequest, inventory: In
         inventory.oversold += excess;
         request.committed = request.quantity;
         request.oversold = excess;
+        if (excess && request.execution?.modules.some(m=>hasDefect(m,'D01'))) activation(request,'D01');
         releaseResources(request, ops, 'stock');
         if (request.invalidateCache) ops.cache = {};
         break;
@@ -175,10 +178,11 @@ export function executePurchaseOperation(request: PurchaseRequest, inventory: In
         if (request.deferUntil && now < request.deferUntil) { request.waitOperation = true; break; }
         if (!request.committed || (request.paid && !request.retryingPayment)) { finishRequest(request, 'FAILED', 'INVALID_FLOW', now); break; }
         if (request.promotion && !request.promotionApplied && (request.promotion.audience === 'all' || request.newCustomer)) { request.price = Math.round((request.price ?? 45) * (1 - request.promotion.percent / 100) * 100) / 100; request.promotionApplied = true; }
-        const key = `payment:${request.intentId ?? request.id}`, seen = ops.payments[key];
+        const trackPayment = Boolean(request.retryPolicy || request.idempotentUntil || request.execution?.modules.some(m => m.configuration.kind === 'purchase') || (request.intentId && request.intentId !== `${request.id}-intent`));
+        const key = `payment:${request.intentId ?? request.id}`, seen = trackPayment ? ops.payments[key] : undefined;
         if (!(seen && seen.until > now && (request.idempotentUntil ?? 0) > now)) {
-          if (seen && seen.until > now) { if (seen.owner !== request.id) request.duplicateBusiness = true; request.duplicates = (request.duplicates ?? 0) + 1; ops.counters.duplicates++; }
-          ops.payments[key] = { until: now + 300, owner: request.id };
+          if (seen && seen.until > now) { if (seen.owner !== request.id) request.duplicateBusiness = true; request.duplicates = (request.duplicates ?? 0) + 1; ops.counters.duplicates++; if (request.execution?.modules.some(m=>hasDefect(m,'D03'))) activation(request,'D03'); }
+          if (trackPayment) ops.payments[key] = { until: now + 300, owner: request.id };
         }
         request.paid = true;
         if ((request.transportFailures ?? 0) > 0) {

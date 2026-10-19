@@ -42,7 +42,7 @@ export function executeInterpretation(g: GameState, identity: Identity | null, i
   if (interpretation.intent === 'OUT_OF_SCOPE') {
     // A model verdict alone never confirms discipline. Versioned exact command rule.
     const confirmed = /^(escribe (un )?poema|write (me )?(a )?poem)[.!]?$/iu.test(input.rawText?.trim() ?? '');
-    const e = employeeFor(g, identity), key = `${e?.id ?? identity.id}:scope:${input.id}`, digest = stableDigest(input);
+    const e = employeeFor(g, identity), key = `${e?.id ?? identity.id}:${input.id}`, digest = stableDigest(input);
     const prior = g.actions.receipts[key]; if (prior && prior.digest !== digest) return response('TECHNICAL_ERROR', 'ID de orden ya utilizado.', { ok: false, code: 'ID_CONFLICT' });
     if (confirmed && e && !prior) {
       confirmViolation(g, e, { id: input.id, type: 'scope.poem' }, 'OUT_OF_SCOPE');

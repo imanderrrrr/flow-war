@@ -4,10 +4,12 @@ import { DEFAULT_TEST } from '../shared/actions.js';
 import { defectFixture } from './defect-fixtures.js';
 import { command, advanceGame } from './helpers.js';
 import { recoverGame, serializeGame } from '../server/persistence.js';
+import { createGame } from '../server/engine.js';
 
 test('4A T18/T19/T22/T23 same artifact passes isolated unit cases and fails 200 interleaved purchases without auto approval', () => {
   const g = defectFixture('concurrency', 'D01'), ch = g.changes[0], production = structuredClone(g.companies[0]);
   assert.equal(command(g, 'qa', 'qa.execute', { changeId: ch.id, scenario: DEFAULT_TEST }).ok, true);
+  assert.deepEqual(g.actions.audit.at(-1)!.refs, [ch.id]);
   advanceGame(g, 1); assert.equal(ch.reports[0].testEvidence?.passed, true); assert.equal(ch.status, 'QA_PENDING');
   assert.equal(g.companies[0].version, production.version); assert.deepEqual(g.companies[0].backend, production.backend);
   command(g, 'qa', 'qa.execute', { changeId: ch.id, scenario: { ...DEFAULT_TEST, suite: 'concurrency', requests: 200, concurrency: 200, stock: 1 } });
@@ -55,4 +57,10 @@ test('4A load uses actual staging FIFO queues and drains every declared request'
   const g = defectFixture('coupon', 'D06'), ch = g.changes[0];
   command(g, 'qa', 'qa.execute', { changeId: ch.id, scenario: { ...DEFAULT_TEST, suite: 'load', requests: 200, concurrency: 100, stock: 1000 } });
   advanceGame(g, 5); assert.equal(ch.reports[0].requests, 200); assert.ok(ch.reports[0].abandoned! + ch.reports[0].rejected > 0); assert.equal(ch.status, 'QA_PENDING');
+});
+test('4A load consumes security windows only for the real declared admissions', () => {
+  const g=createGame();g.status='RUNNING';
+  command(g,'security','security.prepare',{auth:false,authorization:false,waf:false,botThreshold:0,blockedOrigins:[],rate:{limit:1,windowSeconds:60,groupBy:'origin',scope:'all',exceed:'reject'}});
+  const ch=g.changes[0];command(g,'qa','qa.execute',{changeId:ch.id,scenario:{...DEFAULT_TEST,suite:'load',requests:5,concurrency:5,stock:10}});advanceGame(g,3);
+  assert.equal(ch.reports[0].requests,5);assert.equal(ch.reports[0].completed,5);assert.equal(ch.reports[0].testEvidence?.passed,true);
 });

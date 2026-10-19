@@ -1,3 +1,4 @@
+import { admitSecurity } from './security.js';
 import { executionFor } from './artifacts.js';
 import { attachCustomer, recordCustomerExperience, selectCustomer } from './market.js';
 import type { Company, ConcurrencyState, ScenarioContext } from '../shared/types.js';
@@ -21,7 +22,7 @@ export function startConcurrency(company: Company, at: number) {
   if (customers.some(customer => !customer)) return false;
   settleConcurrency(company);
   state.run = createConcurrencyRun(`C${company.id}-CC${++state.sequence}`, productionContext(company), at);
-  state.run.requests.forEach((request, index) => attachCustomer(company, request, customers[index]!));
+  state.run.requests.forEach((request, index) => { request.newCustomer = customers[index]!.successfulVisits === 0; request.securityAllowed = admitSecurity(company, productionContext(company).execution!, 'valid', index, at, `sim-${customers[index]!.cohort % 64}`, customers[index]!.id, 'purchase'); attachCustomer(company, request, customers[index]!); });
   state.totals.generated += state.run.requests.length;
   company.requests += state.run.requests.length;
   return true;
@@ -46,7 +47,7 @@ export function settleConcurrency(company: Company) {
     company.revenue += result.revenue;
     company.lostRevenue += result.lostRevenue;
     company.capital += result.capitalDelta;
-    company.oversold += request.oversold;
+    company.oversold += request.oversold; company.duplicates += request.duplicates ?? 0;
     newOversold += request.oversold;
     recordCustomerExperience(company, request, 'purchase', (result.at - request.arrivalAt) * 1000);
     request.accounted = true;

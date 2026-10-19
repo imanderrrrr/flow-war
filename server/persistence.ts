@@ -9,6 +9,7 @@ import { initialTraffic } from './traffic.js';
 /** Upgrade only missing simulation state. Never infer historical requests/effects. */
 export function recoverGame(serialized: string): GameState {
   const saved = JSON.parse(serialized);
+  const originalSchema = saved.schema;
   if (![1, 2, 3, 4, 5].includes(saved.schema)) throw new Error('Versión de partida no soportada.');
   if (saved.schema === 1) {
     for (const company of saved.companies) company.concurrency = initialConcurrency(saved.duration, saved.tick);
@@ -53,10 +54,14 @@ export function recoverGame(serialized: string): GameState {
     }
     saved.schema = 3;
   }
+  for (const company of [...saved.companies, ...saved.changes.flatMap((change: any) => [change.qaLoad?.company, change.testJob?.staging].filter(Boolean))]) { company.runtime ??= initialRuntime(); syncInfrastructure(company); }
+  for (const change of saved.changes) if (change.testJob?.run) change.testJob.requests = change.testJob.run.requests;
   for (const change of saved.changes) if (change.qaLoad) change.qaLoad.company.traffic.scope = 'qa';
-  for (const company of [...saved.companies, ...saved.changes.flatMap((change: {qaLoad?: {company: unknown}}) => change.qaLoad ? [change.qaLoad.company] : [])]) {
+  for (const company of [...saved.companies, ...saved.changes.flatMap((change: {qaLoad?: {company: unknown}}) => [change.qaLoad?.company, (change as any).testJob?.staging].filter(Boolean))]) {
     company.traffic.paths ??= {};
     for (const request of Object.values(company.traffic.requests) as any[]) {
+      if (originalSchema < 5) request.executor ??= 'requests-1';
+      if (request.execution?.release !== undefined) { const release = company.runtime.releases[request.executionVersion]; if (!release) throw new Error('Versión de ejecución ausente.'); request.execution = release; }
       if (!Array.isArray(request.path)) {
         const path = company.traffic.paths[request.executionVersion];
         if (!path) throw new Error('La solicitud no conserva su versión de ejecución.');
@@ -65,7 +70,18 @@ export function recoverGame(serialized: string): GameState {
     }
   }
   if (saved.schema === 3) { importLegacyMarket(saved); saved.schema = 4; }
-  if (saved.schema === 4) { saved.schema = 5; saved.actions = initialActionState(); }
+  if (saved.schema === 4) {
+    saved.schema = 5; saved.actions = initialActionState();
+    for (const company of saved.companies) for (const request of company.concurrency.run?.requests ?? []) request.executor ??= 'requests-1';
+    for (const change of saved.changes) {
+      for (const request of change.qaScenario?.requests ?? []) request.executor ??= 'requests-1';
+      if (change.graph.nodes.some((n: {type: string}) => ['lock','queue','retry','idempotency','cache','validation'].includes(n.type)) && ['QA_PENDING','QA_RUNNING','CTO_PENDING','AUTHORIZED','DEPLOYING'].includes(change.status)) {
+        const company = saved.companies[change.companyId]; company.reserved = Math.max(0,company.reserved-change.reserved); change.reserved=0; change.status='QA_PENDING';
+        for (const report of change.reports) report.obsolete=true;
+        delete change.qaScenario; delete change.qaLoad; delete change.due;
+      }
+    }
+  }
   if (saved.market.config.version !== 'market-3.0') throw new Error('Versión de mercado no soportada.');
   for (const company of saved.companies) { company.runtime ??= initialRuntime(); syncInfrastructure(company); }
   bindMarket(saved); assertMarket(saved);
@@ -75,8 +91,10 @@ export function recoverGame(serialized: string): GameState {
 
 /** A frozen route is persisted once per release rather than once per request. */
 export function serializeGame(game: GameState): string {
-  return JSON.stringify(game, function(this: {companyId?: number; executionVersion?: number; phase?: string}, key, value) {
+  return JSON.stringify(game, function(this: {companyId?: number; executionVersion?: number; phase?: string; scenario?: unknown; run?: unknown}, key, value) {
     if (key === 'outbox') return [];
+    if (key === 'requests' && this.scenario && this.run) return undefined;
+    if (key === 'execution' && this.companyId !== undefined && this.phase) return { release: this.executionVersion };
     if (key === 'path' && this.companyId !== undefined && this.phase) return { release: this.executionVersion };
     return value;
   });

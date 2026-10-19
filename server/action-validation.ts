@@ -52,7 +52,7 @@ export function validateParameters(type: string, input: unknown) {
     case 'infra.restart': keys(p, ['serverId','duration']); integer(p.serverId, 1, 8); integer(p.duration, 1, 60); break;
     case 'infra.restart_all': keys(p, ['duration']); integer(p.duration, 1, 60); break;
     case 'infra.stop': case 'infra.recover': keys(p, ['service']); oneOf(p.service, ['security','web','checkout','inventory','payment']); break;
-    case 'campaign.prepare': keys(p, ['percent','audience','duration','budget','demandMultiplier']); integer(p.percent, 0, 70); oneOf(p.audience, ['all','new']); integer(p.duration, 10, 300); integer(p.budget, 1, 2000); if (typeof p.demandMultiplier !== 'number' || p.demandMultiplier < 1 || p.demandMultiplier > 4) throw new ActionError('INVALID', 'Multiplicador: 1–4.'); break;
+    case 'campaign.prepare': keys(p, ['percent','audience','duration','budget','demandMultiplier']); integer(p.percent, 0, 70); oneOf(p.audience, ['all','new']); integer(p.duration, 10, 300); integer(p.budget, 1, 2000); if (typeof p.demandMultiplier !== 'number' || !Number.isFinite(p.demandMultiplier) || p.demandMultiplier < 1 || p.demandMultiplier > 4) throw new ActionError('INVALID', 'Multiplicador: 1–4.'); break;
     case 'campaign.authorize': case 'campaign.reject': case 'campaign.activate': keys(p, ['campaignId']); string(p.campaignId); break;
     case 'product.propose': keys(p, ['name','description']); string(p.name); string(p.description, 1000); break;
     case 'employee.correct': keys(p, ['employeeId','justification']); string(p.employeeId); string(p.justification, 1000); break;

@@ -1,7 +1,8 @@
+import { hasDefect } from './defects.js';
 import { activeCampaign } from './business.js';
 import { releaseResources, pruneOperations } from './blocks.js';
 import { admitSecurity } from './security.js';
-import { settleReservation } from './module-execution.js';
+import { settleReservation, activation } from './module-execution.js';
 import { initialOperations } from './artifacts.js';
 import { executionFor } from './artifacts.js';
 import { effectiveServers } from './infrastructure.js';
@@ -69,7 +70,7 @@ export function admitTraffic(company: Company, now: number, type: TrafficRequest
     id, ...(type === 'purchase' ? { intentId: `${id}-intent` } : {}), companyId: company.id,
     ...(trafficClass === 'legitimate' && state.scope === 'qa' ? { customerId: `qa-${company.id}-${ordinal}`, customerSource: 'qa' as const } : {}),
     type, trafficClass, ...(attackKind ? { attackKind } : {}), attempt: 0, commercial: type === 'purchase' && trafficClass === 'legitimate',
-    loadDepth: state.services.web.waiting.length + state.services.checkout.waiting.length, execution: executionFor(company), newCustomer: customer ? customer.successfulVisits === 0 : true, couponCount: 1, executionVersion: company.version, path, securityAllowed: admitSecurity(company, executionFor(company), trafficClass === 'legitimate' ? 'valid' : attackKind ?? 'bot', ordinal - 1, now, `sim-${trafficClass === 'malicious' ? 64 + ordinal % 16 : customer ? customer.cohort % 64 : ordinal % 64}`, customer?.id, type),
+    executor: 'requests-4a', loadDepth: state.services.web.waiting.length + state.services.checkout.waiting.length, execution: executionFor(company), newCustomer: customer ? customer.successfulVisits === 0 : true, couponCount: ordinal % 10 === 0 ? 2 : 1, executionVersion: company.version, path, securityAllowed: admitSecurity(company, executionFor(company), trafficClass === 'legitimate' ? 'valid' : attackKind ?? 'bot', ordinal - 1, now, `sim-${trafficClass === 'malicious' ? 64 + ordinal % 16 : customer ? customer.cohort % 64 : ordinal % 64}`, customer?.id, type),
     arrivalAt: now, nextAt: now, deadline: round(now + state.config.patience[type]), cursor: 1,
     status: 'PENDING', atomic: false, quantity: 1, committed: 0, oversold: 0, paid: false, accounted: false,
     service: 'security', stage: 'entry', phase: 'security', transaction: 'NONE', breach: false, waits: [], trace: [],
@@ -126,7 +127,7 @@ function completeOperation(company: Company, request: TrafficRequest, now: numbe
     const type = request.path[request.cursor]?.type;
     executePurchaseOperation(request, state.inventory, now, state.operations ??= initialOperations());
     const trace = request.trace.at(-1)!; trace.stock = state.inventory.stock; trace.version = state.inventory.version;
-    if (type === 'write' && request.committed && request.trafficClass === 'malicious' && request.attackKind !== 'bot') request.breach = true;
+    if (type === 'write' && request.committed && request.trafficClass === 'malicious' && request.attackKind !== 'bot') { request.breach = true; const code = request.attackKind === 'forged' ? 'D05' : 'D08'; if (request.execution?.modules.some(m=>hasDefect(m,code))) activation(request,code); }
     request.transaction = request.oversold ? 'PENDING_RESOLUTION' : request.paid ? 'CONFIRMED' : request.committed ? 'RESERVED' : 'NONE';
     if (request.result) {
       // The shared interpreter finalizes the result; add queue/transport metadata.
@@ -137,7 +138,7 @@ function completeOperation(company: Company, request: TrafficRequest, now: numbe
 }
 
 export function trafficReceipt(request: TrafficRequest): TrafficReceipt {
-  const { execution, effectCodes, ...visible } = request;
+  const { execution, effectCodes, releaseOnInterrupt, ...visible } = request;
   return { ...structuredClone(visible), path: request.path.map(node => ({ id: node.id, type: node.type, ...(node.data.value !== undefined ? { value: node.data.value } : {}) })) };
 }
 
@@ -172,6 +173,13 @@ export function advanceTraffic(company: Company, now: number, rates = serviceRat
   const dt = round(now - state.lastTick); const prune = Math.floor(now) !== Math.floor(state.lastTick); state.lastTick = now;
   if (prune && state.operations) pruneOperations(state.operations, now);
   for (const request of Object.values(state.requests)) if (!request.result && now >= request.deadline) terminate(request, 'ABANDONED', 'DEADLINE', now);
+  for (const request of Object.values(state.requests)) if (!request.result && request.recoveryRetry && rates.payment > 0) {
+    for (const queue of Object.values(state.services)) { queue.waiting = queue.waiting.filter(id => id !== request.id); queue.processing = queue.processing.filter(id => id !== request.id); }
+    request.recoveryRetry = false; request.retryingPayment = true; request.retryCount = (request.retryCount ?? 0) + 1;
+    (state.operations ??= initialOperations()).counters.retries++;
+    request.cursor = request.path.findIndex(n => n.type === 'payment'); request.phase = 'backend';
+    request.deferUntil = now + request.retryPolicy!.delayMs / 1000; enqueue(company, request, 'payment', now);
+  }
   // Complete the prior tick's operations first. New work never executes in this tick.
   const completed = SERVICE_IDS.flatMap(id => rates[id] > 0 ? state.services[id].processing.filter(key => state.requests[key].nextAt <= now) : []);
   for (const key of completed) { const request = state.requests[key]; if (!request.result) completeOperation(company, request, now); }

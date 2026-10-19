@@ -12,9 +12,9 @@ export function executeModule(r: PurchaseRequest, m: ModuleVersion, inventory: I
   if (r.deferUntil && now < r.deferUntil) { r.waitOperation = true; return 'OK'; }
   if ((c.kind === 'discount' || c.kind === 'coupon') && (c.audience === 'all' || r.newCustomer) && (c.kind !== 'coupon' || (r.couponCount ?? 1) > 0)) {
     const applications = hasDefect(m, 'D02') && (r.couponCount ?? 1) >= 2 ? 2 : 1;
-    if (applications === 2) activation(r, 'D02');
+
     const eligible = c.stackable || !r.discountApplied;
-    if (eligible) { r.price = Math.round((r.price ?? 45) * (1 - c.percent / 100) ** applications * 100) / 100; r.discountApplied = true; }
+    if (eligible) { if (applications === 2) activation(r, 'D02'); r.price = Math.round((r.price ?? 45) * (1 - c.percent / 100) ** applications * 100) / 100; r.discountApplied = true; }
   }
   if (c.kind === 'inventory') {
     if (r.invalidInput) { if (!hasDefect(m, 'D04')) return 'INVALID'; activation(r, 'D04'); }
@@ -22,17 +22,15 @@ export function executeModule(r: PurchaseRequest, m: ModuleVersion, inventory: I
     r.releaseOnInterrupt = !hasDefect(m, 'D07');
   }
   if (c.kind === 'concurrency' && c.strategy === 'atomic' && !r.committed) {
-    if (!hasDefect(m, 'D01')) r.atomic = true; else activation(r, 'D01');
+    if (!hasDefect(m, 'D01')) r.atomic = true;
   }
   if (c.kind === 'concurrency' && c.strategy === 'lock' && !r.committed) {
-    if (hasDefect(m, 'D01')) activation(r, 'D01');
-    else executeBlock(r, { id: m.id, type: 'lock', position: { x: 0, y: 0 }, data: { label: 'Lock', value: 5000 } }, inventory, now, ops);
+    if (!hasDefect(m, 'D01')) executeBlock(r, { id: m.id, type: 'lock', position: { x: 0, y: 0 }, data: { label: 'Lock', value: 5000 } }, inventory, now, ops);
   }
   if (c.kind === 'purchase') {
     r.releaseOnInterrupt = !hasDefect(m, 'D07');
     if (c.idempotent) {
-      if (hasDefect(m, 'D03')) activation(r, 'D03');
-      else {
+      if (!hasDefect(m, 'D03')) {
         const key = `purchase:${r.intentId ?? r.id}`, seen = ops.intents[key];
         if (seen && seen.until > now && seen.owner !== r.id) return 'DUPLICATE';
         ops.intents[key] = { until: now + 300, owner: r.id }; r.idempotentUntil = now + 300;
@@ -46,6 +44,6 @@ export function settleReservation(r: PurchaseRequest, inventory: InventoryState)
   r.reservationSettled = true;
   if (r.releaseOnInterrupt) {
     const units = r.committed - r.oversold; inventory.stock += units; inventory.committed -= r.committed; inventory.oversold -= r.oversold; inventory.version++;
-    r.committed = 0; r.oversold = 0;
+    r.committed = 0; r.oversold = 0; r.result.revenue = 0; r.result.capitalDelta = 0;
   } else if (r.execution?.modules.some(m => hasDefect(m, 'D07'))) activation(r, 'D07');
 }

@@ -19,3 +19,7 @@ test('4A contracts reject forged identity, unknown parameters, unsupported modul
   assert.throws(() => parseAction({ ...action, type: 'state.patch' }));
   assert.throws(() => testScenario({ requests: 20000 }));
 });
+
+test('4A campaign multipliers reject nonfinite values before any mutation', () => {
+  for (const demandMultiplier of [NaN,Infinity,-Infinity]) assert.throws(() => parseAction({ version: 1, id: 'campaign', companyId: 0, source: 'fixture', type: 'campaign.prepare', parameters: { percent: 15, audience: 'new', duration: 120, budget: 250, demandMultiplier } }));
+});
