@@ -14,7 +14,7 @@ export function executeModule(r: PurchaseRequest, m: ModuleVersion, inventory: I
     const applications = hasDefect(m, 'D02') && (r.couponCount ?? 1) >= 2 ? 2 : 1;
 
     const eligible = c.stackable || !r.discountApplied;
-    if (eligible) { if (applications === 2) activation(r, 'D02'); r.price = Math.round((r.price ?? 45) * (1 - c.percent / 100) ** applications * 100) / 100; r.discountApplied = true; }
+    if (eligible) { r.contractPrice = Math.round((r.contractPrice ?? 45) * (1 - c.percent / 100) * 100) / 100; if (applications === 2) activation(r, 'D02'); r.price = Math.round((r.price ?? 45) * (1 - c.percent / 100) ** applications * 100) / 100; r.discountApplied = true; }
   }
   if (c.kind === 'inventory') {
     if (r.invalidInput) { if (!hasDefect(m, 'D04')) return 'INVALID'; activation(r, 'D04'); }

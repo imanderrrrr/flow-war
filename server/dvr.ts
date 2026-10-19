@@ -7,7 +7,7 @@ import {historyAccess,historyPoints,reconstruct} from './history.js';
 import {project} from './engine.js';
 export function visibleFact(f:Observation,identity:Identity):Observation{
  if(identity.role==='operator')return f;
- const {defects,modules,attackKind,...data}=f.data;return{...f,data};
+ const {defects,modules,attackKind,...data}=f.data; if(data.result&&typeof data.result==='object'){const {defectLoss,...result}=data.result as Record<string,unknown>;data.result=result;} return{...f,data};
 }
 export function installDvr(app:Express,db:DatabaseSync,identityFor:(req:Request)=>Identity|null){
  app.get('/api/dvr/games',(req,res)=>{res.setHeader('Cache-Control','no-store');if(!identityFor(req))return res.sendStatus(403);res.json(db.prepare("SELECT generation,start,tick,duration,status,version FROM history_games WHERE status='FINISHED' ORDER BY generation DESC").all());});

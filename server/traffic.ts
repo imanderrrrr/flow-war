@@ -142,7 +142,8 @@ function completeOperation(company: Company, request: TrafficRequest, now: numbe
 }
 
 export function trafficReceipt(request: TrafficRequest): TrafficReceipt {
-  const { execution, effectCodes, releaseOnInterrupt, ...visible } = request;
+  const { execution, effectCodes, releaseOnInterrupt, contractPrice, ...visible } = request;
+  if(visible.result){const {defectLoss,...publicResult}=visible.result;visible.result=publicResult;}
   return { ...structuredClone(visible), path: request.path.map(node => ({ id: node.id, type: node.type, ...(node.data.value !== undefined ? { value: node.data.value } : {}) })) };
 }
 

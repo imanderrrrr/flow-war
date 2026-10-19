@@ -312,7 +312,7 @@ export function project(g: GameState, identity: Identity | null): Snapshot {
   const privateC = ownCompany ? structuredClone({ ...ownVisible, particles: trafficParticles(ownCompany, g.tick), traffic: trafficView(ownCompany.traffic) }) : undefined;
   if (privateC) {
     if (privateC.concurrency.run) delete privateC.concurrency.run.operationsState;
-    for (const request of privateC.concurrency.run?.requests ?? []) { delete request.execution; delete request.effectCodes; delete request.releaseOnInterrupt; }
+    for (const request of privateC.concurrency.run?.requests ?? []) { delete request.execution; delete request.effectCodes; delete request.releaseOnInterrupt; delete request.contractPrice; if(request.result)delete request.result.defectLoss; }
     const ownDraft = identity?.role === 'backend' || identity?.role === 'security' ? identity.role : null;
     privateC.drafts = ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {};
   }

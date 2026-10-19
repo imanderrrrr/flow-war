@@ -46,8 +46,13 @@ export function finishRequest(request: PurchaseRequest, status: RequestResult['s
   if (request.result) return;
   const commercial = request.commercial !== false;
   const legitimateUnits = commercial && request.paid && !request.duplicateBusiness ? request.committed - request.oversold : 0;
+  const evidence:string[]=[];let defectLoss=0;
+  if(request.effectCodes?.includes('D02')&&legitimateUnits>0){defectLoss+=Math.max(0,(request.contractPrice??request.price??45)-(request.price??45))*legitimateUnits;evidence.push('D02:contractual-price-minus-paid-price');}
+  if(request.effectCodes?.includes('D03')&&(request.duplicates??0)>0){defectLoss+=(request.duplicates??0)*8;evidence.push('D03:duplicate-compensation');}
+  if(request.effectCodes?.includes('D01')&&request.oversold>0){defectLoss+=request.oversold*8;evidence.push('D01:oversell-compensation');}
   request.status = status;
   request.result = {
+    ...(evidence.length?{defectLoss:{amount:Math.round(defectLoss*100)/100,evidence}}:{}),
     status, reason, at,
     revenue: legitimateUnits * (request.price ?? 45),
     capitalDelta: legitimateUnits * ((request.price ?? 45) - 42) - request.oversold * 8 - (request.duplicates ?? 0) * 8,
@@ -177,7 +182,7 @@ export function executePurchaseOperation(request: PurchaseRequest, inventory: In
         moveRequest(request, 'payment', now);
         if (request.deferUntil && now < request.deferUntil) { request.waitOperation = true; break; }
         if (!request.committed || (request.paid && !request.retryingPayment)) { finishRequest(request, 'FAILED', 'INVALID_FLOW', now); break; }
-        if (request.promotion && !request.promotionApplied && (request.promotion.audience === 'all' || request.newCustomer)) { request.price = Math.round((request.price ?? 45) * (1 - request.promotion.percent / 100) * 100) / 100; request.promotionApplied = true; }
+        if (request.promotion && !request.promotionApplied && (request.promotion.audience === 'all' || request.newCustomer)) { request.price = Math.round((request.price ?? 45) * (1 - request.promotion.percent / 100) * 100) / 100; request.contractPrice = Math.round((request.contractPrice ?? 45) * (1 - request.promotion.percent / 100) * 100) / 100; request.promotionApplied = true; }
         const trackPayment = Boolean(request.retryPolicy || request.idempotentUntil || request.execution?.modules.some(m => m.configuration.kind === 'purchase') || (request.intentId && request.intentId !== `${request.id}-intent`));
         const key = `payment:${request.intentId ?? request.id}`, seen = trackPayment ? ops.payments[key] : undefined;
         if (!(seen && seen.until > now && (request.idempotentUntil ?? 0) > now)) {
