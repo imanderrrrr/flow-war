@@ -1,0 +1,234 @@
+{
+  "base": {
+    "connections": 27,
+    "snapshots": 1701,
+    "maxSnapshotBytes": 122977,
+    "wallSeconds": 7.410033042000001,
+    "ackP95ms": 55.598291999999674,
+    "ackMaxMs": 57.60308299999997,
+    "finalTick": 918.1,
+    "companies": [
+      {
+        "id": 0,
+        "generated": 5063,
+        "pending": 47,
+        "queue": 38,
+        "legitimateAbandoned": 2
+      },
+      {
+        "id": 1,
+        "generated": 5063,
+        "pending": 47,
+        "queue": 38,
+        "legitimateAbandoned": 2
+      },
+      {
+        "id": 2,
+        "generated": 5063,
+        "pending": 47,
+        "queue": 38,
+        "legitimateAbandoned": 2
+      },
+      {
+        "id": 3,
+        "generated": 5063,
+        "pending": 47,
+        "queue": 38,
+        "legitimateAbandoned": 2
+      },
+      {
+        "id": 4,
+        "generated": 5063,
+        "pending": 47,
+        "queue": 38,
+        "legitimateAbandoned": 2
+      }
+    ]
+  },
+  "entrega4a": {
+    "connections": 27,
+    "snapshots": 1701,
+    "maxSnapshotBytes": 124132,
+    "wallSeconds": 7.492084209000001,
+    "ackP95ms": 70.23095900000044,
+    "ackMaxMs": 74.49308299999984,
+    "finalTick": 918,
+    "companies": [
+      {
+        "id": 0,
+        "generated": 5059,
+        "pending": 49,
+        "queue": 39,
+        "legitimateAbandoned": 2
+      },
+      {
+        "id": 1,
+        "generated": 5059,
+        "pending": 49,
+        "queue": 39,
+        "legitimateAbandoned": 2
+      },
+      {
+        "id": 2,
+        "generated": 5059,
+        "pending": 49,
+        "queue": 39,
+        "legitimateAbandoned": 2
+      },
+      {
+        "id": 3,
+        "generated": 5059,
+        "pending": 49,
+        "queue": 39,
+        "legitimateAbandoned": 2
+      },
+      {
+        "id": 4,
+        "generated": 5059,
+        "pending": 49,
+        "queue": 39,
+        "legitimateAbandoned": 2
+      }
+    ]
+  },
+  "repeticiones4a": [
+    {
+      "connections": 27,
+      "snapshots": 1701,
+      "maxSnapshotBytes": 124132,
+      "wallSeconds": 7.729542666,
+      "ackP95ms": 72.96845900000062,
+      "ackMaxMs": 179.10837500000025,
+      "finalTick": 920,
+      "companies": [
+        {
+          "id": 0,
+          "generated": 5146,
+          "pending": 48,
+          "queue": 39,
+          "legitimateAbandoned": 2
+        },
+        {
+          "id": 1,
+          "generated": 5146,
+          "pending": 48,
+          "queue": 39,
+          "legitimateAbandoned": 2
+        },
+        {
+          "id": 2,
+          "generated": 5146,
+          "pending": 48,
+          "queue": 39,
+          "legitimateAbandoned": 2
+        },
+        {
+          "id": 3,
+          "generated": 5146,
+          "pending": 48,
+          "queue": 39,
+          "legitimateAbandoned": 2
+        },
+        {
+          "id": 4,
+          "generated": 5146,
+          "pending": 48,
+          "queue": 39,
+          "legitimateAbandoned": 2
+        }
+      ]
+    },
+    {
+      "connections": 27,
+      "snapshots": 1701,
+      "maxSnapshotBytes": 124132,
+      "wallSeconds": 7.492084209000001,
+      "ackP95ms": 70.23095900000044,
+      "ackMaxMs": 74.49308299999984,
+      "finalTick": 918,
+      "companies": [
+        {
+          "id": 0,
+          "generated": 5059,
+          "pending": 49,
+          "queue": 39,
+          "legitimateAbandoned": 2
+        },
+        {
+          "id": 1,
+          "generated": 5059,
+          "pending": 49,
+          "queue": 39,
+          "legitimateAbandoned": 2
+        },
+        {
+          "id": 2,
+          "generated": 5059,
+          "pending": 49,
+          "queue": 39,
+          "legitimateAbandoned": 2
+        },
+        {
+          "id": 3,
+          "generated": 5059,
+          "pending": 49,
+          "queue": 39,
+          "legitimateAbandoned": 2
+        },
+        {
+          "id": 4,
+          "generated": 5059,
+          "pending": 49,
+          "queue": 39,
+          "legitimateAbandoned": 2
+        }
+      ]
+    },
+    {
+      "connections": 27,
+      "snapshots": 1701,
+      "maxSnapshotBytes": 124132,
+      "wallSeconds": 7.554498917,
+      "ackP95ms": 60.32779100000016,
+      "ackMaxMs": 62.61558400000001,
+      "finalTick": 918,
+      "companies": [
+        {
+          "id": 0,
+          "generated": 5059,
+          "pending": 49,
+          "queue": 39,
+          "legitimateAbandoned": 2
+        },
+        {
+          "id": 1,
+          "generated": 5059,
+          "pending": 49,
+          "queue": 39,
+          "legitimateAbandoned": 2
+        },
+        {
+          "id": 2,
+          "generated": 5059,
+          "pending": 49,
+          "queue": 39,
+          "legitimateAbandoned": 2
+        },
+        {
+          "id": 3,
+          "generated": 5059,
+          "pending": 49,
+          "queue": 39,
+          "legitimateAbandoned": 2
+        },
+        {
+          "id": 4,
+          "generated": 5059,
+          "pending": 49,
+          "queue": 39,
+          "legitimateAbandoned": 2
+        }
+      ]
+    }
+  ]
+}

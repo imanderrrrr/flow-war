@@ -59,3 +59,5 @@ Los diagramas usan Mermaid. Las fórmulas y valores de balance pertenecen a la d
 Acciones estructuradas, artefactos con defectos persistentes, QA reproducible, operaciones DevOps, campañas y disciplina: [implementación y verificación](docs/10-entrega-4a-acciones-defectos.md). La frontera de Haiku, todavía sin llamadas API, está en [contrato de agentes](docs/11-contrato-agentes-ia.md).
 
 Ejecutar `npm test`, `npm run build`, `npm run bench:traffic` y `npm run bench:actions`.
+
+Verificación final: **181 pruebas**, 18 ensayos completos de acciones y 24 regresiones de tráfico/mercado. [Datos, comparación de rendimiento y conexiones](docs/benchmarks/entrega-4a-informe.md).

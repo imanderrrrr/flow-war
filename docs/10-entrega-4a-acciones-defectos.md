@@ -215,6 +215,6 @@ La suite final contiene **181 pruebas: las 115 originales y 66 nuevas** de contr
 | T42–T51 | `discipline.test.ts`, `agents.test.ts` y reinicio del servidor autenticado |
 | T52–T60 | Migración esquema 4/5, pruebas originales de persistencia, mercado/LAST-UNIT/FIFO/QA Carga y proyecciones |
 
-Los escenarios A–H y controles, mediciones y comparación se detallan en el informe de benchmarks de esta entrega. Se incluyen causas mediante comandos y muestras; un nombre de escenario no cuenta por sí solo como verificación.
+Los escenarios A–H y controles, mediciones y comparación se detallan en el [informe de benchmarks de esta entrega](benchmarks/entrega-4a-informe.md). Se incluyen causas mediante comandos y muestras; un nombre de escenario no cuenta por sí solo como verificación.
 
 No hay integración Haiku, comprensión general de lenguaje natural, director autónomo, compilador arbitrario, bloqueos distribuidos reales ni procesos por cliente. Las campañas y defectos son reglas educativas tipadas. Las suites cubren lo solicitado; no garantizan descubrir cada defecto. No se aprueban ni reparan cambios automáticamente. La integración posterior se define en [contrato de agentes](11-contrato-agentes-ia.md).

@@ -1,0 +1,196 @@
+{
+  "verified": true,
+  "sourceDigest": "67cdf09bedaa1ba5a96a188138a034c0ee5f02d91f49b8c65ac4df4ef0f47cce",
+  "checks": [
+    {
+      "duration": 1200,
+      "scenario": "A-equivalent",
+      "evidence": {
+        "customers": [
+          1000,
+          1000,
+          1000,
+          1000,
+          1000
+        ],
+        "modules": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "duration": 1200,
+      "scenario": "B-restart",
+      "evidence": {
+        "at": 780,
+        "capacity": 0,
+        "abandonedBefore": 0,
+        "abandonedAfter": 123
+      }
+    },
+    {
+      "duration": 1200,
+      "scenario": "C-insufficient",
+      "evidence": {
+        "change": "CH-011",
+        "status": "DEPLOYED",
+        "unitPassed": true,
+        "discountActivations": 117
+      }
+    },
+    {
+      "duration": 1200,
+      "scenario": "D-exhaustive",
+      "evidence": {
+        "change": "CH-011",
+        "status": "QA_REJECTED",
+        "observed": {
+          "revenue": 28.8,
+          "committed": 1,
+          "accepted": 1,
+          "duplicates": 0,
+          "pendingReservations": 0
+        }
+      }
+    },
+    {
+      "duration": 1200,
+      "scenario": "E-campaign",
+      "evidence": {
+        "arrived": 18094,
+        "controlArrived": 6817,
+        "peakQueue": 494
+      }
+    },
+    {
+      "duration": 1200,
+      "scenario": "F-expulsion",
+      "evidence": {
+        "active": 29,
+        "companyContinues": true
+      }
+    },
+    {
+      "duration": 1200,
+      "scenario": "G-migration",
+      "evidence": {
+        "receiverArrivals": 38355,
+        "controlArrivals": 32669,
+        "receiverErrors": 755,
+        "controlErrors": 37,
+        "pressure": 107.65439935411969,
+        "controlPressure": 0.016857625122347994
+      }
+    },
+    {
+      "duration": 1200,
+      "scenario": "H-recovery",
+      "evidence": {
+        "change": "CH-011",
+        "requests": 500,
+        "reports": 1,
+        "expulsionRetained": true,
+        "restartRecovered": true
+      }
+    },
+    {
+      "duration": 1500,
+      "scenario": "A-equivalent",
+      "evidence": {
+        "customers": [
+          1000,
+          1000,
+          1000,
+          1000,
+          1000
+        ],
+        "modules": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "duration": 1500,
+      "scenario": "B-restart",
+      "evidence": {
+        "at": 975,
+        "capacity": 0,
+        "abandonedBefore": 0,
+        "abandonedAfter": 148
+      }
+    },
+    {
+      "duration": 1500,
+      "scenario": "C-insufficient",
+      "evidence": {
+        "change": "CH-011",
+        "status": "DEPLOYED",
+        "unitPassed": true,
+        "discountActivations": 121
+      }
+    },
+    {
+      "duration": 1500,
+      "scenario": "D-exhaustive",
+      "evidence": {
+        "change": "CH-011",
+        "status": "QA_REJECTED",
+        "observed": {
+          "revenue": 28.8,
+          "committed": 1,
+          "accepted": 1,
+          "duplicates": 0,
+          "pendingReservations": 0
+        }
+      }
+    },
+    {
+      "duration": 1500,
+      "scenario": "E-campaign",
+      "evidence": {
+        "arrived": 17793,
+        "controlArrived": 6655,
+        "peakQueue": 494
+      }
+    },
+    {
+      "duration": 1500,
+      "scenario": "F-expulsion",
+      "evidence": {
+        "active": 29,
+        "companyContinues": true
+      }
+    },
+    {
+      "duration": 1500,
+      "scenario": "G-migration",
+      "evidence": {
+        "receiverArrivals": 48235,
+        "controlArrivals": 40836,
+        "receiverErrors": 421,
+        "controlErrors": 36,
+        "pressure": 106.74171817887631,
+        "controlPressure": 0.03357000807395377
+      }
+    },
+    {
+      "duration": 1500,
+      "scenario": "H-recovery",
+      "evidence": {
+        "change": "CH-011",
+        "requests": 500,
+        "reports": 1,
+        "expulsionRetained": true,
+        "restartRecovered": true
+      }
+    }
+  ]
+}
