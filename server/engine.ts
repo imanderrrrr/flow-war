@@ -1,3 +1,4 @@
+import { initialRuntime, executionFor, releaseFor, prepareArtifact } from './artifacts.js';
 import { initialInfrastructure, syncInfrastructure, advanceInfrastructure, restart, setService } from './infrastructure.js';
 import { parseAction, validateParameters } from './action-validation.js';
 import { allowedAction } from '../shared/actions.js';
@@ -20,7 +21,7 @@ export function initialGraph(domain: 'backend' | 'security' | 'product'): Graph 
 }
 export function createGame(duration = 1500, seed = 7357, generation = 0): GameState {
   const companies: Company[] = NAMES.map((name, id) => ({
-    infrastructure: initialInfrastructure(), id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
+    runtime: initialRuntime(), infrastructure: initialInfrastructure(), id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
     servers: 1, balancer: false, infraBudget: duration * .5, reserved: 0, version: 1, deployments: 0, active: 0, requests: 0, successes: 0, errors: 0, breaches: 0, oversold: 0, duplicates: 0,
     lostRevenue: 0, revenue: 0, latency: 0, utilization: 0, queue: 0, migratedIn: 0, migratedOut: 0, eliminated: false, crisisTicks: 0, deadTicks: 0, bankruptTicks: 0, concurrencyUntil: 0,
     backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
@@ -37,14 +38,15 @@ export function validateGraph(input: unknown, domain: 'backend' | 'security' | '
   const graph = structuredClone(input) as Graph;
   if (!Array.isArray(graph.nodes) || !Array.isArray(graph.edges) || graph.nodes.length > 25 || graph.edges.length > 30) throw new Error('Máximo 20 piezas y 30 conexiones.');
   const catalog = domain === 'product' ? [] : BLOCKS[domain];
-  const allowed = new Set(['entry', 'exit', ...(domain === 'backend' ? ['read', 'write', 'payment'] : []), ...catalog.map(b => b.type)]);
+  const allowed = new Set(['entry', 'exit', ...(domain === 'backend' ? ['read', 'write', 'payment', 'module'] : []), ...catalog.map(b => b.type)]);
   const ids = new Set<string>();
   for (const n of graph.nodes) {
     if (typeof n.id !== 'string' || n.id.length > 100 || ids.has(n.id) || !allowed.has(n.type) || !n.position || !Number.isFinite(n.position.x) || !Number.isFinite(n.position.y)) throw new Error('Nodo inválido.');
     ids.add(n.id);
     const block = catalog.find(b => b.type === n.type);
     if (n.type === 'atomic' && (!Number.isInteger(Number(n.data?.value ?? block!.value)) || Number(n.data?.value ?? block!.value) < 1 || Number(n.data?.value ?? block!.value) > 120)) throw new Error('Atomic Update requiere una cantidad entera entre 1 y 120.');
-    n.data = { label: block?.label ?? ({ entry: 'Request IN', exit: 'Response OUT', read: 'Read Stock', write: 'Write Stock', payment: 'Payment' }[n.type] ?? n.type), ...(block ? { value: clamp(Number(n.data?.value ?? block.value) || block.value, 1, n.type === 'lock' ? 5000 : 120) } : {}) };
+    const moduleRef = n.data?.module;
+    n.data = { ...(n.type === 'module' ? { module: moduleRef } : {}), label: block?.label ?? ({ entry: 'Request IN', exit: 'Response OUT', read: 'Read Stock', write: 'Write Stock', payment: 'Payment' }[n.type] ?? n.type), ...(block ? { value: clamp(Number(n.data?.value ?? block.value) || block.value, 1, n.type === 'lock' ? 5000 : 120) } : {}) };
   }
   for (const type of ['entry', 'exit', ...(domain === 'backend' ? ['read', 'write', 'payment'] : [])]) if (graph.nodes.filter(n => n.type === type).length !== 1) throw new Error(`El grafo requiere un módulo ${type}.`);
   const out = new Set<string>(), edgeIds = new Set<string>();
@@ -107,6 +109,9 @@ export function applyCommand(g: GameState, identity: Identity | null, command: C
   const ch = g.changes.find(x => x.id === command.changeId && x.companyId === c.id);
   const p = command.payload ?? {};
   try {
+    if (['module.create','module.revise','security.prepare'].includes(command.type)) {
+      const change = prepareArtifact(g, c, identity, command.type, p); event(g, c.id, `${change.id} preparado. Pendiente de pruebas QA.`, 'neutral', 'PIPELINE'); return { ok: true, refs: [change.id, ...(change.artifactRefs?.map(ref => `${ref.id}@${ref.version}`) ?? [])] };
+    }
     if (['infra.restart','infra.restart_all','infra.stop','infra.recover'].includes(command.type)) {
       validateParameters(command.type, p);
       if (command.type.startsWith('infra.restart')) restart(c, g.tick, Number(p.duration), command.type === 'infra.restart' ? Number(p.serverId) : undefined);
@@ -118,10 +123,11 @@ export function applyCommand(g: GameState, identity: Identity | null, command: C
       const current = c.drafts[domain]?.revision ?? 0;
       if (Number(p.revision) !== current) throw new Error('La revisión cambió. Recarga el borrador.');
       const graph = validateGraph(p.graph, domain, command.type === 'change.submit');
+      const execution = releaseFor(c, domain === 'backend' ? graph : c.backend);
       c.drafts[domain] = { graph, revision: current + 1 };
       if (command.type === 'change.submit') {
         const cost = 100 + graph.nodes.reduce((sum, n) => sum + (BLOCKS[domain].find(b => b.type === n.type)?.cost ?? 0), 0);
-        const change: Change = { id: `CH-${String(g.changes.length + 1).padStart(3, '0')}`, companyId: c.id, domain, name: `${domain === 'backend' ? 'Lógica' : 'Seguridad'} · revisión ${current + 1}`, graph: structuredClone(graph), status: 'QA_PENDING', cost, reserved: 0, baseVersion: c.version, created: g.tick, reports: [], actorId: identity.id, context: { backend: structuredClone(domain === 'backend' ? graph : c.backend), security: structuredClone(domain === 'security' ? graph : c.security), executionVersion: c.version } };
+        const change: Change = { id: `CH-${String(g.changes.length + 1).padStart(3, '0')}`, companyId: c.id, domain, name: `${domain === 'backend' ? 'Lógica' : 'Seguridad'} · revisión ${current + 1}`, graph: structuredClone(graph), status: 'QA_PENDING', cost, reserved: 0, baseVersion: c.version, created: g.tick, reports: [], actorId: identity.id, context: { backend: structuredClone(domain === 'backend' ? graph : c.backend), security: structuredClone(domain === 'security' ? graph : c.security), executionVersion: c.version, execution } };
         g.changes.unshift(change); event(g, c.id, `${change.id} enviado a QA.`, 'neutral', 'PIPELINE');
       }
       return { ok: true };
@@ -183,7 +189,7 @@ function jobs(g: GameState) {
       }
     }
     if (ch.status === 'DEPLOYING' && g.tick >= (ch.due ?? Infinity)) {
-      c[ch.domain] = structuredClone(ch.graph); c.version++; c.deployments++; c.capital -= ch.cost; releaseReservation(c, ch); ch.status = 'DEPLOYED';
+      c[ch.domain] = structuredClone(ch.graph); c.version++; c.runtime.releases[c.version] = structuredClone(ch.context?.execution ?? releaseFor(c)); c.deployments++; c.capital -= ch.cost; releaseReservation(c, ch); ch.status = 'DEPLOYED';
       event(g, c.id, `${ch.id} EN PRODUCCIÓN · v${c.version}`, 'good', 'DEPLOY');
       for (const other of g.changes) if (other.companyId === c.id && other.id !== ch.id && ['QA_PENDING', 'QA_RUNNING', 'CTO_PENDING', 'AUTHORIZED', 'EXPIRED'].includes(other.status)) { other.status = 'STALE'; releaseReservation(c, other); }
     }
@@ -259,18 +265,20 @@ function finishRequests(g: GameState) {
 export function project(g: GameState, identity: Identity | null): Snapshot {
   bindMarket(g);
   const ownCompany = identity?.companyId != null ? g.companies[identity.companyId] : undefined;
-  const privateC = ownCompany ? structuredClone({ ...ownCompany, particles: trafficParticles(ownCompany, g.tick), traffic: trafficView(ownCompany.traffic) }) : undefined;
+  const { runtime: _runtime, ...ownVisible } = ownCompany ?? {} as Company;
+  const privateC = ownCompany ? structuredClone({ ...ownVisible, particles: trafficParticles(ownCompany, g.tick), traffic: trafficView(ownCompany.traffic) }) : undefined;
   if (privateC) {
+    for (const request of privateC.concurrency.run?.requests ?? []) delete request.execution;
     const ownDraft = identity?.role === 'backend' || identity?.role === 'security' ? identity.role : null;
     privateC.drafts = ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {};
   }
   return {
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
     companies: g.companies.map(c => {
-      const { drafts, backend, security, product, migrationRemainder, arrivalRemainder, processedRemainder, crisisTicks, deadTicks, bankruptTicks, concurrencyUntil, concurrency, traffic, ...pub } = c;
+      const { runtime, drafts, backend, security, product, migrationRemainder, arrivalRemainder, processedRemainder, crisisTicks, deadTicks, bankruptTicks, concurrencyUntil, concurrency, traffic, ...pub } = c;
       return { ...pub, traffic: trafficView(traffic), concurrency: { runId: concurrency.run?.id, inventory: concurrency.run && { ...concurrency.run.inventory }, totals: { ...concurrency.totals } }, particles: [...trafficParticles(c, g.tick), ...concurrencyParticles(concurrency.run, c.color, g.tick, c)], modules: [...route(backend), ...route(security)].map(n => n.type), pipelineCounts: [['QA_PENDING', 'QA_RUNNING'], ['CTO_PENDING'], ['AUTHORIZED', 'DEPLOYING'], ['DEPLOYED']].map(states => g.changes.filter(ch => ch.companyId === c.id && states.includes(ch.status)).length) };
     }),
     events: g.events, migrations: g.migrations, unserved: g.unserved, privateCompany: privateC,
-    changes: (identity?.role === 'operator' ? g.changes : g.changes.filter(ch => ch.companyId === identity?.companyId)).map(({ qaLoad, ...change }) => change),
+    changes: (identity?.role === 'operator' ? g.changes : g.changes.filter(ch => ch.companyId === identity?.companyId)).map(({ qaLoad, qaScenario, testJob, context, ...change }) => ({ ...change, ...(context ? { context: { backend: context.backend, security: context.security, executionVersion: context.executionVersion } } : {}) })),
   };
 }

@@ -19,7 +19,7 @@ export function createConcurrencyRun(id: string, context: ScenarioContext, at: n
       const arrivalAt = roundTime(at + offset);
       return {
         id: `${id}-R${index + 1}`, intentId: `${id}-purchase-${index + 1}`,
-        executionVersion: context.executionVersion, path: structuredClone(route(context.backend)),
+        execution: context.execution && structuredClone(context.execution), newCustomer: true, couponCount: 1, executionVersion: context.executionVersion, path: structuredClone(route(context.backend)),
         securityAllowed: evaluateSecurity(context.security, 'valid', index),
         arrivalAt, nextAt: roundTime(arrivalAt + OPERATION_SECONDS), deadline: roundTime(arrivalAt + 16),
         cursor: 0, status: 'PENDING', atomic: false, quantity: 1, committed: 0, oversold: 0,
@@ -44,8 +44,8 @@ export function finishRequest(request: PurchaseRequest, status: RequestResult['s
   request.status = status;
   request.result = {
     status, reason, at,
-    revenue: legitimateUnits * 45,
-    capitalDelta: legitimateUnits * 3 - request.oversold * 8,
+    revenue: legitimateUnits * (request.price ?? 45),
+    capitalDelta: legitimateUnits * ((request.price ?? 45) - 42) - request.oversold * 8,
     lostRevenue: !commercial || request.paid ? 0 : request.quantity * 45,
   };
 }
@@ -143,6 +143,15 @@ export function executePurchaseOperation(request: PurchaseRequest, inventory: In
         inventory.oversold += excess;
         request.committed = request.quantity;
         request.oversold = excess;
+        break;
+      }
+      case 'module': {
+        const module = request.execution?.modules.find(m => m.id === node.data.module?.id && m.version === node.data.module?.version);
+        if (!module) { finishRequest(request, 'FAILED', 'INVALID_FLOW', now); break; }
+        const config = module.configuration;
+        if ((config.kind === 'discount' || config.kind === 'coupon') && (config.audience === 'all' || request.newCustomer) && (config.kind !== 'coupon' || (request.couponCount ?? 1) > 0)) request.price = Math.round((request.price ?? 45) * (1 - config.percent / 100) * 100) / 100;
+        if (config.kind === 'inventory' && (request.read?.stock ?? inventory.stock) < config.minimum) finishRequest(request, 'REJECTED', 'OUT_OF_STOCK', now);
+        if (config.kind === 'concurrency' && config.strategy === 'atomic' && !request.committed) request.atomic = true;
         break;
       }
       case 'payment':

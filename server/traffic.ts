@@ -1,3 +1,4 @@
+import { executionFor } from './artifacts.js';
 import { effectiveServers } from './infrastructure.js';
 import { attachCustomer, customerColor, recordCustomerExperience, selectCustomer } from './market.js';
 import type { MarketCustomer, ServiceQueue, Company, FlowParticle, InventoryState, RequestResult, ScenarioTotals, ServiceId, TrafficMetrics, TrafficReceipt, TrafficRequest, TrafficScenario, TrafficState, TrafficView } from '../shared/types.js';
@@ -62,7 +63,7 @@ export function admitTraffic(company: Company, now: number, type: TrafficRequest
     id, ...(type === 'purchase' ? { intentId: `${id}-intent` } : {}), companyId: company.id,
     ...(trafficClass === 'legitimate' && state.scope === 'qa' ? { customerId: `qa-${company.id}-${ordinal}`, customerSource: 'qa' as const } : {}),
     type, trafficClass, ...(attackKind ? { attackKind } : {}), attempt: 0, commercial: type === 'purchase' && trafficClass === 'legitimate',
-    executionVersion: company.version, path, securityAllowed: evaluateSecurity(company.security, trafficClass === 'legitimate' ? 'valid' : attackKind ?? 'bot', ordinal - 1),
+    execution: executionFor(company), newCustomer: customer ? customer.successfulVisits === 0 : true, couponCount: 1, executionVersion: company.version, path, securityAllowed: evaluateSecurity(company.security, trafficClass === 'legitimate' ? 'valid' : attackKind ?? 'bot', ordinal - 1),
     arrivalAt: now, nextAt: now, deadline: round(now + state.config.patience[type]), cursor: 1,
     status: 'PENDING', atomic: false, quantity: 1, committed: 0, oversold: 0, paid: false, accounted: false,
     service: 'security', stage: 'entry', phase: 'security', transaction: 'NONE', breach: false, waits: [], trace: [],
@@ -130,7 +131,8 @@ function completeOperation(company: Company, request: TrafficRequest, now: numbe
 }
 
 export function trafficReceipt(request: TrafficRequest): TrafficReceipt {
-  return { ...structuredClone(request), path: request.path.map(node => ({ id: node.id, type: node.type, ...(node.data.value !== undefined ? { value: node.data.value } : {}) })) };
+  const { execution, ...visible } = request;
+  return { ...structuredClone(visible), path: request.path.map(node => ({ id: node.id, type: node.type, ...(node.data.value !== undefined ? { value: node.data.value } : {}) })) };
 }
 
 export function settleTraffic(company: Company, now: number) {

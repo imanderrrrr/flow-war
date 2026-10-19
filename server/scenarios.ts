@@ -1,3 +1,4 @@
+import { executionFor } from './artifacts.js';
 import { attachCustomer, recordCustomerExperience, selectCustomer } from './market.js';
 import type { Company, ConcurrencyState, ScenarioContext } from '../shared/types.js';
 import { advanceConcurrency, createConcurrencyRun, isRunFinished } from './requests.js';
@@ -9,7 +10,7 @@ export function initialConcurrency(duration: number, tick = -1): ConcurrencyStat
 }
 
 export function productionContext(company: Company): ScenarioContext {
-  return { backend: company.backend, security: company.security, executionVersion: company.version };
+  return { backend: company.backend, security: company.security, executionVersion: company.version, execution: executionFor(company) };
 }
 
 /** The only admission point for production's LAST-UNIT requests. */

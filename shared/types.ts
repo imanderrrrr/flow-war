@@ -1,9 +1,10 @@
+import type { CompanyRuntime, ExecutionRelease, ModuleRef, OperationsView, TestJob } from './simulation.js';
 export const ROLES = ['backend', 'security', 'qa', 'cto', 'devops', 'product'] as const;
 export type Role = typeof ROLES[number];
 export type Identity = { id: string; role: Role | 'operator'; companyId: number | null };
 export type Domain = 'backend' | 'security' | 'product';
 export type ChangeStatus = 'QA_PENDING' | 'QA_RUNNING' | 'QA_REJECTED' | 'CTO_PENDING' | 'CTO_REJECTED' | 'AUTHORIZED' | 'DEPLOYING' | 'DEPLOYED' | 'DEPLOY_FAILED' | 'EXPIRED' | 'STALE';
-export type GraphNode = { id: string; type: string; position: { x: number; y: number }; data: { label: string; value?: number } };
+export type GraphNode = { id: string; type: string; position: { x: number; y: number }; data: { label: string; value?: number; module?: ModuleRef } };
 export type GraphEdge = { id: string; source: string; target: string };
 export type Graph = { nodes: GraphNode[]; edges: GraphEdge[] };
 export type RequestStatus = 'PENDING' | 'RUNNING' | 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'REJECTED' | 'ABANDONED' | 'FAILED';
@@ -14,13 +15,14 @@ export const TERMINAL_LABELS: Record<TerminalReason, string> = { OK: 'OK', OUT_O
 export type RequestResult = { status: 'COMPLETED' | 'REJECTED' | 'ABANDONED' | 'FAILED'; reason: TerminalReason; at: number; revenue: number; lostRevenue: number; capitalDelta: number; service?: ServiceId; operation?: string };
 export type RequestJourney = { from: RequestStage; to: RequestStage; at: number; duration: number };
 export type PurchaseRequest = {
+  execution?: ExecutionRelease; newCustomer?: boolean; couponCount?: number; invalidInput?: boolean; price?: number; duplicates?: number; retryCount?: number; waitOperation?: boolean;
   id: string; intentId?: string; customerId?: string; customerSource?: 'market' | 'qa' | 'legacy'; customerColor?: string; executionVersion: number; path: GraphNode[]; securityAllowed: boolean; commercial?: boolean;
   arrivalAt: number; nextAt: number; deadline: number; cursor: number; status: RequestStatus;
   read?: { stock: number; version: number }; atomic: boolean; quantity: number;
   committed: number; oversold: number; paid: boolean; result?: RequestResult; accounted: boolean;
   journey: RequestJourney;
 };
-export type ScenarioContext = { backend: Graph; security: Graph; executionVersion: number };
+export type ScenarioContext = { backend: Graph; security: Graph; executionVersion: number; execution?: ExecutionRelease };
 export type ConcurrencyRun = {
   id: string; engineVersion: 'requests-1'; fixture: 'last-unit-1'; startedAt: number;
   backendHash: string; securityHash: string;
@@ -59,7 +61,7 @@ export type TrafficState = {
 export type TrafficView = { scenario: string; totals: ScenarioTotals; legitimate: ScenarioTotals; malicious: ScenarioTotals; metrics: TrafficMetrics; inventory: InventoryState; queues: { id: ServiceId; capacity: number; depth: number; processing: number; rate: number }[]; pendingResolution: number };
 export type ScenarioEvidence = { engineVersion: string; fixture: string; backendHash: string; securityHash: string; executionVersion: number; seed: number; inventory: ConcurrencyRun['inventory']; outcomes: { requestId: string; status: RequestStatus; reason: TerminalReason; read?: PurchaseRequest['read']; committed: number; oversold: number }[] };
 export type Report = { suite: string; requests: number; completed: number; rejected: number; oversold: number; breaches: number; duplicates: number; latency: number; tick: number; abandoned?: number; failed?: number; evidence?: ScenarioEvidence; obsolete?: boolean; loadEvidence?: { engineVersion: string; fixture: string; seed: number; maxQueue: number; pending: number } };
-export type Change = { id: string; companyId: number; domain: Domain; name: string; graph: Graph; status: ChangeStatus; cost: number; reserved: number; baseVersion: number; created: number; reports: Report[]; runningSuite?: string; due?: number; strategy?: string; expires?: number; actorId: string; context?: ScenarioContext; qaScenario?: ConcurrencyRun; qaLoad?: { company: Company; startedAt: number; elapsed: number; maxQueue: number; latencySum: number; terminated: number } };
+export type Change = { artifactRefs?: ModuleRef[]; testJob?: TestJob; id: string; companyId: number; domain: Domain; name: string; graph: Graph; status: ChangeStatus; cost: number; reserved: number; baseVersion: number; created: number; reports: Report[]; runningSuite?: string; due?: number; strategy?: string; expires?: number; actorId: string; context?: ScenarioContext; qaScenario?: ConcurrencyRun; qaLoad?: { company: Company; startedAt: number; elapsed: number; maxQueue: number; latencySum: number; terminated: number } };
 export type Migration = { id: string; from: number | null; to: number | null; count: number; at: number; color: string; customerId: string; reason: string };
 export type CustomerMigration = { id: string; from: number | null; to: number | null; at: number; reason: string; color: string };
 export type MarketCustomer = {
@@ -85,7 +87,7 @@ export type GameEvent = { id: number; at: number; companyId: number | null; text
 export type FlowParticle = { id: string; born: number; duration: number; color: string; customerId?: string; kind: 'success' | 'error' | 'attack'; route: 'browse' | 'purchase' | 'query'; seed: number; requestId?: string; companyId?: number; executionVersion?: number; status?: RequestStatus; reason?: TerminalReason; finishedAt?: number; journey?: RequestJourney; queue?: { service: ServiceId; position: number; enteredAt: number; depth: number } };
 export type Infrastructure = { instances: { id: number; status: 'UP' | 'RESTARTING'; readyAt?: number }[]; stoppedServices: ServiceId[] };
 export type Company = {
-  infrastructure: Infrastructure;
+  runtime: CompanyRuntime; infrastructure: Infrastructure;
   id: number; name: string; tag: string; color: string; customers: number; capital: number; reputation: number; pressure: number;
   servers: number; balancer: boolean; infraBudget: number; reserved: number; version: number; deployments: number;
   active: number; requests: number; successes: number; errors: number; breaches: number; oversold: number; duplicates: number;
@@ -97,12 +99,12 @@ export type Company = {
   concurrency: ConcurrencyState;
   traffic: TrafficState;
 };
-export type PrivateCompany = Omit<Company, 'drafts' | 'traffic'> & { drafts: Company['drafts']; traffic: TrafficView };
-export type PublicCompany = Omit<Company, 'drafts' | 'backend' | 'security' | 'product' | 'migrationRemainder' | 'arrivalRemainder' | 'processedRemainder' | 'crisisTicks' | 'deadTicks' | 'bankruptTicks' | 'concurrencyUntil' | 'concurrency' | 'traffic'> & { modules: string[]; pipelineCounts: number[]; concurrency: ConcurrencyView; traffic: TrafficView };
+export type PrivateCompany = Omit<Company, 'drafts' | 'traffic' | 'runtime'> & { drafts: Company['drafts']; traffic: TrafficView };
+export type PublicCompany = Omit<Company, 'runtime' | 'drafts' | 'backend' | 'security' | 'product' | 'migrationRemainder' | 'arrivalRemainder' | 'processedRemainder' | 'crisisTicks' | 'deadTicks' | 'bankruptTicks' | 'concurrencyUntil' | 'concurrency' | 'traffic'> & { modules: string[]; pipelineCounts: number[]; concurrency: ConcurrencyView; traffic: TrafficView };
 export type GameState = { schema: 4; market: MarketState; generation: number; tick: number; duration: number; status: 'LOBBY' | 'RUNNING' | 'PAUSED' | 'FINISHED'; seed: number; eventSeq: number; companies: Company[]; changes: Change[]; events: GameEvent[]; migrations: Migration[]; unserved: number; speed: number };
-export type Snapshot = { tick: number; duration: number; status: GameState['status']; companies: PublicCompany[]; events: GameEvent[]; migrations: Migration[]; unserved: number; identity: Identity | null; privateCompany?: PrivateCompany; changes: Change[]; speed: number };
+export type Snapshot = { operations?: OperationsView; tick: number; duration: number; status: GameState['status']; companies: PublicCompany[]; events: GameEvent[]; migrations: Migration[]; unserved: number; identity: Identity | null; privateCompany?: PrivateCompany; changes: Change[]; speed: number };
 export type Command = { id: string; type: string; companyId?: number; changeId?: string; payload?: Record<string, unknown> };
-export type Result = { ok: boolean; error?: string; code?: string };
+export type Result = { refs?: string[]; ok: boolean; error?: string; code?: string };
 
 export const ROLE_LABELS: Record<Role | 'operator', string> = { backend: 'Backend', security: 'Seguridad', qa: 'QA', cto: 'CTO', devops: 'DevOps / SRE', product: 'Producto / UX', operator: 'Control de partida' };
 export const BLOCKS: Record<'backend' | 'security', { type: string; label: string; cost: number; value: number; unit: string }[]> = {
