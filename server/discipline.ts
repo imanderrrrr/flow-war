@@ -69,7 +69,7 @@ export function dispatchCommand(g: GameState, identity: Identity | null, raw: Co
   if (result.ok && company && before) for (const field of ['capital','servers','reserved','infraBudget','version'] as const) if (company[field] !== before[field]) audit.effects.push(`${field}.delta:${company[field] - before[field]}`);
   if (employee && employee.violations.filter(v => !v.reversed).length > strikesBefore) audit.effects.push(`discipline.confirmed:${strikesBefore + 1}/5`, `employee.status:${employee.status}`);
   if (command.type === 'employee.correct' && result.ok) audit.effects.push(`justification:${String(command.payload?.justification)}`);
-  observe(g,'action.confirmed',identity.companyId,{type:command.type,actor:identity.id,ok:result.ok,effects:audit.effects},audit.refs);
+  observe(g,'action.confirmed',command.type==='employee.correct'?(g.actions.employees[String(command.payload?.employeeId)]?.companyId??null):identity.companyId,{type:command.type,actor:identity.id,ok:result.ok,effects:audit.effects},audit.refs);
   g.actions.audit.push(audit); g.actions.receipts[key] = { digest, result: structuredClone(result) };
   return result;
 }
