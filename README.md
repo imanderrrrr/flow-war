@@ -61,3 +61,23 @@ Acciones estructuradas, artefactos con defectos persistentes, QA reproducible, o
 Ejecutar `npm test`, `npm run build`, `npm run bench:traffic` y `npm run bench:actions`.
 
 Verificación final: **181 pruebas**, 18 ensayos completos de acciones y 24 regresiones de tráfico/mercado. [Datos, comparación de rendimiento y conexiones](docs/benchmarks/entrega-4a-informe.md).
+
+## Entrega 5
+
+Crisis por reputación con sirena e iluminación accesible, documentos acumulados según tiempo simulado, FlowSlack privado, mantenimiento total y suspensión transaccional exclusiva de DevOps. El DVR reconstruye estados reales de partidas finalizadas mediante checkpoints comprimidos e inputs ordenados; conserva generaciones anteriores sin inventar intervalos antiguos.
+
+- [Arquitectura, contratos, permisos y prueba manual](docs/12-entrega-5-crisis-flowslack-mantenimiento.md)
+- [DVR, causalidad, privacidad y reconstrucción exacta](docs/13-dvr-forense.md)
+- [Pruebas, benchmarks y limitaciones medidas](docs/benchmarks/entrega-5-informe.md)
+
+```sh
+npm test
+npm run build
+npm run bench:traffic
+npm run bench:actions
+npm run bench:connections
+npm run bench:chat
+npm run bench:entrega5
+```
+
+El dominio actual mantiene compras, inventario y pagos; la adaptación a plataformas de inversión queda pendiente. Esta entrega funciona localmente sin Anthropic, claves ni consumo de API.
