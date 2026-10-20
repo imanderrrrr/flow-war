@@ -1,0 +1,23 @@
+
+> flow-war@0.1.0 bench:actions
+> tsx scripts/actions-benchmark.ts && tsx scripts/verify-actions-benchmark.ts
+
+{"strategy":"A-equivalent","control":false,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":3.004,"saveP95ms":63.392,"wallSeconds":22.983}
+{"strategy":"B-restart","control":false,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":3.644,"saveP95ms":70.765,"wallSeconds":24.83}
+{"strategy":"C-insufficient","control":false,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":3.585,"saveP95ms":73.823,"wallSeconds":24.504}
+{"strategy":"D-exhaustive","control":false,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":3.332,"saveP95ms":64.786,"wallSeconds":23.767}
+{"strategy":"E-campaign","control":false,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":3.673,"saveP95ms":69.907,"wallSeconds":25.596}
+{"strategy":"F-expulsion","control":false,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":3.188,"saveP95ms":66.102,"wallSeconds":23.154}
+{"strategy":"G-migration","control":false,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":3.317,"saveP95ms":66.751,"wallSeconds":23.546}
+{"strategy":"H-recovery","control":false,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":3.351,"saveP95ms":64.682,"wallSeconds":24.194}
+{"strategy":"A-equivalent","control":false,"duration":1500,"seed":8,"finalTick":1500,"tickP95ms":3.158,"saveP95ms":63.981,"wallSeconds":29.089}
+{"strategy":"B-restart","control":false,"duration":1500,"seed":8,"finalTick":1500,"tickP95ms":3.294,"saveP95ms":62.371,"wallSeconds":28.788}
+{"strategy":"C-insufficient","control":false,"duration":1500,"seed":8,"finalTick":1500,"tickP95ms":3.138,"saveP95ms":65.619,"wallSeconds":28.23}
+{"strategy":"D-exhaustive","control":false,"duration":1500,"seed":8,"finalTick":1500,"tickP95ms":3.096,"saveP95ms":60.006,"wallSeconds":27.77}
+{"strategy":"E-campaign","control":false,"duration":1500,"seed":8,"finalTick":1500,"tickP95ms":3.548,"saveP95ms":68.936,"wallSeconds":30.459}
+{"strategy":"F-expulsion","control":false,"duration":1500,"seed":8,"finalTick":1500,"tickP95ms":3.131,"saveP95ms":63.146,"wallSeconds":27.927}
+{"strategy":"G-migration","control":false,"duration":1500,"seed":8,"finalTick":1500,"tickP95ms":3.148,"saveP95ms":62.794,"wallSeconds":28.415}
+{"strategy":"H-recovery","control":false,"duration":1500,"seed":8,"finalTick":1500,"tickP95ms":3.221,"saveP95ms":61.346,"wallSeconds":28.591}
+{"strategy":"G-migration","control":true,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":3.106,"saveP95ms":58.408,"wallSeconds":22.124}
+{"strategy":"G-migration","control":true,"duration":1500,"seed":8,"finalTick":1500,"tickP95ms":3.118,"saveP95ms":59.159,"wallSeconds":27.756}
+Verified 16 complete action scenarios and 2 migration controls.

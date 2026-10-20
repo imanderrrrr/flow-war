@@ -1,0 +1,68 @@
+{
+  "label": "cancellation-stress",
+  "historicalSeconds": 120,
+  "hardware": {
+    "node": "v25.9.0",
+    "cpu": "Apple M5"
+  },
+  "durationMs": 9170.783333000001,
+  "connections": 3,
+  "queryConcurrency": 2,
+  "queries": 24,
+  "queryStatus": {
+    "200": 24
+  },
+  "reconstructionHttpMs": {
+    "p50": 152.6904999999997,
+    "p95": 226.26549999999997,
+    "p99": 368.2198750000001
+  },
+  "commandSamples": 24,
+  "chatSamples": 3,
+  "commandAckMs": {
+    "p50": 14.48112500000002,
+    "p95": 18.739583999999923,
+    "p99": 22.960207999999966
+  },
+  "chatAckMs": {
+    "p50": 17.226916999999958,
+    "p95": 32.14999999999998,
+    "p99": 32.14999999999998
+  },
+  "snapshots": 74,
+  "chatDeliveries": 3,
+  "finalTick": 9,
+  "snapshotCadenceMs": {
+    "p50": 149.625,
+    "p95": 203.07891700000073,
+    "p99": 204.3607919999995,
+    "max": 204.3607919999995
+  },
+  "cancelled": 200,
+  "errors": 0,
+  "eventLoop": {
+    "p50": 11.034623,
+    "p95": 12.632063,
+    "p99": 22.593535,
+    "max": 33.882111
+  },
+  "engineIntervalMs": {
+    "p50": 100.76670799999965,
+    "p95": 102.43949999999995,
+    "p99": 121.82683399999996,
+    "max": 121.82683399999996
+  },
+  "engineCallbackMs": {
+    "p50": 0.43429199999991397,
+    "p95": 9.445708000000195,
+    "p99": 11.61804200000006
+  },
+  "persistenceMs": {
+    "p50": 7.164875000000393,
+    "p95": 10.939458000000002,
+    "p99": 15.697625000000016
+  },
+  "engineCallbackCount": 91,
+  "heapMaxMiB": 46.88751983642578,
+  "processRssMaxMiB": 265.546875
+}

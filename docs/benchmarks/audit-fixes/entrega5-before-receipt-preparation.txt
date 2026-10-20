@@ -1,0 +1,19 @@
+
+> flow-war@0.1.0 bench:entrega5
+> tsx scripts/entrega5-benchmark.ts
+
+{"name":"A-crisis","duration":1200,"finalTick":1200,"tick":{"p50":0.777,"p95":3.422,"p99":5.225},"persist":{"p50":81.153,"p95":131.136,"p99":159.416},"dbMiB":280.6,"seekMax":801.195}
+{"name":"B-recovery","duration":1200,"finalTick":1200,"tick":{"p50":0.912,"p95":2.981,"p99":4.681},"persist":{"p50":77.408,"p95":170.982,"p99":225.858},"dbMiB":425.7,"seekMax":1051.162}
+{"name":"C-complaints","duration":1200,"finalTick":1200,"tick":{"p50":0.839,"p95":2.832,"p99":4.373},"persist":{"p50":74.218,"p95":163.113,"p99":181.528},"dbMiB":426.5,"seekMax":1201.749}
+{"name":"D-hidden-traffic","duration":1200,"finalTick":1200,"tick":{"p50":0.818,"p95":2.744,"p99":4.189},"persist":{"p50":72.312,"p95":175.683,"p99":194.196},"dbMiB":426.5,"seekMax":1049.366}
+{"name":"E-maint60","duration":1200,"finalTick":1200,"tick":{"p50":0.87,"p95":2.548,"p99":3.262},"persist":{"p50":67.142,"p95":129.364,"p99":141.485},"dbMiB":424.8,"seekMax":1014.522}
+{"name":"F-maint120","duration":1200,"finalTick":1200,"tick":{"p50":0.774,"p95":2.424,"p99":3.133},"persist":{"p50":64.008,"p95":122.23,"p99":136.754},"dbMiB":424.2,"seekMax":1005.102}
+{"name":"G-orders","duration":1200,"finalTick":1200,"tick":{"p50":0.756,"p95":2.379,"p99":3.113},"persist":{"p50":62.839,"p95":123.918,"p99":135.734},"dbMiB":425.1,"seekMax":1011.093}
+{"name":"H-domino","duration":1200,"finalTick":1200,"tick":{"p50":0.852,"p95":2.529,"p99":3.318},"persist":{"p50":64.741,"p95":123.717,"p99":148.397},"dbMiB":427.1,"seekMax":1126.284}
+{"name":"J-replay","duration":1200,"finalTick":1200,"tick":{"p50":0.743,"p95":2.316,"p99":3.075},"persist":{"p50":62.53,"p95":120.421,"p99":142.554},"dbMiB":425.7,"seekMax":1000.182}
+{"name":"K-defect-maint","duration":1200,"finalTick":1200,"tick":{"p50":0.789,"p95":2.47,"p99":3.17},"persist":{"p50":62.472,"p95":120.759,"p99":134.919},"dbMiB":410.5,"seekMax":1094.753}
+{"name":"L-equivalent","duration":1200,"finalTick":1200,"tick":{"p50":0.771,"p95":2.489,"p99":3.261},"persist":{"p50":65.331,"p95":123.491,"p99":140.255},"dbMiB":425.7,"seekMax":1339.952}
+{"name":"A-crisis","duration":1500,"finalTick":1500,"tick":{"p50":0.629,"p95":2.596,"p99":3.526},"persist":{"p50":66.481,"p95":105.983,"p99":126.19},"dbMiB":340.7,"seekMax":639.409}
+{"name":"B-recovery","duration":1500,"finalTick":1500,"tick":{"p50":0.745,"p95":2.4,"p99":3.147},"persist":{"p50":65.59,"p95":126.862,"p99":139.307},"dbMiB":530,"seekMax":1024.151}
+{"name":"C-complaints","duration":1500,"finalTick":1500,"tick":{"p50":0.765,"p95":2.483,"p99":3.573},"persist":{"p50":66.673,"p95":133.725,"p99":155.21},"dbMiB":531.8,"seekMax":1222.347}
+{"name":"D-hidden-traffic","duration":1500,"finalTick":1500,"tick":{"p50":0.799,"p95":2.531,"p99":3.2},"persist":{"p50":71.722,"p95":125.246,"p99":138.686},"dbMiB":531.8,"seekMax":1054.994}

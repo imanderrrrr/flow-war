@@ -1,0 +1,62 @@
+[
+  {
+    "name": "load-before",
+    "command": "node --import tsx scripts/audit-load.ts",
+    "exitCode": 0,
+    "seconds": 7.868
+  },
+  {
+    "name": "load-after",
+    "command": "node --import tsx scripts/audit-load.ts",
+    "exitCode": 0,
+    "seconds": 5.998
+  },
+  {
+    "name": "load-one-worker",
+    "command": "node --import tsx scripts/audit-load.ts",
+    "exitCode": 1,
+    "seconds": 21.254
+  },
+  {
+    "name": "audit-after",
+    "command": "node --import tsx scripts/audit-baseline.ts",
+    "exitCode": 0,
+    "seconds": 1.491
+  },
+  {
+    "name": "audit-storage",
+    "command": "node --import tsx scripts/audit-storage.ts",
+    "exitCode": 0,
+    "seconds": 9.564
+  },
+  {
+    "name": "build",
+    "command": "npm run build",
+    "exitCode": 0,
+    "seconds": 2.351
+  },
+  {
+    "name": "traffic",
+    "command": "npm run bench:traffic",
+    "exitCode": 0,
+    "seconds": 710.849
+  },
+  {
+    "name": "actions",
+    "command": "npm run bench:actions",
+    "exitCode": 0,
+    "seconds": 504.077
+  },
+  {
+    "name": "connections",
+    "command": "npm run bench:connections",
+    "exitCode": 0,
+    "seconds": 8.911
+  },
+  {
+    "name": "chat",
+    "command": "npm run bench:chat",
+    "exitCode": 0,
+    "seconds": 13.318
+  }
+]

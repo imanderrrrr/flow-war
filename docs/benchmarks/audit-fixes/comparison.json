@@ -1,0 +1,1173 @@
+{
+  "reference": "c86d32058f0fd1741e27e6397f6124a1f1a4b62b",
+  "measuredCommit": "d0b3fe47cd065b172e681192f99db651aed138b9",
+  "hardware": {
+    "node": "v25.9.0",
+    "cpu": "Apple M5"
+  },
+  "scenarios": 22,
+  "exactReconstructions": 176,
+  "allOriginalComparableEconomicAndForensicResultsIdentical": true,
+  "publishedReferenceProjection": "Same sample/company/effect projection as scripts/entrega5-report.mjs; all state digests compared verbatim",
+  "heavyLoad": {
+    "before": {
+      "label": "long-before",
+      "historicalSeconds": 1200,
+      "activeStartSeconds": 900,
+      "activeSpeed": 20,
+      "hardware": {
+        "node": "v25.9.0",
+        "cpu": "Apple M5"
+      },
+      "durationMs": 20787.255167,
+      "connections": 3,
+      "queryConcurrency": 2,
+      "queries": 24,
+      "queryStatus": {
+        "200": 24
+      },
+      "reconstructionHttpMs": {
+        "p50": 1403.8984159999964,
+        "p95": 1536.6442089999982,
+        "p99": 1570.4945000000007
+      },
+      "commandSamples": 24,
+      "chatSamples": 3,
+      "commandAckMs": {
+        "p50": 579.4424590000053,
+        "p95": 654.8179170000003,
+        "p99": 1412.0388340000027
+      },
+      "chatAckMs": {
+        "p50": 805.241915999999,
+        "p95": 892.659334,
+        "p99": 892.659334
+      },
+      "snapshots": 43,
+      "chatDeliveries": 3,
+      "finalTick": 950,
+      "snapshotCadenceMs": {
+        "p50": 680.1452920000011,
+        "p95": 781.1819590000014,
+        "p99": 1483.8015830000004,
+        "max": 1483.8015830000004
+      },
+      "cancelled": 8,
+      "errors": 0,
+      "eventLoop": {
+        "p50": 733.478911,
+        "p95": 822.607871,
+        "p99": 1562.378239,
+        "max": 1562.378239
+      },
+      "engineIntervalMs": {
+        "p50": 749.3689160000031,
+        "p95": 842.421875,
+        "p99": 1619.065917,
+        "max": 1619.065917
+      },
+      "engineCallbackMs": {
+        "p50": 19.4498339999991,
+        "p95": 46.78887500000019,
+        "p99": 49.21941699999843
+      },
+      "persistenceMs": {
+        "p50": 27.353415999998106,
+        "p95": 39.086999999999534,
+        "p99": 46.05799999999999
+      },
+      "engineCallbackCount": 28,
+      "heapMaxMiB": 227.28390502929688,
+      "processRssMaxMiB": 579.5
+    },
+    "after": {
+      "label": "long-after",
+      "historicalSeconds": 1200,
+      "activeStartSeconds": 900,
+      "activeSpeed": 20,
+      "hardware": {
+        "node": "v25.9.0",
+        "cpu": "Apple M5"
+      },
+      "durationMs": 11370.345249999998,
+      "connections": 3,
+      "queryConcurrency": 2,
+      "queries": 24,
+      "queryStatus": {
+        "200": 24
+      },
+      "reconstructionHttpMs": {
+        "p50": 773.5132920000033,
+        "p95": 982.4892500000024,
+        "p99": 983.0466670000023
+      },
+      "commandSamples": 24,
+      "chatSamples": 3,
+      "commandAckMs": {
+        "p50": 69.88270900000134,
+        "p95": 113.08299999999872,
+        "p99": 131.612000000001
+      },
+      "chatAckMs": {
+        "p50": 59.94245800000135,
+        "p95": 110.39945799999987,
+        "p99": 110.39945799999987
+      },
+      "snapshots": 80,
+      "chatDeliveries": 3,
+      "finalTick": 1098,
+      "snapshotCadenceMs": {
+        "p50": 134.3104999999996,
+        "p95": 217.765333000003,
+        "p99": 229.49391599999944,
+        "max": 229.49391599999944
+      },
+      "cancelled": 8,
+      "errors": 0,
+      "eventLoop": {
+        "p50": 12.001279,
+        "p95": 62.586879,
+        "p99": 110.034943,
+        "max": 146.407423
+      },
+      "engineIntervalMs": {
+        "p50": 101.7165,
+        "p95": 158.72962499999994,
+        "p99": 202.26066700000047,
+        "max": 212.97962499999994
+      },
+      "engineCallbackMs": {
+        "p50": 27.978832999999668,
+        "p95": 72.70529199999964,
+        "p99": 120.08879200000047
+      },
+      "persistenceMs": {
+        "p50": 37.1312910000006,
+        "p95": 88.43575000000055,
+        "p99": 105.11854200000016
+      },
+      "engineCallbackCount": 101,
+      "heapMaxMiB": 121.18072509765625,
+      "processRssMaxMiB": 802.890625
+    },
+    "acceptance": {
+      "eventLoopP99BelowMs": 150,
+      "engineIntervalP95BelowMs": 200,
+      "commandAckP95BelowMs": 150,
+      "scope": "1200-second finished generation plus an independently simulated active generation at 900 seconds, speed 20, 3 clients, 24 successful DVR queries."
+    }
+  },
+  "load": {
+    "before": {
+      "label": "before",
+      "historicalSeconds": 120,
+      "activeStartSeconds": 0,
+      "activeSpeed": 1,
+      "hardware": {
+        "node": "v25.9.0",
+        "cpu": "Apple M5"
+      },
+      "durationMs": 6150.148042000001,
+      "connections": 3,
+      "queryConcurrency": 2,
+      "queries": 24,
+      "queryStatus": {
+        "200": 24
+      },
+      "reconstructionHttpMs": {
+        "p50": 158.06220799999983,
+        "p95": 177.07333299999982,
+        "p99": 293.08795799999996
+      },
+      "commandSamples": 24,
+      "chatSamples": 3,
+      "commandAckMs": {
+        "p50": 39.009917000000314,
+        "p95": 107.04120899999998,
+        "p99": 110.58620799999994
+      },
+      "chatAckMs": {
+        "p50": 29.478000000000065,
+        "p95": 94.99037499999986,
+        "p99": 94.99037499999986
+      },
+      "snapshots": 54,
+      "chatDeliveries": 3,
+      "finalTick": 4.8,
+      "snapshotCadenceMs": {
+        "p50": 110.35949999999957,
+        "p95": 161.13783300000023,
+        "p99": 355.21579199999996,
+        "max": 355.21579199999996
+      },
+      "cancelled": 8,
+      "errors": 0,
+      "eventLoop": {
+        "p50": 12.025855,
+        "p95": 128.516095,
+        "p99": 146.931711,
+        "max": 293.076991
+      },
+      "engineIntervalMs": {
+        "p50": 115.6450420000001,
+        "p95": 146.86083299999996,
+        "p99": 364.49399999999997,
+        "max": 364.49399999999997
+      },
+      "engineCallbackMs": {
+        "p50": 0.3056249999999636,
+        "p95": 8.160708000000113,
+        "p99": 21.48858300000029
+      },
+      "persistenceMs": {
+        "p50": 8.263541999999688,
+        "p95": 16.769750000000386,
+        "p99": 18.211833000000297
+      },
+      "engineCallbackCount": 49,
+      "heapMaxMiB": 105.15277862548828,
+      "processRssMaxMiB": 297.28125
+    },
+    "after": {
+      "label": "after",
+      "historicalSeconds": 120,
+      "activeStartSeconds": 0,
+      "activeSpeed": 1,
+      "hardware": {
+        "node": "v25.9.0",
+        "cpu": "Apple M5"
+      },
+      "durationMs": 5065.9764159999995,
+      "connections": 3,
+      "queryConcurrency": 2,
+      "queries": 24,
+      "queryStatus": {
+        "200": 24
+      },
+      "reconstructionHttpMs": {
+        "p50": 131.48962500000016,
+        "p95": 215.64937500000008,
+        "p99": 215.71066699999994
+      },
+      "commandSamples": 24,
+      "chatSamples": 3,
+      "commandAckMs": {
+        "p50": 18.576332999999977,
+        "p95": 36.12012500000037,
+        "p99": 38.371917000000394
+      },
+      "chatAckMs": {
+        "p50": 17.00383299999976,
+        "p95": 30.895999999999958,
+        "p99": 30.895999999999958
+      },
+      "snapshots": 55,
+      "chatDeliveries": 3,
+      "finalTick": 5,
+      "snapshotCadenceMs": {
+        "p50": 92.61000000000013,
+        "p95": 163.1016669999999,
+        "p99": 200.24704099999963,
+        "max": 200.24704099999963
+      },
+      "cancelled": 8,
+      "errors": 0,
+      "eventLoop": {
+        "p50": 11.329535,
+        "p95": 21.168127,
+        "p99": 33.259519,
+        "max": 48.594943
+      },
+      "engineIntervalMs": {
+        "p50": 100.83349999999973,
+        "p95": 107.53233400000045,
+        "p99": 113.46587499999987,
+        "max": 113.46587499999987
+      },
+      "engineCallbackMs": {
+        "p50": 0.6251250000000255,
+        "p95": 14.021416000000045,
+        "p99": 23.751124999999774
+      },
+      "persistenceMs": {
+        "p50": 8.752832999999555,
+        "p95": 17.550083000000086,
+        "p99": 17.553375000000415
+      },
+      "engineCallbackCount": 50,
+      "heapMaxMiB": 44.810447692871094,
+      "processRssMaxMiB": 276.96875
+    },
+    "acceptance": {
+      "eventLoopP99BelowMs": 75,
+      "engineIntervalP95BelowMs": 150,
+      "commandAckP95BelowMs": 100,
+      "scope": "Dedicated local 120-second historical fixture; 100ms engine cadence, 3 clients, 2 concurrent DVR lanes; does not assert universal hardware/network capacity."
+    }
+  },
+  "storage": {
+    "savedBytes": 12976128,
+    "savedPercent": 16.68334298804571,
+    "receiptDigest": "12a2ff5531575d5fa7ffc19566d2d681bf235c77d4883b3e18818629188ea12b"
+  },
+  "comparisons": [
+    {
+      "name": "A-crisis",
+      "duration": 1200,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.711,
+          "p95": 3.076,
+          "p99": 3.969
+        },
+        "persist": {
+          "p50": 40.357,
+          "p95": 77.34,
+          "p99": 92.122
+        },
+        "heapMiB": 189.96,
+        "dbBytes": 357269504,
+        "journalBytes": 73906466,
+        "maxSeekMs": 776.388
+      },
+      "current": {
+        "tick": {
+          "p50": 0.973,
+          "p95": 3.463,
+          "p99": 4.164
+        },
+        "persist": {
+          "p50": 41.739,
+          "p95": 81.354,
+          "p99": 99.897
+        },
+        "heapMiB": 98.87,
+        "dbBytes": 294178816,
+        "journalBytes": 73906466,
+        "maxSeekMs": 740.771
+      }
+    },
+    {
+      "name": "B-recovery",
+      "duration": 1200,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.798,
+          "p95": 2.664,
+          "p99": 3.588
+        },
+        "persist": {
+          "p50": 34.277,
+          "p95": 60.471,
+          "p99": 75.51
+        },
+        "heapMiB": 204.65,
+        "dbBytes": 583077888,
+        "journalBytes": 101578332,
+        "maxSeekMs": 1126.547
+      },
+      "current": {
+        "tick": {
+          "p50": 1.168,
+          "p95": 3.313,
+          "p99": 4.43
+        },
+        "persist": {
+          "p50": 36.938,
+          "p95": 69.942,
+          "p99": 88.606
+        },
+        "heapMiB": 118.48,
+        "dbBytes": 446369792,
+        "journalBytes": 101578332,
+        "maxSeekMs": 1046.017
+      }
+    },
+    {
+      "name": "C-complaints",
+      "duration": 1200,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.821,
+          "p95": 2.73,
+          "p99": 3.618
+        },
+        "persist": {
+          "p50": 34.034,
+          "p95": 62.576,
+          "p99": 79.795
+        },
+        "heapMiB": 417.97,
+        "dbBytes": 583688192,
+        "journalBytes": 102079890,
+        "maxSeekMs": 1107.604
+      },
+      "current": {
+        "tick": {
+          "p50": 1.255,
+          "p95": 3.593,
+          "p99": 4.785
+        },
+        "persist": {
+          "p50": 35.748,
+          "p95": 68.221,
+          "p99": 102.951
+        },
+        "heapMiB": 107.36,
+        "dbBytes": 447242240,
+        "journalBytes": 102079890,
+        "maxSeekMs": 1056.678
+      }
+    },
+    {
+      "name": "D-hidden-traffic",
+      "duration": 1200,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.813,
+          "p95": 2.743,
+          "p99": 3.618
+        },
+        "persist": {
+          "p50": 33.973,
+          "p95": 61.318,
+          "p99": 87.252
+        },
+        "heapMiB": 211.28,
+        "dbBytes": 583688192,
+        "journalBytes": 102079890,
+        "maxSeekMs": 1122.355
+      },
+      "current": {
+        "tick": {
+          "p50": 1.249,
+          "p95": 3.496,
+          "p99": 4.524
+        },
+        "persist": {
+          "p50": 36.537,
+          "p95": 66.999,
+          "p99": 82.26
+        },
+        "heapMiB": 114.8,
+        "dbBytes": 447242240,
+        "journalBytes": 102079890,
+        "maxSeekMs": 1059.566
+      }
+    },
+    {
+      "name": "E-maint60",
+      "duration": 1200,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.878,
+          "p95": 2.68,
+          "p99": 3.519
+        },
+        "persist": {
+          "p50": 32.929,
+          "p95": 58.853,
+          "p99": 76.664
+        },
+        "heapMiB": 418.52,
+        "dbBytes": 581365760,
+        "journalBytes": 101677763,
+        "maxSeekMs": 1096.259
+      },
+      "current": {
+        "tick": {
+          "p50": 1.321,
+          "p95": 3.462,
+          "p99": 4.778
+        },
+        "persist": {
+          "p50": 35.711,
+          "p95": 59.246,
+          "p99": 71.159
+        },
+        "heapMiB": 117.77,
+        "dbBytes": 445480960,
+        "journalBytes": 101677763,
+        "maxSeekMs": 1055.906
+      }
+    },
+    {
+      "name": "F-maint120",
+      "duration": 1200,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.816,
+          "p95": 2.715,
+          "p99": 3.611
+        },
+        "persist": {
+          "p50": 32.669,
+          "p95": 59.022,
+          "p99": 73.405
+        },
+        "heapMiB": 216.12,
+        "dbBytes": 579858432,
+        "journalBytes": 101808199,
+        "maxSeekMs": 1111.108
+      },
+      "current": {
+        "tick": {
+          "p50": 1.247,
+          "p95": 3.433,
+          "p99": 4.588
+        },
+        "persist": {
+          "p50": 34.787,
+          "p95": 67.966,
+          "p99": 83.904
+        },
+        "heapMiB": 170.21,
+        "dbBytes": 444809216,
+        "journalBytes": 101808199,
+        "maxSeekMs": 1066.427
+      }
+    },
+    {
+      "name": "G-orders",
+      "duration": 1200,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.797,
+          "p95": 2.554,
+          "p99": 3.457
+        },
+        "persist": {
+          "p50": 32.252,
+          "p95": 59.181,
+          "p99": 72.301
+        },
+        "heapMiB": 249.5,
+        "dbBytes": 581496832,
+        "journalBytes": 101607407,
+        "maxSeekMs": 1104.821
+      },
+      "current": {
+        "tick": {
+          "p50": 1.205,
+          "p95": 3.328,
+          "p99": 4.518
+        },
+        "persist": {
+          "p50": 34.18,
+          "p95": 63.105,
+          "p99": 85.119
+        },
+        "heapMiB": 178.52,
+        "dbBytes": 445739008,
+        "journalBytes": 101607407,
+        "maxSeekMs": 1042.403
+      }
+    },
+    {
+      "name": "H-domino",
+      "duration": 1200,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.897,
+          "p95": 2.829,
+          "p99": 3.847
+        },
+        "persist": {
+          "p50": 33.964,
+          "p95": 60.853,
+          "p99": 75.346
+        },
+        "heapMiB": 196.59,
+        "dbBytes": 583598080,
+        "journalBytes": 102181979,
+        "maxSeekMs": 1241.527
+      },
+      "current": {
+        "tick": {
+          "p50": 1.289,
+          "p95": 3.405,
+          "p99": 4.733
+        },
+        "persist": {
+          "p50": 35.729,
+          "p95": 65.458,
+          "p99": 81.971
+        },
+        "heapMiB": 216.05,
+        "dbBytes": 447844352,
+        "journalBytes": 102181979,
+        "maxSeekMs": 1155.193
+      }
+    },
+    {
+      "name": "J-replay",
+      "duration": 1200,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.804,
+          "p95": 2.573,
+          "p99": 3.394
+        },
+        "persist": {
+          "p50": 31.801,
+          "p95": 59.706,
+          "p99": 75.592
+        },
+        "heapMiB": 189.82,
+        "dbBytes": 583090176,
+        "journalBytes": 101584916,
+        "maxSeekMs": 1110.089
+      },
+      "current": {
+        "tick": {
+          "p50": 1.157,
+          "p95": 3.256,
+          "p99": 4.46
+        },
+        "persist": {
+          "p50": 33.471,
+          "p95": 64.422,
+          "p99": 73.142
+        },
+        "heapMiB": 158.16,
+        "dbBytes": 446382080,
+        "journalBytes": 101584916,
+        "maxSeekMs": 1009.521
+      }
+    },
+    {
+      "name": "K-defect-maint",
+      "duration": 1200,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.845,
+          "p95": 2.778,
+          "p99": 3.587
+        },
+        "persist": {
+          "p50": 34.051,
+          "p95": 60.904,
+          "p99": 81.752
+        },
+        "heapMiB": 203.77,
+        "dbBytes": 566915072,
+        "journalBytes": 97552581,
+        "maxSeekMs": 1190.007
+      },
+      "current": {
+        "tick": {
+          "p50": 1.213,
+          "p95": 3.509,
+          "p99": 4.426
+        },
+        "persist": {
+          "p50": 35.698,
+          "p95": 66.039,
+          "p99": 78.01
+        },
+        "heapMiB": 98.02,
+        "dbBytes": 430485504,
+        "journalBytes": 97552581,
+        "maxSeekMs": 1092.162
+      }
+    },
+    {
+      "name": "L-equivalent",
+      "duration": 1200,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.797,
+          "p95": 2.577,
+          "p99": 3.414
+        },
+        "persist": {
+          "p50": 33.842,
+          "p95": 59.948,
+          "p99": 73.087
+        },
+        "heapMiB": 154.18,
+        "dbBytes": 583073792,
+        "journalBytes": 101577454,
+        "maxSeekMs": 1122.273
+      },
+      "current": {
+        "tick": {
+          "p50": 1.159,
+          "p95": 3.264,
+          "p99": 4.399
+        },
+        "persist": {
+          "p50": 34.413,
+          "p95": 60.718,
+          "p99": 73.478
+        },
+        "heapMiB": 103.78,
+        "dbBytes": 446365696,
+        "journalBytes": 101577454,
+        "maxSeekMs": 1015.168
+      }
+    },
+    {
+      "name": "A-crisis",
+      "duration": 1500,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.646,
+          "p95": 3.059,
+          "p99": 3.915
+        },
+        "persist": {
+          "p50": 40.142,
+          "p95": 79.412,
+          "p99": 94.548
+        },
+        "heapMiB": 203.28,
+        "dbBytes": 433750016,
+        "journalBytes": 90536540,
+        "maxSeekMs": 703.727
+      },
+      "current": {
+        "tick": {
+          "p50": 0.903,
+          "p95": 3.484,
+          "p99": 4.261
+        },
+        "persist": {
+          "p50": 43.802,
+          "p95": 81.494,
+          "p99": 109.275
+        },
+        "heapMiB": 115.54,
+        "dbBytes": 357203968,
+        "journalBytes": 90536540,
+        "maxSeekMs": 652.44
+      }
+    },
+    {
+      "name": "B-recovery",
+      "duration": 1500,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.808,
+          "p95": 2.653,
+          "p99": 3.568
+        },
+        "persist": {
+          "p50": 34.715,
+          "p95": 64.43,
+          "p99": 82.497
+        },
+        "heapMiB": 183.24,
+        "dbBytes": 738955264,
+        "journalBytes": 127143037,
+        "maxSeekMs": 1124.037
+      },
+      "current": {
+        "tick": {
+          "p50": 1.148,
+          "p95": 3.162,
+          "p99": 4.646
+        },
+        "persist": {
+          "p50": 33.716,
+          "p95": 66.971,
+          "p99": 77.593
+        },
+        "heapMiB": 118.86,
+        "dbBytes": 555741184,
+        "journalBytes": 127143037,
+        "maxSeekMs": 1037.223
+      }
+    },
+    {
+      "name": "C-complaints",
+      "duration": 1500,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.835,
+          "p95": 2.707,
+          "p99": 3.56
+        },
+        "persist": {
+          "p50": 34.132,
+          "p95": 65.214,
+          "p99": 80.178
+        },
+        "heapMiB": 196.16,
+        "dbBytes": 740315136,
+        "journalBytes": 127750288,
+        "maxSeekMs": 1160.766
+      },
+      "current": {
+        "tick": {
+          "p50": 1.193,
+          "p95": 3.322,
+          "p99": 4.524
+        },
+        "persist": {
+          "p50": 36.405,
+          "p95": 70.223,
+          "p99": 85.12
+        },
+        "heapMiB": 162.09,
+        "dbBytes": 557662208,
+        "journalBytes": 127750288,
+        "maxSeekMs": 1067.118
+      }
+    },
+    {
+      "name": "D-hidden-traffic",
+      "duration": 1500,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.836,
+          "p95": 2.686,
+          "p99": 3.6
+        },
+        "persist": {
+          "p50": 35.598,
+          "p95": 64.697,
+          "p99": 81.395
+        },
+        "heapMiB": 158.96,
+        "dbBytes": 740315136,
+        "journalBytes": 127750288,
+        "maxSeekMs": 1172.057
+      },
+      "current": {
+        "tick": {
+          "p50": 1.18,
+          "p95": 3.27,
+          "p99": 4.528
+        },
+        "persist": {
+          "p50": 32.823,
+          "p95": 63.997,
+          "p99": 75.55
+        },
+        "heapMiB": 224.84,
+        "dbBytes": 557662208,
+        "journalBytes": 127750288,
+        "maxSeekMs": 1011.621
+      }
+    },
+    {
+      "name": "E-maint60",
+      "duration": 1500,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.825,
+          "p95": 2.581,
+          "p99": 3.388
+        },
+        "persist": {
+          "p50": 32.525,
+          "p95": 62.55,
+          "p99": 72.976
+        },
+        "heapMiB": 232.52,
+        "dbBytes": 738369536,
+        "journalBytes": 127282690,
+        "maxSeekMs": 1161.531
+      },
+      "current": {
+        "tick": {
+          "p50": 1.174,
+          "p95": 3.229,
+          "p99": 4.364
+        },
+        "persist": {
+          "p50": 33.847,
+          "p95": 61.495,
+          "p99": 71.643
+        },
+        "heapMiB": 203.61,
+        "dbBytes": 555233280,
+        "journalBytes": 127282690,
+        "maxSeekMs": 1000.556
+      }
+    },
+    {
+      "name": "F-maint120",
+      "duration": 1500,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.817,
+          "p95": 2.633,
+          "p99": 3.525
+        },
+        "persist": {
+          "p50": 33.092,
+          "p95": 64.633,
+          "p99": 78.114
+        },
+        "heapMiB": 200.07,
+        "dbBytes": 738283520,
+        "journalBytes": 127442330,
+        "maxSeekMs": 1138.839
+      },
+      "current": {
+        "tick": {
+          "p50": 1.149,
+          "p95": 3.27,
+          "p99": 4.434
+        },
+        "persist": {
+          "p50": 34.199,
+          "p95": 60.05,
+          "p99": 79.189
+        },
+        "heapMiB": 214.55,
+        "dbBytes": 554610688,
+        "journalBytes": 127442330,
+        "maxSeekMs": 986.414
+      }
+    },
+    {
+      "name": "G-orders",
+      "duration": 1500,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.821,
+          "p95": 2.549,
+          "p99": 3.352
+        },
+        "persist": {
+          "p50": 32.719,
+          "p95": 59.433,
+          "p99": 74.808
+        },
+        "heapMiB": 192.54,
+        "dbBytes": 738332672,
+        "journalBytes": 127194821,
+        "maxSeekMs": 1161.023
+      },
+      "current": {
+        "tick": {
+          "p50": 1.136,
+          "p95": 3.092,
+          "p99": 4.309
+        },
+        "persist": {
+          "p50": 32.734,
+          "p95": 57.608,
+          "p99": 78.401
+        },
+        "heapMiB": 216.16,
+        "dbBytes": 555585536,
+        "journalBytes": 127194821,
+        "maxSeekMs": 996.125
+      }
+    },
+    {
+      "name": "H-domino",
+      "duration": 1500,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.843,
+          "p95": 2.689,
+          "p99": 3.763
+        },
+        "persist": {
+          "p50": 34.001,
+          "p95": 64.288,
+          "p99": 83.128
+        },
+        "heapMiB": 202.33,
+        "dbBytes": 740720640,
+        "journalBytes": 127903689,
+        "maxSeekMs": 1305.072
+      },
+      "current": {
+        "tick": {
+          "p50": 1.128,
+          "p95": 3.106,
+          "p99": 4.401
+        },
+        "persist": {
+          "p50": 33.017,
+          "p95": 57.918,
+          "p99": 70.889
+        },
+        "heapMiB": 190.48,
+        "dbBytes": 558338048,
+        "journalBytes": 127903689,
+        "maxSeekMs": 1051.436
+      }
+    },
+    {
+      "name": "J-replay",
+      "duration": 1500,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.823,
+          "p95": 2.591,
+          "p99": 3.425
+        },
+        "persist": {
+          "p50": 33.538,
+          "p95": 63.922,
+          "p99": 73.154
+        },
+        "heapMiB": 228.19,
+        "dbBytes": 738963456,
+        "journalBytes": 127151398,
+        "maxSeekMs": 1171.402
+      },
+      "current": {
+        "tick": {
+          "p50": 1.068,
+          "p95": 2.969,
+          "p99": 4.011
+        },
+        "persist": {
+          "p50": 29.862,
+          "p95": 52.775,
+          "p99": 64.544
+        },
+        "heapMiB": 107.95,
+        "dbBytes": 555749376,
+        "journalBytes": 127151398,
+        "maxSeekMs": 926.025
+      }
+    },
+    {
+      "name": "K-defect-maint",
+      "duration": 1500,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.782,
+          "p95": 2.604,
+          "p99": 3.487
+        },
+        "persist": {
+          "p50": 34.47,
+          "p95": 66.538,
+          "p99": 82.115
+        },
+        "heapMiB": 203.06,
+        "dbBytes": 717783040,
+        "journalBytes": 121720256,
+        "maxSeekMs": 1173.455
+      },
+      "current": {
+        "tick": {
+          "p50": 1.052,
+          "p95": 2.952,
+          "p99": 3.915
+        },
+        "persist": {
+          "p50": 31.753,
+          "p95": 55.432,
+          "p99": 67.857
+        },
+        "heapMiB": 112.1,
+        "dbBytes": 534892544,
+        "journalBytes": 121720256,
+        "maxSeekMs": 955.001
+      }
+    },
+    {
+      "name": "L-equivalent",
+      "duration": 1500,
+      "exactReconstructions": 8,
+      "identicalEconomy": true,
+      "identicalForensics": true,
+      "original": {
+        "tick": {
+          "p50": 0.828,
+          "p95": 2.559,
+          "p99": 3.396
+        },
+        "persist": {
+          "p50": 33.777,
+          "p95": 61.686,
+          "p99": 73.53
+        },
+        "heapMiB": 200.77,
+        "dbBytes": 738955264,
+        "journalBytes": 127141970,
+        "maxSeekMs": 1140.538
+      },
+      "current": {
+        "tick": {
+          "p50": 1.101,
+          "p95": 2.941,
+          "p99": 4.096
+        },
+        "persist": {
+          "p50": 29.759,
+          "p95": 58.514,
+          "p99": 67.542
+        },
+        "heapMiB": 204.27,
+        "dbBytes": 555741184,
+        "journalBytes": 127141970,
+        "maxSeekMs": 956.944
+      }
+    }
+  ]
+}

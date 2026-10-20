@@ -1,0 +1,10 @@
+✔ H4 complete generations export losslessly, verify, preview, protect, delete atomically and remain readable after reopen (754.326ms)
+✔ H4 exact legacy references migrate without ID guessing or loss; active leases and unauthorized CLI credentials are denied (685.257542ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1568.214916

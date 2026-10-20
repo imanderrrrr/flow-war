@@ -1,0 +1,15 @@
+{
+  "commit": "e1d57dfaac77c6667cb0586e1c2c8eeaec2707fc",
+  "checks": [
+    {
+      "name": "tests",
+      "exitCode": 0,
+      "seconds": 50.739
+    },
+    {
+      "name": "build",
+      "exitCode": 0,
+      "seconds": 2.195
+    }
+  ]
+}

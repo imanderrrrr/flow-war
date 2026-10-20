@@ -1,0 +1,100 @@
+[
+  {
+    "name": "tests",
+    "command": "npm test",
+    "exitCode": 0,
+    "seconds": 48.236,
+    "benchmarkProcesses": 1
+  },
+  {
+    "name": "build",
+    "command": "npm run build",
+    "exitCode": 0,
+    "seconds": 2.05,
+    "benchmarkProcesses": 1
+  },
+  {
+    "name": "load-before",
+    "command": "node --import tsx scripts/audit-load.ts",
+    "exitCode": 0,
+    "seconds": 6.985,
+    "benchmarkProcesses": 1
+  },
+  {
+    "name": "load-after",
+    "command": "node --import tsx scripts/audit-load.ts",
+    "exitCode": 0,
+    "seconds": 5.946,
+    "benchmarkProcesses": 1
+  },
+  {
+    "name": "load-one-worker",
+    "command": "node --import tsx scripts/audit-load.ts",
+    "exitCode": 0,
+    "seconds": 5.9,
+    "benchmarkProcesses": 1
+  },
+  {
+    "name": "load-long-before",
+    "command": "node --import tsx scripts/audit-load.ts",
+    "exitCode": 0,
+    "seconds": 43.317,
+    "benchmarkProcesses": 1
+  },
+  {
+    "name": "load-long-after",
+    "command": "node --import tsx scripts/audit-load.ts",
+    "exitCode": 0,
+    "seconds": 38.147,
+    "benchmarkProcesses": 1
+  },
+  {
+    "name": "audit-after",
+    "command": "node --import tsx scripts/audit-baseline.ts",
+    "exitCode": 0,
+    "seconds": 1.153,
+    "benchmarkProcesses": 1
+  },
+  {
+    "name": "audit-storage",
+    "command": "node --import tsx scripts/audit-storage.ts",
+    "exitCode": 0,
+    "seconds": 8.542,
+    "benchmarkProcesses": 1
+  },
+  {
+    "name": "actions",
+    "command": "npm run bench:actions",
+    "exitCode": 0,
+    "seconds": 472.737,
+    "benchmarkProcesses": 3
+  },
+  {
+    "name": "entrega5",
+    "command": "npm run bench:entrega5",
+    "exitCode": 0,
+    "seconds": 574.48,
+    "benchmarkProcesses": 3
+  },
+  {
+    "name": "traffic",
+    "command": "npm run bench:traffic",
+    "exitCode": 0,
+    "seconds": 738.831,
+    "benchmarkProcesses": 3
+  },
+  {
+    "name": "connections",
+    "command": "npm run bench:connections",
+    "exitCode": 0,
+    "seconds": 9.174,
+    "benchmarkProcesses": 1
+  },
+  {
+    "name": "chat",
+    "command": "npm run bench:chat",
+    "exitCode": 0,
+    "seconds": 13.616,
+    "benchmarkProcesses": 1
+  }
+]

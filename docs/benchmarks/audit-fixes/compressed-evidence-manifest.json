@@ -1,0 +1,29 @@
+{
+  "format": "lossless-benchmark-evidence-1",
+  "files": [
+    {
+      "file": "new-actions-benchmark-4a.json.gz",
+      "uncompressedName": "new-actions-benchmark-4a.json",
+      "uncompressedBytes": 13207351,
+      "compressedBytes": 215511,
+      "sha256Uncompressed": "7d95232b6a81c911a8720a965168103a82b841477fee519fe2661ebbf769b7a1",
+      "sha256Compressed": "d5be073af8693afc770f14b9691e6f001595718bfb9954a346a7fcfaa92cd65b"
+    },
+    {
+      "file": "new-entrega5-benchmark.json.gz",
+      "uncompressedName": "new-entrega5-benchmark.json",
+      "uncompressedBytes": 3786679,
+      "compressedBytes": 197849,
+      "sha256Uncompressed": "a6f677a9f86d0b6b9ee5ba03d5eaa41b9300becc686e3d19212c366ed5717e77",
+      "sha256Compressed": "71173e439a7cbf4eea16e11d66630187c9f08bc993b0ed835eaf671727c4062d"
+    },
+    {
+      "file": "new-market-benchmark-market-3.0.json.gz",
+      "uncompressedName": "new-market-benchmark-market-3.0.json",
+      "uncompressedBytes": 2719028,
+      "compressedBytes": 146862,
+      "sha256Uncompressed": "e6d9617d6dba9a03f8901f6adeae015e49d99b173ebbd2e07f1804b2297a1807",
+      "sha256Compressed": "730af88891a493ac42b41af66813a9a2786c715d17053bab95d09c28a2e4c88a"
+    }
+  ]
+}

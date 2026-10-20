@@ -1,0 +1,14 @@
+Transcripción del resultado de herramienta leído antes de repetir el ensayo.
+El log original fue sobrescrito por la ejecución final; se conserva aquí esa salida observada.
+Las rutas locales se sustituyeron por <workspace>. runs-before-receipt-preparation.json conserva exitCode=1 y seconds=21.254.
+
+file://<workspace>/node_modules/socket.io-client/build/esm-debug/socket.js:300
+            ack.call(this, new Error("operation has timed out"));
+                           ^
+
+Error: operation has timed out
+    at Timeout._onTimeout (file://<workspace>/node_modules/socket.io-client/build/esm-debug/socket.js:300:28)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+
+Node.js v25.9.0

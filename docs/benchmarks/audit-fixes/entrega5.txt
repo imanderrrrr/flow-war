@@ -1,0 +1,26 @@
+
+> flow-war@0.1.0 bench:entrega5
+> tsx scripts/entrega5-benchmark.ts
+
+{"name":"A-crisis","duration":1200,"finalTick":1200,"tick":{"p50":0.973,"p95":3.463,"p99":4.164},"persist":{"p50":41.739,"p95":81.354,"p99":99.897},"dbMiB":280.6,"seekMax":740.771}
+{"name":"B-recovery","duration":1200,"finalTick":1200,"tick":{"p50":1.168,"p95":3.313,"p99":4.43},"persist":{"p50":36.938,"p95":69.942,"p99":88.606},"dbMiB":425.7,"seekMax":1046.017}
+{"name":"C-complaints","duration":1200,"finalTick":1200,"tick":{"p50":1.255,"p95":3.593,"p99":4.785},"persist":{"p50":35.748,"p95":68.221,"p99":102.951},"dbMiB":426.5,"seekMax":1056.678}
+{"name":"D-hidden-traffic","duration":1200,"finalTick":1200,"tick":{"p50":1.249,"p95":3.496,"p99":4.524},"persist":{"p50":36.537,"p95":66.999,"p99":82.26},"dbMiB":426.5,"seekMax":1059.566}
+{"name":"E-maint60","duration":1200,"finalTick":1200,"tick":{"p50":1.321,"p95":3.462,"p99":4.778},"persist":{"p50":35.711,"p95":59.246,"p99":71.159},"dbMiB":424.8,"seekMax":1055.906}
+{"name":"F-maint120","duration":1200,"finalTick":1200,"tick":{"p50":1.247,"p95":3.433,"p99":4.588},"persist":{"p50":34.787,"p95":67.966,"p99":83.904},"dbMiB":424.2,"seekMax":1066.427}
+{"name":"G-orders","duration":1200,"finalTick":1200,"tick":{"p50":1.205,"p95":3.328,"p99":4.518},"persist":{"p50":34.18,"p95":63.105,"p99":85.119},"dbMiB":425.1,"seekMax":1042.403}
+{"name":"H-domino","duration":1200,"finalTick":1200,"tick":{"p50":1.289,"p95":3.405,"p99":4.733},"persist":{"p50":35.729,"p95":65.458,"p99":81.971},"dbMiB":427.1,"seekMax":1155.193}
+{"name":"J-replay","duration":1200,"finalTick":1200,"tick":{"p50":1.157,"p95":3.256,"p99":4.46},"persist":{"p50":33.471,"p95":64.422,"p99":73.142},"dbMiB":425.7,"seekMax":1009.521}
+{"name":"K-defect-maint","duration":1200,"finalTick":1200,"tick":{"p50":1.213,"p95":3.509,"p99":4.426},"persist":{"p50":35.698,"p95":66.039,"p99":78.01},"dbMiB":410.5,"seekMax":1092.162}
+{"name":"L-equivalent","duration":1200,"finalTick":1200,"tick":{"p50":1.159,"p95":3.264,"p99":4.399},"persist":{"p50":34.413,"p95":60.718,"p99":73.478},"dbMiB":425.7,"seekMax":1015.168}
+{"name":"A-crisis","duration":1500,"finalTick":1500,"tick":{"p50":0.903,"p95":3.484,"p99":4.261},"persist":{"p50":43.802,"p95":81.494,"p99":109.275},"dbMiB":340.7,"seekMax":652.44}
+{"name":"B-recovery","duration":1500,"finalTick":1500,"tick":{"p50":1.148,"p95":3.162,"p99":4.646},"persist":{"p50":33.716,"p95":66.971,"p99":77.593},"dbMiB":530,"seekMax":1037.223}
+{"name":"C-complaints","duration":1500,"finalTick":1500,"tick":{"p50":1.193,"p95":3.322,"p99":4.524},"persist":{"p50":36.405,"p95":70.223,"p99":85.12},"dbMiB":531.8,"seekMax":1067.118}
+{"name":"D-hidden-traffic","duration":1500,"finalTick":1500,"tick":{"p50":1.18,"p95":3.27,"p99":4.528},"persist":{"p50":32.823,"p95":63.997,"p99":75.55},"dbMiB":531.8,"seekMax":1011.621}
+{"name":"E-maint60","duration":1500,"finalTick":1500,"tick":{"p50":1.174,"p95":3.229,"p99":4.364},"persist":{"p50":33.847,"p95":61.495,"p99":71.643},"dbMiB":529.5,"seekMax":1000.556}
+{"name":"F-maint120","duration":1500,"finalTick":1500,"tick":{"p50":1.149,"p95":3.27,"p99":4.434},"persist":{"p50":34.199,"p95":60.05,"p99":79.189},"dbMiB":528.9,"seekMax":986.414}
+{"name":"G-orders","duration":1500,"finalTick":1500,"tick":{"p50":1.136,"p95":3.092,"p99":4.309},"persist":{"p50":32.734,"p95":57.608,"p99":78.401},"dbMiB":529.8,"seekMax":996.125}
+{"name":"H-domino","duration":1500,"finalTick":1500,"tick":{"p50":1.128,"p95":3.106,"p99":4.401},"persist":{"p50":33.017,"p95":57.918,"p99":70.889},"dbMiB":532.5,"seekMax":1051.436}
+{"name":"J-replay","duration":1500,"finalTick":1500,"tick":{"p50":1.068,"p95":2.969,"p99":4.011},"persist":{"p50":29.862,"p95":52.775,"p99":64.544},"dbMiB":530,"seekMax":926.025}
+{"name":"K-defect-maint","duration":1500,"finalTick":1500,"tick":{"p50":1.052,"p95":2.952,"p99":3.915},"persist":{"p50":31.753,"p95":55.432,"p99":67.857},"dbMiB":510.1,"seekMax":955.001}
+{"name":"L-equivalent","duration":1500,"finalTick":1500,"tick":{"p50":1.101,"p95":2.941,"p99":4.096},"persist":{"p50":29.759,"p95":58.514,"p99":67.542},"dbMiB":530,"seekMax":956.944}

@@ -1,0 +1,11 @@
+{
+  "reference": "c86d32058f0fd1741e27e6397f6124a1f1a4b62b",
+  "request": "g0-C0-O1",
+  "exposed": {
+    "trafficClass": "malicious",
+    "attackKind": "injection",
+    "securityAllowed": true,
+    "breach": false
+  },
+  "fixture": "createGame(); admitTraffic(company0, 0, 'purchase', 'malicious', 'injection'); trafficReceipt(request)"
+}

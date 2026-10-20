@@ -1,0 +1,36 @@
+{
+  "fixture": {
+    "generations": [
+      {
+        "generation": 0,
+        "status": "FINISHED",
+        "tick": 2
+      },
+      {
+        "generation": 1,
+        "status": "ABORTED",
+        "previousStatus": "PAUSED",
+        "tick": 1.3
+      },
+      {
+        "generation": 2,
+        "status": "LOBBY",
+        "tick": 0
+      }
+    ]
+  },
+  "checks": [
+    "Teacher can open prior DVR from a new LOBBY",
+    "Interrupted and finished labels are distinct",
+    "Student company selector contains NOVA only",
+    "Rapid seeks 0.1 -> 1.1 -> 0.6 display the latest requested frame",
+    "Own request g1-C0-O1 shows visible operational evidence without restricted fields",
+    "Internal defect attribution is reserved for the teacher"
+  ],
+  "screenshots": [
+    "docs/images/entrega-5-audit-dvr-teacher.jpg",
+    "docs/images/entrega-5-audit-dvr-student.jpg"
+  ],
+  "testDataOnly": true,
+  "temporaryTabAndServerClosed": true
+}

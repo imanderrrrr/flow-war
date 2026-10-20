@@ -1,0 +1,46 @@
+{
+  "connections": 27,
+  "snapshots": 1674,
+  "maxSnapshotBytes": 129644,
+  "wallSeconds": 8.340166916,
+  "ackP95ms": 207.7164160000002,
+  "ackMaxMs": 227.65625,
+  "finalTick": 916,
+  "companies": [
+    {
+      "id": 0,
+      "generated": 4971,
+      "pending": 50,
+      "queue": 39,
+      "legitimateAbandoned": 2
+    },
+    {
+      "id": 1,
+      "generated": 4971,
+      "pending": 50,
+      "queue": 39,
+      "legitimateAbandoned": 2
+    },
+    {
+      "id": 2,
+      "generated": 4971,
+      "pending": 50,
+      "queue": 39,
+      "legitimateAbandoned": 2
+    },
+    {
+      "id": 3,
+      "generated": 4971,
+      "pending": 50,
+      "queue": 39,
+      "legitimateAbandoned": 2
+    },
+    {
+      "id": 4,
+      "generated": 4971,
+      "pending": 50,
+      "queue": 39,
+      "legitimateAbandoned": 2
+    }
+  ]
+}
