@@ -1,0 +1,1424 @@
+{
+  "measurement": "sequential, identical action ticks and economic state; TCP loopback payload, no physical Wi-Fi claim",
+  "testCount": 264,
+  "exactLegacyReplays": 176,
+  "regressionExitCodes": [
+    {
+      "command": "npm test",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run bench:traffic",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run bench:actions",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run bench:connections",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run bench:chat",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run bench:entrega5",
+      "exitCode": 0
+    }
+  ],
+  "allMatrixRunsPassed": true,
+  "rows": [
+    {
+      "label": "final-A-1200-20x",
+      "mode": "on",
+      "sha": "b52ccc67c8aeaf3d76cf52a4db60d10e120f5942",
+      "sourceDigest": "cc6f6691e3e6510d3fa7d86b800764beac67175816b9d4fb2f71a7061290ab1c",
+      "harnessDigest": "ce4893253f5f7e48e05586a55abc8272729ce90856c241c9f9e255f7ca6c6790",
+      "probeDigest": "ca8344983c7a902b613254132cc04207ff70b517b93312447bb8a669ec449480",
+      "hardware": {
+        "node": "v25.9.0",
+        "os": "27.0.0",
+        "cpu": "Apple M5",
+        "cores": 10,
+        "ram": 17179869184
+      },
+      "duration": 1200,
+      "speed": 20,
+      "serverWallSeconds": 69.061928833,
+      "runningWallSeconds": 65.99504604200001,
+      "pausedWallSeconds": 1.1583169159999998,
+      "completeProjectionLogicalBytes": 1139798046,
+      "logicalBytes": 1147889985,
+      "clientLogicalBytes": 1139798046,
+      "socketIoBytes": 1148057645,
+      "websocketPayloadBytes": 1148072746,
+      "websocketFramingBytes": 82526,
+      "tcpBytes": 1148162367,
+      "clientTcpBytes": 1148162367,
+      "bytesPerSecond": 16625112.94430241,
+      "mbps": 133.00090355441927,
+      "peakOneSecondMbps": 180.256384,
+      "bytesPerIdentity": 42524532.11111111,
+      "emittedUpdates": 8818,
+      "appliedUpdates": 8763,
+      "full": 8818,
+      "delta": 0,
+      "refreshBasesAfterFirstJoin": null,
+      "protocolResyncRequests": 0,
+      "coalesced": 0,
+      "sizes": {
+        "n": 8763,
+        "p50": 144432,
+        "p95": 170320,
+        "p99": 176496,
+        "max": 180417
+      },
+      "applyMs": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+      },
+      "cadenceMs": {
+        "n": 8736,
+        "p50": 201.74516700000095,
+        "p95": 259.27520899999945,
+        "p99": 441.1035000000011,
+        "max": 2751.5988749999997
+      },
+      "cpuSeconds": 38.994094,
+      "cpuOneCorePercent": 56.46250352244343,
+      "rssMiB": 654.65625,
+      "heapMiB": 166.64747619628906,
+      "eventLoopP99Ms": 127.008767,
+      "ackP95Ms": 1682.9875839999986,
+      "nonChatAckP95Ms": 1070.661709,
+      "chatAckP95Ms": 1818.0991250000006,
+      "actualSocketIoSerializationMs": 3841.545413000133,
+      "broadcastTotalMs": 7760.224423000012,
+      "broadcastP95SegmentMaxMs": 31.9365420000031,
+      "sqliteBytes": 447610880,
+      "walBeforeShutdown": 20439352,
+      "walAfterShutdown": 0,
+      "sqliteRowsModified": 457862,
+      "sqliteCommits": 340,
+      "tables": {
+        "game": {
+          "rows": 1
+        },
+        "history_games": {
+          "rows": 1
+        },
+        "history_events": {
+          "rows": 228931
+        },
+        "history_inputs": {
+          "rows": 273
+        },
+        "history_checkpoints": {
+          "rows": 23
+        },
+        "history_points": {
+          "rows": 241
+        },
+        "request_receipts": {
+          "rows": 227130
+        },
+        "receipt_paths": {
+          "rows": 2
+        },
+        "commands": {
+          "rows": 273
+        },
+        "slack_messages": {
+          "rows": 285
+        }
+      },
+      "logicalByTable": {
+        "game": {
+          "payloadBytes": 4735641
+        },
+        "history_events": {
+          "payloadBytes": 98717429
+        },
+        "history_inputs": {
+          "payloadBytes": 72378
+        },
+        "history_points": {
+          "payloadBytes": 211786
+        },
+        "slack_messages": {
+          "payloadBytes": 75595
+        },
+        "history_checkpoints": {
+          "payloadBytes": 3580182
+        },
+        "request_receipts": {
+          "payloadBytes": 153611680
+        },
+        "receipt_paths": {
+          "payloadBytes": 396
+        },
+        "commands": {
+          "payloadBytes": 5488
+        }
+      },
+      "qaEvidenceLogicalBytes": 41060,
+      "liveStateLogicalBytes": 4735641,
+      "workersCreated": 0,
+      "flowSlack": {
+        "originals": 125,
+        "deliveries": 625,
+        "loss": 0,
+        "leaks": 0
+      },
+      "economicDigest": "102d85f98f2b9f210680e0fe923d3775a155a55312185f1d38ecb7faf69f4c3d",
+      "actionDigest": "5034141a19b7aeeca52496147227d3623e6aa45d95647a1c50245d0f68d28ed4",
+      "exitCode": 0,
+      "trafficReductionPercent": 0,
+      "logicalReductionPercent": 0,
+      "storageReductionPercent": 0,
+      "cpuReductionPercent": 0,
+      "ramReductionPercent": 0
+    },
+    {
+      "label": "final-B-1200-20x",
+      "mode": "on",
+      "sha": "35e870719cb63710d568d414e0ebf306d9882ecd",
+      "sourceDigest": "35ba3e543d3afa3efd1e4afcc7cd45fbff5a7161369a50a980f0bc2c01bbc72e",
+      "harnessDigest": "ce4893253f5f7e48e05586a55abc8272729ce90856c241c9f9e255f7ca6c6790",
+      "probeDigest": "ca8344983c7a902b613254132cc04207ff70b517b93312447bb8a669ec449480",
+      "hardware": {
+        "node": "v25.9.0",
+        "os": "27.0.0",
+        "cpu": "Apple M5",
+        "cores": 10,
+        "ram": 17179869184
+      },
+      "duration": 1200,
+      "speed": 20,
+      "serverWallSeconds": 79.072473708,
+      "runningWallSeconds": 67.074989792,
+      "pausedWallSeconds": 6.130959583,
+      "completeProjectionLogicalBytes": 1084955037,
+      "logicalBytes": 336819558,
+      "clientLogicalBytes": 336729161,
+      "socketIoBytes": 337043607,
+      "websocketPayloadBytes": 45192131,
+      "websocketFramingBytes": 34270,
+      "tcpBytes": 45239106,
+      "clientTcpBytes": 45239106,
+      "bytesPerSecond": 572122.0530808185,
+      "mbps": 4.576976424646548,
+      "peakOneSecondMbps": 7.530432,
+      "bytesPerIdentity": 1675522.4444444445,
+      "emittedUpdates": 8271,
+      "appliedUpdates": 8243,
+      "full": 55,
+      "delta": 8216,
+      "refreshBasesAfterFirstJoin": 28,
+      "protocolResyncRequests": 0,
+      "coalesced": 292,
+      "sizes": {
+        "n": 8243,
+        "p50": 43579,
+        "p95": 55105,
+        "p99": 57409,
+        "max": 124429
+      },
+      "applyMs": {
+        "n": 8243,
+        "p50": 0.12104199999885168,
+        "p95": 0.17349999999714782,
+        "p99": 0.2913330000010319,
+        "max": 0.5879579999964335
+      },
+      "cadenceMs": {
+        "n": 8216,
+        "p50": 202.6002079999962,
+        "p95": 316.8194999999978,
+        "p99": 1924.6261249999989,
+        "max": 5944.468083
+      },
+      "cpuSeconds": 49.462329999999994,
+      "cpuOneCorePercent": 62.553158742263726,
+      "rssMiB": 695.78125,
+      "heapMiB": 183.0949478149414,
+      "eventLoopP99Ms": 144.834559,
+      "ackP95Ms": 1624.672125000001,
+      "nonChatAckP95Ms": 1115.687,
+      "chatAckP95Ms": 1779.7373319999988,
+      "actualSocketIoSerializationMs": 2541.9932239999607,
+      "broadcastTotalMs": 15742.230334000034,
+      "broadcastP95SegmentMaxMs": 60.30262500000026,
+      "sqliteBytes": 447537152,
+      "walBeforeShutdown": 20394032,
+      "walAfterShutdown": 0,
+      "sqliteRowsModified": 457885,
+      "sqliteCommits": 350,
+      "tables": {
+        "game": {
+          "rows": 1
+        },
+        "history_games": {
+          "rows": 1
+        },
+        "history_events": {
+          "rows": 228932
+        },
+        "history_inputs": {
+          "rows": 274
+        },
+        "history_checkpoints": {
+          "rows": 23
+        },
+        "history_points": {
+          "rows": 241
+        },
+        "request_receipts": {
+          "rows": 227130
+        },
+        "receipt_paths": {
+          "rows": 2
+        },
+        "commands": {
+          "rows": 274
+        },
+        "slack_messages": {
+          "rows": 285
+        }
+      },
+      "logicalByTable": {
+        "game": {
+          "payloadBytes": 4736049
+        },
+        "history_events": {
+          "payloadBytes": 98717586
+        },
+        "history_inputs": {
+          "payloadBytes": 72585
+        },
+        "history_points": {
+          "payloadBytes": 211786
+        },
+        "slack_messages": {
+          "payloadBytes": 75595
+        },
+        "history_checkpoints": {
+          "payloadBytes": 3584919
+        },
+        "request_receipts": {
+          "payloadBytes": 153611680
+        },
+        "receipt_paths": {
+          "payloadBytes": 396
+        },
+        "commands": {
+          "payloadBytes": 5499
+        }
+      },
+      "qaEvidenceLogicalBytes": 41060,
+      "liveStateLogicalBytes": 4736049,
+      "workersCreated": 0,
+      "flowSlack": {
+        "originals": 125,
+        "deliveries": 625,
+        "loss": 0,
+        "leaks": 0
+      },
+      "economicDigest": "102d85f98f2b9f210680e0fe923d3775a155a55312185f1d38ecb7faf69f4c3d",
+      "actionDigest": "5034141a19b7aeeca52496147227d3623e6aa45d95647a1c50245d0f68d28ed4",
+      "exitCode": 0,
+      "trafficReductionPercent": 96.05986859522282,
+      "logicalReductionPercent": 70.65750530091087,
+      "storageReductionPercent": 0.01647144948755397,
+      "cpuReductionPercent": -26.845696171322754,
+      "ramReductionPercent": -6.281922764809766
+    },
+    {
+      "label": "final-C-1200-20x",
+      "mode": "off",
+      "sha": "35e870719cb63710d568d414e0ebf306d9882ecd",
+      "sourceDigest": "35ba3e543d3afa3efd1e4afcc7cd45fbff5a7161369a50a980f0bc2c01bbc72e",
+      "harnessDigest": "ce4893253f5f7e48e05586a55abc8272729ce90856c241c9f9e255f7ca6c6790",
+      "probeDigest": "ca8344983c7a902b613254132cc04207ff70b517b93312447bb8a669ec449480",
+      "hardware": {
+        "node": "v25.9.0",
+        "os": "27.0.0",
+        "cpu": "Apple M5",
+        "cores": 10,
+        "ram": 17179869184
+      },
+      "duration": 1200,
+      "speed": 20,
+      "serverWallSeconds": 76.175599999,
+      "runningWallSeconds": 64.451575999,
+      "pausedWallSeconds": 6.083403917000004,
+      "completeProjectionLogicalBytes": 1085128628,
+      "logicalBytes": 336867495,
+      "clientLogicalBytes": 336777098,
+      "socketIoBytes": 337091724,
+      "websocketPayloadBytes": 45201897,
+      "websocketFramingBytes": 34326,
+      "tcpBytes": 45248928,
+      "clientTcpBytes": 45248928,
+      "bytesPerSecond": 594008.1601010561,
+      "mbps": 4.7520652808084485,
+      "peakOneSecondMbps": 7.527152,
+      "bytesPerIdentity": 1675886.2222222222,
+      "emittedUpdates": 8276,
+      "appliedUpdates": 8248,
+      "full": 55,
+      "delta": 8221,
+      "refreshBasesAfterFirstJoin": 28,
+      "protocolResyncRequests": 0,
+      "coalesced": 287,
+      "sizes": {
+        "n": 8248,
+        "p50": 43546,
+        "p95": 55105,
+        "p99": 57409,
+        "max": 124430
+      },
+      "applyMs": {
+        "n": 8248,
+        "p50": 0.11954200000036508,
+        "p95": 0.16683300000295276,
+        "p99": 0.27129100000456674,
+        "max": 0.6619580000042333
+      },
+      "cadenceMs": {
+        "n": 8221,
+        "p50": 201.95337499999732,
+        "p95": 250.20620800000324,
+        "p99": 1878.3356249999997,
+        "max": 5873.712499999998
+      },
+      "cpuSeconds": 37.570724,
+      "cpuOneCorePercent": 49.321205215965755,
+      "rssMiB": 434.53125,
+      "heapMiB": 164.03076934814453,
+      "eventLoopP99Ms": 101.515263,
+      "ackP95Ms": 1490.2038760000014,
+      "nonChatAckP95Ms": 1048.166916000002,
+      "chatAckP95Ms": 1634.8595829999977,
+      "actualSocketIoSerializationMs": 2554.034607999845,
+      "broadcastTotalMs": 15796.753666999964,
+      "broadcastP95SegmentMaxMs": 57.310457999999926,
+      "sqliteBytes": 9646080,
+      "walBeforeShutdown": 8281232,
+      "walAfterShutdown": 0,
+      "sqliteRowsModified": 1284,
+      "sqliteCommits": 350,
+      "tables": {
+        "game": {
+          "rows": 1
+        },
+        "history_games": {
+          "rows": 1
+        },
+        "history_events": {
+          "rows": 0
+        },
+        "history_inputs": {
+          "rows": 0
+        },
+        "history_checkpoints": {
+          "rows": 0
+        },
+        "history_points": {
+          "rows": 0
+        },
+        "request_receipts": {
+          "rows": 0
+        },
+        "receipt_paths": {
+          "rows": 0
+        },
+        "commands": {
+          "rows": 274
+        },
+        "slack_messages": {
+          "rows": 285
+        }
+      },
+      "logicalByTable": {
+        "game": {
+          "payloadBytes": 4736045
+        },
+        "history_events": {
+          "payloadBytes": 0
+        },
+        "history_inputs": {
+          "payloadBytes": 0
+        },
+        "history_points": {
+          "payloadBytes": 0
+        },
+        "slack_messages": {
+          "payloadBytes": 75595
+        },
+        "history_checkpoints": {
+          "payloadBytes": 0
+        },
+        "request_receipts": {
+          "payloadBytes": 0
+        },
+        "receipt_paths": {
+          "payloadBytes": 0
+        },
+        "commands": {
+          "payloadBytes": 5499
+        }
+      },
+      "qaEvidenceLogicalBytes": 41060,
+      "liveStateLogicalBytes": 4736045,
+      "workersCreated": 0,
+      "flowSlack": {
+        "originals": 125,
+        "deliveries": 625,
+        "loss": 0,
+        "leaks": 0
+      },
+      "economicDigest": "102d85f98f2b9f210680e0fe923d3775a155a55312185f1d38ecb7faf69f4c3d",
+      "actionDigest": "5034141a19b7aeeca52496147227d3623e6aa45d95647a1c50245d0f68d28ed4",
+      "exitCode": 0,
+      "trafficReductionPercent": 96.05901314130078,
+      "logicalReductionPercent": 70.65332920384351,
+      "storageReductionPercent": 97.84498535871157,
+      "cpuReductionPercent": 3.650219440923541,
+      "ramReductionPercent": 33.624516683373905
+    },
+    {
+      "label": "final-A-1500-20x",
+      "mode": "on",
+      "sha": "b52ccc67c8aeaf3d76cf52a4db60d10e120f5942",
+      "sourceDigest": "cc6f6691e3e6510d3fa7d86b800764beac67175816b9d4fb2f71a7061290ab1c",
+      "harnessDigest": "ce4893253f5f7e48e05586a55abc8272729ce90856c241c9f9e255f7ca6c6790",
+      "probeDigest": "ca8344983c7a902b613254132cc04207ff70b517b93312447bb8a669ec449480",
+      "hardware": {
+        "node": "v25.9.0",
+        "os": "27.0.0",
+        "cpu": "Apple M5",
+        "cores": 10,
+        "ram": 17179869184
+      },
+      "duration": 1500,
+      "speed": 20,
+      "serverWallSeconds": 83.59414462599999,
+      "runningWallSeconds": 80.49134616699999,
+      "pausedWallSeconds": 1.1822452909999992,
+      "completeProjectionLogicalBytes": 1419633625,
+      "logicalBytes": 1427475217,
+      "clientLogicalBytes": 1419633625,
+      "socketIoBytes": 1427671143,
+      "websocketPayloadBytes": 1427688264,
+      "websocketFramingBytes": 102224,
+      "tcpBytes": 1427797583,
+      "clientTcpBytes": 1427797583,
+      "bytesPerSecond": 17080114.75430442,
+      "mbps": 136.64091803443537,
+      "peakOneSecondMbps": 169.58584,
+      "bytesPerIdentity": 52881391.96296296,
+      "emittedUpdates": 10838,
+      "appliedUpdates": 10783,
+      "full": 10838,
+      "delta": 0,
+      "refreshBasesAfterFirstJoin": null,
+      "protocolResyncRequests": 0,
+      "coalesced": 0,
+      "sizes": {
+        "n": 10783,
+        "p50": 145213,
+        "p95": 171247,
+        "p99": 176796,
+        "max": 180496
+      },
+      "applyMs": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+      },
+      "cadenceMs": {
+        "n": 10756,
+        "p50": 201.7736670000013,
+        "p95": 249.38937499999884,
+        "p99": 348.70600000000013,
+        "max": 2403.1719169999997
+      },
+      "cpuSeconds": 45.936189999999996,
+      "cpuOneCorePercent": 54.951444512673,
+      "rssMiB": 671.859375,
+      "heapMiB": 176.51074981689453,
+      "eventLoopP99Ms": 121.765887,
+      "ackP95Ms": 1450.417126000002,
+      "nonChatAckP95Ms": 982.7845419999994,
+      "chatAckP95Ms": 1566.6027919999997,
+      "actualSocketIoSerializationMs": 4784.864925999627,
+      "broadcastTotalMs": 9465.057322999974,
+      "broadcastP95SegmentMaxMs": 31.274459000000206,
+      "sqliteBytes": 557096960,
+      "walBeforeShutdown": 20443472,
+      "walAfterShutdown": 0,
+      "sqliteRowsModified": 571807,
+      "sqliteCommits": 355,
+      "tables": {
+        "game": {
+          "rows": 1
+        },
+        "history_games": {
+          "rows": 1
+        },
+        "history_events": {
+          "rows": 285981
+        },
+        "history_inputs": {
+          "rows": 273
+        },
+        "history_checkpoints": {
+          "rows": 28
+        },
+        "history_points": {
+          "rows": 301
+        },
+        "request_receipts": {
+          "rows": 283910
+        },
+        "receipt_paths": {
+          "rows": 2
+        },
+        "commands": {
+          "rows": 273
+        },
+        "slack_messages": {
+          "rows": 305
+        }
+      },
+      "logicalByTable": {
+        "game": {
+          "payloadBytes": 4747000
+        },
+        "history_events": {
+          "payloadBytes": 123557354
+        },
+        "history_inputs": {
+          "payloadBytes": 72373
+        },
+        "history_points": {
+          "payloadBytes": 264686
+        },
+        "slack_messages": {
+          "payloadBytes": 81210
+        },
+        "history_checkpoints": {
+          "payloadBytes": 4416577
+        },
+        "request_receipts": {
+          "payloadBytes": 192702505
+        },
+        "receipt_paths": {
+          "payloadBytes": 396
+        },
+        "commands": {
+          "payloadBytes": 5488
+        }
+      },
+      "qaEvidenceLogicalBytes": 41060,
+      "liveStateLogicalBytes": 4747000,
+      "workersCreated": 0,
+      "flowSlack": {
+        "originals": 125,
+        "deliveries": 625,
+        "loss": 0,
+        "leaks": 0
+      },
+      "economicDigest": "ad1ffd09888c532b5056362dbfa68e4e62fbeeb9755cf25e75f76641ae9aa416",
+      "actionDigest": "5034141a19b7aeeca52496147227d3623e6aa45d95647a1c50245d0f68d28ed4",
+      "exitCode": 0,
+      "trafficReductionPercent": 0,
+      "logicalReductionPercent": 0,
+      "storageReductionPercent": 0,
+      "cpuReductionPercent": 0,
+      "ramReductionPercent": 0
+    },
+    {
+      "label": "final-B-1500-20x",
+      "mode": "on",
+      "sha": "35e870719cb63710d568d414e0ebf306d9882ecd",
+      "sourceDigest": "35ba3e543d3afa3efd1e4afcc7cd45fbff5a7161369a50a980f0bc2c01bbc72e",
+      "harnessDigest": "ce4893253f5f7e48e05586a55abc8272729ce90856c241c9f9e255f7ca6c6790",
+      "probeDigest": "ca8344983c7a902b613254132cc04207ff70b517b93312447bb8a669ec449480",
+      "hardware": {
+        "node": "v25.9.0",
+        "os": "27.0.0",
+        "cpu": "Apple M5",
+        "cores": 10,
+        "ram": 17179869184
+      },
+      "duration": 1500,
+      "speed": 20,
+      "serverWallSeconds": 94.43831349999999,
+      "runningWallSeconds": 82.42158370899999,
+      "pausedWallSeconds": 5.975282833000005,
+      "completeProjectionLogicalBytes": 1358695937,
+      "logicalBytes": 417083857,
+      "clientLogicalBytes": 417032834,
+      "socketIoBytes": 417352437,
+      "websocketPayloadBytes": 55791865,
+      "websocketFramingBytes": 42378,
+      "tcpBytes": 55846948,
+      "clientTcpBytes": 55846948,
+      "bytesPerSecond": 591359.0144745649,
+      "mbps": 4.73087211579652,
+      "peakOneSecondMbps": 7.602728,
+      "bytesPerIdentity": 2068405.4814814816,
+      "emittedUpdates": 10295,
+      "appliedUpdates": 10267,
+      "full": 55,
+      "delta": 10240,
+      "refreshBasesAfterFirstJoin": 28,
+      "protocolResyncRequests": 0,
+      "coalesced": 373,
+      "sizes": {
+        "n": 10267,
+        "p50": 43794,
+        "p95": 55017,
+        "p99": 57905,
+        "max": 120209
+      },
+      "applyMs": {
+        "n": 10267,
+        "p50": 0.11616700000013225,
+        "p95": 0.18045799999526935,
+        "p99": 0.3151670000006561,
+        "max": 1.9080420000100276
+      },
+      "cadenceMs": {
+        "n": 10240,
+        "p50": 203.2501250000023,
+        "p95": 314.99758400000064,
+        "p99": 1172.0482499999998,
+        "max": 5889.577915999998
+      },
+      "cpuSeconds": 59.543588,
+      "cpuOneCorePercent": 63.050244962284296,
+      "rssMiB": 660.09375,
+      "heapMiB": 181.5317153930664,
+      "eventLoopP99Ms": 144.048127,
+      "ackP95Ms": 1378.339124,
+      "nonChatAckP95Ms": 965.7096669999992,
+      "chatAckP95Ms": 1511.9438750000008,
+      "actualSocketIoSerializationMs": 3217.1867499996315,
+      "broadcastTotalMs": 19392.357867,
+      "broadcastP95SegmentMaxMs": 60.60725000000093,
+      "sqliteBytes": 557084672,
+      "walBeforeShutdown": 20361072,
+      "walAfterShutdown": 0,
+      "sqliteRowsModified": 571830,
+      "sqliteCommits": 365,
+      "tables": {
+        "game": {
+          "rows": 1
+        },
+        "history_games": {
+          "rows": 1
+        },
+        "history_events": {
+          "rows": 285982
+        },
+        "history_inputs": {
+          "rows": 274
+        },
+        "history_checkpoints": {
+          "rows": 28
+        },
+        "history_points": {
+          "rows": 301
+        },
+        "request_receipts": {
+          "rows": 283910
+        },
+        "receipt_paths": {
+          "rows": 2
+        },
+        "commands": {
+          "rows": 274
+        },
+        "slack_messages": {
+          "rows": 305
+        }
+      },
+      "logicalByTable": {
+        "game": {
+          "payloadBytes": 4747408
+        },
+        "history_events": {
+          "payloadBytes": 123557511
+        },
+        "history_inputs": {
+          "payloadBytes": 72580
+        },
+        "history_points": {
+          "payloadBytes": 264686
+        },
+        "slack_messages": {
+          "payloadBytes": 81210
+        },
+        "history_checkpoints": {
+          "payloadBytes": 4418755
+        },
+        "request_receipts": {
+          "payloadBytes": 192702505
+        },
+        "receipt_paths": {
+          "payloadBytes": 396
+        },
+        "commands": {
+          "payloadBytes": 5499
+        }
+      },
+      "qaEvidenceLogicalBytes": 41060,
+      "liveStateLogicalBytes": 4747408,
+      "workersCreated": 0,
+      "flowSlack": {
+        "originals": 125,
+        "deliveries": 625,
+        "loss": 0,
+        "leaks": 0
+      },
+      "economicDigest": "ad1ffd09888c532b5056362dbfa68e4e62fbeeb9755cf25e75f76641ae9aa416",
+      "actionDigest": "5034141a19b7aeeca52496147227d3623e6aa45d95647a1c50245d0f68d28ed4",
+      "exitCode": 0,
+      "trafficReductionPercent": 96.08859486351994,
+      "logicalReductionPercent": 70.7817094102307,
+      "storageReductionPercent": 0.002205720167636205,
+      "cpuReductionPercent": -29.62239140860399,
+      "ramReductionPercent": 1.7512035163608441
+    },
+    {
+      "label": "final-C-1500-20x",
+      "mode": "off",
+      "sha": "35e870719cb63710d568d414e0ebf306d9882ecd",
+      "sourceDigest": "35ba3e543d3afa3efd1e4afcc7cd45fbff5a7161369a50a980f0bc2c01bbc72e",
+      "harnessDigest": "ce4893253f5f7e48e05586a55abc8272729ce90856c241c9f9e255f7ca6c6790",
+      "probeDigest": "ca8344983c7a902b613254132cc04207ff70b517b93312447bb8a669ec449480",
+      "hardware": {
+        "node": "v25.9.0",
+        "os": "27.0.0",
+        "cpu": "Apple M5",
+        "cores": 10,
+        "ram": 17179869184
+      },
+      "duration": 1500,
+      "speed": 20,
+      "serverWallSeconds": 91.26871537499999,
+      "runningWallSeconds": 79.50738558399999,
+      "pausedWallSeconds": 6.101465958,
+      "completeProjectionLogicalBytes": 1365359755,
+      "logicalBytes": 419662717,
+      "clientLogicalBytes": 419581700,
+      "socketIoBytes": 419931434,
+      "websocketPayloadBytes": 56115206,
+      "websocketFramingBytes": 42444,
+      "tcpBytes": 56170355,
+      "clientTcpBytes": 56170355,
+      "bytesPerSecond": 615439.3076445776,
+      "mbps": 4.92351446115662,
+      "peakOneSecondMbps": 7.604832,
+      "bytesPerIdentity": 2080383.5185185184,
+      "emittedUpdates": 10301,
+      "appliedUpdates": 10273,
+      "full": 55,
+      "delta": 10246,
+      "refreshBasesAfterFirstJoin": 28,
+      "protocolResyncRequests": 0,
+      "coalesced": 287,
+      "sizes": {
+        "n": 10273,
+        "p50": 43771,
+        "p95": 55017,
+        "p99": 57905,
+        "max": 120210
+      },
+      "applyMs": {
+        "n": 10273,
+        "p50": 0.11437499999738066,
+        "p95": 0.1532089999964228,
+        "p99": 0.17741600000590552,
+        "max": 0.6971249999987776
+      },
+      "cadenceMs": {
+        "n": 10246,
+        "p50": 201.98204100000294,
+        "p95": 243.7273750000022,
+        "p99": 1387.1776250000003,
+        "max": 5885.386833999997
+      },
+      "cpuSeconds": 45.489663,
+      "cpuOneCorePercent": 49.84146299539171,
+      "rssMiB": 375.140625,
+      "heapMiB": 165.2977752685547,
+      "eventLoopP99Ms": 103.743487,
+      "ackP95Ms": 1514.5770840000005,
+      "nonChatAckP95Ms": 1073.6674160000002,
+      "chatAckP95Ms": 1654.2944169999992,
+      "actualSocketIoSerializationMs": 3277.438665000476,
+      "broadcastTotalMs": 19523.68934200007,
+      "broadcastP95SegmentMaxMs": 58.048249999999825,
+      "sqliteBytes": 9687040,
+      "walBeforeShutdown": 8293592,
+      "walAfterShutdown": 0,
+      "sqliteRowsModified": 1334,
+      "sqliteCommits": 365,
+      "tables": {
+        "game": {
+          "rows": 1
+        },
+        "history_games": {
+          "rows": 1
+        },
+        "history_events": {
+          "rows": 0
+        },
+        "history_inputs": {
+          "rows": 0
+        },
+        "history_checkpoints": {
+          "rows": 0
+        },
+        "history_points": {
+          "rows": 0
+        },
+        "request_receipts": {
+          "rows": 0
+        },
+        "receipt_paths": {
+          "rows": 0
+        },
+        "commands": {
+          "rows": 274
+        },
+        "slack_messages": {
+          "rows": 305
+        }
+      },
+      "logicalByTable": {
+        "game": {
+          "payloadBytes": 4747404
+        },
+        "history_events": {
+          "payloadBytes": 0
+        },
+        "history_inputs": {
+          "payloadBytes": 0
+        },
+        "history_points": {
+          "payloadBytes": 0
+        },
+        "slack_messages": {
+          "payloadBytes": 81210
+        },
+        "history_checkpoints": {
+          "payloadBytes": 0
+        },
+        "request_receipts": {
+          "payloadBytes": 0
+        },
+        "receipt_paths": {
+          "payloadBytes": 0
+        },
+        "commands": {
+          "payloadBytes": 5499
+        }
+      },
+      "qaEvidenceLogicalBytes": 41060,
+      "liveStateLogicalBytes": 4747404,
+      "workersCreated": 0,
+      "flowSlack": {
+        "originals": 125,
+        "deliveries": 625,
+        "loss": 0,
+        "leaks": 0
+      },
+      "economicDigest": "ad1ffd09888c532b5056362dbfa68e4e62fbeeb9755cf25e75f76641ae9aa416",
+      "actionDigest": "5034141a19b7aeeca52496147227d3623e6aa45d95647a1c50245d0f68d28ed4",
+      "exitCode": 0,
+      "trafficReductionPercent": 96.06594410378688,
+      "logicalReductionPercent": 70.60105058202211,
+      "storageReductionPercent": 98.26115726784795,
+      "cpuReductionPercent": 0.9720592848470822,
+      "ramReductionPercent": 44.163817763203795
+    },
+    {
+      "label": "final-A-1200-1x",
+      "mode": "on",
+      "sha": "b52ccc67c8aeaf3d76cf52a4db60d10e120f5942",
+      "sourceDigest": "cc6f6691e3e6510d3fa7d86b800764beac67175816b9d4fb2f71a7061290ab1c",
+      "harnessDigest": "ce4893253f5f7e48e05586a55abc8272729ce90856c241c9f9e255f7ca6c6790",
+      "probeDigest": "ca8344983c7a902b613254132cc04207ff70b517b93312447bb8a669ec449480",
+      "hardware": {
+        "node": "v25.9.0",
+        "os": "27.0.0",
+        "cpu": "Apple M5",
+        "cores": 10,
+        "ram": 17179869184
+      },
+      "duration": 1200,
+      "speed": 1,
+      "serverWallSeconds": 1230.9723734590002,
+      "runningWallSeconds": 1223.2125967919999,
+      "pausedWallSeconds": 1.1582064579999716,
+      "completeProjectionLogicalBytes": 21688879036,
+      "logicalBytes": 21795233845,
+      "clientLogicalBytes": 21688879036,
+      "socketIoBytes": 21797562346,
+      "websocketPayloadBytes": 21731934552,
+      "websocketFramingBytes": 1532516,
+      "tcpBytes": 21733474163,
+      "clientTcpBytes": 21733412711,
+      "bytesPerSecond": 17655533.650953926,
+      "mbps": 141.24426920763142,
+      "peakOneSecondMbps": 197.136752,
+      "bytesPerIdentity": 804943487.5185186,
+      "emittedUpdates": 163152,
+      "appliedUpdates": 162466,
+      "full": 163152,
+      "delta": 0,
+      "refreshBasesAfterFirstJoin": null,
+      "protocolResyncRequests": 0,
+      "coalesced": 0,
+      "sizes": {
+        "n": 162466,
+        "p50": 144751,
+        "p95": 170581,
+        "p99": 176570,
+        "max": 180416
+      },
+      "applyMs": {
+        "n": 0,
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+      },
+      "cadenceMs": {
+        "n": 162439,
+        "p50": 201.76350000000093,
+        "p95": 219.91179200005718,
+        "p99": 269.52183300000615,
+        "max": 2675.63504199998
+      },
+      "cpuSeconds": 353.248432,
+      "cpuOneCorePercent": 28.69669861130848,
+      "rssMiB": 446.03125,
+      "heapMiB": 173.1507797241211,
+      "eventLoopP99Ms": 83.820543,
+      "ackP95Ms": 1594.9147090000042,
+      "nonChatAckP95Ms": 1023.3551670000015,
+      "chatAckP95Ms": 1732.8259170000092,
+      "actualSocketIoSerializationMs": 111109.69014600964,
+      "broadcastTotalMs": 231035.76010400022,
+      "broadcastP95SegmentMaxMs": 64.00675000000047,
+      "sqliteBytes": 447705088,
+      "walBeforeShutdown": 8330672,
+      "walAfterShutdown": 0,
+      "sqliteRowsModified": 460152,
+      "sqliteCommits": 1485,
+      "tables": {
+        "game": {
+          "rows": 1
+        },
+        "history_games": {
+          "rows": 1
+        },
+        "history_events": {
+          "rows": 228931
+        },
+        "history_inputs": {
+          "rows": 273
+        },
+        "history_checkpoints": {
+          "rows": 23
+        },
+        "history_points": {
+          "rows": 241
+        },
+        "request_receipts": {
+          "rows": 227130
+        },
+        "receipt_paths": {
+          "rows": 2
+        },
+        "commands": {
+          "rows": 273
+        },
+        "slack_messages": {
+          "rows": 285
+        }
+      },
+      "logicalByTable": {
+        "game": {
+          "payloadBytes": 4735640
+        },
+        "history_events": {
+          "payloadBytes": 98717429
+        },
+        "history_inputs": {
+          "payloadBytes": 72377
+        },
+        "history_points": {
+          "payloadBytes": 211786
+        },
+        "slack_messages": {
+          "payloadBytes": 75595
+        },
+        "history_checkpoints": {
+          "payloadBytes": 3581132
+        },
+        "request_receipts": {
+          "payloadBytes": 153611680
+        },
+        "receipt_paths": {
+          "payloadBytes": 396
+        },
+        "commands": {
+          "payloadBytes": 5488
+        }
+      },
+      "qaEvidenceLogicalBytes": 41060,
+      "liveStateLogicalBytes": 4735640,
+      "workersCreated": 0,
+      "flowSlack": {
+        "originals": 125,
+        "deliveries": 625,
+        "loss": 0,
+        "leaks": 0
+      },
+      "economicDigest": "102d85f98f2b9f210680e0fe923d3775a155a55312185f1d38ecb7faf69f4c3d",
+      "actionDigest": "5034141a19b7aeeca52496147227d3623e6aa45d95647a1c50245d0f68d28ed4",
+      "exitCode": 0,
+      "trafficReductionPercent": 0,
+      "logicalReductionPercent": 0,
+      "storageReductionPercent": 0,
+      "cpuReductionPercent": 0,
+      "ramReductionPercent": 0
+    },
+    {
+      "label": "final-B-1200-1x",
+      "mode": "on",
+      "sha": "35e870719cb63710d568d414e0ebf306d9882ecd",
+      "sourceDigest": "35ba3e543d3afa3efd1e4afcc7cd45fbff5a7161369a50a980f0bc2c01bbc72e",
+      "harnessDigest": "ce4893253f5f7e48e05586a55abc8272729ce90856c241c9f9e255f7ca6c6790",
+      "probeDigest": "ca8344983c7a902b613254132cc04207ff70b517b93312447bb8a669ec449480",
+      "hardware": {
+        "node": "v25.9.0",
+        "os": "27.0.0",
+        "cpu": "Apple M5",
+        "cores": 10,
+        "ram": 17179869184
+      },
+      "duration": 1200,
+      "speed": 1,
+      "serverWallSeconds": 1248.276611708,
+      "runningWallSeconds": 1233.850284626,
+      "pausedWallSeconds": 6.1322430830000085,
+      "completeProjectionLogicalBytes": 21444765276,
+      "logicalBytes": 6164723030,
+      "clientLogicalBytes": 6164638510,
+      "socketIoBytes": 6168501110,
+      "websocketPayloadBytes": 817841430,
+      "websocketFramingBytes": 652068,
+      "tcpBytes": 818506203,
+      "clientTcpBytes": 818506203,
+      "bytesPerSecond": 655708.9953644561,
+      "mbps": 5.245671962915648,
+      "peakOneSecondMbps": 7.612928,
+      "bytesPerIdentity": 30315044.555555556,
+      "emittedUpdates": 162073,
+      "appliedUpdates": 162045,
+      "full": 55,
+      "delta": 162018,
+      "refreshBasesAfterFirstJoin": 28,
+      "protocolResyncRequests": 0,
+      "coalesced": 283,
+      "sizes": {
+        "n": 162045,
+        "p50": 42742,
+        "p95": 46300,
+        "p99": 47504,
+        "max": 124428
+      },
+      "applyMs": {
+        "n": 162045,
+        "p50": 0.10479200002737343,
+        "p95": 0.21762500004842877,
+        "p99": 0.41283299995120615,
+        "max": 18.31162499997299
+      },
+      "cadenceMs": {
+        "n": 162018,
+        "p50": 202.9196660000016,
+        "p95": 266.2365829999326,
+        "p99": 302.1222920001019,
+        "max": 5945.73987499997
+      },
+      "cpuSeconds": 538.629607,
+      "cpuOneCorePercent": 43.14985973044871,
+      "rssMiB": 442.46875,
+      "heapMiB": 185.67131805419922,
+      "eventLoopP99Ms": 101.908479,
+      "ackP95Ms": 1798.80799999999,
+      "nonChatAckP95Ms": 1077.0718329999945,
+      "chatAckP95Ms": 1976.0406240000157,
+      "actualSocketIoSerializationMs": 58309.52764499831,
+      "broadcastTotalMs": 359464.62944699556,
+      "broadcastP95SegmentMaxMs": 87.54679200006649,
+      "sqliteBytes": 447750144,
+      "walBeforeShutdown": 8334792,
+      "walAfterShutdown": 0,
+      "sqliteRowsModified": 460171,
+      "sqliteCommits": 1493,
+      "tables": {
+        "game": {
+          "rows": 1
+        },
+        "history_games": {
+          "rows": 1
+        },
+        "history_events": {
+          "rows": 228932
+        },
+        "history_inputs": {
+          "rows": 274
+        },
+        "history_checkpoints": {
+          "rows": 23
+        },
+        "history_points": {
+          "rows": 241
+        },
+        "request_receipts": {
+          "rows": 227130
+        },
+        "receipt_paths": {
+          "rows": 2
+        },
+        "commands": {
+          "rows": 274
+        },
+        "slack_messages": {
+          "rows": 285
+        }
+      },
+      "logicalByTable": {
+        "game": {
+          "payloadBytes": 4736048
+        },
+        "history_events": {
+          "payloadBytes": 98717586
+        },
+        "history_inputs": {
+          "payloadBytes": 72584
+        },
+        "history_points": {
+          "payloadBytes": 211786
+        },
+        "slack_messages": {
+          "payloadBytes": 75595
+        },
+        "history_checkpoints": {
+          "payloadBytes": 3584385
+        },
+        "request_receipts": {
+          "payloadBytes": 153611680
+        },
+        "receipt_paths": {
+          "payloadBytes": 396
+        },
+        "commands": {
+          "payloadBytes": 5499
+        }
+      },
+      "qaEvidenceLogicalBytes": 41060,
+      "liveStateLogicalBytes": 4736048,
+      "workersCreated": 0,
+      "flowSlack": {
+        "originals": 125,
+        "deliveries": 625,
+        "loss": 0,
+        "leaks": 0
+      },
+      "economicDigest": "102d85f98f2b9f210680e0fe923d3775a155a55312185f1d38ecb7faf69f4c3d",
+      "actionDigest": "5034141a19b7aeeca52496147227d3623e6aa45d95647a1c50245d0f68d28ed4",
+      "exitCode": 0,
+      "trafficReductionPercent": 96.23389156808874,
+      "logicalReductionPercent": 71.715270073075,
+      "storageReductionPercent": -0.010063767691637082,
+      "cpuReductionPercent": -52.47898028886367,
+      "ramReductionPercent": 0.7987108526588682
+    },
+    {
+      "label": "final-C-1200-1x",
+      "mode": "off",
+      "sha": "35e870719cb63710d568d414e0ebf306d9882ecd",
+      "sourceDigest": "35ba3e543d3afa3efd1e4afcc7cd45fbff5a7161369a50a980f0bc2c01bbc72e",
+      "harnessDigest": "ce4893253f5f7e48e05586a55abc8272729ce90856c241c9f9e255f7ca6c6790",
+      "probeDigest": "ca8344983c7a902b613254132cc04207ff70b517b93312447bb8a669ec449480",
+      "hardware": {
+        "node": "v25.9.0",
+        "os": "27.0.0",
+        "cpu": "Apple M5",
+        "cores": 10,
+        "ram": 17179869184
+      },
+      "duration": 1200,
+      "speed": 1,
+      "serverWallSeconds": 1246.343005458,
+      "runningWallSeconds": 1234.13844496,
+      "pausedWallSeconds": 6.02998074900001,
+      "completeProjectionLogicalBytes": 21441953456,
+      "logicalBytes": 6154469811,
+      "clientLogicalBytes": 6154418680,
+      "socketIoBytes": 6158248690,
+      "websocketPayloadBytes": 816362200,
+      "websocketFramingBytes": 652160,
+      "tcpBytes": 817027065,
+      "clientTcpBytes": 817027065,
+      "bytesPerSecond": 655539.4954856451,
+      "mbps": 5.244315963885161,
+      "peakOneSecondMbps": 7.417536,
+      "bytesPerIdentity": 30260261.666666668,
+      "emittedUpdates": 162109,
+      "appliedUpdates": 162081,
+      "full": 55,
+      "delta": 162054,
+      "refreshBasesAfterFirstJoin": 28,
+      "protocolResyncRequests": 0,
+      "coalesced": 570,
+      "sizes": {
+        "n": 162081,
+        "p50": 42740,
+        "p95": 46300,
+        "p99": 47504,
+        "max": 124429
+      },
+      "applyMs": {
+        "n": 162081,
+        "p50": 0.11254200001712888,
+        "p95": 0.24441699997987598,
+        "p99": 0.4870840000221506,
+        "max": 14.384375000023283
+      },
+      "cadenceMs": {
+        "n": 162054,
+        "p50": 202.91104100004304,
+        "p95": 255.0688749998808,
+        "p99": 303.58775000000605,
+        "max": 5932.558541000006
+      },
+      "cpuSeconds": 514.050779,
+      "cpuOneCorePercent": 41.24472771531294,
+      "rssMiB": 350.953125,
+      "heapMiB": 197.72018432617188,
+      "eventLoopP99Ms": 91.553791,
+      "ackP95Ms": 1574.715333,
+      "nonChatAckP95Ms": 1299.7967509999871,
+      "chatAckP95Ms": 1721.2699999999895,
+      "actualSocketIoSerializationMs": 59148.186389012204,
+      "broadcastTotalMs": 364715.9597790007,
+      "broadcastP95SegmentMaxMs": 101.58066599996528,
+      "sqliteBytes": 9695232,
+      "walBeforeShutdown": 8227672,
+      "walAfterShutdown": 0,
+      "sqliteRowsModified": 3564,
+      "sqliteCommits": 1490,
+      "tables": {
+        "game": {
+          "rows": 1
+        },
+        "history_games": {
+          "rows": 1
+        },
+        "history_events": {
+          "rows": 0
+        },
+        "history_inputs": {
+          "rows": 0
+        },
+        "history_checkpoints": {
+          "rows": 0
+        },
+        "history_points": {
+          "rows": 0
+        },
+        "request_receipts": {
+          "rows": 0
+        },
+        "receipt_paths": {
+          "rows": 0
+        },
+        "commands": {
+          "rows": 274
+        },
+        "slack_messages": {
+          "rows": 285
+        }
+      },
+      "logicalByTable": {
+        "game": {
+          "payloadBytes": 4736044
+        },
+        "history_events": {
+          "payloadBytes": 0
+        },
+        "history_inputs": {
+          "payloadBytes": 0
+        },
+        "history_points": {
+          "payloadBytes": 0
+        },
+        "slack_messages": {
+          "payloadBytes": 75595
+        },
+        "history_checkpoints": {
+          "payloadBytes": 0
+        },
+        "request_receipts": {
+          "payloadBytes": 0
+        },
+        "receipt_paths": {
+          "payloadBytes": 0
+        },
+        "commands": {
+          "payloadBytes": 5499
+        }
+      },
+      "qaEvidenceLogicalBytes": 41060,
+      "liveStateLogicalBytes": 4736044,
+      "workersCreated": 0,
+      "flowSlack": {
+        "originals": 125,
+        "deliveries": 625,
+        "loss": 0,
+        "leaks": 0
+      },
+      "economicDigest": "102d85f98f2b9f210680e0fe923d3775a155a55312185f1d38ecb7faf69f4c3d",
+      "actionDigest": "5034141a19b7aeeca52496147227d3623e6aa45d95647a1c50245d0f68d28ed4",
+      "exitCode": 0,
+      "trafficReductionPercent": 96.2406973736811,
+      "logicalReductionPercent": 71.76231347289772,
+      "storageReductionPercent": 97.83446017035214,
+      "cpuReductionPercent": -45.52103631135158,
+      "ramReductionPercent": 21.316471659777203
+    }
+  ]
+}

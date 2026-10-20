@@ -1,0 +1,37 @@
+✔ DVR OFF configures in LOBBY, persists, locks RUNNING/PAUSED and carries into reset (74.711833ms)
+✔ DVR ON configures in LOBBY, persists, locks RUNNING/PAUSED and carries into reset (85.382958ms)
+✔ DVR mode is restricted to the teacher and validated (10.778291ms)
+✔ DVR OFF retains FlowSlack, commands, QA and live state without replay tables or buffers (57.689541ms)
+✔ legacy generation migration records ON explicitly and replays old data (33.559875ms)
+✔ DVR ON reconstructs exact snapshots while the next generation is OFF (168.145083ms)
+✔ DVR OFF rollback retains operational messages and retries atomically (20.275334ms)
+✔ DVR ON/OFF economics, all 5000 customers, incidents, QA, deployments and communications are identical (3181.563208ms)
+✔ real server DVR OFF: crash recovery, sequence loss, resync authorization and logout (1733.508208ms)
+✔ real server DVR ON: crash recovery, sequence loss, resync authorization and logout (1653.478959ms)
+✔ sync edits nested object without mutating the base (1.698709ms)
+✔ sync edits deleted field without mutating the base (0.053583ms)
+✔ sync edits truncated array without mutating the base (0.058917ms)
+✔ sync edits new fields without mutating the base (0.043375ms)
+✔ sync edits keyed reorder and deletion without mutating the base (0.076666ms)
+✔ sync edits empty keyed array without mutating the base (0.042292ms)
+✔ sync edits null transition without mutating the base (0.024708ms)
+✔ sync edits primitive array without mutating the base (0.037458ms)
+✔ sync edits duplicate IDs without mutating the base (0.052584ms)
+✔ sync first connection requires a complete base (20.03275ms)
+✔ sync sequence gap clears private state and requests a complete base (28.65425ms)
+✔ sync ignores stale full and out-of-order updates (34.239792ms)
+✔ sync identity replacement discards previous private company (18.82825ms)
+✔ sync logout/public base removes every private domain (14.035125ms)
+✔ sync generation needs a new full base (17.313709ms)
+✔ sync rejects identity or economic clock changes inside a delta (7.94725ms)
+✔ sync coalesces slow consumers, times out to a fresh base, and skips blocked transports (19.143792ms)
+✔ sync reconstructed clients equal authorized projections through live engine changes (151.571458ms)
+✔ compact wire codec preserves exact React projections and particle IDs for every role (31.624666ms)
+ℹ tests 29
+ℹ suites 0
+ℹ pass 29
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3829.155917

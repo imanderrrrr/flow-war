@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-20T15:35:05.300344+00:00",
+  "status": "superseded",
+  "reason": "The initial observer reserialized each payload and wrapped every JSON.stringify. This overstates CPU unequally for full and delta messages. Certified measurements use the existing Socket.IO encoding and no global JSON wrapper.",
+  "interrupted": "Coordinator stopped after final-B-1500-20x; final-C-1500-20x was not certified",
+  "signals": {
+    "matrixExitCode": 143,
+    "harnessCleanup": "Process no longer present when cleanup was attempted",
+    "serverCleanup": "Process no longer present when cleanup was attempted"
+  },
+  "certifiedDirectory": "certified",
+  "oldResultsPreserved": true
+}

@@ -1,0 +1,4 @@
+{"label":"final-A-1200-20x","tick":490,"status":"RUNNING","wallSeconds":30.305096332999998,"updates":3849}
+{"label":"final-A-1200-20x","tick":786,"status":"RUNNING","wallSeconds":45.305525333,"updates":5847}
+{"label":"final-A-1200-20x","tick":1070,"status":"RUNNING","wallSeconds":60.306225458,"updates":7764}
+{"output":"/Users/anderson/Documents/proyecto aseguramiento/docs/benchmarks/entrega-5-5/certified/final-A-1200-20x.json","status":"passed","errors":[],"wallSeconds":67.15336295800002}

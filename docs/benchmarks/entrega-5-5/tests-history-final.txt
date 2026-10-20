@@ -1,0 +1,18 @@
+✔ DVR OFF configures in LOBBY, persists, locks RUNNING/PAUSED and carries into reset (73.038209ms)
+✔ DVR ON configures in LOBBY, persists, locks RUNNING/PAUSED and carries into reset (75.791333ms)
+✔ DVR mode is restricted to the teacher and validated (10.7185ms)
+✔ DVR OFF retains FlowSlack, commands, QA and live state without replay tables or buffers (64.053625ms)
+✔ legacy generation migration records ON explicitly and replays old data (26.1925ms)
+✔ DVR ON reconstructs exact snapshots while the next generation is OFF (189.421125ms)
+✔ DVR OFF rollback retains operational messages and retries atomically (34.147791ms)
+✔ DVR ON/OFF economics, all 5000 customers, incidents, QA, deployments and communications are identical (3445.8985ms)
+✔ DVR OFF HTTP rejects before worker dispatch and preserves access to an older ON generation (307.852625ms)
+✔ a real archive exported by b52ccc67 remains exact and unchanged under the new reader (788.616958ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4434.633334

@@ -1,0 +1,701 @@
+{
+  "sourceDigest": "c6f9c7253cb5c8760be9d4e689baf81602aa3b6cf2e16e3fdd57e999533b5226",
+  "seed": 8,
+  "population": 5000,
+  "harnessDigest": "e14cd52cb7f6ff78e7e010a650d46937ecc2419f22ada3196dbae99ed16802ec",
+  "label": "C-compact-smoke",
+  "duration": 1200,
+  "speed": 20,
+  "mode": "off",
+  "reference": "b52ccc67c8aeaf3d76cf52a4db60d10e120f5942",
+  "serverRoot": "working-tree",
+  "at": "2026-10-20T14:58:19.875Z",
+  "hardware": {
+    "node": "v25.9.0",
+    "os": "27.0.0",
+    "cpu": "Apple M5",
+    "cores": 10,
+    "ram": 17179869184
+  },
+  "errors": [],
+  "segments": [
+    {
+      "segment": 1,
+      "exitCode": null,
+      "signal": "SIGKILL",
+      "wallMs": 13258.921083,
+      "cpuMicros": {
+        "user": 5862026,
+        "system": 957493
+      },
+      "cpuPercent": 51.433438341704026,
+      "rssMax": 293683200,
+      "heapMax": 118037648,
+      "eventLoopP99": 73.007103,
+      "emitted": 1591,
+      "logicalBytes": 21475163,
+      "socketIoEncodedBytes": 21520732,
+      "tcpBytesWritten": 3574275,
+      "tcpBytesRead": 189799,
+      "full": 28,
+      "delta": 1563,
+      "writes": 1026,
+      "commits": 282,
+      "sizes": {
+        "n": 1591,
+        "total": 21475163,
+        "p50": 14468,
+        "p95": 27601,
+        "p99": 31036,
+        "max": 53442
+      },
+      "payloadSerializationMs": {
+        "n": 1591,
+        "total": 48.57726899994856,
+        "p50": 0.029499999998733983,
+        "p95": 0.0693329999994603,
+        "p99": 0.08516700000109267,
+        "max": 0.16466600000057952
+      },
+      "broadcastMs": {
+        "n": 181,
+        "total": 1031.386669000005,
+        "p50": 2.7952919999997903,
+        "p95": 18.67162500000086,
+        "p99": 28.07837499999914,
+        "max": 28.247083000000202
+      },
+      "jsonStringifyMs": 1789.2361010003838,
+      "jsonStringifyCalls": 268661,
+      "logicalPeakOneSecondBytes": 4878249,
+      "transportPeakOneSecondBytes": 779677,
+      "compression": true,
+      "syncMetrics": [
+        {
+          "full": 1,
+          "delta": 60,
+          "coalesced": 95,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 46,
+          "coalesced": 79,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 60,
+          "coalesced": 94,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 59,
+          "coalesced": 95,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 58,
+          "coalesced": 96,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 57,
+          "coalesced": 97,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 56,
+          "coalesced": 98,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 56,
+          "coalesced": 98,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 56,
+          "coalesced": 98,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 11,
+          "coalesced": 18,
+          "resyncs": 0
+        }
+      ],
+      "layer": "net.Socket.bytesWritten: TCP payload including HTTP upgrade, Engine.IO and WebSocket framing after negotiated compression; excludes IP/TCP headers and Wi-Fi airtime",
+      "serializationScope": "JSON.stringify inclusive of runtime, diff-size selection and probe payload accounting; broadcast excludes asynchronous zlib CPU"
+    },
+    {
+      "segment": 2,
+      "exitCode": 0,
+      "signal": null,
+      "wallMs": 61187.299125,
+      "cpuMicros": {
+        "user": 30159006,
+        "system": 1224562
+      },
+      "cpuPercent": 51.2909843199424,
+      "rssMax": 419725312,
+      "heapMax": 228583672,
+      "eventLoopP99": 101.122047,
+      "emitted": 7452,
+      "logicalBytes": 327765109,
+      "socketIoEncodedBytes": 327928839,
+      "tcpBytesWritten": 57228162,
+      "tcpBytesRead": 550292,
+      "full": 27,
+      "delta": 7425,
+      "writes": 246,
+      "commits": 64,
+      "sizes": {
+        "n": 7452,
+        "total": 327765109,
+        "p50": 43958,
+        "p95": 56137,
+        "p99": 58791,
+        "max": 97054
+      },
+      "payloadSerializationMs": {
+        "n": 7452,
+        "total": 947.5759609997706,
+        "p50": 0.12541600000258768,
+        "p95": 0.16129199999704724,
+        "p99": 0.1935410000005504,
+        "max": 1.946750000002794
+      },
+      "broadcastMs": {
+        "n": 302,
+        "total": 16092.304820000058,
+        "p50": 60.15599999999904,
+        "p95": 65.62004100000195,
+        "p99": 67.16575000000012,
+        "max": 68.69466700000339
+      },
+      "jsonStringifyMs": 9725.467043004239,
+      "jsonStringifyCalls": 4156314,
+      "logicalPeakOneSecondBytes": 6793031,
+      "transportPeakOneSecondBytes": 1261158,
+      "compression": true,
+      "syncMetrics": [
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 275,
+          "coalesced": 1,
+          "resyncs": 0
+        }
+      ],
+      "layer": "net.Socket.bytesWritten: TCP payload including HTTP upgrade, Engine.IO and WebSocket framing after negotiated compression; excludes IP/TCP headers and Wi-Fi airtime",
+      "serializationScope": "JSON.stringify inclusive of runtime, diff-size selection and probe payload accounting; broadcast excludes asynchronous zlib CPU"
+    }
+  ],
+  "limitations": [
+    "27 Node Socket.IO clients over local loopback; no Wi-Fi or browser FPS measurement.",
+    "CPU includes SQLite serialization and benchmark instrumentation. Transport excludes TCP/IP headers.",
+    "Network runs share action orchestration; tick scheduling may differ. Exact economic equivalence is tested separately with fixed seed and action ticks."
+  ],
+  "scenario": {
+    "initialReputation": 34,
+    "initialServers": 1,
+    "targetServers": 8,
+    "initialWarmup": 0,
+    "seed": 8
+  },
+  "pipeline": {
+    "companies": 5,
+    "backendQaCtoDevops": true,
+    "securityQaCtoDevops": 5
+  },
+  "recovery": {
+    "signal": "SIGKILL",
+    "exact": true,
+    "pendingQa": "CH-011",
+    "cookiesReused": 26,
+    "mode": false
+  },
+  "activeWallSeconds": 68.77582025,
+  "storage": {
+    "tables": {
+      "game": {
+        "rows": 1
+      },
+      "history_games": {
+        "rows": 1
+      },
+      "history_events": {
+        "rows": 0
+      },
+      "history_inputs": {
+        "rows": 0
+      },
+      "history_checkpoints": {
+        "rows": 0
+      },
+      "history_points": {
+        "rows": 0
+      },
+      "request_receipts": {
+        "rows": 0
+      },
+      "receipt_paths": {
+        "rows": 0
+      },
+      "commands": {
+        "rows": 271
+      },
+      "slack_messages": {
+        "rows": 284
+      }
+    },
+    "pages": [
+      {
+        "name": "commands",
+        "bytes": 40960
+      },
+      {
+        "name": "commands_generation",
+        "bytes": 4096
+      },
+      {
+        "name": "game",
+        "bytes": 4689920
+      },
+      {
+        "name": "history_checkpoint_time",
+        "bytes": 4096
+      },
+      {
+        "name": "history_checkpoints",
+        "bytes": 4096
+      },
+      {
+        "name": "history_events",
+        "bytes": 4096
+      },
+      {
+        "name": "history_events_time",
+        "bytes": 4096
+      },
+      {
+        "name": "history_games",
+        "bytes": 4096
+      },
+      {
+        "name": "history_inputs",
+        "bytes": 4096
+      },
+      {
+        "name": "history_points",
+        "bytes": 4096
+      },
+      {
+        "name": "receipt_paths",
+        "bytes": 4096
+      },
+      {
+        "name": "receipts_generation",
+        "bytes": 4096
+      },
+      {
+        "name": "request_receipts",
+        "bytes": 4096
+      },
+      {
+        "name": "sessions",
+        "bytes": 4096
+      },
+      {
+        "name": "slack_messages",
+        "bytes": 94208
+      },
+      {
+        "name": "slack_tenant",
+        "bytes": 12288
+      },
+      {
+        "name": "sqlite_autoindex_commands_1",
+        "bytes": 16384
+      },
+      {
+        "name": "sqlite_autoindex_history_checkpoints_1",
+        "bytes": 4096
+      },
+      {
+        "name": "sqlite_autoindex_history_events_1",
+        "bytes": 4096
+      },
+      {
+        "name": "sqlite_autoindex_history_inputs_1",
+        "bytes": 4096
+      },
+      {
+        "name": "sqlite_autoindex_history_points_1",
+        "bytes": 4096
+      },
+      {
+        "name": "sqlite_autoindex_receipt_paths_1",
+        "bytes": 4096
+      },
+      {
+        "name": "sqlite_autoindex_request_receipts_1",
+        "bytes": 4096
+      },
+      {
+        "name": "sqlite_autoindex_sessions_1",
+        "bytes": 4096
+      },
+      {
+        "name": "sqlite_autoindex_slack_messages_1",
+        "bytes": 12288
+      },
+      {
+        "name": "sqlite_schema",
+        "bytes": 4096
+      },
+      {
+        "name": "storage_lease",
+        "bytes": 4096
+      }
+    ],
+    "mainBytes": 9592832,
+    "walBytes": 8071112,
+    "forensicOffIsEmpty": true
+  },
+  "finalEconomicDigest": "defe009a03381577c6136c17e8983b8e7c799069eacf2709094da90ff8e2c13e",
+  "crisis": {
+    "entered": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "recovered": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "flowSlack": {
+    "originals": 125,
+    "deliveries": 625,
+    "loss": 0,
+    "leaks": 0
+  },
+  "status": "passed",
+  "clients": {
+    "connections": 27,
+    "projectedFullBytes": 1156507295,
+    "updates": 9037,
+    "full": 55,
+    "deltas": 8982,
+    "resyncs": 1,
+    "ackMs": {
+      "n": 397,
+      "p50": 30.10845800000061,
+      "p95": 466.9265830000004,
+      "p99": 470.63908400000037,
+      "max": 471.47279100000014
+    },
+    "cadenceMs": {
+      "n": 9010,
+      "p50": 200.9231249999939,
+      "p95": 248.42612499999814,
+      "p99": 488.74791600000026,
+      "max": 5841.852708
+    },
+    "applyMs": {
+      "n": 9037,
+      "p50": 0.12079099999755272,
+      "p95": 0.18529100000159815,
+      "p99": 0.298041000001831,
+      "max": 0.7678749999904539
+    },
+    "sizeBytes": {
+      "n": 9037,
+      "p50": 43100,
+      "p95": 55647,
+      "p99": 58636,
+      "max": 97054
+    },
+    "receivedLogicalBytes": 349117650,
+    "tcpBytesRead": 60812408
+  },
+  "sourceUnchanged": true,
+  "exitCode": 0
+}

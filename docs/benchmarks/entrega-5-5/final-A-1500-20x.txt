@@ -1,0 +1,5 @@
+{"label":"final-A-1500-20x","tick":490,"status":"RUNNING","wallSeconds":32.436589208,"updates":3833}
+{"label":"final-A-1500-20x","tick":774,"status":"RUNNING","wallSeconds":47.437750333000004,"updates":5756}
+{"label":"final-A-1500-20x","tick":1046,"status":"RUNNING","wallSeconds":62.438885500000005,"updates":7592}
+{"label":"final-A-1500-20x","tick":1290,"status":"RUNNING","wallSeconds":77.44045725000001,"updates":9239}
+{"output":"/Users/anderson/Documents/proyecto aseguramiento/docs/benchmarks/entrega-5-5/final-A-1500-20x.json","status":"passed","errors":[],"wallSeconds":89.101739541}

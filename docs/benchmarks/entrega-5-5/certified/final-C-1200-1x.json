@@ -1,0 +1,6073 @@
+{
+  "sourceFiles": [
+    "server/action-validation.ts",
+    "server/agents.ts",
+    "server/artifacts.ts",
+    "server/blocks.ts",
+    "server/business.ts",
+    "server/chat.ts",
+    "server/crisis.ts",
+    "server/defects.ts",
+    "server/discipline.ts",
+    "server/dvr-pool.ts",
+    "server/dvr-query.ts",
+    "server/dvr-worker.mjs",
+    "server/dvr-worker.ts",
+    "server/dvr.ts",
+    "server/engine.ts",
+    "server/flowslack.ts",
+    "server/graphs.ts",
+    "server/history-admin.ts",
+    "server/history.ts",
+    "server/index.ts",
+    "server/infrastructure.ts",
+    "server/load.ts",
+    "server/maintenance.ts",
+    "server/market.ts",
+    "server/module-execution.ts",
+    "server/observability.ts",
+    "server/persistence.ts",
+    "server/postmortem.ts",
+    "server/projections.ts",
+    "server/qa.ts",
+    "server/receipt-storage.ts",
+    "server/requests.ts",
+    "server/scenarios.ts",
+    "server/security.ts",
+    "server/snapshot-sync.ts",
+    "server/storage-lease.ts",
+    "server/storage.ts",
+    "server/traffic.ts",
+    "shared/actions.ts",
+    "shared/agents.ts",
+    "shared/blocks.ts",
+    "shared/crisis.ts",
+    "shared/live-client.ts",
+    "shared/observability.ts",
+    "shared/simulation.ts",
+    "shared/snapshot-codec.ts",
+    "shared/sync.ts",
+    "shared/types.ts"
+  ],
+  "sourceDigest": "35ba3e543d3afa3efd1e4afcc7cd45fbff5a7161369a50a980f0bc2c01bbc72e",
+  "probeDigest": "ca8344983c7a902b613254132cc04207ff70b517b93312447bb8a669ec449480",
+  "seed": 8,
+  "population": 5000,
+  "harnessDigest": "ce4893253f5f7e48e05586a55abc8272729ce90856c241c9f9e255f7ca6c6790",
+  "label": "final-C-1200-1x",
+  "duration": 1200,
+  "speed": 1,
+  "mode": "off",
+  "reference": "35e870719cb63710d568d414e0ebf306d9882ecd",
+  "serverRoot": "working-tree",
+  "at": "2026-10-20T16:25:06.901Z",
+  "hardware": {
+    "node": "v25.9.0",
+    "os": "27.0.0",
+    "cpu": "Apple M5",
+    "cores": 10,
+    "ram": 17179869184
+  },
+  "errors": [],
+  "segments": [
+    {
+      "segment": 1,
+      "exitCode": null,
+      "signal": "SIGKILL",
+      "wallMs": 262092.78662499998,
+      "workersCreated": 0,
+      "scheduledCommands": 394,
+      "maxScheduled": 125,
+      "websocketFrames": 34649,
+      "websocketFrameBytes": 90544924,
+      "websocketPayloadBytes": 90407830,
+      "websocketFramingBytes": 137094,
+      "cpuMicros": {
+        "user": 70592656,
+        "system": 5074414
+      },
+      "cpuPercent": 28.87033671333495,
+      "rssMax": 368001024,
+      "heapMax": 105109152,
+      "eventLoopP99": 66.682879,
+      "emitted": 33897,
+      "logicalBytes": 657656166,
+      "socketIoEncodedBytes": 658468171,
+      "tcpBytesWritten": 90551392,
+      "tcpBytesRead": 2590701,
+      "full": 28,
+      "delta": 33869,
+      "writes": 1538,
+      "commits": 530,
+      "sizes": {
+        "n": 33897,
+        "total": 657656166,
+        "p50": 13989,
+        "p95": 43723,
+        "p99": 46260,
+        "max": 72379
+      },
+      "socketIoSerializationMs": {
+        "n": 33897,
+        "total": 6996.612981998211,
+        "p50": 0.1773339999926975,
+        "p95": 0.4305830000084825,
+        "p99": 0.5853749999951106,
+        "max": 14.903791999997338
+      },
+      "broadcastMs": {
+        "n": 1301,
+        "total": 48975.024574999705,
+        "p50": 35.80162499999278,
+        "p95": 60.76737499999581,
+        "p99": 66.83658299999661,
+        "max": 150.69362499999988
+      },
+      "logicalPeakOneSecondBytes": 6608865,
+      "transportPeakOneSecondBytes": 927192,
+      "compression": true,
+      "syncMetrics": [
+        {
+          "full": 1,
+          "delta": 1256,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 952,
+          "coalesced": 13,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1255,
+          "coalesced": 16,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1255,
+          "coalesced": 16,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1254,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1255,
+          "coalesced": 16,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1255,
+          "coalesced": 16,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1255,
+          "coalesced": 16,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1255,
+          "coalesced": 16,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1255,
+          "coalesced": 16,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1255,
+          "coalesced": 16,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1254,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1255,
+          "coalesced": 16,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1254,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1254,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1254,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1254,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1254,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1254,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1254,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1254,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1254,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1254,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1254,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1254,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1254,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 1254,
+          "coalesced": 17,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 302,
+          "coalesced": 5,
+          "resyncs": 0
+        }
+      ],
+      "layer": "net.Socket.bytesWritten: TCP payload including HTTP upgrade, Engine.IO and WebSocket framing after negotiated compression; excludes IP/TCP headers and Wi-Fi airtime",
+      "serializationScope": "Actual Socket.IO Encoder.encode time for state messages; logical bytes derived from that encoding without reserializing payloads. Broadcast includes projection, codec, diff and encoding, excludes asynchronous zlib CPU."
+    },
+    {
+      "segment": 2,
+      "exitCode": 0,
+      "signal": null,
+      "wallMs": 984250.218833,
+      "workersCreated": 0,
+      "scheduledCommands": 0,
+      "maxScheduled": 0,
+      "websocketFrames": 129321,
+      "websocketFrameBytes": 726469436,
+      "websocketPayloadBytes": 725954370,
+      "websocketFramingBytes": 515066,
+      "cpuMicros": {
+        "user": 418125991,
+        "system": 20257718
+      },
+      "cpuPercent": 44.53986401138729,
+      "rssMax": 362577920,
+      "heapMax": 207324640,
+      "eventLoopP99": 91.553791,
+      "emitted": 128212,
+      "logicalBytes": 5496813645,
+      "socketIoEncodedBytes": 5499780519,
+      "tcpBytesWritten": 726475673,
+      "tcpBytesRead": 9620428,
+      "full": 27,
+      "delta": 128185,
+      "writes": 2026,
+      "commits": 960,
+      "sizes": {
+        "n": 128212,
+        "total": 5496813645,
+        "p50": 43347,
+        "p95": 46408,
+        "p99": 47815,
+        "max": 124429
+      },
+      "socketIoSerializationMs": {
+        "n": 128212,
+        "total": 52151.573407013995,
+        "p50": 0.3622080000350252,
+        "p95": 0.6970420000143349,
+        "p99": 1.2477499999804422,
+        "max": 42.26216599997133
+      },
+      "broadcastMs": {
+        "n": 4781,
+        "total": 315740.935204001,
+        "p50": 62.039749999996275,
+        "p95": 101.58066599996528,
+        "p99": 161.39737500000047,
+        "max": 328.4247500000056
+      },
+      "logicalPeakOneSecondBytes": 6509110,
+      "transportPeakOneSecondBytes": 920269,
+      "compression": true,
+      "syncMetrics": [
+        {
+          "full": 1,
+          "delta": 4751,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4751,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4751,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4751,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4750,
+          "coalesced": 2,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4751,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4751,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4751,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4750,
+          "coalesced": 2,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4750,
+          "coalesced": 2,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4749,
+          "coalesced": 3,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4750,
+          "coalesced": 2,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4751,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4747,
+          "coalesced": 5,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4749,
+          "coalesced": 3,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4746,
+          "coalesced": 6,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4746,
+          "coalesced": 6,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4746,
+          "coalesced": 6,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4746,
+          "coalesced": 6,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4746,
+          "coalesced": 6,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4745,
+          "coalesced": 7,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4745,
+          "coalesced": 7,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4743,
+          "coalesced": 9,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4743,
+          "coalesced": 9,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4742,
+          "coalesced": 10,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4742,
+          "coalesced": 10,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 4742,
+          "coalesced": 10,
+          "resyncs": 0
+        }
+      ],
+      "layer": "net.Socket.bytesWritten: TCP payload including HTTP upgrade, Engine.IO and WebSocket framing after negotiated compression; excludes IP/TCP headers and Wi-Fi airtime",
+      "serializationScope": "Actual Socket.IO Encoder.encode time for state messages; logical bytes derived from that encoding without reserializing payloads. Broadcast includes projection, codec, diff and encoding, excludes asynchronous zlib CPU."
+    }
+  ],
+  "limitations": [
+    "27 Node Socket.IO clients over local loopback; no Wi-Fi or browser FPS measurement.",
+    "CPU includes SQLite serialization and benchmark instrumentation. Transport excludes TCP/IP headers.",
+    "Scheduled commands arrive over the real 27 sockets; a common test-only preload releases the unchanged server handlers at declared ticks. Intentional scheduling wait is excluded from reported ACK latency and reported separately."
+  ],
+  "scenario": {
+    "initialReputation": 34,
+    "initialServers": 1,
+    "targetServers": 8,
+    "initialWarmup": 0,
+    "seed": 8,
+    "actionTicks": [
+      10,
+      20,
+      30,
+      40,
+      50,
+      70,
+      80,
+      90,
+      100,
+      110,
+      130,
+      160,
+      180,
+      190,
+      200,
+      210,
+      215,
+      240,
+      250
+    ],
+    "pausedAt": [
+      190,
+      250
+    ]
+  },
+  "pipeline": {
+    "companies": 5,
+    "backendQaCtoDevops": true,
+    "securityQaCtoDevops": 5,
+    "fixedActionTicks": true
+  },
+  "pauses": [
+    {
+      "tick": 190,
+      "reason": "controlled client reconnect",
+      "wallMs": 131.08733300000313
+    },
+    {
+      "tick": 250,
+      "reason": "SIGKILL, restart and 27 reconnects",
+      "wallMs": 5898.893416000006
+    }
+  ],
+  "recovery": {
+    "signal": "SIGKILL",
+    "exact": true,
+    "pendingQa": "CH-011",
+    "cookiesReused": 26,
+    "mode": false
+  },
+  "activeWallSeconds": 1240.168425709,
+  "runningWallSeconds": 1234.13844496,
+  "fullEconomicDigest": "102d85f98f2b9f210680e0fe923d3775a155a55312185f1d38ecb7faf69f4c3d",
+  "storage": {
+    "liveStateLogicalBytes": 4736044,
+    "qaEvidenceLogicalBytes": 41060,
+    "logicalByTable": {
+      "game": {
+        "payloadBytes": 4736044
+      },
+      "history_events": {
+        "payloadBytes": 0
+      },
+      "history_inputs": {
+        "payloadBytes": 0
+      },
+      "history_points": {
+        "payloadBytes": 0
+      },
+      "slack_messages": {
+        "payloadBytes": 75595
+      },
+      "history_checkpoints": {
+        "payloadBytes": 0
+      },
+      "request_receipts": {
+        "payloadBytes": 0
+      },
+      "receipt_paths": {
+        "payloadBytes": 0
+      },
+      "commands": {
+        "payloadBytes": 5499
+      }
+    },
+    "receiptCompressedDetailBytes": {
+      "bytes": 0
+    },
+    "tables": {
+      "game": {
+        "rows": 1
+      },
+      "history_games": {
+        "rows": 1
+      },
+      "history_events": {
+        "rows": 0
+      },
+      "history_inputs": {
+        "rows": 0
+      },
+      "history_checkpoints": {
+        "rows": 0
+      },
+      "history_points": {
+        "rows": 0
+      },
+      "request_receipts": {
+        "rows": 0
+      },
+      "receipt_paths": {
+        "rows": 0
+      },
+      "commands": {
+        "rows": 274
+      },
+      "slack_messages": {
+        "rows": 285
+      }
+    },
+    "pages": [
+      {
+        "name": "commands",
+        "bytes": 40960
+      },
+      {
+        "name": "commands_generation",
+        "bytes": 4096
+      },
+      {
+        "name": "game",
+        "bytes": 4743168
+      },
+      {
+        "name": "history_checkpoint_time",
+        "bytes": 4096
+      },
+      {
+        "name": "history_checkpoints",
+        "bytes": 4096
+      },
+      {
+        "name": "history_events",
+        "bytes": 4096
+      },
+      {
+        "name": "history_events_time",
+        "bytes": 4096
+      },
+      {
+        "name": "history_games",
+        "bytes": 4096
+      },
+      {
+        "name": "history_inputs",
+        "bytes": 4096
+      },
+      {
+        "name": "history_points",
+        "bytes": 4096
+      },
+      {
+        "name": "receipt_paths",
+        "bytes": 4096
+      },
+      {
+        "name": "receipts_generation",
+        "bytes": 4096
+      },
+      {
+        "name": "request_receipts",
+        "bytes": 4096
+      },
+      {
+        "name": "sessions",
+        "bytes": 4096
+      },
+      {
+        "name": "slack_messages",
+        "bytes": 94208
+      },
+      {
+        "name": "slack_tenant",
+        "bytes": 12288
+      },
+      {
+        "name": "sqlite_autoindex_commands_1",
+        "bytes": 16384
+      },
+      {
+        "name": "sqlite_autoindex_history_checkpoints_1",
+        "bytes": 4096
+      },
+      {
+        "name": "sqlite_autoindex_history_events_1",
+        "bytes": 4096
+      },
+      {
+        "name": "sqlite_autoindex_history_inputs_1",
+        "bytes": 4096
+      },
+      {
+        "name": "sqlite_autoindex_history_points_1",
+        "bytes": 4096
+      },
+      {
+        "name": "sqlite_autoindex_receipt_paths_1",
+        "bytes": 4096
+      },
+      {
+        "name": "sqlite_autoindex_request_receipts_1",
+        "bytes": 4096
+      },
+      {
+        "name": "sqlite_autoindex_sessions_1",
+        "bytes": 4096
+      },
+      {
+        "name": "sqlite_autoindex_slack_messages_1",
+        "bytes": 12288
+      },
+      {
+        "name": "sqlite_schema",
+        "bytes": 4096
+      },
+      {
+        "name": "storage_lease",
+        "bytes": 4096
+      }
+    ],
+    "mainBytes": 9695232,
+    "walBytes": 8227672,
+    "forensicOffIsEmpty": true
+  },
+  "finalEconomicDigest": "5eb14c1ab6782c8c77b882d90544154b4d07a281e402ee041ce8435f30347700",
+  "crisis": {
+    "entered": [
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "recovered": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "flowSlack": {
+    "originals": 125,
+    "deliveries": 625,
+    "loss": 0,
+    "leaks": 0
+  },
+  "status": "passed",
+  "actionTrace": [
+    {
+      "actor": "0-backend",
+      "type": "change.submit",
+      "tick": 10,
+      "order": 1,
+      "payload": {
+        "graph": {
+          "nodes": [
+            {
+              "id": "b-entry",
+              "type": "entry",
+              "position": {
+                "x": 0,
+                "y": 160
+              },
+              "data": {
+                "label": "entry",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-read",
+              "type": "read",
+              "position": {
+                "x": 190,
+                "y": 160
+              },
+              "data": {
+                "label": "read",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-atomic",
+              "type": "atomic",
+              "position": {
+                "x": 380,
+                "y": 160
+              },
+              "data": {
+                "label": "atomic",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-write",
+              "type": "write",
+              "position": {
+                "x": 570,
+                "y": 160
+              },
+              "data": {
+                "label": "write",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-payment",
+              "type": "payment",
+              "position": {
+                "x": 760,
+                "y": 160
+              },
+              "data": {
+                "label": "payment",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-exit",
+              "type": "exit",
+              "position": {
+                "x": 950,
+                "y": 160
+              },
+              "data": {
+                "label": "exit",
+                "value": 1
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge-0",
+              "source": "b-entry",
+              "target": "b-read"
+            },
+            {
+              "id": "edge-1",
+              "source": "b-read",
+              "target": "b-atomic"
+            },
+            {
+              "id": "edge-2",
+              "source": "b-atomic",
+              "target": "b-write"
+            },
+            {
+              "id": "edge-3",
+              "source": "b-write",
+              "target": "b-payment"
+            },
+            {
+              "id": "edge-4",
+              "source": "b-payment",
+              "target": "b-exit"
+            }
+          ]
+        },
+        "revision": 0
+      }
+    },
+    {
+      "actor": "1-backend",
+      "type": "change.submit",
+      "tick": 10,
+      "order": 2,
+      "payload": {
+        "graph": {
+          "nodes": [
+            {
+              "id": "b-entry",
+              "type": "entry",
+              "position": {
+                "x": 0,
+                "y": 160
+              },
+              "data": {
+                "label": "entry",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-read",
+              "type": "read",
+              "position": {
+                "x": 190,
+                "y": 160
+              },
+              "data": {
+                "label": "read",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-atomic",
+              "type": "atomic",
+              "position": {
+                "x": 380,
+                "y": 160
+              },
+              "data": {
+                "label": "atomic",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-write",
+              "type": "write",
+              "position": {
+                "x": 570,
+                "y": 160
+              },
+              "data": {
+                "label": "write",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-payment",
+              "type": "payment",
+              "position": {
+                "x": 760,
+                "y": 160
+              },
+              "data": {
+                "label": "payment",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-exit",
+              "type": "exit",
+              "position": {
+                "x": 950,
+                "y": 160
+              },
+              "data": {
+                "label": "exit",
+                "value": 1
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge-0",
+              "source": "b-entry",
+              "target": "b-read"
+            },
+            {
+              "id": "edge-1",
+              "source": "b-read",
+              "target": "b-atomic"
+            },
+            {
+              "id": "edge-2",
+              "source": "b-atomic",
+              "target": "b-write"
+            },
+            {
+              "id": "edge-3",
+              "source": "b-write",
+              "target": "b-payment"
+            },
+            {
+              "id": "edge-4",
+              "source": "b-payment",
+              "target": "b-exit"
+            }
+          ]
+        },
+        "revision": 0
+      }
+    },
+    {
+      "actor": "2-backend",
+      "type": "change.submit",
+      "tick": 10,
+      "order": 3,
+      "payload": {
+        "graph": {
+          "nodes": [
+            {
+              "id": "b-entry",
+              "type": "entry",
+              "position": {
+                "x": 0,
+                "y": 160
+              },
+              "data": {
+                "label": "entry",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-read",
+              "type": "read",
+              "position": {
+                "x": 190,
+                "y": 160
+              },
+              "data": {
+                "label": "read",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-atomic",
+              "type": "atomic",
+              "position": {
+                "x": 380,
+                "y": 160
+              },
+              "data": {
+                "label": "atomic",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-write",
+              "type": "write",
+              "position": {
+                "x": 570,
+                "y": 160
+              },
+              "data": {
+                "label": "write",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-payment",
+              "type": "payment",
+              "position": {
+                "x": 760,
+                "y": 160
+              },
+              "data": {
+                "label": "payment",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-exit",
+              "type": "exit",
+              "position": {
+                "x": 950,
+                "y": 160
+              },
+              "data": {
+                "label": "exit",
+                "value": 1
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge-0",
+              "source": "b-entry",
+              "target": "b-read"
+            },
+            {
+              "id": "edge-1",
+              "source": "b-read",
+              "target": "b-atomic"
+            },
+            {
+              "id": "edge-2",
+              "source": "b-atomic",
+              "target": "b-write"
+            },
+            {
+              "id": "edge-3",
+              "source": "b-write",
+              "target": "b-payment"
+            },
+            {
+              "id": "edge-4",
+              "source": "b-payment",
+              "target": "b-exit"
+            }
+          ]
+        },
+        "revision": 0
+      }
+    },
+    {
+      "actor": "3-backend",
+      "type": "change.submit",
+      "tick": 10,
+      "order": 4,
+      "payload": {
+        "graph": {
+          "nodes": [
+            {
+              "id": "b-entry",
+              "type": "entry",
+              "position": {
+                "x": 0,
+                "y": 160
+              },
+              "data": {
+                "label": "entry",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-read",
+              "type": "read",
+              "position": {
+                "x": 190,
+                "y": 160
+              },
+              "data": {
+                "label": "read",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-atomic",
+              "type": "atomic",
+              "position": {
+                "x": 380,
+                "y": 160
+              },
+              "data": {
+                "label": "atomic",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-write",
+              "type": "write",
+              "position": {
+                "x": 570,
+                "y": 160
+              },
+              "data": {
+                "label": "write",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-payment",
+              "type": "payment",
+              "position": {
+                "x": 760,
+                "y": 160
+              },
+              "data": {
+                "label": "payment",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-exit",
+              "type": "exit",
+              "position": {
+                "x": 950,
+                "y": 160
+              },
+              "data": {
+                "label": "exit",
+                "value": 1
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge-0",
+              "source": "b-entry",
+              "target": "b-read"
+            },
+            {
+              "id": "edge-1",
+              "source": "b-read",
+              "target": "b-atomic"
+            },
+            {
+              "id": "edge-2",
+              "source": "b-atomic",
+              "target": "b-write"
+            },
+            {
+              "id": "edge-3",
+              "source": "b-write",
+              "target": "b-payment"
+            },
+            {
+              "id": "edge-4",
+              "source": "b-payment",
+              "target": "b-exit"
+            }
+          ]
+        },
+        "revision": 0
+      }
+    },
+    {
+      "actor": "4-backend",
+      "type": "change.submit",
+      "tick": 10,
+      "order": 5,
+      "payload": {
+        "graph": {
+          "nodes": [
+            {
+              "id": "b-entry",
+              "type": "entry",
+              "position": {
+                "x": 0,
+                "y": 160
+              },
+              "data": {
+                "label": "entry",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-read",
+              "type": "read",
+              "position": {
+                "x": 190,
+                "y": 160
+              },
+              "data": {
+                "label": "read",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-atomic",
+              "type": "atomic",
+              "position": {
+                "x": 380,
+                "y": 160
+              },
+              "data": {
+                "label": "atomic",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-write",
+              "type": "write",
+              "position": {
+                "x": 570,
+                "y": 160
+              },
+              "data": {
+                "label": "write",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-payment",
+              "type": "payment",
+              "position": {
+                "x": 760,
+                "y": 160
+              },
+              "data": {
+                "label": "payment",
+                "value": 1
+              }
+            },
+            {
+              "id": "b-exit",
+              "type": "exit",
+              "position": {
+                "x": 950,
+                "y": 160
+              },
+              "data": {
+                "label": "exit",
+                "value": 1
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "edge-0",
+              "source": "b-entry",
+              "target": "b-read"
+            },
+            {
+              "id": "edge-1",
+              "source": "b-read",
+              "target": "b-atomic"
+            },
+            {
+              "id": "edge-2",
+              "source": "b-atomic",
+              "target": "b-write"
+            },
+            {
+              "id": "edge-3",
+              "source": "b-write",
+              "target": "b-payment"
+            },
+            {
+              "id": "edge-4",
+              "source": "b-payment",
+              "target": "b-exit"
+            }
+          ]
+        },
+        "revision": 0
+      }
+    },
+    {
+      "actor": "0-qa",
+      "type": "qa.run",
+      "tick": 20,
+      "order": 6,
+      "payload": {
+        "suite": "Concurrencia"
+      },
+      "changeId": "CH-001"
+    },
+    {
+      "actor": "1-qa",
+      "type": "qa.run",
+      "tick": 20,
+      "order": 7,
+      "payload": {
+        "suite": "Concurrencia"
+      },
+      "changeId": "CH-002"
+    },
+    {
+      "actor": "2-qa",
+      "type": "qa.run",
+      "tick": 20,
+      "order": 8,
+      "payload": {
+        "suite": "Concurrencia"
+      },
+      "changeId": "CH-003"
+    },
+    {
+      "actor": "3-qa",
+      "type": "qa.run",
+      "tick": 20,
+      "order": 9,
+      "payload": {
+        "suite": "Concurrencia"
+      },
+      "changeId": "CH-004"
+    },
+    {
+      "actor": "4-qa",
+      "type": "qa.run",
+      "tick": 20,
+      "order": 10,
+      "payload": {
+        "suite": "Concurrencia"
+      },
+      "changeId": "CH-005"
+    },
+    {
+      "actor": "0-qa",
+      "type": "qa.approve",
+      "tick": 30,
+      "order": 11,
+      "payload": {},
+      "changeId": "CH-001"
+    },
+    {
+      "actor": "1-qa",
+      "type": "qa.approve",
+      "tick": 30,
+      "order": 12,
+      "payload": {},
+      "changeId": "CH-002"
+    },
+    {
+      "actor": "2-qa",
+      "type": "qa.approve",
+      "tick": 30,
+      "order": 13,
+      "payload": {},
+      "changeId": "CH-003"
+    },
+    {
+      "actor": "3-qa",
+      "type": "qa.approve",
+      "tick": 30,
+      "order": 14,
+      "payload": {},
+      "changeId": "CH-004"
+    },
+    {
+      "actor": "4-qa",
+      "type": "qa.approve",
+      "tick": 30,
+      "order": 15,
+      "payload": {},
+      "changeId": "CH-005"
+    },
+    {
+      "actor": "0-cto",
+      "type": "cto.authorize",
+      "tick": 40,
+      "order": 16,
+      "payload": {},
+      "changeId": "CH-001"
+    },
+    {
+      "actor": "1-cto",
+      "type": "cto.authorize",
+      "tick": 40,
+      "order": 17,
+      "payload": {},
+      "changeId": "CH-002"
+    },
+    {
+      "actor": "2-cto",
+      "type": "cto.authorize",
+      "tick": 40,
+      "order": 18,
+      "payload": {},
+      "changeId": "CH-003"
+    },
+    {
+      "actor": "3-cto",
+      "type": "cto.authorize",
+      "tick": 40,
+      "order": 19,
+      "payload": {},
+      "changeId": "CH-004"
+    },
+    {
+      "actor": "4-cto",
+      "type": "cto.authorize",
+      "tick": 40,
+      "order": 20,
+      "payload": {},
+      "changeId": "CH-005"
+    },
+    {
+      "actor": "0-devops",
+      "type": "deploy.start",
+      "tick": 50,
+      "order": 21,
+      "payload": {
+        "strategy": "rolling"
+      },
+      "changeId": "CH-001"
+    },
+    {
+      "actor": "1-devops",
+      "type": "deploy.start",
+      "tick": 50,
+      "order": 22,
+      "payload": {
+        "strategy": "rolling"
+      },
+      "changeId": "CH-002"
+    },
+    {
+      "actor": "2-devops",
+      "type": "deploy.start",
+      "tick": 50,
+      "order": 23,
+      "payload": {
+        "strategy": "rolling"
+      },
+      "changeId": "CH-003"
+    },
+    {
+      "actor": "3-devops",
+      "type": "deploy.start",
+      "tick": 50,
+      "order": 24,
+      "payload": {
+        "strategy": "rolling"
+      },
+      "changeId": "CH-004"
+    },
+    {
+      "actor": "4-devops",
+      "type": "deploy.start",
+      "tick": 50,
+      "order": 25,
+      "payload": {
+        "strategy": "rolling"
+      },
+      "changeId": "CH-005"
+    },
+    {
+      "actor": "0-security",
+      "type": "change.submit",
+      "tick": 70,
+      "order": 26,
+      "payload": {
+        "graph": {
+          "nodes": [
+            {
+              "id": "s-entry",
+              "type": "entry",
+              "position": {
+                "x": 0,
+                "y": 160
+              },
+              "data": {
+                "label": "entry",
+                "value": 1
+              }
+            },
+            {
+              "id": "s-auth",
+              "type": "auth",
+              "position": {
+                "x": 190,
+                "y": 160
+              },
+              "data": {
+                "label": "auth",
+                "value": 1
+              }
+            },
+            {
+              "id": "s-waf",
+              "type": "waf",
+              "position": {
+                "x": 380,
+                "y": 160
+              },
+              "data": {
+                "label": "waf",
+                "value": 1
+              }
+            },
+            {
+              "id": "s-bot",
+              "type": "bot",
+              "position": {
+                "x": 570,
+                "y": 160
+              },
+              "data": {
+                "label": "bot",
+                "value": 100
+              }
+            },
+            {
+              "id": "s-exit",
+              "type": "exit",
+              "position": {
+                "x": 760,
+                "y": 160
+              },
+              "data": {
+                "label": "exit",
+                "value": 1
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "s-edge-0",
+              "source": "s-entry",
+              "target": "s-auth"
+            },
+            {
+              "id": "s-edge-1",
+              "source": "s-auth",
+              "target": "s-waf"
+            },
+            {
+              "id": "s-edge-2",
+              "source": "s-waf",
+              "target": "s-bot"
+            },
+            {
+              "id": "s-edge-3",
+              "source": "s-bot",
+              "target": "s-exit"
+            }
+          ]
+        },
+        "revision": 0
+      }
+    },
+    {
+      "actor": "1-security",
+      "type": "change.submit",
+      "tick": 70,
+      "order": 27,
+      "payload": {
+        "graph": {
+          "nodes": [
+            {
+              "id": "s-entry",
+              "type": "entry",
+              "position": {
+                "x": 0,
+                "y": 160
+              },
+              "data": {
+                "label": "entry",
+                "value": 1
+              }
+            },
+            {
+              "id": "s-auth",
+              "type": "auth",
+              "position": {
+                "x": 190,
+                "y": 160
+              },
+              "data": {
+                "label": "auth",
+                "value": 1
+              }
+            },
+            {
+              "id": "s-waf",
+              "type": "waf",
+              "position": {
+                "x": 380,
+                "y": 160
+              },
+              "data": {
+                "label": "waf",
+                "value": 1
+              }
+            },
+            {
+              "id": "s-bot",
+              "type": "bot",
+              "position": {
+                "x": 570,
+                "y": 160
+              },
+              "data": {
+                "label": "bot",
+                "value": 100
+              }
+            },
+            {
+              "id": "s-exit",
+              "type": "exit",
+              "position": {
+                "x": 760,
+                "y": 160
+              },
+              "data": {
+                "label": "exit",
+                "value": 1
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "s-edge-0",
+              "source": "s-entry",
+              "target": "s-auth"
+            },
+            {
+              "id": "s-edge-1",
+              "source": "s-auth",
+              "target": "s-waf"
+            },
+            {
+              "id": "s-edge-2",
+              "source": "s-waf",
+              "target": "s-bot"
+            },
+            {
+              "id": "s-edge-3",
+              "source": "s-bot",
+              "target": "s-exit"
+            }
+          ]
+        },
+        "revision": 0
+      }
+    },
+    {
+      "actor": "2-security",
+      "type": "change.submit",
+      "tick": 70,
+      "order": 28,
+      "payload": {
+        "graph": {
+          "nodes": [
+            {
+              "id": "s-entry",
+              "type": "entry",
+              "position": {
+                "x": 0,
+                "y": 160
+              },
+              "data": {
+                "label": "entry",
+                "value": 1
+              }
+            },
+            {
+              "id": "s-auth",
+              "type": "auth",
+              "position": {
+                "x": 190,
+                "y": 160
+              },
+              "data": {
+                "label": "auth",
+                "value": 1
+              }
+            },
+            {
+              "id": "s-waf",
+              "type": "waf",
+              "position": {
+                "x": 380,
+                "y": 160
+              },
+              "data": {
+                "label": "waf",
+                "value": 1
+              }
+            },
+            {
+              "id": "s-bot",
+              "type": "bot",
+              "position": {
+                "x": 570,
+                "y": 160
+              },
+              "data": {
+                "label": "bot",
+                "value": 100
+              }
+            },
+            {
+              "id": "s-exit",
+              "type": "exit",
+              "position": {
+                "x": 760,
+                "y": 160
+              },
+              "data": {
+                "label": "exit",
+                "value": 1
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "s-edge-0",
+              "source": "s-entry",
+              "target": "s-auth"
+            },
+            {
+              "id": "s-edge-1",
+              "source": "s-auth",
+              "target": "s-waf"
+            },
+            {
+              "id": "s-edge-2",
+              "source": "s-waf",
+              "target": "s-bot"
+            },
+            {
+              "id": "s-edge-3",
+              "source": "s-bot",
+              "target": "s-exit"
+            }
+          ]
+        },
+        "revision": 0
+      }
+    },
+    {
+      "actor": "3-security",
+      "type": "change.submit",
+      "tick": 70,
+      "order": 29,
+      "payload": {
+        "graph": {
+          "nodes": [
+            {
+              "id": "s-entry",
+              "type": "entry",
+              "position": {
+                "x": 0,
+                "y": 160
+              },
+              "data": {
+                "label": "entry",
+                "value": 1
+              }
+            },
+            {
+              "id": "s-auth",
+              "type": "auth",
+              "position": {
+                "x": 190,
+                "y": 160
+              },
+              "data": {
+                "label": "auth",
+                "value": 1
+              }
+            },
+            {
+              "id": "s-waf",
+              "type": "waf",
+              "position": {
+                "x": 380,
+                "y": 160
+              },
+              "data": {
+                "label": "waf",
+                "value": 1
+              }
+            },
+            {
+              "id": "s-bot",
+              "type": "bot",
+              "position": {
+                "x": 570,
+                "y": 160
+              },
+              "data": {
+                "label": "bot",
+                "value": 100
+              }
+            },
+            {
+              "id": "s-exit",
+              "type": "exit",
+              "position": {
+                "x": 760,
+                "y": 160
+              },
+              "data": {
+                "label": "exit",
+                "value": 1
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "s-edge-0",
+              "source": "s-entry",
+              "target": "s-auth"
+            },
+            {
+              "id": "s-edge-1",
+              "source": "s-auth",
+              "target": "s-waf"
+            },
+            {
+              "id": "s-edge-2",
+              "source": "s-waf",
+              "target": "s-bot"
+            },
+            {
+              "id": "s-edge-3",
+              "source": "s-bot",
+              "target": "s-exit"
+            }
+          ]
+        },
+        "revision": 0
+      }
+    },
+    {
+      "actor": "4-security",
+      "type": "change.submit",
+      "tick": 70,
+      "order": 30,
+      "payload": {
+        "graph": {
+          "nodes": [
+            {
+              "id": "s-entry",
+              "type": "entry",
+              "position": {
+                "x": 0,
+                "y": 160
+              },
+              "data": {
+                "label": "entry",
+                "value": 1
+              }
+            },
+            {
+              "id": "s-auth",
+              "type": "auth",
+              "position": {
+                "x": 190,
+                "y": 160
+              },
+              "data": {
+                "label": "auth",
+                "value": 1
+              }
+            },
+            {
+              "id": "s-waf",
+              "type": "waf",
+              "position": {
+                "x": 380,
+                "y": 160
+              },
+              "data": {
+                "label": "waf",
+                "value": 1
+              }
+            },
+            {
+              "id": "s-bot",
+              "type": "bot",
+              "position": {
+                "x": 570,
+                "y": 160
+              },
+              "data": {
+                "label": "bot",
+                "value": 100
+              }
+            },
+            {
+              "id": "s-exit",
+              "type": "exit",
+              "position": {
+                "x": 760,
+                "y": 160
+              },
+              "data": {
+                "label": "exit",
+                "value": 1
+              }
+            }
+          ],
+          "edges": [
+            {
+              "id": "s-edge-0",
+              "source": "s-entry",
+              "target": "s-auth"
+            },
+            {
+              "id": "s-edge-1",
+              "source": "s-auth",
+              "target": "s-waf"
+            },
+            {
+              "id": "s-edge-2",
+              "source": "s-waf",
+              "target": "s-bot"
+            },
+            {
+              "id": "s-edge-3",
+              "source": "s-bot",
+              "target": "s-exit"
+            }
+          ]
+        },
+        "revision": 0
+      }
+    },
+    {
+      "actor": "0-qa",
+      "type": "qa.run",
+      "tick": 80,
+      "order": 31,
+      "payload": {
+        "suite": "Seguridad"
+      },
+      "changeId": "CH-006"
+    },
+    {
+      "actor": "1-qa",
+      "type": "qa.run",
+      "tick": 80,
+      "order": 32,
+      "payload": {
+        "suite": "Seguridad"
+      },
+      "changeId": "CH-007"
+    },
+    {
+      "actor": "2-qa",
+      "type": "qa.run",
+      "tick": 80,
+      "order": 33,
+      "payload": {
+        "suite": "Seguridad"
+      },
+      "changeId": "CH-008"
+    },
+    {
+      "actor": "3-qa",
+      "type": "qa.run",
+      "tick": 80,
+      "order": 34,
+      "payload": {
+        "suite": "Seguridad"
+      },
+      "changeId": "CH-009"
+    },
+    {
+      "actor": "4-qa",
+      "type": "qa.run",
+      "tick": 80,
+      "order": 35,
+      "payload": {
+        "suite": "Seguridad"
+      },
+      "changeId": "CH-010"
+    },
+    {
+      "actor": "0-qa",
+      "type": "qa.approve",
+      "tick": 90,
+      "order": 36,
+      "payload": {},
+      "changeId": "CH-006"
+    },
+    {
+      "actor": "1-qa",
+      "type": "qa.approve",
+      "tick": 90,
+      "order": 37,
+      "payload": {},
+      "changeId": "CH-007"
+    },
+    {
+      "actor": "2-qa",
+      "type": "qa.approve",
+      "tick": 90,
+      "order": 38,
+      "payload": {},
+      "changeId": "CH-008"
+    },
+    {
+      "actor": "3-qa",
+      "type": "qa.approve",
+      "tick": 90,
+      "order": 39,
+      "payload": {},
+      "changeId": "CH-009"
+    },
+    {
+      "actor": "4-qa",
+      "type": "qa.approve",
+      "tick": 90,
+      "order": 40,
+      "payload": {},
+      "changeId": "CH-010"
+    },
+    {
+      "actor": "0-cto",
+      "type": "cto.authorize",
+      "tick": 100,
+      "order": 41,
+      "payload": {},
+      "changeId": "CH-006"
+    },
+    {
+      "actor": "1-cto",
+      "type": "cto.authorize",
+      "tick": 100,
+      "order": 42,
+      "payload": {},
+      "changeId": "CH-007"
+    },
+    {
+      "actor": "2-cto",
+      "type": "cto.authorize",
+      "tick": 100,
+      "order": 43,
+      "payload": {},
+      "changeId": "CH-008"
+    },
+    {
+      "actor": "3-cto",
+      "type": "cto.authorize",
+      "tick": 100,
+      "order": 44,
+      "payload": {},
+      "changeId": "CH-009"
+    },
+    {
+      "actor": "4-cto",
+      "type": "cto.authorize",
+      "tick": 100,
+      "order": 45,
+      "payload": {},
+      "changeId": "CH-010"
+    },
+    {
+      "actor": "0-devops",
+      "type": "deploy.start",
+      "tick": 110,
+      "order": 46,
+      "payload": {
+        "strategy": "rolling"
+      },
+      "changeId": "CH-006"
+    },
+    {
+      "actor": "1-devops",
+      "type": "deploy.start",
+      "tick": 110,
+      "order": 47,
+      "payload": {
+        "strategy": "rolling"
+      },
+      "changeId": "CH-007"
+    },
+    {
+      "actor": "2-devops",
+      "type": "deploy.start",
+      "tick": 110,
+      "order": 48,
+      "payload": {
+        "strategy": "rolling"
+      },
+      "changeId": "CH-008"
+    },
+    {
+      "actor": "3-devops",
+      "type": "deploy.start",
+      "tick": 110,
+      "order": 49,
+      "payload": {
+        "strategy": "rolling"
+      },
+      "changeId": "CH-009"
+    },
+    {
+      "actor": "4-devops",
+      "type": "deploy.start",
+      "tick": 110,
+      "order": 50,
+      "payload": {
+        "strategy": "rolling"
+      },
+      "changeId": "CH-010"
+    },
+    {
+      "actor": "0-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 51,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "0-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 52,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "0-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 53,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "0-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 54,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "0-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 55,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "0-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 56,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 57,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 58,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 59,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 60,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 61,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 62,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 63,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "infra.balancer",
+      "tick": 130,
+      "order": 64,
+      "payload": {
+        "enabled": true
+      }
+    },
+    {
+      "actor": "1-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 65,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "1-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 66,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "1-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 67,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "1-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 68,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "1-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 69,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "1-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 70,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 71,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 72,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 73,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 74,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 75,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 76,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 77,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "infra.balancer",
+      "tick": 130,
+      "order": 78,
+      "payload": {
+        "enabled": true
+      }
+    },
+    {
+      "actor": "2-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 79,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "2-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 80,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "2-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 81,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "2-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 82,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "2-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 83,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "2-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 84,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 85,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 86,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 87,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 88,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 89,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 90,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 91,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "infra.balancer",
+      "tick": 130,
+      "order": 92,
+      "payload": {
+        "enabled": true
+      }
+    },
+    {
+      "actor": "3-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 93,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "3-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 94,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "3-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 95,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "3-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 96,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "3-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 97,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "3-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 98,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 99,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 100,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 101,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 102,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 103,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 104,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 105,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "infra.balancer",
+      "tick": 130,
+      "order": 106,
+      "payload": {
+        "enabled": true
+      }
+    },
+    {
+      "actor": "4-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 107,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "4-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 108,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "4-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 109,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "4-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 110,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "4-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 111,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "4-cto",
+      "type": "cto.budget",
+      "tick": 130,
+      "order": 112,
+      "payload": {
+        "amount": 1000
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 113,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 114,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 115,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 116,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 117,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 118,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "infra.scale",
+      "tick": 130,
+      "order": 119,
+      "payload": {
+        "delta": 1
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "infra.balancer",
+      "tick": 130,
+      "order": 120,
+      "payload": {
+        "enabled": true
+      }
+    },
+    {
+      "actor": "0-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 121,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 122,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 123,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 124,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 125,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 126,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 127,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 128,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 129,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 130,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 131,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 132,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 133,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 134,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 135,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 136,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 137,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 138,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 139,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 140,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 141,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 142,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 143,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 144,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 145,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 146,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 147,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 148,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 149,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 150,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 151,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 152,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 153,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 154,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 155,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 156,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 157,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 158,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 159,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 160,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 161,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 162,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 163,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 164,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 165,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 166,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 167,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 168,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 169,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 170,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 171,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 172,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 173,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 174,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 175,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 176,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 177,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 178,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 179,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 180,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 181,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 182,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 183,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 184,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 185,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 186,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 187,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 188,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 189,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 190,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 191,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 192,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 193,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 194,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 195,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 196,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 197,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 198,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 199,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 200,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 201,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 202,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 203,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 204,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 205,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 206,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 207,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 208,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 209,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 210,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 211,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 212,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 213,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 214,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 215,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 216,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 217,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 218,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 219,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 220,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 221,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 222,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 223,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 224,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 225,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 226,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 227,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 228,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 229,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 230,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 231,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 232,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 233,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 234,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 235,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 236,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 237,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 238,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 239,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 240,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-backend",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 241,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-security",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 242,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-qa",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 243,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-cto",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 244,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "chat.send",
+      "tick": 160,
+      "order": 245,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 246,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 247,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 248,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 249,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 250,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 251,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 252,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 253,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 254,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 255,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 256,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 257,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 258,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 259,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 260,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 261,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 262,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 263,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 264,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 265,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 266,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 267,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 268,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 269,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 270,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 0",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 271,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 272,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 273,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 274,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 275,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 276,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 277,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 278,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 279,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 280,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 281,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 282,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 283,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 284,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 285,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 286,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 287,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 288,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 289,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 290,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 291,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 292,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 293,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 294,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 295,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 1",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 296,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 297,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 298,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 299,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 300,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 301,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 302,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 303,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 304,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 305,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 306,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 307,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 308,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 309,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 310,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 311,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 312,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 313,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 314,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 315,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 316,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 317,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 318,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 319,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 320,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 2",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 321,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 322,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 323,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 324,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 325,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 326,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 327,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 328,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 329,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 330,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 331,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 332,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 333,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 334,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 335,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 336,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 337,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 338,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 339,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 340,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 341,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 342,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 343,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 344,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 345,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 3",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 346,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 347,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 348,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 349,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 350,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 351,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 352,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 353,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 354,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 355,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 356,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 357,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 358,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 359,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 360,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 361,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 362,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 363,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 364,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 365,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-backend",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 366,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-security",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 367,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-qa",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 368,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-cto",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 369,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "chat.send",
+      "tick": 180,
+      "order": 370,
+      "payload": {
+        "channel": "equipo-interno",
+        "text": "Mensaje sintético 4",
+        "refs": []
+      }
+    },
+    {
+      "actor": "operator",
+      "type": "room.pause",
+      "tick": 190,
+      "order": 371
+    },
+    {
+      "actor": "0-devops",
+      "type": "infra.stop",
+      "tick": 200,
+      "order": 372,
+      "payload": {
+        "service": "web"
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "infra.stop",
+      "tick": 200,
+      "order": 373,
+      "payload": {
+        "service": "web"
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "infra.stop",
+      "tick": 200,
+      "order": 374,
+      "payload": {
+        "service": "web"
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "infra.stop",
+      "tick": 200,
+      "order": 375,
+      "payload": {
+        "service": "web"
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "infra.stop",
+      "tick": 200,
+      "order": 376,
+      "payload": {
+        "service": "web"
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "infra.recover",
+      "tick": 210,
+      "order": 377,
+      "payload": {
+        "service": "web"
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "infra.recover",
+      "tick": 210,
+      "order": 378,
+      "payload": {
+        "service": "web"
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "infra.recover",
+      "tick": 210,
+      "order": 379,
+      "payload": {
+        "service": "web"
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "infra.recover",
+      "tick": 210,
+      "order": 380,
+      "payload": {
+        "service": "web"
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "infra.recover",
+      "tick": 210,
+      "order": 381,
+      "payload": {
+        "service": "web"
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "infra.maintenance",
+      "tick": 215,
+      "order": 382,
+      "payload": {
+        "mode": "ORDERS_PAUSED"
+      }
+    },
+    {
+      "actor": "0-devops",
+      "type": "infra.maintenance",
+      "tick": 215,
+      "order": 383,
+      "payload": {
+        "mode": "OPERATING"
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "infra.maintenance",
+      "tick": 215,
+      "order": 384,
+      "payload": {
+        "mode": "ORDERS_PAUSED"
+      }
+    },
+    {
+      "actor": "1-devops",
+      "type": "infra.maintenance",
+      "tick": 215,
+      "order": 385,
+      "payload": {
+        "mode": "OPERATING"
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "infra.maintenance",
+      "tick": 215,
+      "order": 386,
+      "payload": {
+        "mode": "ORDERS_PAUSED"
+      }
+    },
+    {
+      "actor": "2-devops",
+      "type": "infra.maintenance",
+      "tick": 215,
+      "order": 387,
+      "payload": {
+        "mode": "OPERATING"
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "infra.maintenance",
+      "tick": 215,
+      "order": 388,
+      "payload": {
+        "mode": "ORDERS_PAUSED"
+      }
+    },
+    {
+      "actor": "3-devops",
+      "type": "infra.maintenance",
+      "tick": 215,
+      "order": 389,
+      "payload": {
+        "mode": "OPERATING"
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "infra.maintenance",
+      "tick": 215,
+      "order": 390,
+      "payload": {
+        "mode": "ORDERS_PAUSED"
+      }
+    },
+    {
+      "actor": "4-devops",
+      "type": "infra.maintenance",
+      "tick": 215,
+      "order": 391,
+      "payload": {
+        "mode": "OPERATING"
+      }
+    },
+    {
+      "actor": "0-backend",
+      "type": "module.create",
+      "tick": 240,
+      "order": 392,
+      "payload": {
+        "name": "Recuperación sintética",
+        "configuration": {
+          "kind": "inventory",
+          "minimum": 3
+        },
+        "dependencies": []
+      }
+    },
+    {
+      "actor": "0-qa",
+      "type": "qa.run",
+      "tick": 250,
+      "order": 393,
+      "payload": {
+        "suite": "Concurrencia"
+      },
+      "changeId": "CH-011"
+    },
+    {
+      "actor": "operator",
+      "type": "room.pause",
+      "tick": 250,
+      "order": 394
+    }
+  ],
+  "actionTraceDigest": "5034141a19b7aeeca52496147227d3623e6aa45d95647a1c50245d0f68d28ed4",
+  "clients": {
+    "connections": 27,
+    "projectedFullBytes": 21441953456,
+    "updates": 162081,
+    "full": 55,
+    "deltas": 162026,
+    "resyncs": 1,
+    "nonChatAckMs": {
+      "n": 150,
+      "p50": 47.34424900000158,
+      "p95": 1299.7967509999871,
+      "p99": 1458.4012079999957,
+      "max": 1477.082998999991
+    },
+    "chatAckMs": {
+      "n": 250,
+      "p50": 2.550165999971796,
+      "p95": 1721.2699999999895,
+      "p99": 1904.460207999975,
+      "max": 1940.688124999986
+    },
+    "byIdentity": [
+      {
+        "id": "operator",
+        "role": "operator",
+        "logicalBytes": 233398572,
+        "updates": 6008,
+        "connections": 2,
+        "tcpBytesRead": 30621569
+      },
+      {
+        "id": "0-backend",
+        "role": "backend",
+        "logicalBytes": 227986346,
+        "updates": 6006,
+        "connections": 3,
+        "tcpBytesRead": 30299680
+      },
+      {
+        "id": "0-security",
+        "role": "security",
+        "logicalBytes": 227974828,
+        "updates": 6007,
+        "connections": 2,
+        "tcpBytesRead": 30284125
+      },
+      {
+        "id": "0-qa",
+        "role": "qa",
+        "logicalBytes": 227901199,
+        "updates": 6007,
+        "connections": 2,
+        "tcpBytesRead": 30279899
+      },
+      {
+        "id": "0-cto",
+        "role": "cto",
+        "logicalBytes": 227818638,
+        "updates": 6005,
+        "connections": 2,
+        "tcpBytesRead": 30268703
+      },
+      {
+        "id": "0-devops",
+        "role": "devops",
+        "logicalBytes": 227949271,
+        "updates": 6007,
+        "connections": 2,
+        "tcpBytesRead": 30285582
+      },
+      {
+        "id": "1-backend",
+        "role": "backend",
+        "logicalBytes": 227934717,
+        "updates": 6007,
+        "connections": 2,
+        "tcpBytesRead": 30289841
+      },
+      {
+        "id": "1-security",
+        "role": "security",
+        "logicalBytes": 227946429,
+        "updates": 6007,
+        "connections": 2,
+        "tcpBytesRead": 30272289
+      },
+      {
+        "id": "1-qa",
+        "role": "qa",
+        "logicalBytes": 227825980,
+        "updates": 6006,
+        "connections": 2,
+        "tcpBytesRead": 30239375
+      },
+      {
+        "id": "1-cto",
+        "role": "cto",
+        "logicalBytes": 227840161,
+        "updates": 6006,
+        "connections": 2,
+        "tcpBytesRead": 30262204
+      },
+      {
+        "id": "1-devops",
+        "role": "devops",
+        "logicalBytes": 227829381,
+        "updates": 6005,
+        "connections": 2,
+        "tcpBytesRead": 30264263
+      },
+      {
+        "id": "2-backend",
+        "role": "backend",
+        "logicalBytes": 227846947,
+        "updates": 6005,
+        "connections": 2,
+        "tcpBytesRead": 30285390
+      },
+      {
+        "id": "2-security",
+        "role": "security",
+        "logicalBytes": 227951089,
+        "updates": 6007,
+        "connections": 2,
+        "tcpBytesRead": 30257293
+      },
+      {
+        "id": "2-qa",
+        "role": "qa",
+        "logicalBytes": 227654835,
+        "updates": 6002,
+        "connections": 2,
+        "tcpBytesRead": 30218436
+      },
+      {
+        "id": "2-cto",
+        "role": "cto",
+        "logicalBytes": 227753617,
+        "updates": 6004,
+        "connections": 2,
+        "tcpBytesRead": 30235475
+      },
+      {
+        "id": "2-devops",
+        "role": "devops",
+        "logicalBytes": 227658234,
+        "updates": 6001,
+        "connections": 2,
+        "tcpBytesRead": 30242095
+      },
+      {
+        "id": "3-backend",
+        "role": "backend",
+        "logicalBytes": 227675924,
+        "updates": 6001,
+        "connections": 2,
+        "tcpBytesRead": 30251065
+      },
+      {
+        "id": "3-security",
+        "role": "security",
+        "logicalBytes": 227687624,
+        "updates": 6001,
+        "connections": 2,
+        "tcpBytesRead": 30234220
+      },
+      {
+        "id": "3-qa",
+        "role": "qa",
+        "logicalBytes": 227614067,
+        "updates": 6001,
+        "connections": 2,
+        "tcpBytesRead": 30231064
+      },
+      {
+        "id": "3-cto",
+        "role": "cto",
+        "logicalBytes": 227626073,
+        "updates": 6001,
+        "connections": 2,
+        "tcpBytesRead": 30227309
+      },
+      {
+        "id": "3-devops",
+        "role": "devops",
+        "logicalBytes": 227625318,
+        "updates": 6000,
+        "connections": 2,
+        "tcpBytesRead": 30243596
+      },
+      {
+        "id": "4-backend",
+        "role": "backend",
+        "logicalBytes": 227643160,
+        "updates": 6000,
+        "connections": 2,
+        "tcpBytesRead": 30240537
+      },
+      {
+        "id": "4-security",
+        "role": "security",
+        "logicalBytes": 227573231,
+        "updates": 5998,
+        "connections": 2,
+        "tcpBytesRead": 30230781
+      },
+      {
+        "id": "4-qa",
+        "role": "qa",
+        "logicalBytes": 227499710,
+        "updates": 5998,
+        "connections": 2,
+        "tcpBytesRead": 30202712
+      },
+      {
+        "id": "4-cto",
+        "role": "cto",
+        "logicalBytes": 227471420,
+        "updates": 5997,
+        "connections": 2,
+        "tcpBytesRead": 30218228
+      },
+      {
+        "id": "4-devops",
+        "role": "devops",
+        "logicalBytes": 227507414,
+        "updates": 5997,
+        "connections": 2,
+        "tcpBytesRead": 30225209
+      },
+      {
+        "id": "public",
+        "role": "projector",
+        "logicalBytes": 227224495,
+        "updates": 5997,
+        "connections": 2,
+        "tcpBytesRead": 30116125
+      }
+    ],
+    "ackMs": {
+      "n": 400,
+      "p50": 47.34424900000158,
+      "p95": 1574.715333,
+      "p99": 1867.4380820000079,
+      "max": 1940.688124999986
+    },
+    "ackIncludingScheduledWaitMs": {
+      "n": 400,
+      "p50": 20040.564792000005,
+      "p95": 32501.28895799999,
+      "p99": 32501.369166999997,
+      "max": 32501.42758300001
+    },
+    "cadenceMs": {
+      "n": 162054,
+      "p50": 202.91104100004304,
+      "p95": 255.0688749998808,
+      "p99": 303.58775000000605,
+      "max": 5932.558541000006
+    },
+    "applyMs": {
+      "n": 162081,
+      "p50": 0.11254200001712888,
+      "p95": 0.24441699997987598,
+      "p99": 0.4870840000221506,
+      "max": 14.384375000023283
+    },
+    "sizeBytes": {
+      "n": 162081,
+      "p50": 42740,
+      "p95": 46300,
+      "p99": 47504,
+      "max": 124429
+    },
+    "receivedLogicalBytes": 6154418680,
+    "tcpBytesRead": 817027065
+  },
+  "sourceUnchanged": true,
+  "storageAfterShutdown": {
+    "mainBytes": 9695232,
+    "walBytes": 0
+  },
+  "exitCode": 0
+}

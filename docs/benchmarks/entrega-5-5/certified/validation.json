@@ -1,0 +1,96 @@
+{
+  "at": "2026-10-20T19:48:45.414Z",
+  "baselineSha": "b52ccc67c8aeaf3d76cf52a4db60d10e120f5942",
+  "measuredOptimizedSha": "35e870719cb63710d568d414e0ebf306d9882ecd",
+  "runtimeSourceDigest": "35ba3e543d3afa3efd1e4afcc7cd45fbff5a7161369a50a980f0bc2c01bbc72e",
+  "baselineSourceDigest": "cc6f6691e3e6510d3fa7d86b800764beac67175816b9d4fb2f71a7061290ab1c",
+  "harnessDigest": "ce4893253f5f7e48e05586a55abc8272729ce90856c241c9f9e255f7ca6c6790",
+  "probeDigest": "ca8344983c7a902b613254132cc04207ff70b517b93312447bb8a669ec449480",
+  "reportGeneratorDigest": "57a342af5402fbdbaa99e87f1f5de524784076645f99388a1942e40a4e16da44",
+  "hardware": {
+    "node": "v25.9.0",
+    "os": "27.0.0",
+    "cpu": "Apple M5",
+    "cores": 10,
+    "ram": 17179869184
+  },
+  "tests": {
+    "command": "npm test",
+    "exitCode": 0,
+    "total": 264,
+    "passed": 264,
+    "failed": 0,
+    "skipped": 0,
+    "baselineTestsPreserved": 232,
+    "added": 32,
+    "log": "../test-certified.txt",
+    "logSha256": "5027f0811225b3852329e12623b5bc72c31510d78e7074003f528ceae5f75338",
+    "logModifiedAt": "2026-10-20T15:26:16.089Z"
+  },
+  "build": {
+    "command": "npm run build",
+    "exitCode": 0,
+    "log": "../build-delivery.txt",
+    "logSha256": "b58f96ef02f3f4b80fa86b3e76de191d4c37d20cb9a670a3d24741c36ebf7bcf",
+    "logModifiedAt": "2026-10-20T15:27:36.188Z",
+    "warning": "Vite reports a client chunk over 500 kB; build succeeds."
+  },
+  "regressions": [
+    {
+      "command": "npm test",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run bench:traffic",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run bench:actions",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run bench:connections",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run bench:chat",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run bench:entrega5",
+      "exitCode": 0
+    }
+  ],
+  "exactLegacyReplays": 176,
+  "matrix": {
+    "runs": 9,
+    "allExitCodesZero": true,
+    "activeConnectionsPerRun": 27,
+    "realPhysicalConnectionsAcrossReconnectsPerRun": 55,
+    "originalHumanMessagesPerRun": 125,
+    "authorizedHumanDeliveriesPerRun": 625,
+    "identicalActionAndEconomicHashes": true,
+    "sigkillRecoveryExactBothModes": true,
+    "offExclusiveForensicTablesEmpty": true
+  },
+  "observedChecks": {
+    "currentSourcesAndHarnessMatchAllMeasuredDigests": true,
+    "reportGenerationExitCode": 0,
+    "evidenceCredentialScanMatches": 0,
+    "gitMergesSinceBaseline": 0
+  },
+  "limits": [
+    "Single pass per cell on loopback TCP; not physical Wi-Fi traffic.",
+    "Client reducer measured in Node, not browser DOM or FPS.",
+    "CPU increases at 1x; durable action bursts retain high ACK latency.",
+    "SQLite modified-row counts are not physical disk-write byte totals."
+  ],
+  "publication": {
+    "branch": "codex/entrega-5-5-performance-modes",
+    "finalSha": "Provided in delivery response; this manifest cannot contain its own Git commit hash."
+  }
+}

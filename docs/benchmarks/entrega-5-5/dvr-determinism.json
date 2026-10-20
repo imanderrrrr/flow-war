@@ -1,0 +1,1218 @@
+{
+  "sha": "9e0e2dc838cc670df52baf95e450fbe025ca166d",
+  "hardware": {
+    "node": "v25.9.0",
+    "cpu": "Apple M5"
+  },
+  "normalizations": [
+    "dvrEnabled (configuration)",
+    "observability.checkpointAt (replay scheduler)",
+    "observability.sampleAt (replay scheduler)",
+    "serializeGame already omits transient receipt outbox in both modes"
+  ],
+  "rssLimitation": "Sequential runs in one Node process; retained V8 arenas make RSS unsuitable for causal comparison. Use separate-process classroom runs for RAM.",
+  "results": [
+    {
+      "duration": 1200,
+      "enabled": true,
+      "states": [
+        {
+          "tick": 60,
+          "digest": "53b748d04b87e11eee9f9e717471a530c88e60d6a70ec8db5d6b35bd6aa9f620"
+        },
+        {
+          "tick": 120,
+          "digest": "371394adce84797d6109e65cc2bceda572f01ae08ace18b0969cf160d9c4b5ad"
+        },
+        {
+          "tick": 180,
+          "digest": "094b9097dfa3c36d2b461e0e0af7f15c69ca1e89c2b18a85f5244643dff953ef"
+        },
+        {
+          "tick": 240,
+          "digest": "853dfa581e241c13c11f21e059c5107718b00b96bc3b07a0db969935fc308a8f"
+        },
+        {
+          "tick": 300,
+          "digest": "bca12cf90a47a95a7497f55346711152bf8d75ad6c88a669d0544d7ab78f39a5"
+        },
+        {
+          "tick": 360,
+          "digest": "ac03ca75e8bf9d7ca6a34ba91de2c2df93557b6347aac714817a7f91eb0a3da2"
+        },
+        {
+          "tick": 420,
+          "digest": "945cdb34efe7b52ec7445857c870105184a208de1fcba8fa43ec209a735df140"
+        },
+        {
+          "tick": 480,
+          "digest": "57e788c9ccd7554b41cfa22162554409d9caced4e3512dfeba56f124423ac016"
+        },
+        {
+          "tick": 540,
+          "digest": "62a08ec0d92bb481d0d6e1e401980f92883c9ca38795887d2e5f688655684538"
+        },
+        {
+          "tick": 600,
+          "digest": "6df7f91ba4d700e04703088b081ff8c1c9beab15134c99e3346458a268dd1564"
+        },
+        {
+          "tick": 660,
+          "digest": "2f0fdd050189f4f33a02cd1c7d157e36e9891e3ed8c3f490e15f0a3ee606c7bc"
+        },
+        {
+          "tick": 720,
+          "digest": "9160c605072d2017844e5b0bb4dbbd6dfd83d9302d5270320acf10b453b819ef"
+        },
+        {
+          "tick": 780,
+          "digest": "55fb159873458f661fc224352f1ac5c68cf082184c9b85248b0fe72ae327cd3e"
+        },
+        {
+          "tick": 840,
+          "digest": "d0616292bbc95b5c2d6b3a1b722844c7074f98976fa18e682beef3f05bd7a1d6"
+        },
+        {
+          "tick": 900,
+          "digest": "ad8327e1cb306638c108959cb0446c43c0d9fbbac280ccd30c9b206a9974c631"
+        },
+        {
+          "tick": 960,
+          "digest": "168f861e76d664fb16064e1e1a260d1f7563196f7dab7e61beb52d7ea98a9e8e"
+        },
+        {
+          "tick": 1020,
+          "digest": "14650cb5e45c0dfcebbd4949d915925b334e1d8cc25678e39c421024fed4e4ab"
+        },
+        {
+          "tick": 1080,
+          "digest": "e83ecb221112d45a2ed5208b347cce7cc6b01a301edaf55a2d0bda72ac291b72"
+        },
+        {
+          "tick": 1140,
+          "digest": "5bd6a539b434932fc475def7d2c12a1277e9184cc5a6a697b0df86b317db7768"
+        },
+        {
+          "tick": 1200,
+          "digest": "f5acbe4e79eb5915b51493aa9c0009b50ba4b4c340a138735c6d8bd0b0c9755f"
+        }
+      ],
+      "elapsedMs": 25146.646042,
+      "cpuMicros": {
+        "user": 26148156,
+        "system": 2061628
+      },
+      "rssMax": 496861184,
+      "heapUsed": 62425392,
+      "maxPending": 8357,
+      "sqliteBytes": 446201856,
+      "tables": {
+        "history_events": {
+          "rows": 228567
+        },
+        "history_inputs": {
+          "rows": 125
+        },
+        "history_points": {
+          "rows": 240
+        },
+        "history_checkpoints": {
+          "rows": 21
+        },
+        "request_receipts": {
+          "rows": 227125
+        },
+        "receipt_paths": {
+          "rows": 2
+        },
+        "commands": {
+          "rows": 0
+        },
+        "slack_messages": {
+          "rows": 118
+        }
+      },
+      "pages": [
+        {
+          "name": "commands",
+          "bytes": 4096
+        },
+        {
+          "name": "commands_generation",
+          "bytes": 4096
+        },
+        {
+          "name": "game",
+          "bytes": 4636672
+        },
+        {
+          "name": "history_checkpoint_time",
+          "bytes": 4096
+        },
+        {
+          "name": "history_checkpoints",
+          "bytes": 3035136
+        },
+        {
+          "name": "history_events",
+          "bytes": 116908032
+        },
+        {
+          "name": "history_events_time",
+          "bytes": 4923392
+        },
+        {
+          "name": "history_games",
+          "bytes": 4096
+        },
+        {
+          "name": "history_inputs",
+          "bytes": 40960
+        },
+        {
+          "name": "history_points",
+          "bytes": 249856
+        },
+        {
+          "name": "receipt_paths",
+          "bytes": 4096
+        },
+        {
+          "name": "receipts_generation",
+          "bytes": 2306048
+        },
+        {
+          "name": "request_receipts",
+          "bytes": 300916736
+        },
+        {
+          "name": "slack_messages",
+          "bytes": 45056
+        },
+        {
+          "name": "slack_tenant",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_commands_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_history_checkpoints_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_history_events_1",
+          "bytes": 3338240
+        },
+        {
+          "name": "sqlite_autoindex_history_inputs_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_history_points_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_receipt_paths_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_request_receipts_1",
+          "bytes": 5185536
+        },
+        {
+          "name": "sqlite_autoindex_slack_messages_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_schema",
+          "bytes": 4096
+        }
+      ],
+      "finalDigest": "f5acbe4e79eb5915b51493aa9c0009b50ba4b4c340a138735c6d8bd0b0c9755f",
+      "population": 5000,
+      "requests": [
+        {
+          "generated": 45265,
+          "completed": 32404,
+          "rejected": 12803,
+          "abandoned": 58,
+          "failed": 0,
+          "committed": 9683,
+          "oversold": 0,
+          "revenue": 435600,
+          "lostRevenue": 3195,
+          "capitalDelta": 29040
+        },
+        {
+          "generated": 45458,
+          "completed": 32665,
+          "rejected": 12755,
+          "abandoned": 38,
+          "failed": 0,
+          "committed": 9791,
+          "oversold": 0,
+          "revenue": 440415,
+          "lostRevenue": 1035,
+          "capitalDelta": 29361
+        },
+        {
+          "generated": 45488,
+          "completed": 32695,
+          "rejected": 12755,
+          "abandoned": 38,
+          "failed": 0,
+          "committed": 9800,
+          "oversold": 0,
+          "revenue": 440820,
+          "lostRevenue": 1035,
+          "capitalDelta": 29388
+        },
+        {
+          "generated": 45426,
+          "completed": 32632,
+          "rejected": 12755,
+          "abandoned": 39,
+          "failed": 0,
+          "committed": 9781,
+          "oversold": 0,
+          "revenue": 440010,
+          "lostRevenue": 945,
+          "capitalDelta": 29334
+        },
+        {
+          "generated": 45488,
+          "completed": 32695,
+          "rejected": 12755,
+          "abandoned": 38,
+          "failed": 0,
+          "committed": 9800,
+          "oversold": 0,
+          "revenue": 440820,
+          "lostRevenue": 1035,
+          "capitalDelta": 29388
+        }
+      ],
+      "crises": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "duration": 1200,
+      "enabled": false,
+      "states": [
+        {
+          "tick": 60,
+          "digest": "53b748d04b87e11eee9f9e717471a530c88e60d6a70ec8db5d6b35bd6aa9f620"
+        },
+        {
+          "tick": 120,
+          "digest": "371394adce84797d6109e65cc2bceda572f01ae08ace18b0969cf160d9c4b5ad"
+        },
+        {
+          "tick": 180,
+          "digest": "094b9097dfa3c36d2b461e0e0af7f15c69ca1e89c2b18a85f5244643dff953ef"
+        },
+        {
+          "tick": 240,
+          "digest": "853dfa581e241c13c11f21e059c5107718b00b96bc3b07a0db969935fc308a8f"
+        },
+        {
+          "tick": 300,
+          "digest": "bca12cf90a47a95a7497f55346711152bf8d75ad6c88a669d0544d7ab78f39a5"
+        },
+        {
+          "tick": 360,
+          "digest": "ac03ca75e8bf9d7ca6a34ba91de2c2df93557b6347aac714817a7f91eb0a3da2"
+        },
+        {
+          "tick": 420,
+          "digest": "945cdb34efe7b52ec7445857c870105184a208de1fcba8fa43ec209a735df140"
+        },
+        {
+          "tick": 480,
+          "digest": "57e788c9ccd7554b41cfa22162554409d9caced4e3512dfeba56f124423ac016"
+        },
+        {
+          "tick": 540,
+          "digest": "62a08ec0d92bb481d0d6e1e401980f92883c9ca38795887d2e5f688655684538"
+        },
+        {
+          "tick": 600,
+          "digest": "6df7f91ba4d700e04703088b081ff8c1c9beab15134c99e3346458a268dd1564"
+        },
+        {
+          "tick": 660,
+          "digest": "2f0fdd050189f4f33a02cd1c7d157e36e9891e3ed8c3f490e15f0a3ee606c7bc"
+        },
+        {
+          "tick": 720,
+          "digest": "9160c605072d2017844e5b0bb4dbbd6dfd83d9302d5270320acf10b453b819ef"
+        },
+        {
+          "tick": 780,
+          "digest": "55fb159873458f661fc224352f1ac5c68cf082184c9b85248b0fe72ae327cd3e"
+        },
+        {
+          "tick": 840,
+          "digest": "d0616292bbc95b5c2d6b3a1b722844c7074f98976fa18e682beef3f05bd7a1d6"
+        },
+        {
+          "tick": 900,
+          "digest": "ad8327e1cb306638c108959cb0446c43c0d9fbbac280ccd30c9b206a9974c631"
+        },
+        {
+          "tick": 960,
+          "digest": "168f861e76d664fb16064e1e1a260d1f7563196f7dab7e61beb52d7ea98a9e8e"
+        },
+        {
+          "tick": 1020,
+          "digest": "14650cb5e45c0dfcebbd4949d915925b334e1d8cc25678e39c421024fed4e4ab"
+        },
+        {
+          "tick": 1080,
+          "digest": "e83ecb221112d45a2ed5208b347cce7cc6b01a301edaf55a2d0bda72ac291b72"
+        },
+        {
+          "tick": 1140,
+          "digest": "5bd6a539b434932fc475def7d2c12a1277e9184cc5a6a697b0df86b317db7768"
+        },
+        {
+          "tick": 1200,
+          "digest": "f5acbe4e79eb5915b51493aa9c0009b50ba4b4c340a138735c6d8bd0b0c9755f"
+        }
+      ],
+      "elapsedMs": 12550.535792000002,
+      "cpuMicros": {
+        "user": 12017135,
+        "system": 924651
+      },
+      "rssMax": 514129920,
+      "heapUsed": 134880096,
+      "maxPending": 0,
+      "sqliteBytes": 9334784,
+      "tables": {
+        "history_events": {
+          "rows": 0
+        },
+        "history_inputs": {
+          "rows": 0
+        },
+        "history_points": {
+          "rows": 0
+        },
+        "history_checkpoints": {
+          "rows": 0
+        },
+        "request_receipts": {
+          "rows": 0
+        },
+        "receipt_paths": {
+          "rows": 0
+        },
+        "commands": {
+          "rows": 0
+        },
+        "slack_messages": {
+          "rows": 118
+        }
+      },
+      "pages": [
+        {
+          "name": "commands",
+          "bytes": 4096
+        },
+        {
+          "name": "commands_generation",
+          "bytes": 4096
+        },
+        {
+          "name": "game",
+          "bytes": 4636672
+        },
+        {
+          "name": "history_checkpoint_time",
+          "bytes": 4096
+        },
+        {
+          "name": "history_checkpoints",
+          "bytes": 4096
+        },
+        {
+          "name": "history_events",
+          "bytes": 4096
+        },
+        {
+          "name": "history_events_time",
+          "bytes": 4096
+        },
+        {
+          "name": "history_games",
+          "bytes": 4096
+        },
+        {
+          "name": "history_inputs",
+          "bytes": 4096
+        },
+        {
+          "name": "history_points",
+          "bytes": 4096
+        },
+        {
+          "name": "receipt_paths",
+          "bytes": 4096
+        },
+        {
+          "name": "receipts_generation",
+          "bytes": 4096
+        },
+        {
+          "name": "request_receipts",
+          "bytes": 4096
+        },
+        {
+          "name": "slack_messages",
+          "bytes": 45056
+        },
+        {
+          "name": "slack_tenant",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_commands_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_history_checkpoints_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_history_events_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_history_inputs_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_history_points_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_receipt_paths_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_request_receipts_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_slack_messages_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_schema",
+          "bytes": 4096
+        }
+      ],
+      "finalDigest": "f5acbe4e79eb5915b51493aa9c0009b50ba4b4c340a138735c6d8bd0b0c9755f",
+      "population": 5000,
+      "requests": [
+        {
+          "generated": 45265,
+          "completed": 32404,
+          "rejected": 12803,
+          "abandoned": 58,
+          "failed": 0,
+          "committed": 9683,
+          "oversold": 0,
+          "revenue": 435600,
+          "lostRevenue": 3195,
+          "capitalDelta": 29040
+        },
+        {
+          "generated": 45458,
+          "completed": 32665,
+          "rejected": 12755,
+          "abandoned": 38,
+          "failed": 0,
+          "committed": 9791,
+          "oversold": 0,
+          "revenue": 440415,
+          "lostRevenue": 1035,
+          "capitalDelta": 29361
+        },
+        {
+          "generated": 45488,
+          "completed": 32695,
+          "rejected": 12755,
+          "abandoned": 38,
+          "failed": 0,
+          "committed": 9800,
+          "oversold": 0,
+          "revenue": 440820,
+          "lostRevenue": 1035,
+          "capitalDelta": 29388
+        },
+        {
+          "generated": 45426,
+          "completed": 32632,
+          "rejected": 12755,
+          "abandoned": 39,
+          "failed": 0,
+          "committed": 9781,
+          "oversold": 0,
+          "revenue": 440010,
+          "lostRevenue": 945,
+          "capitalDelta": 29334
+        },
+        {
+          "generated": 45488,
+          "completed": 32695,
+          "rejected": 12755,
+          "abandoned": 38,
+          "failed": 0,
+          "committed": 9800,
+          "oversold": 0,
+          "revenue": 440820,
+          "lostRevenue": 1035,
+          "capitalDelta": 29388
+        }
+      ],
+      "crises": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "duration": 1500,
+      "enabled": true,
+      "states": [
+        {
+          "tick": 60,
+          "digest": "21f360d2ded4af7656b77b857c75e541e1ce7549abeca4e940e3aeaa35f655dc"
+        },
+        {
+          "tick": 120,
+          "digest": "64a6c8f250ceacf21a645da723103f7dab47b2f83c95edde19801187b02e0f3c"
+        },
+        {
+          "tick": 180,
+          "digest": "de3187b586b45a14cfa67768ec070b4d2a755c9b9e7715f91e2f390a99dcbd52"
+        },
+        {
+          "tick": 240,
+          "digest": "be7c3fc5c192f43d38d8a3e0ddb7f54ed8a8825176d42748471c953d1d8bd4cb"
+        },
+        {
+          "tick": 300,
+          "digest": "e94f4e4f25e50d385a087875afd766863d86546bb936a6ca6a5d0a642cf8a5ed"
+        },
+        {
+          "tick": 360,
+          "digest": "96706077bd3bbc8b243a343c530dbde8f6510cf2ea77f2291ad92fb000807bd6"
+        },
+        {
+          "tick": 420,
+          "digest": "275c618f1a638fc222287e197860ce663361487bba97d90121fd8ba58598a6b4"
+        },
+        {
+          "tick": 480,
+          "digest": "6f80b64fa3efb8aca196d8ddf5cfa8eaa3cef46fb4f765d5fd40af74d5958721"
+        },
+        {
+          "tick": 540,
+          "digest": "0c4892ce44920c13f4651a79c287c8056c34a0d7889bee5feaf1f36bb7bf8f3e"
+        },
+        {
+          "tick": 600,
+          "digest": "4a656d7ab72d41c22af14df680e08f32bce2c32156374831bc888984e1048285"
+        },
+        {
+          "tick": 660,
+          "digest": "c1aa4a909bb4719d8f06a216abb24b71f3f9e8c44d89040d734ccba61dd61c1d"
+        },
+        {
+          "tick": 720,
+          "digest": "ec44bf1580514488a98a8b4fb453688530d670e2b10d9f155467f65a90693c0a"
+        },
+        {
+          "tick": 780,
+          "digest": "c0ba19f24ba9b055268d771fd0084138333254007a6e53060939a3997185e11b"
+        },
+        {
+          "tick": 840,
+          "digest": "9cd5650fcc8cc16c8bac5ec50f9adb41240f68c20fb3bfdef5b717379e432ac9"
+        },
+        {
+          "tick": 900,
+          "digest": "958f64608dc9dd973abc31a56f0e7b2f5ce40f26c58bc3101607b0515d61b624"
+        },
+        {
+          "tick": 960,
+          "digest": "76728d3c1800dbbff852135d42770451712ddf008bc9218a4990524871a471d6"
+        },
+        {
+          "tick": 1020,
+          "digest": "a50a9af28bccce32e04ba55492596f5a6cbe3ffb9511f3f1065a58f2be5fbdd0"
+        },
+        {
+          "tick": 1080,
+          "digest": "8e1bb1abbc8be0ccf789e1c43e203ddeb6bee2a248ab4738e533760256aa2508"
+        },
+        {
+          "tick": 1140,
+          "digest": "e5538c0d4b5261be617284a5c4c033246104d5fd31ad6bdaa3ffdc6941266a78"
+        },
+        {
+          "tick": 1200,
+          "digest": "a3610fcba597c950f9622cb154de2276e14c3c956b2e7c281b9c354c79018433"
+        },
+        {
+          "tick": 1260,
+          "digest": "0d7abba8d0dd298a80398979c5508d3961b1e0e0c079262cf23c6a7d934ade76"
+        },
+        {
+          "tick": 1320,
+          "digest": "cefc158721b464d7783dc3311d977eed57db216ae6cb6b328de5b49a43f87c49"
+        },
+        {
+          "tick": 1380,
+          "digest": "aad43b76f54da3e63d2857c4e62ed4b34dbb6401bfa62138e24faf4a3e81c82a"
+        },
+        {
+          "tick": 1440,
+          "digest": "a3b677a3688d2adb0dc71ed47ba97bf536cee6e5d9b3a205cfcb9298b3a24478"
+        },
+        {
+          "tick": 1500,
+          "digest": "3c5a4fb80f6808f04a74e4d41d8d6dc3f90c0a6b4b4e8a4ee44024330b715d23"
+        }
+      ],
+      "elapsedMs": 28008.082790999993,
+      "cpuMicros": {
+        "user": 28470498,
+        "system": 2244497
+      },
+      "rssMax": 552845312,
+      "heapUsed": 117818304,
+      "maxPending": 8357,
+      "sqliteBytes": 556056576,
+      "tables": {
+        "history_events": {
+          "rows": 285621
+        },
+        "history_inputs": {
+          "rows": 125
+        },
+        "history_points": {
+          "rows": 300
+        },
+        "history_checkpoints": {
+          "rows": 26
+        },
+        "request_receipts": {
+          "rows": 283905
+        },
+        "receipt_paths": {
+          "rows": 2
+        },
+        "commands": {
+          "rows": 0
+        },
+        "slack_messages": {
+          "rows": 142
+        }
+      },
+      "pages": [
+        {
+          "name": "commands",
+          "bytes": 4096
+        },
+        {
+          "name": "commands_generation",
+          "bytes": 4096
+        },
+        {
+          "name": "game",
+          "bytes": 4653056
+        },
+        {
+          "name": "history_checkpoint_time",
+          "bytes": 4096
+        },
+        {
+          "name": "history_checkpoints",
+          "bytes": 3772416
+        },
+        {
+          "name": "history_events",
+          "bytes": 146137088
+        },
+        {
+          "name": "history_events_time",
+          "bytes": 6164480
+        },
+        {
+          "name": "history_games",
+          "bytes": 4096
+        },
+        {
+          "name": "history_inputs",
+          "bytes": 40960
+        },
+        {
+          "name": "history_points",
+          "bytes": 311296
+        },
+        {
+          "name": "receipt_paths",
+          "bytes": 4096
+        },
+        {
+          "name": "receipts_generation",
+          "bytes": 2891776
+        },
+        {
+          "name": "request_receipts",
+          "bytes": 376713216
+        },
+        {
+          "name": "slack_messages",
+          "bytes": 49152
+        },
+        {
+          "name": "slack_tenant",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_commands_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_history_checkpoints_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_history_events_1",
+          "bytes": 4190208
+        },
+        {
+          "name": "sqlite_autoindex_history_inputs_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_history_points_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_receipt_paths_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_request_receipts_1",
+          "bytes": 6504448
+        },
+        {
+          "name": "sqlite_autoindex_slack_messages_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_schema",
+          "bytes": 4096
+        }
+      ],
+      "finalDigest": "3c5a4fb80f6808f04a74e4d41d8d6dc3f90c0a6b4b4e8a4ee44024330b715d23",
+      "population": 5000,
+      "requests": [
+        {
+          "generated": 56579,
+          "completed": 40541,
+          "rejected": 15983,
+          "abandoned": 55,
+          "failed": 0,
+          "committed": 12131,
+          "oversold": 0,
+          "revenue": 545625,
+          "lostRevenue": 2925,
+          "capitalDelta": 36375
+        },
+        {
+          "generated": 56822,
+          "completed": 40840,
+          "rejected": 15944,
+          "abandoned": 38,
+          "failed": 0,
+          "committed": 12244,
+          "oversold": 0,
+          "revenue": 550845,
+          "lostRevenue": 945,
+          "capitalDelta": 36723
+        },
+        {
+          "generated": 56861,
+          "completed": 40878,
+          "rejected": 15944,
+          "abandoned": 39,
+          "failed": 0,
+          "committed": 12256,
+          "oversold": 0,
+          "revenue": 551340,
+          "lostRevenue": 990,
+          "capitalDelta": 36756
+        },
+        {
+          "generated": 56782,
+          "completed": 40800,
+          "rejected": 15944,
+          "abandoned": 38,
+          "failed": 0,
+          "committed": 12232,
+          "oversold": 0,
+          "revenue": 550305,
+          "lostRevenue": 945,
+          "capitalDelta": 36687
+        },
+        {
+          "generated": 56861,
+          "completed": 40879,
+          "rejected": 15944,
+          "abandoned": 38,
+          "failed": 0,
+          "committed": 12256,
+          "oversold": 0,
+          "revenue": 551385,
+          "lostRevenue": 945,
+          "capitalDelta": 36759
+        }
+      ],
+      "crises": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "duration": 1500,
+      "enabled": false,
+      "states": [
+        {
+          "tick": 60,
+          "digest": "21f360d2ded4af7656b77b857c75e541e1ce7549abeca4e940e3aeaa35f655dc"
+        },
+        {
+          "tick": 120,
+          "digest": "64a6c8f250ceacf21a645da723103f7dab47b2f83c95edde19801187b02e0f3c"
+        },
+        {
+          "tick": 180,
+          "digest": "de3187b586b45a14cfa67768ec070b4d2a755c9b9e7715f91e2f390a99dcbd52"
+        },
+        {
+          "tick": 240,
+          "digest": "be7c3fc5c192f43d38d8a3e0ddb7f54ed8a8825176d42748471c953d1d8bd4cb"
+        },
+        {
+          "tick": 300,
+          "digest": "e94f4e4f25e50d385a087875afd766863d86546bb936a6ca6a5d0a642cf8a5ed"
+        },
+        {
+          "tick": 360,
+          "digest": "96706077bd3bbc8b243a343c530dbde8f6510cf2ea77f2291ad92fb000807bd6"
+        },
+        {
+          "tick": 420,
+          "digest": "275c618f1a638fc222287e197860ce663361487bba97d90121fd8ba58598a6b4"
+        },
+        {
+          "tick": 480,
+          "digest": "6f80b64fa3efb8aca196d8ddf5cfa8eaa3cef46fb4f765d5fd40af74d5958721"
+        },
+        {
+          "tick": 540,
+          "digest": "0c4892ce44920c13f4651a79c287c8056c34a0d7889bee5feaf1f36bb7bf8f3e"
+        },
+        {
+          "tick": 600,
+          "digest": "4a656d7ab72d41c22af14df680e08f32bce2c32156374831bc888984e1048285"
+        },
+        {
+          "tick": 660,
+          "digest": "c1aa4a909bb4719d8f06a216abb24b71f3f9e8c44d89040d734ccba61dd61c1d"
+        },
+        {
+          "tick": 720,
+          "digest": "ec44bf1580514488a98a8b4fb453688530d670e2b10d9f155467f65a90693c0a"
+        },
+        {
+          "tick": 780,
+          "digest": "c0ba19f24ba9b055268d771fd0084138333254007a6e53060939a3997185e11b"
+        },
+        {
+          "tick": 840,
+          "digest": "9cd5650fcc8cc16c8bac5ec50f9adb41240f68c20fb3bfdef5b717379e432ac9"
+        },
+        {
+          "tick": 900,
+          "digest": "958f64608dc9dd973abc31a56f0e7b2f5ce40f26c58bc3101607b0515d61b624"
+        },
+        {
+          "tick": 960,
+          "digest": "76728d3c1800dbbff852135d42770451712ddf008bc9218a4990524871a471d6"
+        },
+        {
+          "tick": 1020,
+          "digest": "a50a9af28bccce32e04ba55492596f5a6cbe3ffb9511f3f1065a58f2be5fbdd0"
+        },
+        {
+          "tick": 1080,
+          "digest": "8e1bb1abbc8be0ccf789e1c43e203ddeb6bee2a248ab4738e533760256aa2508"
+        },
+        {
+          "tick": 1140,
+          "digest": "e5538c0d4b5261be617284a5c4c033246104d5fd31ad6bdaa3ffdc6941266a78"
+        },
+        {
+          "tick": 1200,
+          "digest": "a3610fcba597c950f9622cb154de2276e14c3c956b2e7c281b9c354c79018433"
+        },
+        {
+          "tick": 1260,
+          "digest": "0d7abba8d0dd298a80398979c5508d3961b1e0e0c079262cf23c6a7d934ade76"
+        },
+        {
+          "tick": 1320,
+          "digest": "cefc158721b464d7783dc3311d977eed57db216ae6cb6b328de5b49a43f87c49"
+        },
+        {
+          "tick": 1380,
+          "digest": "aad43b76f54da3e63d2857c4e62ed4b34dbb6401bfa62138e24faf4a3e81c82a"
+        },
+        {
+          "tick": 1440,
+          "digest": "a3b677a3688d2adb0dc71ed47ba97bf536cee6e5d9b3a205cfcb9298b3a24478"
+        },
+        {
+          "tick": 1500,
+          "digest": "3c5a4fb80f6808f04a74e4d41d8d6dc3f90c0a6b4b4e8a4ee44024330b715d23"
+        }
+      ],
+      "elapsedMs": 13140.284291999997,
+      "cpuMicros": {
+        "user": 12378815,
+        "system": 944366
+      },
+      "rssMax": 622985216,
+      "heapUsed": 180754368,
+      "maxPending": 0,
+      "sqliteBytes": 9367552,
+      "tables": {
+        "history_events": {
+          "rows": 0
+        },
+        "history_inputs": {
+          "rows": 0
+        },
+        "history_points": {
+          "rows": 0
+        },
+        "history_checkpoints": {
+          "rows": 0
+        },
+        "request_receipts": {
+          "rows": 0
+        },
+        "receipt_paths": {
+          "rows": 0
+        },
+        "commands": {
+          "rows": 0
+        },
+        "slack_messages": {
+          "rows": 142
+        }
+      },
+      "pages": [
+        {
+          "name": "commands",
+          "bytes": 4096
+        },
+        {
+          "name": "commands_generation",
+          "bytes": 4096
+        },
+        {
+          "name": "game",
+          "bytes": 4653056
+        },
+        {
+          "name": "history_checkpoint_time",
+          "bytes": 4096
+        },
+        {
+          "name": "history_checkpoints",
+          "bytes": 4096
+        },
+        {
+          "name": "history_events",
+          "bytes": 4096
+        },
+        {
+          "name": "history_events_time",
+          "bytes": 4096
+        },
+        {
+          "name": "history_games",
+          "bytes": 4096
+        },
+        {
+          "name": "history_inputs",
+          "bytes": 4096
+        },
+        {
+          "name": "history_points",
+          "bytes": 4096
+        },
+        {
+          "name": "receipt_paths",
+          "bytes": 4096
+        },
+        {
+          "name": "receipts_generation",
+          "bytes": 4096
+        },
+        {
+          "name": "request_receipts",
+          "bytes": 4096
+        },
+        {
+          "name": "slack_messages",
+          "bytes": 49152
+        },
+        {
+          "name": "slack_tenant",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_commands_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_history_checkpoints_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_history_events_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_history_inputs_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_history_points_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_receipt_paths_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_request_receipts_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_autoindex_slack_messages_1",
+          "bytes": 4096
+        },
+        {
+          "name": "sqlite_schema",
+          "bytes": 4096
+        }
+      ],
+      "finalDigest": "3c5a4fb80f6808f04a74e4d41d8d6dc3f90c0a6b4b4e8a4ee44024330b715d23",
+      "population": 5000,
+      "requests": [
+        {
+          "generated": 56579,
+          "completed": 40541,
+          "rejected": 15983,
+          "abandoned": 55,
+          "failed": 0,
+          "committed": 12131,
+          "oversold": 0,
+          "revenue": 545625,
+          "lostRevenue": 2925,
+          "capitalDelta": 36375
+        },
+        {
+          "generated": 56822,
+          "completed": 40840,
+          "rejected": 15944,
+          "abandoned": 38,
+          "failed": 0,
+          "committed": 12244,
+          "oversold": 0,
+          "revenue": 550845,
+          "lostRevenue": 945,
+          "capitalDelta": 36723
+        },
+        {
+          "generated": 56861,
+          "completed": 40878,
+          "rejected": 15944,
+          "abandoned": 39,
+          "failed": 0,
+          "committed": 12256,
+          "oversold": 0,
+          "revenue": 551340,
+          "lostRevenue": 990,
+          "capitalDelta": 36756
+        },
+        {
+          "generated": 56782,
+          "completed": 40800,
+          "rejected": 15944,
+          "abandoned": 38,
+          "failed": 0,
+          "committed": 12232,
+          "oversold": 0,
+          "revenue": 550305,
+          "lostRevenue": 945,
+          "capitalDelta": 36687
+        },
+        {
+          "generated": 56861,
+          "completed": 40879,
+          "rejected": 15944,
+          "abandoned": 38,
+          "failed": 0,
+          "committed": 12256,
+          "oversold": 0,
+          "revenue": 551385,
+          "lostRevenue": 945,
+          "capitalDelta": 36759
+        }
+      ],
+      "crises": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    }
+  ],
+  "exact": true,
+  "exitCode": 0
+}

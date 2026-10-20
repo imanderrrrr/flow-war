@@ -1,0 +1,30 @@
+✔ real server resumes a saved race, preserves sessions and enforces the complete Atomic deployment pipeline (3537.197167ms)
+✔ real server backs up a v1 snapshot before upgrading it (247.188458ms)
+✔ sync edits nested object without mutating the base (1.256834ms)
+✔ sync edits deleted field without mutating the base (0.050667ms)
+✔ sync edits truncated array without mutating the base (0.056042ms)
+✔ sync edits new fields without mutating the base (0.042333ms)
+✔ sync edits keyed reorder and deletion without mutating the base (0.073375ms)
+✔ sync edits empty keyed array without mutating the base (0.037792ms)
+✔ sync edits null transition without mutating the base (0.024084ms)
+✔ sync edits primitive array without mutating the base (0.037583ms)
+✔ sync edits duplicate IDs without mutating the base (0.04975ms)
+✔ sync first connection requires a complete base (17.10925ms)
+✔ sync sequence gap clears private state and requests a complete base (25.862708ms)
+✔ sync ignores stale full and out-of-order updates (28.604542ms)
+✔ sync identity replacement discards previous private company (13.885167ms)
+✔ sync logout/public base removes every private domain (12.051417ms)
+✔ sync generation needs a new full base (12.168041ms)
+✔ sync rejects identity or economic clock changes inside a delta (5.900083ms)
+✔ sync coalesces slow consumers, times out to a fresh base, and skips blocked transports (12.463875ms)
+✔ sync reconstructed clients equal authorized projections through live engine changes (107.990042ms)
+✔ compact wire codec preserves exact React projections and particle IDs for every role (19.96575ms)
+✔ public synchronization retains race and collapse alerts but never foreign administrative details (6.451666ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3976.99125

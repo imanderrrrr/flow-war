@@ -1,0 +1,38 @@
+✔ 4A real authenticated server executes structured artifacts and recovers expulsion, pending restart and deduplication (1265.212583ms)
+✔ H1/H2 real sessions enforce private projections, durable reset deduplication and honest failed acknowledgments (964.890375ms)
+✔ DVR OFF configures in LOBBY, persists, locks RUNNING/PAUSED and carries into reset (70.638125ms)
+✔ DVR ON configures in LOBBY, persists, locks RUNNING/PAUSED and carries into reset (72.84525ms)
+✔ DVR mode is restricted to the teacher and validated (8.799958ms)
+✔ DVR OFF retains FlowSlack, commands, QA and live state without replay tables or buffers (58.391625ms)
+✔ legacy generation migration records ON explicitly and replays old data (30.5835ms)
+✔ DVR ON reconstructs exact snapshots while the next generation is OFF (118.564583ms)
+✔ DVR OFF rollback retains operational messages and retries atomically (26.988709ms)
+✔ DVR ON/OFF economics, all 5000 customers, incidents, QA, deployments and communications are identical (2600.828459ms)
+✔ real server DVR OFF: crash recovery, sequence loss, resync authorization and logout (1668.900084ms)
+✔ real server DVR ON: crash recovery, sequence loss, resync authorization and logout (1546.925417ms)
+✔ sync edits nested object without mutating the base (2.44ms)
+✔ sync edits deleted field without mutating the base (0.126458ms)
+✔ sync edits truncated array without mutating the base (0.127791ms)
+✔ sync edits new fields without mutating the base (0.10175ms)
+✔ sync edits keyed reorder and deletion without mutating the base (0.184917ms)
+✔ sync edits empty keyed array without mutating the base (0.075125ms)
+✔ sync edits null transition without mutating the base (0.041416ms)
+✔ sync edits primitive array without mutating the base (0.041125ms)
+✔ sync edits duplicate IDs without mutating the base (0.058625ms)
+✔ sync first connection requires a complete base (26.581667ms)
+✔ sync sequence gap clears private state and requests a complete base (22.440083ms)
+✔ sync ignores stale full and out-of-order updates (30.520167ms)
+✔ sync identity replacement discards previous private company (17.502875ms)
+✔ sync logout/public base removes every private domain (11.039708ms)
+✔ sync generation needs a new full base (14.292375ms)
+✔ sync rejects identity or economic clock changes inside a delta (7.604583ms)
+✔ sync coalesces slow consumers, times out to a fresh base, and skips blocked transports (15.531041ms)
+✔ sync reconstructed clients equal authorized projections through live engine changes (123.896084ms)
+ℹ tests 30
+ℹ suites 0
+ℹ pass 30
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3407.531083

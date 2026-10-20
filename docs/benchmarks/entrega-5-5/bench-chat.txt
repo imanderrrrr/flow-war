@@ -1,0 +1,5 @@
+
+> flow-war@0.1.0 bench:chat
+> tsx scripts/chat-benchmark.ts
+
+{"commit":"3faa48e0c5f2b301b365b5cc9c6de07269c37cae","connections":27,"humans":25,"messages":125,"deliveries":125,"exactlyOnce":true,"reconnect":true,"restart":true,"isolation":true,"snapshots":701,"maxSnapshotBytes":21808,"ack":{"p50":12.427458999999999,"p95":14.414040999999997,"p99":15.16045900000006},"delivery":{"p50":15.158625000000029,"p95":17.848250000000007,"p99":18.608208999999988}}

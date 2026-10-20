@@ -1,0 +1,57 @@
+✔ DVR OFF configures in LOBBY, persists, locks RUNNING/PAUSED and carries into reset (51.367709ms)
+✔ DVR ON configures in LOBBY, persists, locks RUNNING/PAUSED and carries into reset (58.147791ms)
+✔ DVR mode is restricted to the teacher and validated (7.71275ms)
+✖ DVR OFF retains FlowSlack, commands, QA and live state without replay tables or buffers (37.229334ms)
+✔ legacy generation migration records ON explicitly and replays old data (18.941042ms)
+✔ DVR ON reconstructs exact snapshots while the next generation is OFF (107.759375ms)
+✔ DVR OFF rollback retains operational messages and retries atomically (17.501292ms)
+✔ DVR ON/OFF economics, all 5000 customers, incidents, QA, deployments and communications are identical (2510.089041ms)
+✔ sync edits nested object without mutating the base (1.066959ms)
+✔ sync edits deleted field without mutating the base (0.045ms)
+✔ sync edits truncated array without mutating the base (0.055125ms)
+✔ sync edits new fields without mutating the base (0.048042ms)
+✔ sync edits keyed reorder and deletion without mutating the base (0.072916ms)
+✔ sync edits empty keyed array without mutating the base (0.031208ms)
+✔ sync edits null transition without mutating the base (0.024959ms)
+✔ sync edits primitive array without mutating the base (0.028709ms)
+✔ sync edits duplicate IDs without mutating the base (0.0425ms)
+✔ sync first connection requires a complete base (14.893625ms)
+✔ sync sequence gap clears private state and requests a complete base (18.251209ms)
+✔ sync ignores stale full and out-of-order updates (23.904084ms)
+✔ sync identity replacement discards previous private company (11.014375ms)
+✔ sync logout/public base removes every private domain (10.240708ms)
+✔ sync generation needs a new full base (10.773792ms)
+✔ sync rejects identity or economic clock changes inside a delta (5.550417ms)
+✔ sync coalesces slow consumers, times out to a fresh base, and skips blocked transports (10.727417ms)
+✔ sync reconstructed clients equal authorized projections through live engine changes (89.719458ms)
+ℹ tests 26
+ℹ suites 0
+ℹ pass 25
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2954.657417
+
+✖ failing tests:
+
+test at tests/dvr-modes.test.ts:1:2443
+✖ DVR OFF retains FlowSlack, commands, QA and live state without replay tables or buffers (37.229334ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert(g.slack.messages.some(m=>m.source!=='human'))
+  
+      at TestContext.<anonymous> (/Users/anderson/Documents/proyecto aseguramiento/tests/dvr-modes.test.ts:17:665)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:831:18)
+      at Test.postRun (node:internal/test_runner/test:1330:19)
+      at Test.run (node:internal/test_runner/test:1258:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }

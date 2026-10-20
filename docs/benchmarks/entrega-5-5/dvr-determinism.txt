@@ -1,0 +1,4 @@
+{"duration":1200,"enabled":true,"elapsedMs":25146.646042,"sqliteBytes":446201856,"digest":"f5acbe4e79eb5915b51493aa9c0009b50ba4b4c340a138735c6d8bd0b0c9755f","maxPending":8357}
+{"duration":1200,"enabled":false,"elapsedMs":12550.535792000002,"sqliteBytes":9334784,"digest":"f5acbe4e79eb5915b51493aa9c0009b50ba4b4c340a138735c6d8bd0b0c9755f","maxPending":0}
+{"duration":1500,"enabled":true,"elapsedMs":28008.082790999993,"sqliteBytes":556056576,"digest":"3c5a4fb80f6808f04a74e4d41d8d6dc3f90c0a6b4b4e8a4ee44024330b715d23","maxPending":8357}
+{"duration":1500,"enabled":false,"elapsedMs":13140.284291999997,"sqliteBytes":9367552,"digest":"3c5a4fb80f6808f04a74e4d41d8d6dc3f90c0a6b4b4e8a4ee44024330b715d23","maxPending":0}

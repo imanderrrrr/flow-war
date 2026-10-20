@@ -1,0 +1,5 @@
+{"label":"final-B-1200-20x","tick":386,"status":"RUNNING","wallSeconds":31.329205625,"updates":2735}
+{"label":"final-B-1200-20x","tick":674,"status":"RUNNING","wallSeconds":46.330434415999996,"updates":4677}
+{"label":"final-B-1200-20x","tick":938,"status":"RUNNING","wallSeconds":61.331243332999996,"updates":6459}
+{"label":"final-B-1200-20x","tick":1190,"status":"RUNNING","wallSeconds":76.33229504100001,"updates":8079}
+{"output":"/Users/anderson/Documents/proyecto aseguramiento/docs/benchmarks/entrega-5-5/final-B-1200-20x.json","status":"passed","errors":[],"wallSeconds":76.91707954099999}

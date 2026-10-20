@@ -1,0 +1,74 @@
+[
+  {
+    "label": "final-A-1200-20x",
+    "command": "node --import tsx scripts/performance-classroom.ts --label=final-A-1200-20x --output-root=/Users/anderson/Documents/proyecto aseguramiento/docs/benchmarks/entrega-5-5/certified --duration=1200 --speed=20 --dvr=on --server-root=<frozen-reference>",
+    "started": "2026-10-20T15:35:28.905Z",
+    "wallMs": 69630,
+    "exitCode": 0,
+    "signal": null
+  },
+  {
+    "label": "final-B-1200-20x",
+    "command": "node --import tsx scripts/performance-classroom.ts --label=final-B-1200-20x --output-root=/Users/anderson/Documents/proyecto aseguramiento/docs/benchmarks/entrega-5-5/certified --duration=1200 --speed=20 --dvr=on",
+    "started": "2026-10-20T15:36:38.540Z",
+    "wallMs": 79590,
+    "exitCode": 0,
+    "signal": null
+  },
+  {
+    "label": "final-C-1200-20x",
+    "command": "node --import tsx scripts/performance-classroom.ts --label=final-C-1200-20x --output-root=/Users/anderson/Documents/proyecto aseguramiento/docs/benchmarks/entrega-5-5/certified --duration=1200 --speed=20 --dvr=off",
+    "started": "2026-10-20T15:37:58.134Z",
+    "wallMs": 76636,
+    "exitCode": 0,
+    "signal": null
+  },
+  {
+    "label": "final-A-1500-20x",
+    "command": "node --import tsx scripts/performance-classroom.ts --label=final-A-1500-20x --output-root=/Users/anderson/Documents/proyecto aseguramiento/docs/benchmarks/entrega-5-5/certified --duration=1500 --speed=20 --dvr=on --server-root=<frozen-reference>",
+    "started": "2026-10-20T15:39:14.773Z",
+    "wallMs": 84097,
+    "exitCode": 0,
+    "signal": null
+  },
+  {
+    "label": "final-B-1500-20x",
+    "command": "node --import tsx scripts/performance-classroom.ts --label=final-B-1500-20x --output-root=/Users/anderson/Documents/proyecto aseguramiento/docs/benchmarks/entrega-5-5/certified --duration=1500 --speed=20 --dvr=on",
+    "started": "2026-10-20T15:40:38.874Z",
+    "wallMs": 94914,
+    "exitCode": 0,
+    "signal": null
+  },
+  {
+    "label": "final-C-1500-20x",
+    "command": "node --import tsx scripts/performance-classroom.ts --label=final-C-1500-20x --output-root=/Users/anderson/Documents/proyecto aseguramiento/docs/benchmarks/entrega-5-5/certified --duration=1500 --speed=20 --dvr=off",
+    "started": "2026-10-20T15:42:13.791Z",
+    "wallMs": 91794,
+    "exitCode": 0,
+    "signal": null
+  },
+  {
+    "label": "final-A-1200-1x",
+    "command": "node --import tsx scripts/performance-classroom.ts --label=final-A-1200-1x --output-root=/Users/anderson/Documents/proyecto aseguramiento/docs/benchmarks/entrega-5-5/certified --duration=1200 --speed=1 --dvr=on --server-root=<frozen-reference>",
+    "started": "2026-10-20T15:43:45.587Z",
+    "wallMs": 1231680,
+    "exitCode": 0,
+    "signal": null
+  },
+  {
+    "label": "final-B-1200-1x",
+    "command": "node --import tsx scripts/performance-classroom.ts --label=final-B-1200-1x --output-root=/Users/anderson/Documents/proyecto aseguramiento/docs/benchmarks/entrega-5-5/certified --duration=1200 --speed=1 --dvr=on",
+    "started": "2026-10-20T16:04:17.327Z",
+    "wallMs": 1249404,
+    "exitCode": 0,
+    "signal": null
+  },
+  {
+    "label": "final-C-1200-1x",
+    "command": "node --import tsx scripts/performance-classroom.ts --label=final-C-1200-1x --output-root=/Users/anderson/Documents/proyecto aseguramiento/docs/benchmarks/entrega-5-5/certified --duration=1200 --speed=1 --dvr=off",
+    "started": "2026-10-20T16:25:06.741Z",
+    "wallMs": 1247002,
+    "exitCode": 0,
+    "signal": null
+  }
+]

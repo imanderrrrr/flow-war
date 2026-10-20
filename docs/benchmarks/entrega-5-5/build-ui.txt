@@ -1,0 +1,5 @@
+
+> flow-war@0.1.0 build
+> tsc --noEmit && vite build
+
+scripts/performance-modes.ts(28,37): error TS2367: This comparison appears to be unintentional because the types '"RUNNING"' and '"FINISHED"' have no overlap.
