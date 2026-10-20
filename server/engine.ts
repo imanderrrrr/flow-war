@@ -353,7 +353,7 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
       const { runtime, drafts, backend, security, product, breaches, migrationRemainder, arrivalRemainder, processedRemainder, crisisTicks, deadTicks, bankruptTicks, concurrencyUntil, concurrency, traffic, ...pub } = c;
       return { ...pub, ...(internal?{breaches}:{}), traffic: trafficView(traffic, internal), concurrency: { runId: concurrency.run?.id, inventory: concurrency.run && { ...concurrency.run.inventory }, totals: { ...concurrency.totals } }, particles: particles(c), modules: [...route(backend), ...route(security)].map(n => n.type), pipelineCounts: [['QA_PENDING', 'QA_RUNNING'], ['CTO_PENDING'], ['AUTHORIZED', 'DEPLOYING'], ['DEPLOYED']].map(states => g.changes.filter(ch => ch.companyId === c.id && states.includes(ch.status)).length) };
     }),
-    events: internal ? g.events : g.events.filter(e=>e.companyId===null||e.companyId===identity?.companyId), migrations: g.migrations, unserved: g.unserved, privateCompany: privateC,
+    events: internal ? g.events : g.events.filter(e=>e.companyId===null||e.companyId===identity?.companyId||['CONCURRENCIA','COLAPSO'].includes(e.category)), migrations: g.migrations, unserved: g.unserved, privateCompany: privateC,
     changes: (identity?.role === 'operator' ? g.changes : g.changes.filter(ch => ch.companyId === identity?.companyId)).map(({ qaLoad, qaScenario, testJob, context, ...change }) => ({ ...change, ...(context ? { context: { backend: context.backend, security: context.security, executionVersion: context.executionVersion } } : {}) })),
   };
 }
