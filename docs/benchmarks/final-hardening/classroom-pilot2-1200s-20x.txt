@@ -1,0 +1,4 @@
+
+> flow-war@0.1.0 bench:classroom
+> tsx scripts/audit-classroom-load.ts --label=pilot2-1200s-20x
+

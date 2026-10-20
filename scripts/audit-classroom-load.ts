@@ -69,7 +69,7 @@ try{
  // Historical workload is built with the production engine and role pipeline,
  // every tick and all 5,000 people. No precomputed or synthetic replay output.
  const prepAt=performance.now(),db=new DatabaseSync(path);db.exec('PRAGMA journal_mode=WAL;CREATE TABLE commands(identity TEXT,id TEXT,digest TEXT,result TEXT,PRIMARY KEY(identity,id))');adminSchema(db);const write=createGameWriter(db),scenario=marketScenario(historyDuration,'A-equivalent',8),history=scenario.game;
- for(const c of history.companies)c.reputation=34;clearBuffer(history);checkpoint(history,serializeGame,true);write(history);
+ for(const c of history.companies)c.reputation=34;clearBuffer(history);checkpoint(history,serializeGame,true);for(let c=0;c<5;c++)assert(applyCommand(history,{id:`${c}-backend`,role:'backend',companyId:c},{id:`historical-chat-${c}`,type:'chat.send',companyId:c,payload:{channel:'equipo-interno',text:'Evidencia histórica de coordinación',refs:[]}}).ok);write(history);
  for(let i=0;history.status==='RUNNING';i++){scenario.decide();step(history);if(i%100===0)write(history);}
  assert.equal(history.tick,historyDuration);assertMarket(history);write(history);
  const archived=exportGeneration(db,0,archive),expected=new Map<string,unknown>();
@@ -115,7 +115,7 @@ try{
  // Five concurrent teams use their own credentialed sockets and real pipeline.
  await Promise.all(Array.from({length:5},(_,c)=>pipeline(c,'backend')));
  await Promise.all(Array.from({length:5},(_,c)=>pipeline(c,'security')));
- for(let c=0;c<5;c++){requireOk(await send(member(c,'cto'),'cto.budget',{amount:1000}));for(let i=0;i<3;i++)requireOk(await send(member(c,'devops'),'infra.scale',{delta:1}));requireOk(await send(member(c,'devops'),'infra.balancer',{enabled:true}));}
+ for(let c=0;c<5;c++){for(let funding=0;funding<6;funding++)requireOk(await send(member(c,'cto'),'cto.budget',{amount:1000}));for(let i=0;i<7;i++)requireOk(await send(member(c,'devops'),'infra.scale',{delta:1}));requireOk(await send(member(c,'devops'),'infra.balancer',{enabled:true}));}
  // 125 original messages plus 125 identical retries, delivered to all five
  // students in their own company. Repeated full snapshots are not duplicates.
  const chatAt=performance.now();for(let round=0;round<5;round++){
@@ -129,15 +129,16 @@ try{
  report.scenarios.B={pipelineCompanies:5,architectureQaAuthorizationDeployment:true,securityPipeline:true,scaling:true,maintenance:true,stopRecoverRestart:true};
  // Confirmed work, an in-flight QA job, active requests, SIGKILL and same-cookie
  // reconnection. The saved state, rather than a stale client frame, is oracle.
- const pending=requireOk(await send(student,'module.create',{name:'Pendiente ante cierre',configuration:{kind:'inventory',minimum:3},dependencies:[]}));
+ const pendingId=randomUUID(),pendingPayload={name:'Pendiente ante cierre',configuration:{kind:'inventory',minimum:3},dependencies:[]};const pending=requireOk(await send(student,'module.create',pendingPayload,undefined,pendingId));
  const current=await(await get('/api/snapshot',student)).json() as Snapshot,newChange=current.changes.find(c=>c.name==='Pendiente ante cierre')!;assert(newChange);requireOk(await send(member(0,'qa'),'qa.run',{suite:'Concurrencia'},newChange.id));
  const committed=JSON.parse((db.prepare('SELECT state FROM game WHERE id=1').get() as {state:string}).state);assert(committed.changes.some((c:any)=>c.id===newChange.id&&c.status==='QA_RUNNING'));
  await flushProbe();for(const e of entries)e.socket.disconnect();await stop('SIGKILL');await launch();
  const recovered=JSON.parse((db.prepare('SELECT state FROM game WHERE id=1').get() as {state:string}).state);assert.equal(recovered.status,'PAUSED');assert.equal(recovered.generation,1);assert.equal(recovered.tick,committed.tick);assert.deepEqual(recovered.market,committed.market);assert.deepEqual(recovered.changes,committed.changes);
  for(const e of entries){await connect(e);reconnects++;}
+ assert.deepEqual(await send(student,'module.create',pendingPayload,undefined,pendingId,'post-crash-retry'),pending);assert.equal((await(await get('/api/snapshot',student)).json()).changes.filter((c:any)=>c.name==='Pendiente ante cierre').length,1);
  const originalChat=sent.get('0-backend:classroom-chat-0-0-backend')!;assert.deepEqual((await send(student,'chat.send',originalChat.command.payload,undefined,originalChat.command.id,'post-crash-retry')).refs,originalChat.refs);
  requireOk(await send(teacher,'room.start'));await until(()=>teacher.latest!.changes.find(c=>c.id===newChange.id)?.status==='QA_PENDING','pending QA survives and resumes',30000);
- report.scenarios.G={signal:'SIGKILL',persistedTick:committed.tick,recoveredPaused:true,marketExact:true,pendingQaPreserved:true,pendingQaResumed:true,sessionReconnects:27,confirmedChatDeduplicated:true,pendingCommandResult:pending.ok};
+ report.scenarios.G={signal:'SIGKILL',persistedTick:committed.tick,recoveredPaused:true,marketExact:true,pendingQaPreserved:true,pendingQaResumed:true,sessionReconnects:27,confirmedChatDeduplicated:true,confirmedModuleDeduplicated:true,pendingCommandResult:pending.ok};
  const background=(async()=>{let i=0;while(teacher.latest!.status!=='FINISHED'){await delay(2000);if(String(teacher.latest!.status)==='FINISHED')break;const e=member(i++%5,'cto');await send(e,'cto.prioritize',{incident:i%2?'security':'concurrency'},undefined,randomUUID(),'background');}})();
  await waitTick(900);
  await flushProbe(true);

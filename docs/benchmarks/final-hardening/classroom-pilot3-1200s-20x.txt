@@ -1,0 +1,9 @@
+
+> flow-war@0.1.0 bench:classroom
+> tsx scripts/audit-classroom-load.ts --label=pilot3-1200s-20x
+
+{"label":"pilot3-1200s-20x","phase":"active","tick":233.9,"status":"RUNNING","snapshots":10030,"commands":362,"queries":0,"wallSeconds":25.034574417}
+{"label":"pilot3-1200s-20x","phase":"active","tick":525.9,"status":"RUNNING","snapshots":12217,"commands":370,"queries":0,"wallSeconds":40.0364635}
+{"label":"pilot3-1200s-20x","phase":"active","tick":809.9,"status":"RUNNING","snapshots":14323,"commands":377,"queries":0,"wallSeconds":55.03808458299999}
+{"label":"pilot3-1200s-20x","phase":"active","tick":932.1,"status":"FINISHED","snapshots":16348,"commands":380,"queries":26,"wallSeconds":70.040402375}
+{"output":"docs/benchmarks/final-hardening/classroom-pilot3-1200s-20x.json","result":"failed","exitCode":1,"wallSeconds":112.06102233299998,"commandAck":{"n":128,"p50":36.22795799999585,"p95":117.61454200000298,"p99":122.89537500000006,"max":124.61470800000097},"budgets":{"eventLoopP99Below150":true,"engineIntervalP95Below200":true,"commandAckP95Below150":true,"scope":"Investigative budgets on local loopback; crossing one is reported, never hidden or relaxed."},"errors":["AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n932.1 !== 1200\n\n    at <anonymous> (/Users/anderson/Documents/proyecto aseguramiento/scripts/audit-classroom-load.ts:157:237)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"]}
