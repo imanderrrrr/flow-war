@@ -1,0 +1,11 @@
+
+> flow-war@0.1.0 build
+> tsc --noEmit && vite build
+
+tests/final-broadcast.test.ts(22,202): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(emitter: EventEmitter<DefaultEventMap>, eventName: string | symbol, options?: StaticEventEmitterOptions | undefined): Promise<...>', gave the following error.
+    Argument of type 'Socket<DefaultEventsMap, DefaultEventsMap>' is not assignable to parameter of type 'EventEmitter<DefaultEventMap>'.
+      Type 'Socket<DefaultEventsMap, DefaultEventsMap>' is missing the following properties from type 'EventEmitter<DefaultEventMap>': addListener, setMaxListeners, getMaxListeners, rawListeners, and 4 more.
+  Overload 2 of 2, '(emitter: EventTarget, eventName: string, options?: StaticEventEmitterOptions | undefined): Promise<any[]>', gave the following error.
+    Argument of type 'Socket<DefaultEventsMap, DefaultEventsMap>' is not assignable to parameter of type 'EventTarget'.
+      Type 'Socket<DefaultEventsMap, DefaultEventsMap>' is missing the following properties from type 'EventTarget': addEventListener, dispatchEvent, removeEventListener
