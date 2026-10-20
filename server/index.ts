@@ -21,6 +21,9 @@ import { trafficReceipt } from './traffic.js';
 
 const directory = resolve(process.env.FLOW_DATA_DIR ?? '.local');
 mkdirSync(directory, { recursive: true, mode: 0o700 });
+// Admission precedes every storage mutation, including first-run credentials.
+const db = new DatabaseSync(resolve(directory, 'game.sqlite'));
+const releaseStorage = acquireStorageLease(db);
 const accessFile = resolve(directory, 'access.json');
 type Credential = { code: string; identity: Identity; label: string };
 let credentials: Credential[];
@@ -32,8 +35,6 @@ else {
 }
 const hash = (s: string) => createHash('sha256').update(s).digest('hex');
 const identities = new Map(credentials.map(c => [hash(c.code), c.identity]));
-const db = new DatabaseSync(resolve(directory, 'game.sqlite'));
-const releaseStorage = acquireStorageLease(db);
 db.exec('PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS game (id INTEGER PRIMARY KEY, state TEXT NOT NULL); CREATE TABLE IF NOT EXISTS commands (identity TEXT NOT NULL, id TEXT NOT NULL, digest TEXT NOT NULL, result TEXT NOT NULL, PRIMARY KEY(identity,id)); CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, identity TEXT NOT NULL, expires INTEGER NOT NULL);');
 const saved = db.prepare('SELECT state FROM game WHERE id=1').get() as { state: string } | undefined;
 // Keep the original legacy snapshot before the first upgraded snapshot is written.

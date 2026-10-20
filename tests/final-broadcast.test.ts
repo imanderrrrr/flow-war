@@ -19,7 +19,7 @@ test('final broadcast: bursts preserve every durable command and the latest priv
   const credentials=JSON.parse(readFileSync(join(dir,'access.json'),'utf8')).credentials;
   const chosen=[credentials.find((c:any)=>c.identity.role==='operator'),...Array.from({length:5},(_,companyId)=>credentials.find((c:any)=>c.identity.role==='backend'&&c.identity.companyId===companyId)),undefined];
   for(const credential of chosen){let cookie='';if(credential){const res=await fetch(base+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:credential.code})});assert(res.ok);cookie=res.headers.get('set-cookie')!.split(';')[0];}
-   const socket=io(base,{forceNew:true,autoConnect:false,transports:['websocket'],extraHeaders:{Cookie:cookie}});sockets.push(socket);socket.on('snapshot',s=>latest.set(socket,s));const connected=once(socket,'connect');socket.connect();await connected;
+   const socket=io(base,{forceNew:true,autoConnect:false,transports:['websocket'],extraHeaders:{Cookie:cookie}});sockets.push(socket);socket.on('snapshot',s=>latest.set(socket,s));const connected=new Promise<void>((resolve,reject)=>{socket.once('connect',resolve);socket.once('connect_error',reject);});socket.connect();await connected;
   }
   const send=(socket:Socket,type:string,payload?:Record<string,unknown>,companyId?:number,id=crypto.randomUUID())=>new Promise<Result>((res,rej)=>socket.timeout(5000).emit('command',{id,type,payload,companyId},(error:Error|null,result:Result)=>error?rej(error):res(result)));
   assert((await send(sockets[0],'room.start')).ok);

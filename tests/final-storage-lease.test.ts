@@ -32,6 +32,7 @@ test('final lease: independent owners exclude each other and recover after SIGTE
    await once(child.stdout!,'data');assert.equal(child.exitCode,null);
    assert.throws(()=>acquireStorageLease(db));
    const alias=join(dir,`alias-${signal}.sqlite`);symlinkSync(path,alias);const other=new DatabaseSync(alias);try{assert.throws(()=>acquireStorageLease(other));}finally{other.close();}
+   if(signal==='SIGTERM'&&process.platform!=='win32'){child.kill('SIGSTOP');await new Promise(r=>setTimeout(r,30));assert.throws(()=>acquireStorageLease(db));child.kill('SIGCONT');}
    const exited=once(child,'exit');child.kill(signal);await exited;
    const release=acquireStorageLease(db);release();
    assert.equal(db.prepare('SELECT count(*) AS n FROM storage_lease').get()!.n,0);

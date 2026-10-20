@@ -1,0 +1,14 @@
+✔ final broadcast: bursts preserve every durable command and the latest private snapshot (718.764125ms)
+✔ final retention: preview agrees with actual archive and deletion, independently of protection and retention (2124.555708ms)
+✔ final startup: concurrent first starts have one owner and one usable credential file (331.652959ms)
+✔ final lease: stale diagnostics with a reused live PID do not block ownership (3.929667ms)
+✔ final lease: independent owners exclude each other and recover after SIGTERM and SIGKILL (250.377208ms)
+✔ final lease: admission and release write failures cannot strand the OS lock (5.1435ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2237.770792
