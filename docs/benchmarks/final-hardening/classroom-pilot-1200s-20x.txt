@@ -1,0 +1,5 @@
+
+> flow-war@0.1.0 bench:classroom
+> tsx scripts/audit-classroom-load.ts --label=pilot-1200s-20x
+
+{"output":"docs/benchmarks/final-hardening/classroom-pilot-1200s-20x.json","result":"failed","exitCode":1,"wallSeconds":52.489766792000005,"commandAck":{"n":11,"p50":22.905417000001762,"p95":95.98716699999932,"p99":95.98716699999932,"max":95.98716699999932},"budgets":{"eventLoopP99Below150":true,"engineIntervalP95Below200":true,"commandAckP95Below150":true,"scope":"Investigative budgets on local loopback; crossing one is reported, never hidden or relaxed."},"errors":["AssertionError [ERR_ASSERTION]: Se requiere una prueba terminada.\n    at requireOk (/Users/anderson/Documents/proyecto aseguramiento/scripts/audit-classroom-load.ts:52:30)\n    at pipeline (/Users/anderson/Documents/proyecto aseguramiento/scripts/audit-classroom-load.ts:64:2)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async Promise.all (index 0)\n    at async <anonymous> (/Users/anderson/Documents/proyecto aseguramiento/scripts/audit-classroom-load.ts:116:2)"]}

@@ -3,13 +3,16 @@ import {mkdirSync,writeFileSync,readFileSync,existsSync,createWriteStream} from 
 import {cpus,totalmem,freemem,platform,release} from 'node:os';
 import {gzipSync} from 'node:zlib';
 import {createHash} from 'node:crypto';
+if(process.argv.includes('--help')){console.log('node scripts/audit-final-regressions.mjs [--only=tests,build,traffic,actions,connections,chat,entrega5]');process.exit(0);}
+const only=process.argv.find(v=>v.startsWith('--only='))?.slice(7).split(',');
 const root='docs/benchmarks/final-hardening';mkdirSync(root,{recursive:true});
 const sha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim();
-const dirty=execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim();
+const dirty=execFileSync('git',['status','--porcelain','--','server','shared','scripts','tests','package.json'],{encoding:'utf8'}).trim();
 const metadata={sha,date:new Date().toISOString(),node:process.version,os:`${platform()} ${release()}`,cpu:cpus()[0]?.model,cores:cpus().length,totalRamBytes:totalmem(),freeRamBytes:freemem(),workers:2,sourceDirty:dirty};
 const runs=[];
 const cases=[['tests',['test'],[]],['build',['run','build'],[]],['traffic',['run','bench:traffic'],['traffic-benchmark-traffic-2.0-market-3.0.json','market-benchmark-market-3.0.json']],['actions',['run','bench:actions'],['actions-benchmark-4a.json','actions-benchmark-4a.verified.json']],['connections',['run','bench:connections'],['connection-benchmark.json']],['chat',['run','bench:chat'],['entrega5-chat.json']],['entrega5',['run','bench:entrega5'],['entrega5-benchmark.json']]];
 for(const [name,args,files] of cases){
+ if(only&&!only.includes(name))continue;
  const start=Date.now(),out=createWriteStream(`${root}/${name}.txt`);console.log(`START ${name} ${new Date().toISOString()}`);
  const child=spawn('npm',args,{env:{...process.env,FLOW_DVR_WORKERS:'2'},stdio:['ignore','pipe','pipe']});child.stdout.pipe(out,{end:false});child.stderr.pipe(out,{end:false});
  const result=await new Promise(resolve=>{child.once('error',e=>resolve({exitCode:null,error:e.message}));child.once('exit',(exitCode,signal)=>resolve({exitCode,signal}));});await new Promise(r=>out.end(r));

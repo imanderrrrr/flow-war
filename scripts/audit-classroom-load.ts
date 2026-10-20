@@ -60,7 +60,7 @@ async function pipeline(companyId:number,domain:'backend'|'security'){
  requireOk(await send(actor,'change.submit',{graph:domain==='backend'?atomicGraph():securityGraph(),revision:0}));
  const snap=await(await get('/api/snapshot',actor)).json() as Snapshot,change=snap.changes.find(c=>c.companyId===companyId&&c.domain===domain)!;assert(change,'new change must exist');
  requireOk(await send(qa,'qa.run',{suite:domain==='backend'?'Concurrencia':'Seguridad'},change.id));
- await until(()=>qa.latest?.changes.find(c=>c.id===change.id)?.status==='QA_PENDING',`QA completion ${companyId}/${domain}`,30000);
+ await until(()=>qa.latest?.changes.some(c=>c.id===change.id&&c.status==='QA_PENDING'&&c.reports.length>0)??false,`QA completion ${companyId}/${domain}`,30000);
  requireOk(await send(qa,'qa.approve',{},change.id));requireOk(await send(cto,'cto.authorize',{},change.id));requireOk(await send(devops,'deploy.start',{strategy:'rolling'},change.id));
  await until(()=>devops.latest?.changes.find(c=>c.id===change.id)?.status==='DEPLOYED',`deployment ${companyId}/${domain}`,30000);
 }
@@ -122,7 +122,7 @@ try{
   await Promise.all(entries.filter(e=>e.identity?.companyId!=null).map(async e=>{const id=`classroom-chat-${round}-${e.identity!.id}`,payload={channel:'equipo-interno',text:`Coordinación ${round+1}: ${e.identity!.role}`,refs:[]},cmd:Command={id,type:'chat.send',companyId:e.identity!.companyId!,payload};const key=`${e.identity!.id}:${id}`;sent.set(key,{at:performance.now(),companyId:e.identity!.companyId!,observers:new Set(),command:cmd});const result=requireOk(await send(e,'chat.send',payload,undefined,id));sent.get(key)!.refs=result.refs;assert.deepEqual(await send(e,'chat.send',payload,undefined,id,'retry'),result);}));
  }
  await until(()=>[...sent.values()].every(m=>m.observers.size===5),'every acknowledged message delivered to all authorized students');
- for(let c=0;c<5;c++){const e=member(c,'backend'),res=await get('/api/flowslack?channel=equipo-interno',e),messages=(await res.json()).messages;assert.equal(messages.length,25);assert.equal(new Set(messages.map((m:any)=>m.id)).size,25);assert(messages.every((m:any)=>m.companyId===c));assert(messages.every((m:any,i:number)=>!i||m.id>messages[i-1].id));assert.equal((await get(`/api/flowslack?companyId=${(c+1)%5}`,e)).status,403);}
+ for(let c=0;c<5;c++){const e=member(c,'backend'),res=await get('/api/flowslack?channel=equipo-interno',e),messages=(await res.json()).messages;assert.equal(messages.length,25);assert.equal(new Set(messages.map((m:any)=>m.id)).size,25);assert(messages.every((m:any)=>m.companyId===c));assert(messages.every((m:any,i:number)=>!i||m.sequence>messages[i-1].sequence));assert.equal((await get(`/api/flowslack?companyId=${(c+1)%5}`,e)).status,403);}
  student.socket.disconnect();await connect(student);reconnects++;requireOk(await send(student,'chat.send',sent.values().next().value!.command.payload,undefined,'classroom-chat-0-0-backend','reconnect-retry'));
  report.scenarios.C={messages:125,identicalRetries:125,authorizedRecipientDeliveries:625,wallMs:performance.now()-chatAt,orderVerified:true,zeroDuplicateRows:true,reconnected:true};
  for(let c=0;c<5;c++){const devops=member(c,'devops');requireOk(await send(devops,'infra.maintenance',{mode:'ORDERS_PAUSED'}));requireOk(await send(devops,'infra.maintenance',{mode:'OPERATING'}));requireOk(await send(devops,'infra.stop',{service:'web'}));requireOk(await send(devops,'infra.recover',{service:'web'}));requireOk(await send(devops,'infra.restart',{serverId:1,duration:1}));}

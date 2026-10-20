@@ -1,0 +1,566 @@
+{
+  "sha": "ab08cf560a425591d796b3f2e956cbfe3d79383f",
+  "sourceDigest": "38ff47b0e8931dd848bf48ec56470b439d1ff10a514f78f1e1e9bdaf34198735",
+  "sourceFiles": [
+    "scripts/audit-classroom-load.ts",
+    "scripts/audit-classroom-probe.cjs",
+    "scripts/market-scenarios.ts",
+    "server/action-validation.ts",
+    "server/agents.ts",
+    "server/artifacts.ts",
+    "server/blocks.ts",
+    "server/business.ts",
+    "server/chat.ts",
+    "server/crisis.ts",
+    "server/defects.ts",
+    "server/discipline.ts",
+    "server/dvr-pool.ts",
+    "server/dvr-query.ts",
+    "server/dvr-worker.mjs",
+    "server/dvr-worker.ts",
+    "server/dvr.ts",
+    "server/engine.ts",
+    "server/flowslack.ts",
+    "server/graphs.ts",
+    "server/history-admin.ts",
+    "server/history.ts",
+    "server/index.ts",
+    "server/infrastructure.ts",
+    "server/load.ts",
+    "server/maintenance.ts",
+    "server/market.ts",
+    "server/module-execution.ts",
+    "server/observability.ts",
+    "server/persistence.ts",
+    "server/postmortem.ts",
+    "server/projections.ts",
+    "server/qa.ts",
+    "server/receipt-storage.ts",
+    "server/requests.ts",
+    "server/scenarios.ts",
+    "server/security.ts",
+    "server/storage-lease.ts",
+    "server/storage.ts",
+    "server/traffic.ts",
+    "shared/actions.ts",
+    "shared/agents.ts",
+    "shared/blocks.ts",
+    "shared/crisis.ts",
+    "shared/observability.ts",
+    "shared/simulation.ts",
+    "shared/types.ts"
+  ],
+  "sourceDirty": "",
+  "date": "2026-10-20T01:56:32.601Z",
+  "node": "v25.9.0",
+  "os": "darwin 27.0.0",
+  "cpu": "Apple M5",
+  "cores": 10,
+  "totalRamBytes": 17179869184,
+  "freeRamBytes": 340606976,
+  "workers": 2,
+  "parameters": {
+    "duration": 1200,
+    "speed": 20,
+    "historyDuration": 1200,
+    "seed": 8,
+    "population": 5000,
+    "initialReputation": 34,
+    "oneXWarmupSeconds": 10,
+    "dvrConcurrency": 2
+  },
+  "clients": 27,
+  "students": 25,
+  "authenticatedSessions": 26,
+  "publicConnections": 1,
+  "scenarios": {
+    "preparation": {
+      "wallMs": 35555.845625,
+      "historicalTicks": 12000,
+      "historicalStatus": "FINISHED",
+      "archiveDigest": "946e4a72edcac5904d6892936a55f1f92f83e8075f8bf048a89cbc1a43e26431",
+      "expectedFrames": 8
+    },
+    "A": {
+      "connections": 27,
+      "uniqueAuthenticatedIdentities": 26,
+      "rolesPerCompany": [
+        "backend",
+        "security",
+        "qa",
+        "cto",
+        "devops"
+      ],
+      "lobbyCoherent": true,
+      "initialPopulation": 5000,
+      "initialCustomersPerCompany": [
+        1000,
+        1000,
+        1000,
+        1000,
+        1000
+      ],
+      "firstTrafficGenerated": true
+    },
+    "oneXWarmup": {
+      "wallMs": 10002.039833999996,
+      "simulatedSeconds": 10,
+      "speed": 1
+    }
+  },
+  "commands": [
+    {
+      "identity": "0-backend",
+      "type": "room.reset",
+      "id": "4e459767-c298-4961-b910-56d10406ef4e",
+      "atTick": 0,
+      "purpose": "expected-denial",
+      "ok": false,
+      "code": "FORBIDDEN",
+      "error": "Acción ajena al rol.",
+      "ms": 24.099542000003566
+    },
+    {
+      "identity": "public",
+      "type": "room.start",
+      "id": "3afbf723-0d46-41e2-a069-a9885f61b486",
+      "atTick": 0,
+      "purpose": "expected-denial",
+      "ok": false,
+      "code": "FORBIDDEN",
+      "error": "Sesión o comando no autorizado.",
+      "ms": 3.515584000000672
+    },
+    {
+      "identity": "operator",
+      "type": "room.start",
+      "id": "6508a945-29cd-422e-9cb4-e65e7abe22b2",
+      "atTick": 0,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 16.848625000005995
+    },
+    {
+      "identity": "operator",
+      "type": "room.speed",
+      "id": "8995bda1-99ff-44fe-b179-4fd73237bf66",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 19.00045799999498
+    },
+    {
+      "identity": "0-backend",
+      "type": "change.submit",
+      "id": "e20850cc-b9b3-4d64-a890-7442746bc548",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 22.905417000001762
+    },
+    {
+      "identity": "1-backend",
+      "type": "change.submit",
+      "id": "3be9c831-dc71-4202-a914-44fe2600a2cd",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 40.882917000002635
+    },
+    {
+      "identity": "2-backend",
+      "type": "change.submit",
+      "id": "1d209728-83fe-4efd-8dd3-f6ccf8419f53",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 58.17925000000105
+    },
+    {
+      "identity": "3-backend",
+      "type": "change.submit",
+      "id": "139e862b-60e3-42ea-81c3-fd8c4d46cbb5",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 78.13500000000204
+    },
+    {
+      "identity": "4-backend",
+      "type": "change.submit",
+      "id": "a9b7b6da-72ca-4e0b-a0d3-7e9f4995ef9c",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 95.98716699999932
+    },
+    {
+      "identity": "0-qa",
+      "type": "qa.run",
+      "id": "2fc1ac5c-0ac4-4f7b-b903-dc231eb2c92c",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 13.360082999999577
+    },
+    {
+      "identity": "0-qa",
+      "type": "qa.approve",
+      "id": "aeaf27dd-9ed6-4a43-a85a-0ce02c470321",
+      "atTick": 12,
+      "purpose": "work",
+      "ok": false,
+      "code": null,
+      "error": "Se requiere una prueba terminada.",
+      "ms": 19.584125000001222
+    }
+  ],
+  "dvr": [],
+  "security": {
+    "secondServerDenied": true,
+    "liveMaintenanceDenied": true,
+    "authorizedIndependentArchiveReadable": true,
+    "studentArchiveDenied": true,
+    "studentDeletionDenied": true,
+    "studentAccessDenied": true,
+    "foreignReceiptDenied": true,
+    "foreignDvrDenied": true,
+    "unauthenticatedDvrDenied": true,
+    "localSecretsNotServed": true
+  },
+  "errors": [
+    "AssertionError [ERR_ASSERTION]: Se requiere una prueba terminada.\n    at requireOk (/Users/anderson/Documents/proyecto aseguramiento/scripts/audit-classroom-load.ts:52:30)\n    at pipeline (/Users/anderson/Documents/proyecto aseguramiento/scripts/audit-classroom-load.ts:64:2)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async Promise.all (index 0)\n    at async <anonymous> (/Users/anderson/Documents/proyecto aseguramiento/scripts/audit-classroom-load.ts:116:2)"
+  ],
+  "segments": [
+    {
+      "segment": 1,
+      "exitCode": 0,
+      "signal": null,
+      "hookedStep": true,
+      "hookedQueue": true,
+      "ticks": 120,
+      "idleSteps": 62,
+      "snapshots": 2438,
+      "snapshotBytes": 41650603,
+      "maxSnapshotBytes": 35578,
+      "maxConnections": 27,
+      "connections": 0,
+      "disconnects": 27,
+      "writes": 252,
+      "commits": 28,
+      "rollbacks": 1,
+      "checkpoints": 0,
+      "workersCreated": 1,
+      "workersExited": 1,
+      "workerErrors": 0,
+      "workerInjectedFailures": 0,
+      "workerTerminations": 1,
+      "workerReplies": 1,
+      "maxWorkers": 1,
+      "maxWorkersBusy": 1,
+      "maxQueued": 0,
+      "lastControl": null,
+      "elapsedMs": 16743.213333,
+      "final": true,
+      "eventLoop": {
+        "p50": 12.025855,
+        "p95": 12.230655,
+        "p99": 25.690111,
+        "max": 97.320959
+      },
+      "tickMs": {
+        "n": 120,
+        "p50": 0.6322080000009009,
+        "p95": 5.601749999999811,
+        "p99": 6.9210000000002765,
+        "max": 8.946582999999919
+      },
+      "engineIntervalMs": {
+        "n": 163,
+        "p50": 101.11641700000109,
+        "p95": 102.55124999999862,
+        "p99": 111.3139170000004,
+        "max": 139.32949999999983
+      },
+      "engineCallbackMs": {
+        "n": 163,
+        "p50": 2.1066249999994398,
+        "p95": 25.855750000000626,
+        "p99": 31.09399999999914,
+        "max": 31.748499999999694
+      },
+      "persistenceMs": {
+        "n": 28,
+        "p50": 9.538042000000132,
+        "p95": 21.15216700000019,
+        "p99": 22.46075000000019,
+        "max": 22.46075000000019
+      },
+      "workerTaskMs": {
+        "n": 1,
+        "p50": 35.78783300000032,
+        "p95": 35.78783300000032,
+        "p99": 35.78783300000032,
+        "max": 35.78783300000032
+      },
+      "activeWorkers": 0,
+      "busyWorkers": 0,
+      "memory": [
+        {
+          "atMs": 1002.547041,
+          "heapUsed": 19369168,
+          "rss": 125108224,
+          "external": 6269553
+        },
+        {
+          "atMs": 2003.9927079999998,
+          "heapUsed": 19577416,
+          "rss": 126828544,
+          "external": 6189296
+        },
+        {
+          "atMs": 3005.191375,
+          "heapUsed": 19678496,
+          "rss": 135659520,
+          "external": 6189026
+        },
+        {
+          "atMs": 4006.9855,
+          "heapUsed": 19720056,
+          "rss": 135675904,
+          "external": 6197218
+        },
+        {
+          "atMs": 5008.019416,
+          "heapUsed": 34172656,
+          "rss": 137363456,
+          "external": 6197218
+        },
+        {
+          "atMs": 6010.145541,
+          "heapUsed": 34077032,
+          "rss": 136249344,
+          "external": 6197218
+        },
+        {
+          "atMs": 7010.017541,
+          "heapUsed": 20779208,
+          "rss": 144261120,
+          "external": 6320426
+        },
+        {
+          "atMs": 8010.8065,
+          "heapUsed": 28206240,
+          "rss": 147357696,
+          "external": 6320426
+        },
+        {
+          "atMs": 9011.435958,
+          "heapUsed": 21091640,
+          "rss": 147816448,
+          "external": 6328618
+        },
+        {
+          "atMs": 10012.206083000001,
+          "heapUsed": 30138696,
+          "rss": 148226048,
+          "external": 6508922
+        },
+        {
+          "atMs": 11012.356958,
+          "heapUsed": 21549032,
+          "rss": 150388736,
+          "external": 6590882
+        },
+        {
+          "atMs": 12012.497208,
+          "heapUsed": 31233344,
+          "rss": 150568960,
+          "external": 6664650
+        },
+        {
+          "atMs": 13013.442416000002,
+          "heapUsed": 26130120,
+          "rss": 150765568,
+          "external": 6754802
+        },
+        {
+          "atMs": 14015.057375,
+          "heapUsed": 21755480,
+          "rss": 150896640,
+          "external": 6844954
+        },
+        {
+          "atMs": 15015.589750000001,
+          "heapUsed": 30965008,
+          "rss": 151093248,
+          "external": 6935106
+        },
+        {
+          "atMs": 16016.176833000001,
+          "heapUsed": 26349496,
+          "rss": 151289856,
+          "external": 7017066
+        }
+      ],
+      "workerMemory": [
+        {
+          "atMs": 7011.469875,
+          "id": 2,
+          "usedHeapBytes": 9773600,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 8011.586625,
+          "id": 2,
+          "usedHeapBytes": 9773712,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 9012.191333,
+          "id": 2,
+          "usedHeapBytes": 9773824,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 10013.213541000001,
+          "id": 2,
+          "usedHeapBytes": 9773936,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 11013.109583000001,
+          "id": 2,
+          "usedHeapBytes": 9774048,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 12013.517833000002,
+          "id": 2,
+          "usedHeapBytes": 9774160,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 13014.343,
+          "id": 2,
+          "usedHeapBytes": 9774272,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 14017.104166000001,
+          "id": 2,
+          "usedHeapBytes": 9774384,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 15016.569458000002,
+          "id": 2,
+          "usedHeapBytes": 9774664,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 16017.591958,
+          "id": 2,
+          "usedHeapBytes": 9774776,
+          "totalHeapBytes": 15876096
+        }
+      ],
+      "heapMaxBytes": 34172656,
+      "rssMaxBytes": 151289856
+    }
+  ],
+  "limitations": [
+    "Local loopback; Node Socket.IO clients do not render 27 browser UIs.",
+    "The 34-point reputation is an explicit pre-start scenario condition for all five companies. No live engine state is mutated.",
+    "Total process RSS includes worker memory; worker heap samples are not additive RSS.",
+    "SIGKILL telemetry is explicitly flushed immediately before killing; crash tail may omit the last sampling interval."
+  ],
+  "visual": {
+    "calls": 50000,
+    "totalMs": 35.326333000004524,
+    "economyUnchanged": true,
+    "scope": "Pure derived visual function, not browser FPS; server does not run paper animation."
+  },
+  "result": "failed",
+  "exitCode": 1,
+  "wallMs": 52489.766792,
+  "socket": {
+    "snapshots": 2411,
+    "sizeBytes": {
+      "n": 2411,
+      "p50": 17207,
+      "p95": 22631,
+      "p99": 24862,
+      "max": 35359
+    },
+    "deliveryMs": {
+      "n": 2411,
+      "p50": 6.998291015625,
+      "p95": 4447.459228515625,
+      "p99": 5246.171630859375,
+      "max": 5271.735107421875
+    },
+    "cadenceMs": {
+      "n": 2384,
+      "p50": 188.49229200000264,
+      "p95": 221.0653749999983,
+      "p99": 5440.056917000002,
+      "max": 5462.709625000003
+    },
+    "maximumConnections": 27,
+    "disconnects": 27,
+    "reconnects": 0,
+    "timeouts": 3,
+    "commandAckMs": {
+      "n": 11,
+      "p50": 22.905417000001762,
+      "p95": 95.98716699999932,
+      "p99": 95.98716699999932,
+      "max": 95.98716699999932
+    }
+  },
+  "flowSlack": {
+    "sent": 0,
+    "authorizedDeliveries": 0,
+    "ackMs": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "max": null
+    },
+    "deliveryMs": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "max": null
+    },
+    "crossCompanyDeliveries": 0,
+    "confirmedMessageLoss": null,
+    "duplicateApplications": null
+  },
+  "explicitCheckpoints": 0,
+  "budgets": {
+    "eventLoopP99Below150": true,
+    "engineIntervalP95Below200": true,
+    "commandAckP95Below150": true,
+    "scope": "Investigative budgets on local loopback; crossing one is reported, never hidden or relaxed."
+  }
+}
