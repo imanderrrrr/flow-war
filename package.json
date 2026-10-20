@@ -14,7 +14,8 @@
     "bench:entrega5": "tsx scripts/entrega5-benchmark.ts",
     "bench:chat": "tsx scripts/chat-benchmark.ts",
     "history:admin": "tsx scripts/history-admin.ts",
-    "bench:audit": "tsx scripts/audit-load.ts"
+    "bench:audit": "tsx scripts/audit-load.ts",
+    "bench:classroom": "tsx scripts/audit-classroom-load.ts"
   },
   "dependencies": {
     "@fontsource/press-start-2p": "^5.2.5",

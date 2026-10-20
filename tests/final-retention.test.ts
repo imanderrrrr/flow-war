@@ -19,7 +19,7 @@ test('final retention: preview agrees with actual archive and deletion, independ
   // LOBBY and RUNNING must reject both operations.
   check(0,false,false);assert.throws(()=>exportGeneration(db,0,join(dir,'lobby.sqlite')));
   command(g,'operator','room.start');write(g);check(0,false,false);assert.throws(()=>exportGeneration(db,0,join(dir,'running.sqlite')));
-  while(g.status==='RUNNING')step(g);write(g);
+  while(String(g.status)==='RUNNING')step(g);write(g);
   // Current FINISHED without a policy: backing up is valid, deleting is not.
   exportGeneration(db,0,join(dir,'finished.sqlite'));check(0,true,false);assert.throws(()=>deleteArchivedGeneration(db,0,0));
   command(g,'operator','room.reset');write(g);check(0,true,false);
@@ -35,7 +35,7 @@ test('final retention: preview agrees with actual archive and deletion, independ
   command(g,'operator','room.start');step(g);command(g,'operator','room.reset');write(g);
   assert.equal(preview(1).status,'ABORTED');check(1,true,false);exportGeneration(db,1,join(dir,'aborted.sqlite'));
   // Historical FINISHED with no archive remains exportable, never deletable.
-  command(g,'operator','room.start');g.duration=2;while(g.status==='RUNNING')step(g);write(g);command(g,'operator','room.reset');write(g);check(2,true,false);
+  command(g,'operator','room.start');g.duration=2;while(String(g.status)==='RUNNING')step(g);write(g);command(g,'operator','room.reset');write(g);check(2,true,false);
   setRetentionPolicy(db,{keepGenerations:0,olderThanDays:null,deleteEnabled:true});check(2,true,false);assert.throws(()=>deleteArchivedGeneration(db,2,2));
   // Invalid closure and corrupt evidence must agree with export rejection too.
   db.exec('UPDATE history_games SET closedAt=NULL WHERE generation=2');check(2,false,false);assert.throws(()=>exportGeneration(db,2,join(dir,'invalid.sqlite')));

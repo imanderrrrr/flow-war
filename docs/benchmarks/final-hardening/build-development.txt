@@ -1,0 +1,9 @@
+
+> flow-war@0.1.0 build
+> tsc --noEmit && vite build
+
+scripts/audit-classroom-load.ts(122,509): error TS2345: Argument of type 'string' is not assignable to parameter of type '`${string}-${string}-${string}-${string}-${string}`'.
+scripts/audit-classroom-load.ts(122,606): error TS2345: Argument of type 'string' is not assignable to parameter of type '`${string}-${string}-${string}-${string}-${string}`'.
+scripts/audit-classroom-load.ts(138,159): error TS2345: Argument of type 'string' is not assignable to parameter of type '`${string}-${string}-${string}-${string}-${string}`'.
+scripts/audit-classroom-load.ts(141,102): error TS2367: This comparison appears to be unintentional because the types '"RUNNING" | "LOBBY" | "PAUSED" | "ABORTED"' and '"FINISHED"' have no overlap.
+tests/final-retention.test.ts(38,57): error TS2367: This comparison appears to be unintentional because the types '"LOBBY" | "PAUSED" | "FINISHED" | "ABORTED"' and '"RUNNING"' have no overlap.
