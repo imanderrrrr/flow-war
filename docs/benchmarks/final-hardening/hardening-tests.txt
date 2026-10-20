@@ -1,0 +1,14 @@
+✔ H1/H2 real sessions enforce private projections, durable reset deduplication and honest failed acknowledgments (907.103875ms)
+✔ final broadcast: bursts preserve every durable command and the latest private snapshot (781.927208ms)
+✔ final retention: preview agrees with actual archive and deletion, independently of protection and retention (2109.120458ms)
+✔ final lease: stale diagnostics with a reused live PID do not block ownership (4.010583ms)
+✔ final lease: independent owners exclude each other and recover after SIGTERM and SIGKILL (184.085333ms)
+✔ final lease: admission and release write failures cannot strand the OS lock (4.634833ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2230.930709

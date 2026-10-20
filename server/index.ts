@@ -133,11 +133,18 @@ io.on('connection', socket => {
     const result = applyCommand(game, identity, command);
     try {
       persist({ identity: identity.id, id: command.id, digest, result: JSON.stringify(result) });
-      ack(result); broadcast();
+      ack(result); scheduleBroadcast();
     } catch { game = before; bindObservability(game); ack({ ok: false, error: 'No se pudo confirmar el comando.' }); }
   });
 });
+let pendingBroadcast: ReturnType<typeof setImmediate> | undefined;
+// Commands remain individually durable. Notifications can share the latest
+// committed state within one event-loop turn; every forensic input is retained.
+function scheduleBroadcast() {
+  pendingBroadcast ??= setImmediate(() => { pendingBroadcast = undefined; broadcast(); });
+}
 function broadcast() {
+  if (pendingBroadcast) { clearImmediate(pendingBroadcast); pendingBroadcast = undefined; }
   for (const socket of io.sockets.sockets.values()) socket.emit('snapshot', project(game, session(socket.request.headers.cookie)));
 }
 let iterations = 0;
@@ -158,5 +165,5 @@ if (process.env.NODE_ENV === 'production') {
 }
 const port = Number(process.env.FLOW_PORT ?? 4173);
 http.listen(port, '0.0.0.0', () => console.log(`FLOW WAR listo: http://localhost:${port}\nCredenciales locales: ${accessFile}`));
-async function shutdown() { clearInterval(timer); persist(); await dvr.close(); io.close(); http.close(); releaseStorage(); db.close(); process.exit(0); }
+async function shutdown() { clearInterval(timer); if (pendingBroadcast) clearImmediate(pendingBroadcast); persist(); await dvr.close(); io.close(); http.close(); releaseStorage(); db.close(); process.exit(0); }
 process.on('SIGINT', shutdown); process.on('SIGTERM', shutdown);
