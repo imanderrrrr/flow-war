@@ -27,19 +27,30 @@ export function setRetentionPolicy(db:DatabaseSync,value:RetentionPolicy){
 }
 function activeGeneration(db:DatabaseSync){const row=db.prepare('SELECT state FROM game WHERE id=1').get()as{state:string}|undefined;return row?JSON.parse(row.state).generation:null;}
 function validGeneration(generation:number){if(!Number.isSafeInteger(generation)||generation<0)throw Error('Generación inválida.');}
-function terminal(db:DatabaseSync,generation:number){validGeneration(generation);const row=db.prepare('SELECT * FROM history_games WHERE generation=?').get(generation)as{generation:number;status:string;closedAt:number|null}|undefined;if(!row||!['FINISHED','ABORTED'].includes(row.status))throw Error('Solo se archivan generaciones cerradas.');return row;}
+function terminal(db:DatabaseSync,generation:number){validGeneration(generation);const row=db.prepare('SELECT * FROM history_games WHERE generation=?').get(generation)as{generation:number;status:string;closedAt:number|null}|undefined;if(!row||!['FINISHED','ABORTED'].includes(row.status)||!Number.isFinite(row.closedAt)||row.closedAt===null)throw Error('Solo se archivan generaciones cerradas.');return row;}
 export function protectGeneration(db:DatabaseSync,generation:number,reason:string|null){validGeneration(generation);if(reason===null)db.prepare('DELETE FROM history_protection WHERE generation=?').run(generation);else{if(!db.prepare('SELECT 1 FROM history_games WHERE generation=?').get(generation))throw Error('Generación ausente.');if(!reason.trim()||reason.length>1000)throw Error('Motivo inválido.');db.prepare('INSERT INTO history_protection VALUES (?,?) ON CONFLICT(generation) DO UPDATE SET reason=excluded.reason').run(generation,reason);} }
 export function retentionPreview(db:DatabaseSync,now=Date.now()){
  const policy=retentionPolicy(db),active=activeGeneration(db),rows=db.prepare('SELECT * FROM history_games ORDER BY generation DESC').all()as{generation:number;status:string;closedAt:number|null}[];
  return{policy,generations:rows.map((g,index)=>{
-  const reasons:string[]=[];
-  if(g.generation===active)reasons.push('CURRENT_GENERATION');if(!['FINISHED','ABORTED'].includes(g.status))reasons.push('NOT_TERMINAL');
-  if(db.prepare('SELECT 1 FROM history_protection WHERE generation=?').get(g.generation))reasons.push('PROTECTED');
-  if(policy.keepGenerations===null&&policy.olderThanDays===null)reasons.push('NO_RETENTION_RULE');
-  if(policy.keepGenerations!==null&&index<policy.keepGenerations)reasons.push('RETAIN_RECENT');
-  if(policy.olderThanDays!==null&&(g.closedAt===null||g.closedAt>now-policy.olderThanDays*86400000))reasons.push('RETAIN_AGE_OR_UNKNOWN');
-  const archive=db.prepare('SELECT path,digest,verifiedAt FROM history_archives WHERE generation=?').get(g.generation);
-  return{...g,archive:archive??null,eligibleForArchive:!reasons.length,eligibleForDeletion:!reasons.length&&!!archive&&policy.deleteEnabled,reasons};
+  const archiveReasons:string[]=[],deletionReasons:string[]=[];
+  if(!['FINISHED','ABORTED'].includes(g.status))archiveReasons.push('NOT_TERMINAL');
+  else if(g.closedAt===null||!Number.isFinite(g.closedAt))archiveReasons.push('INVALID_CLOSURE');
+  else {try{verifyGenerationEvidence(db,g.generation);}catch{archiveReasons.push('INVALID_EVIDENCE');}}
+  deletionReasons.push(...archiveReasons);
+  if(g.generation===active)deletionReasons.push('CURRENT_GENERATION');
+  if(db.prepare('SELECT 1 FROM history_protection WHERE generation=?').get(g.generation))deletionReasons.push('PROTECTED');
+  if(policy.keepGenerations===null&&policy.olderThanDays===null)deletionReasons.push('NO_RETENTION_RULE');
+  if(policy.keepGenerations!==null&&index<policy.keepGenerations)deletionReasons.push('RETAIN_RECENT');
+  if(policy.olderThanDays!==null&&(g.closedAt===null||g.closedAt>now-policy.olderThanDays*86400000))deletionReasons.push('RETAIN_AGE_OR_UNKNOWN');
+  if(!policy.deleteEnabled)deletionReasons.push('DELETION_DISABLED');
+  const archive=db.prepare('SELECT path,digest,manifest,verifiedAt FROM history_archives WHERE generation=?').get(g.generation) as {path:string;digest:string;manifest:string;verifiedAt:number}|undefined;
+  if(!archive)deletionReasons.push('NO_VERIFIED_ARCHIVE');
+  else {
+   try{const verified=verifyArchive(archive.path,archive.digest);
+    if(JSON.stringify(verified.manifest)!==archive.manifest||JSON.stringify(manifest(db,g.generation))!==archive.manifest)deletionReasons.push('ARCHIVE_MANIFEST_MISMATCH');
+   }catch{deletionReasons.push('INVALID_ARCHIVE');}
+  }
+  return{...g,archive:archive?{path:archive.path,digest:archive.digest,verifiedAt:archive.verifiedAt}:null,eligibleForArchive:!archiveReasons.length,eligibleForDeletion:!deletionReasons.length,archiveReasons,deletionReasons,reasons:deletionReasons};
  })};
 }
 function bytes(path:string){return existsSync(path)?statSync(path).size:0;}
@@ -65,17 +76,23 @@ export function verifyArchive(path:string,expectedDigest?:string){
   for(const table of Object.keys(TABLES) as Table[]){const total=db.prepare(`SELECT count(*) AS n FROM ${table}`).get() as {n:number};if(total.n!==saved.tables?.[table]?.count)throw Error('Archivo contiene filas ajenas o un manifiesto incompleto.');}
   const actual=manifest(db,saved.generation);if(JSON.stringify(actual)!==JSON.stringify(saved))throw Error('Evidencia o esquema de archivo no coincide con el manifiesto.');
   const meta=terminal(db,saved.generation);
-  for(const row of db.prepare('SELECT * FROM request_receipts WHERE generation=?').iterate(saved.generation)){
-   const receipt=decodeReceipt(db,row as any);if(receipt.id!==row.id||receipt.companyId!==row.companyId||!Array.isArray(receipt.path))throw Error('Identidad o estructura de recibo archivado inconsistente.');
-  }
-  for(const cp of db.prepare('SELECT state,digest FROM history_checkpoints WHERE generation=?').iterate(saved.generation)){if(createHash('sha256').update(inflateSync(cp.state as Uint8Array)).digest('hex')!==cp.digest)throw Error('Checkpoint corrupto en archivo.');}
-  const last=(db.prepare('SELECT tick FROM history_games WHERE generation=?').get(saved.generation)as{tick:number}).tick;
-  if(reconstruct(db,saved.generation,last).tick!==last)throw Error('Último checkpoint no reconstruible.');
+  const last=verifyGenerationEvidence(db,saved.generation);
   return{digest,manifest:actual,status:meta.status,lastTick:last};
  }finally{db.close();}
 }
+/** Shared by preview, export and archive verification: no optimistic integrity claims. */
+function verifyGenerationEvidence(db:DatabaseSync,generation:number){
+ terminal(db,generation);
+  for(const row of db.prepare('SELECT * FROM request_receipts WHERE generation=?').iterate(generation)){
+   const receipt=decodeReceipt(db,row as any);if(receipt.id!==row.id||receipt.companyId!==row.companyId||!Array.isArray(receipt.path))throw Error('Identidad o estructura de recibo archivado inconsistente.');
+  }
+  for(const cp of db.prepare('SELECT state,digest FROM history_checkpoints WHERE generation=?').iterate(generation)){if(createHash('sha256').update(inflateSync(cp.state as Uint8Array)).digest('hex')!==cp.digest)throw Error('Checkpoint corrupto en archivo.');}
+  const last=(db.prepare('SELECT tick FROM history_games WHERE generation=?').get(generation)as{tick:number}).tick;
+  if(reconstruct(db,generation,last).tick!==last)throw Error('Último checkpoint no reconstruible.');
+ return last;
+}
 export function exportGeneration(db:DatabaseSync,generation:number,path:string){
- terminal(db,generation);path=resolve(path);if(existsSync(path))throw Error('El archivo de destino ya existe.');const temp=path+'.'+randomUUID()+'.tmp';
+ verifyGenerationEvidence(db,generation);path=resolve(path);if(existsSync(path))throw Error('El archivo de destino ya existe.');const temp=path+'.'+randomUUID()+'.tmp';
  closeSync(openSync(temp,'wx',0o600));const archive=new DatabaseSync(temp);let closed=false;
  try{
   db.exec('BEGIN');archive.exec('BEGIN');
