@@ -2,7 +2,7 @@ import {spawnSync} from 'node:child_process';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
-import {mkdtempSync,rmSync,writeFileSync,readFileSync} from 'node:fs';
+import {mkdtempSync,rmSync,writeFileSync,readFileSync,existsSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {createGame,step} from '../server/engine.js';
@@ -20,6 +20,7 @@ test('H4 complete generations export losslessly, verify, preview, protect, delet
   for(let generation=0;generation<3;generation++){command(g,'operator','room.start');command(g,'backend','chat.send',{channel:'equipo-interno',text:'evidencia en archivo',refs:[]});while(g.status==='RUNNING')step(g);assert.equal(g.status,'FINISHED');write(g);if(generation===0)write(g,{identity:'operator',id:'reset-tombstone',digest:'same',result:'{"ok":true}'});if(generation<2){command(g,'operator','room.reset');g.duration=2;write(g);}}
   assert.equal(storageUsage(db,path).generations.length,3);assert(retentionPreview(db).generations.every(g=>!g.eligibleForDeletion));
   const original=reconstruct(db,0,2);const expectedRow=db.prepare('SELECT * FROM request_receipts WHERE generation=0 LIMIT 1').get()as{receipt:string;generation:number};const originalReceipt=decodeReceipt(db,expectedRow);assert(!('path' in JSON.parse(expectedRow.receipt)));assert(originalReceipt.path.length);
+  const first=db.prepare('SELECT * FROM request_receipts WHERE generation=0 LIMIT 1').get() as any,invalid=join(dir,'invalid.sqlite');db.prepare('UPDATE request_receipts SET details=? WHERE id=?').run(Buffer.from('invalid-zlib'),first.id);assert.throws(()=>exportGeneration(db,0,invalid));assert(!existsSync(invalid));assert.equal(db.prepare('SELECT count(*) AS n FROM history_archives').get()!.n,0);db.prepare('UPDATE request_receipts SET details=? WHERE id=?').run(first.details,first.id);
   const exported=exportGeneration(db,0,archive);assert.equal(verifyArchive(archive,exported.digest).lastTick,2);assert.deepEqual(readArchive(archive).snapshot.companies[0],readArchive(archive,2).snapshot.companies[0]);
   const archivedDb=new DatabaseSync(archive,{readOnly:true});assert.deepEqual(reconstruct(archivedDb,0,2).market,original.market);const r=archivedDb.prepare('SELECT * FROM request_receipts LIMIT 1').get()as any;assert.deepEqual(decodeReceipt(archivedDb,r),originalReceipt);assert.equal(archivedDb.prepare("SELECT count(*) AS n FROM sqlite_master WHERE name='sessions'").get()!.n,0);archivedDb.close();
   assert.throws(()=>deleteArchivedGeneration(db,0,0));setRetentionPolicy(db,{keepGenerations:1,olderThanDays:null,deleteEnabled:true});assert.equal(retentionPreview(db).generations.find(g=>g.generation===0)!.eligibleForDeletion,true);

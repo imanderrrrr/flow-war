@@ -1,3 +1,4 @@
+import {decodeReceipt} from './receipt-storage.js';
 import {queryDvr} from './dvr-query.js';
 import {DatabaseSync} from 'node:sqlite';
 import {createHash,timingSafeEqual,randomUUID} from 'node:crypto';
@@ -64,6 +65,9 @@ export function verifyArchive(path:string,expectedDigest?:string){
   for(const table of Object.keys(TABLES) as Table[]){const total=db.prepare(`SELECT count(*) AS n FROM ${table}`).get() as {n:number};if(total.n!==saved.tables?.[table]?.count)throw Error('Archivo contiene filas ajenas o un manifiesto incompleto.');}
   const actual=manifest(db,saved.generation);if(JSON.stringify(actual)!==JSON.stringify(saved))throw Error('Evidencia o esquema de archivo no coincide con el manifiesto.');
   const meta=terminal(db,saved.generation);
+  for(const row of db.prepare('SELECT * FROM request_receipts WHERE generation=?').iterate(saved.generation)){
+   const receipt=decodeReceipt(db,row as any);if(receipt.id!==row.id||receipt.companyId!==row.companyId||!Array.isArray(receipt.path))throw Error('Identidad o estructura de recibo archivado inconsistente.');
+  }
   for(const cp of db.prepare('SELECT state,digest FROM history_checkpoints WHERE generation=?').iterate(saved.generation)){if(createHash('sha256').update(inflateSync(cp.state as Uint8Array)).digest('hex')!==cp.digest)throw Error('Checkpoint corrupto en archivo.');}
   const last=(db.prepare('SELECT tick FROM history_games WHERE generation=?').get(saved.generation)as{tick:number}).tick;
   if(reconstruct(db,saved.generation,last).tick!==last)throw Error('Último checkpoint no reconstruible.');
