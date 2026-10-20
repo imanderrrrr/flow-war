@@ -21,6 +21,8 @@ test('E6 real HTTP refuses missing credentials, cross-role interpretation, fixtu
   const operator=await connect(await login('operator')),cookie=await login('backend'),backend=await connect(cookie);
   const run=(socket:typeof backend,type:string,payload?:Record<string,unknown>)=>new Promise<any>((res,rej)=>socket.timeout(3000).emit('command',{id:crypto.randomUUID(),type,companyId:type.startsWith('room.')?undefined:0,payload},(e:Error|null,r:any)=>e?rej(e):res(r)));
   assert((await run(operator,'room.start')).ok);
+  // A classroom behind one IP can authenticate all thirty seats plus the teacher.
+  for(const cr of credentials){const r=await fetch(base+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:cr.code})});assert.equal(r.status,200);}
   const request=(body:unknown,session=cookie,origin?:string)=>fetch(base+'/api/ai',{method:'POST',headers:{'Content-Type':'application/json',Cookie:session,...(origin?{Origin:origin}:{})},body:JSON.stringify(body)});
   assert.equal((await request({id:'anonymous',kind:'backend.propose',text:'Compra'},'')).status,403);
   assert.equal((await request({id:'csrf',kind:'backend.propose',text:'Compra'},cookie,'https://foreign.invalid')).status,403);

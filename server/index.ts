@@ -72,15 +72,15 @@ app.use((req, res, next) => {
   if (req.method !== 'GET' && req.headers.origin && new URL(req.headers.origin).host !== req.headers.host) return res.status(403).json({ error: 'Origen no autorizado.' });
   next();
 });
-const attempts = new Map<string, { at: number; count: number }>();
+const attempts = new Map<string, { at: number; count: number; failed: number }>();
 app.post('/api/login', (req, res) => {
   const ip = req.ip ?? 'local', now = Date.now();
-  let bucket = attempts.get(ip); if (!bucket || now - bucket.at > 60000) { bucket = { at: now, count: 0 }; attempts.set(ip, bucket); }
-  if (++bucket.count > 30) return res.status(429).json({ error: 'Límite de intentos alcanzado. Espera un minuto.' });
+  let bucket = attempts.get(ip); if (!bucket || now - bucket.at > 60000) { bucket = { at: now, count: 0, failed: 0 }; attempts.set(ip, bucket); }
+  if (++bucket.count > 60 || bucket.failed >= 30) return res.status(429).json({ error: 'Límite de intentos alcanzado. Espera un minuto.' });
   const code = typeof req.body.code === 'string' ? req.body.code.trim() : '';
   const identity = code.length < 100 ? identities.get(hash(code)) : undefined;
   if (identity && game.actions.employees[identity.id]?.status === 'EXPELLED') return res.status(403).json({ error: 'Empleado expulsado. Puesto vacante.' });
-  if (!identity) return res.status(401).json({ error: 'Credencial no válida.' });
+  if (!identity) { bucket.failed++; return res.status(401).json({ error: 'Credencial no válida.' }); }
   const token = randomBytes(32).toString('base64url');
   db.prepare('INSERT INTO sessions (token,identity,expires) VALUES (?,?,?)').run(hash(token), JSON.stringify(identity), now + 12 * 60 * 60 * 1000);
   res.setHeader('Set-Cookie', `fw_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200`);
