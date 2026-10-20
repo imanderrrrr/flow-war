@@ -39,3 +39,6 @@ html[data-calm="true"] .crisis-surface *{animation:none!important}
 /* Reconnected paused rooms show existing papers immediately instead of freezing their entry at opacity zero. */
 .crisis-surface[data-paused="true"] .pixel-paper{animation:none!important}
 .dvr-table-wrap{overflow:auto;padding:20px}.dvr-table{width:100%;border-collapse:collapse;font-size:11px;text-align:left}.dvr-table th{color:#8f9aaf;font-weight:400;font-size:10px}.dvr-table td,.dvr-table th{padding:12px;border-bottom:1px solid #30394a;white-space:nowrap}.forensic-note,.dvr-summary{font-size:11px;line-height:1.8;padding:0 20px;color:#a6b4ca}.dvr-raw{margin:20px;font-size:9px;color:#b6c4d9;cursor:pointer}
+
+.dvr-mode-setting > strong { display: block; margin-top: 12px; font-size: 12px; }
+.dvr-mode-setting > p { margin: 10px 0; line-height: 1.7; }
