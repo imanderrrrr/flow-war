@@ -51,12 +51,12 @@ export function event(g: GameState, companyId: number | null, text: string, tone
 export function validateGraph(input: unknown, domain: 'backend' | 'security' | 'product', complete = true): Graph {
   if (!input || typeof input !== 'object') throw new Error('Grafo inválido.');
   const graph = structuredClone(input) as Graph;
-  if (!Array.isArray(graph.nodes) || !Array.isArray(graph.edges) || graph.nodes.length > 25 || graph.edges.length > 30) throw new Error('Máximo 20 piezas y 30 conexiones.');
+  if (!Array.isArray(graph.nodes) || !Array.isArray(graph.edges) || graph.nodes.length > 25 || graph.edges.length > 30) throw new Error('Máximo 25 piezas y 30 conexiones.');
   const catalog = domain === 'product' ? [] : BLOCKS[domain];
   const allowed = new Set(['entry', 'exit', ...(domain === 'backend' ? ['read', 'write', 'payment', 'module'] : []), ...catalog.map(b => b.type)]);
   const ids = new Set<string>();
   for (const n of graph.nodes) {
-    if (typeof n.id !== 'string' || n.id.length > 100 || ids.has(n.id) || !allowed.has(n.type) || !n.position || !Number.isFinite(n.position.x) || !Number.isFinite(n.position.y)) throw new Error('Nodo inválido.');
+    if (typeof n.id !== 'string' || !n.id.trim() || n.id.length > 100 || ids.has(n.id) || !allowed.has(n.type) || !n.position || !Number.isFinite(n.position.x) || !Number.isFinite(n.position.y)) throw new Error('Nodo inválido.');
     ids.add(n.id);
     const block = catalog.find(b => b.type === n.type);
     if (n.type === 'atomic' && (!Number.isInteger(Number(n.data?.value ?? block!.value)) || Number(n.data?.value ?? block!.value) < 1 || Number(n.data?.value ?? block!.value) > 120)) throw new Error('Atomic Update requiere una cantidad entera entre 1 y 120.');

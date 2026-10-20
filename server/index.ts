@@ -1,3 +1,6 @@
+import { auditCompletion } from './discipline.js';
+import { AiGateway, AiError } from './claude.js';
+import { prepareAi, commitAi, visibleProposal } from './ai-service.js';
 import { slackFact } from './flowslack.js';
 import { SnapshotSync } from './snapshot-sync.js';
 import { acquireStorageLease } from './storage-lease.js';
@@ -90,6 +93,33 @@ app.post('/api/logout', (req, res) => {
   }
   res.setHeader('Set-Cookie', 'fw_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); res.json({ ok: true });
 });
+const aiGateway = new AiGateway();
+const aiPending = new Set<string>();
+app.post('/api/ai', async (req,res) => {
+  res.setHeader('Cache-Control','no-store');
+  const identity=session(req.headers.cookie);
+  if(!identity)return res.status(403).json({ok:false,code:'FORBIDDEN',error:'Sesión no autorizada.'});
+  const key=identity.id;
+  if(aiPending.has(key))return res.status(429).json({ok:false,code:'AI_BUSY',error:'Hay una solicitud en curso.'});
+  aiPending.add(key);const generation=game.generation;
+  try {
+    const proposal=await prepareAi(game,identity,req.body,aiGateway);
+    const current=session(req.headers.cookie);
+    if(!current||current.id!==identity.id||game.generation!==generation)throw new AiError('FORBIDDEN','La sesión o la partida cambió.');
+    const before=structuredClone(game);copyHistoryBuffer(game,before);
+    try {
+      const stored=commitAi(game,current,req.body,proposal);
+      auditCompletion(game,identity.companyId!,'ai.prepared',[stored.id],[`provider:${stored.provider}`,`kind:${stored.kind}`]);
+      checkpoint(game,serializeGame,true);persist();scheduleBroadcast();res.json({ok:true,proposal:visibleProposal(stored)});
+    }catch(e){game=before;bindObservability(game,f=>slackFact(game,f));throw e;}
+  }catch(e){const code=e instanceof AiError?e.code:'AI_INVALID';
+    if(game.generation===generation&&session(req.headers.cookie)?.id===identity.id){
+      const before=structuredClone(game);copyHistoryBuffer(game,before);
+      try{auditCompletion(game,identity.companyId!,'ai.failed',[],[code]);persist();}catch{game=before;bindObservability(game,f=>slackFact(game,f));}
+    }
+    res.status(code==='FORBIDDEN'?403:code==='AI_RATE_LIMIT'||code==='AI_BUSY'?429:503).json({ok:false,code,error:e instanceof AiError?e.message:'No se pudo preparar la propuesta.'});}
+  finally{aiPending.delete(key);}
+});
 app.get('/api/health', (_req, res) => res.json({ ok: true, room: 'FW-001' }));
 app.get('/api/snapshot', (req, res) => { res.setHeader('Cache-Control', 'no-store'); res.json(project(game, session(req.headers.cookie))); });
 app.get('/api/requests/:id', (req, res) => {
@@ -136,6 +166,7 @@ io.on('connection', socket => {
     if (typeof ack !== 'function') return;
     if (Date.now() - at > 1000) { at = Date.now(); count = 0; }
     if (++count > 20) return ack({ ok: false, error: 'Límite de comandos alcanzado.' });
+    if(command?.type==='agent.fixture')return ack({ok:false,code:'UNSUPPORTED',error:'Intérprete disponible únicamente en pruebas.'});
     const identity = session(socket.request.headers.cookie, true);
     if (!identity || !command || typeof command.id !== 'string' || command.id.length > 100 || typeof command.type !== 'string') return ack({ ok: false, code: 'FORBIDDEN', error: 'Sesión o comando no autorizado.' });
     const digest = hash(JSON.stringify(command));
