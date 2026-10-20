@@ -1,0 +1,16 @@
+{
+  "recordedAt": "2026-10-20T04:33:05.664867+00:00",
+  "referenceSha": "dd88729949dabbbf8c216c265dd580eef071a5aa",
+  "referenceBranch": "codex/entrega-5-audit-fixes",
+  "deliveryBranch": "codex/entrega-5-final-hardening",
+  "firstNewCommit": "f858e823320a206e14078c34a62a49f7a62255f8",
+  "firstNewParent": "dd88729949dabbbf8c216c265dd580eef071a5aa",
+  "mergeBase": "dd88729949dabbbf8c216c265dd580eef071a5aa",
+  "newMergeCommits": [],
+  "mainLocal": "ded62dcba370b899b5295e4e81837a7276b0bc65",
+  "remoteBeforePublication": {
+    "refs/heads/codex/entrega-5-audit-fixes": "dd88729949dabbbf8c216c265dd580eef071a5aa",
+    "refs/heads/main": "ded62dcba370b899b5295e4e81837a7276b0bc65"
+  },
+  "publishedAtThisSnapshot": false
+}

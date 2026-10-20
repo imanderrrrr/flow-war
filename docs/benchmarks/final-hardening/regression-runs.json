@@ -1,0 +1,280 @@
+[
+  {
+    "sha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245",
+    "date": "2026-10-20T04:19:22.574Z",
+    "node": "v25.9.0",
+    "os": "darwin 27.0.0",
+    "cpu": "Apple M5",
+    "cores": 10,
+    "totalRamBytes": 17179869184,
+    "freeRamBytes": 68730880,
+    "workers": 2,
+    "sourceDirty": "",
+    "name": "tests",
+    "command": "npm test",
+    "startedAt": "2026-10-20T04:19:22.577Z",
+    "wallMs": 53136,
+    "exitCode": 0,
+    "signal": null,
+    "evidence": [],
+    "clients": null,
+    "simulatedSeconds": null,
+    "scenario": "unchanged repository command, default full parameters"
+  },
+  {
+    "sha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245",
+    "date": "2026-10-20T04:19:22.574Z",
+    "node": "v25.9.0",
+    "os": "darwin 27.0.0",
+    "cpu": "Apple M5",
+    "cores": 10,
+    "totalRamBytes": 17179869184,
+    "freeRamBytes": 68730880,
+    "workers": 2,
+    "sourceDirty": "",
+    "name": "build",
+    "command": "npm run build",
+    "startedAt": "2026-10-20T04:20:15.713Z",
+    "wallMs": 2187,
+    "exitCode": 0,
+    "signal": null,
+    "evidence": [],
+    "clients": null,
+    "simulatedSeconds": null,
+    "scenario": "unchanged repository command, default full parameters"
+  },
+  {
+    "sha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245",
+    "date": "2026-10-20T04:19:22.574Z",
+    "node": "v25.9.0",
+    "os": "darwin 27.0.0",
+    "cpu": "Apple M5",
+    "cores": 10,
+    "totalRamBytes": 17179869184,
+    "freeRamBytes": 68730880,
+    "workers": 2,
+    "sourceDirty": "",
+    "name": "traffic",
+    "command": "npm run bench:traffic",
+    "startedAt": "2026-10-20T04:20:17.900Z",
+    "wallMs": 703983,
+    "exitCode": 0,
+    "signal": null,
+    "evidence": [
+      {
+        "file": "traffic-benchmark-traffic-2.0-market-3.0.json.gz",
+        "sha256Raw": "df8bfb7807583250b45ba1b5e05015a19e5fd20cfcfaf429c7c5ad72ae0ef999",
+        "sha256Gzip": "d3dcaea8ae80dfbe82b65aa47cda7d555af58ee0a4ae272b720d5c157f397942",
+        "rawBytes": 44005
+      },
+      {
+        "file": "market-benchmark-market-3.0.json.gz",
+        "sha256Raw": "e1c1846521534792fbebdd921c0f417b662422200a29517d242fc7c441534e71",
+        "sha256Gzip": "cd2877751573ff747fba392517aec047a5f4f490dd4e96e11710a1c8361ee936",
+        "rawBytes": 2719071
+      }
+    ],
+    "clients": null,
+    "simulatedSeconds": [
+      1200,
+      1500
+    ],
+    "scenario": "unchanged repository command, default full parameters"
+  },
+  {
+    "sha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245",
+    "date": "2026-10-20T13:45:20.876Z",
+    "node": "v25.9.0",
+    "os": "darwin 27.0.0",
+    "cpu": "Apple M5",
+    "cores": 10,
+    "totalRamBytes": 17179869184,
+    "freeRamBytes": 130596864,
+    "workers": 2,
+    "sourceDirty": "",
+    "measuredPaths": [
+      "server",
+      "shared",
+      "src",
+      "tests",
+      "package.json",
+      "package-lock.json",
+      "scripts/traffic-benchmark.ts",
+      "scripts/market-benchmark.ts",
+      "scripts/actions-benchmark.ts",
+      "scripts/verify-actions-benchmark.ts",
+      "scripts/connection-benchmark.ts",
+      "scripts/chat-benchmark.ts",
+      "scripts/entrega5-benchmark.ts"
+    ],
+    "auditToolingDirty": "M scripts/audit-final-compare.mjs\n M scripts/audit-final-regressions.mjs\n?? scripts/audit-final-report.mjs\n?? scripts/audit-final-verify.mjs",
+    "runnerSha256": "bdd7d927795b7dc597ffdb7defc5ad83505957ac43b8951e828fda59c3df919c",
+    "name": "actions",
+    "command": "npm run bench:actions",
+    "startedAt": "2026-10-20T13:45:20.881Z",
+    "wallMs": 436461,
+    "exitCode": 0,
+    "signal": null,
+    "evidence": [
+      {
+        "file": "actions-benchmark-4a.json.gz",
+        "sha256Raw": "308b39a268b2e9812c7c016d6c07d9690bc256022e5b7383e52851ea0737fc17",
+        "sha256Gzip": "724e9f5ff9b4dd38267300d1d38df89ca03f25f7ce0c724b2237fbe9af728f29",
+        "rawBytes": 13207355
+      },
+      {
+        "file": "actions-benchmark-4a.verified.json.gz",
+        "sha256Raw": "369f6517654576235dd9b054634d23369446e403ae7f0e5a0219a888d14a41d1",
+        "sha256Gzip": "1494763da581c39a5c74ed07eab04cd48e97e318b65f380bfb34a37d634c513d",
+        "rawBytes": 4019
+      }
+    ],
+    "clients": null,
+    "simulatedSeconds": [
+      1200,
+      1500
+    ],
+    "scenario": "unchanged repository command, default full parameters"
+  },
+  {
+    "sha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245",
+    "date": "2026-10-20T13:45:20.876Z",
+    "node": "v25.9.0",
+    "os": "darwin 27.0.0",
+    "cpu": "Apple M5",
+    "cores": 10,
+    "totalRamBytes": 17179869184,
+    "freeRamBytes": 130596864,
+    "workers": 2,
+    "sourceDirty": "",
+    "measuredPaths": [
+      "server",
+      "shared",
+      "src",
+      "tests",
+      "package.json",
+      "package-lock.json",
+      "scripts/traffic-benchmark.ts",
+      "scripts/market-benchmark.ts",
+      "scripts/actions-benchmark.ts",
+      "scripts/verify-actions-benchmark.ts",
+      "scripts/connection-benchmark.ts",
+      "scripts/chat-benchmark.ts",
+      "scripts/entrega5-benchmark.ts"
+    ],
+    "auditToolingDirty": "M scripts/audit-final-compare.mjs\n M scripts/audit-final-regressions.mjs\n?? scripts/audit-final-report.mjs\n?? scripts/audit-final-verify.mjs",
+    "runnerSha256": "bdd7d927795b7dc597ffdb7defc5ad83505957ac43b8951e828fda59c3df919c",
+    "name": "connections",
+    "command": "npm run bench:connections",
+    "startedAt": "2026-10-20T13:52:37.342Z",
+    "wallMs": 8454,
+    "exitCode": 0,
+    "signal": null,
+    "evidence": [
+      {
+        "file": "connection-benchmark.json.gz",
+        "sha256Raw": "7b10419d1eab2f62c3a0c7f34fbbaae3cbfd8bbb81b0766693aa5426f10bf982",
+        "sha256Gzip": "43c0fec22532a6052239d98cc52c2726673809a024482825b225808f62d6e8e1",
+        "rawBytes": 837
+      }
+    ],
+    "clients": 27,
+    "simulatedSeconds": null,
+    "scenario": "unchanged repository command, default full parameters"
+  },
+  {
+    "sha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245",
+    "date": "2026-10-20T13:45:20.876Z",
+    "node": "v25.9.0",
+    "os": "darwin 27.0.0",
+    "cpu": "Apple M5",
+    "cores": 10,
+    "totalRamBytes": 17179869184,
+    "freeRamBytes": 130596864,
+    "workers": 2,
+    "sourceDirty": "",
+    "measuredPaths": [
+      "server",
+      "shared",
+      "src",
+      "tests",
+      "package.json",
+      "package-lock.json",
+      "scripts/traffic-benchmark.ts",
+      "scripts/market-benchmark.ts",
+      "scripts/actions-benchmark.ts",
+      "scripts/verify-actions-benchmark.ts",
+      "scripts/connection-benchmark.ts",
+      "scripts/chat-benchmark.ts",
+      "scripts/entrega5-benchmark.ts"
+    ],
+    "auditToolingDirty": "M scripts/audit-final-compare.mjs\n M scripts/audit-final-regressions.mjs\n?? scripts/audit-final-report.mjs\n?? scripts/audit-final-verify.mjs",
+    "runnerSha256": "bdd7d927795b7dc597ffdb7defc5ad83505957ac43b8951e828fda59c3df919c",
+    "name": "chat",
+    "command": "npm run bench:chat",
+    "startedAt": "2026-10-20T13:52:45.797Z",
+    "wallMs": 12614,
+    "exitCode": 0,
+    "signal": null,
+    "evidence": [
+      {
+        "file": "entrega5-chat.json.gz",
+        "sha256Raw": "934301a74f51de96e7320bed90c4d0ab653ff1a98f9f896818531d95bb343a57",
+        "sha256Gzip": "a1621bc7363f0b94a0cecfa880c9b4c8acf670d4781e10f0f0f95502fc0cc110",
+        "rawBytes": 488
+      }
+    ],
+    "clients": 27,
+    "simulatedSeconds": null,
+    "scenario": "unchanged repository command, default full parameters"
+  },
+  {
+    "sha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245",
+    "date": "2026-10-20T13:45:20.876Z",
+    "node": "v25.9.0",
+    "os": "darwin 27.0.0",
+    "cpu": "Apple M5",
+    "cores": 10,
+    "totalRamBytes": 17179869184,
+    "freeRamBytes": 130596864,
+    "workers": 2,
+    "sourceDirty": "",
+    "measuredPaths": [
+      "server",
+      "shared",
+      "src",
+      "tests",
+      "package.json",
+      "package-lock.json",
+      "scripts/traffic-benchmark.ts",
+      "scripts/market-benchmark.ts",
+      "scripts/actions-benchmark.ts",
+      "scripts/verify-actions-benchmark.ts",
+      "scripts/connection-benchmark.ts",
+      "scripts/chat-benchmark.ts",
+      "scripts/entrega5-benchmark.ts"
+    ],
+    "auditToolingDirty": "M scripts/audit-final-compare.mjs\n M scripts/audit-final-regressions.mjs\n?? scripts/audit-final-report.mjs\n?? scripts/audit-final-verify.mjs",
+    "runnerSha256": "bdd7d927795b7dc597ffdb7defc5ad83505957ac43b8951e828fda59c3df919c",
+    "name": "entrega5",
+    "command": "npm run bench:entrega5",
+    "startedAt": "2026-10-20T13:52:58.411Z",
+    "wallMs": 647275,
+    "exitCode": 0,
+    "signal": null,
+    "evidence": [
+      {
+        "file": "entrega5-benchmark.json.gz",
+        "sha256Raw": "c0b66b0827d45a8df55c07d100cf3f7cfc106312e840c2b293d1372d91c45f0f",
+        "sha256Gzip": "7f5d1ab41b6f2c4460f6e7d20ca581a21d01b9f238016b26db1b9995b61b0fdc",
+        "rawBytes": 3786691
+      }
+    ],
+    "clients": null,
+    "simulatedSeconds": [
+      1200,
+      1500
+    ],
+    "scenario": "unchanged repository command, default full parameters"
+  }
+]

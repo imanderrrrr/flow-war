@@ -1,0 +1,10 @@
+{
+  "source": "Pre-existing optional /tmp/flow-war-base-bench.json embedded by the unchanged market benchmark as reproducedBase",
+  "capturedAt": "2026-10-20T04:29:55.402564+00:00",
+  "sha256Raw": "4cff7f1eda4725471ffddfc3f9ed7860744a2a60d11e41fd23923806b48b3a6e",
+  "bytes": 43869,
+  "cases": 6,
+  "remeasuredInThisAudit": false,
+  "usedForNewPerformanceClaims": false,
+  "sensitiveKeyScan": "No credential, cookie, password, secret, session, accessToken or apiKey keys found."
+}

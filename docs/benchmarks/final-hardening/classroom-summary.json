@@ -1,0 +1,1959 @@
+{
+  "classroom": [
+    {
+      "label": "certified-1200s-20x",
+      "sha": "346265103b55b9b6117efa42ce9b4b6bccc956c7",
+      "date": "2026-10-20T02:15:35.129Z",
+      "node": "v25.9.0",
+      "os": "darwin 27.0.0",
+      "cpu": "Apple M5",
+      "cores": 10,
+      "totalRamBytes": 17179869184,
+      "freeRamBytes": 246136832,
+      "workers": 2,
+      "parameters": {
+        "duration": 1200,
+        "speed": 20,
+        "historyDuration": 1200,
+        "seed": 8,
+        "population": 5000,
+        "initialReputation": 34,
+        "oneXWarmupSeconds": 10,
+        "dvrConcurrency": 2
+      },
+      "clients": 27,
+      "result": "passed",
+      "exitCode": 0,
+      "wallSeconds": 131.76108895800002,
+      "activeWallSeconds": 79.08679479099999,
+      "simulatedSeconds": 1200,
+      "commandAckMs": {
+        "n": 181,
+        "p50": 29.807499999995343,
+        "p95": 93.32200000000012,
+        "p99": 161.08574999999837,
+        "max": 229.5648749999964
+      },
+      "allAckMs": {
+        "n": 433,
+        "p50": 85.00504200000432,
+        "p95": 360.13408399999753,
+        "p99": 393.6965829999972,
+        "max": 412.55058299999655
+      },
+      "successfulOperationalAckMs": {
+        "n": 179,
+        "p50": 30.051958000010927,
+        "p95": 99.02249999999185,
+        "p99": 161.08574999999837,
+        "max": 229.5648749999964
+      },
+      "expectedRejections": [
+        {
+          "identity": "0-backend",
+          "type": "room.reset",
+          "id": "47e5cfee-c46f-48b2-9f4d-88f0495492e8",
+          "atTick": 0,
+          "purpose": "expected-denial",
+          "ok": false,
+          "code": "FORBIDDEN",
+          "error": "Acción ajena al rol.",
+          "ms": 23.863666999997804
+        },
+        {
+          "identity": "public",
+          "type": "room.start",
+          "id": "bb20399b-f287-40cd-84df-f0320999c3fd",
+          "atTick": 0,
+          "purpose": "expected-denial",
+          "ok": false,
+          "code": "FORBIDDEN",
+          "error": "Sesión o comando no autorizado.",
+          "ms": 3.7744579999998678
+        }
+      ],
+      "flowSlack": {
+        "sent": 125,
+        "authorizedDeliveries": 625,
+        "ackMs": {
+          "n": 252,
+          "p50": 202.30512499999895,
+          "p95": 375.81104100000084,
+          "p99": 403.1021669999973,
+          "max": 412.55058299999655
+        },
+        "deliveryMs": {
+          "n": 625,
+          "p50": 414.4909589999952,
+          "p95": 426.9749159999992,
+          "p99": 427.9400830000013,
+          "max": 428.1485410000023
+        },
+        "crossCompanyDeliveries": 0,
+        "confirmedMessageLoss": 0,
+        "duplicateApplications": 0
+      },
+      "socket": {
+        "snapshots": 15912,
+        "snapshotSizes": {
+          "n": 15912,
+          "p50": 97535,
+          "p95": 169362,
+          "p99": 178747,
+          "max": 183056
+        },
+        "snapshotDeliveryMs": {
+          "n": 15912,
+          "p50": 14.45849609375,
+          "p95": 67.425537109375,
+          "p99": 112.019775390625,
+          "max": 138.902099609375
+        },
+        "cadenceMs": {
+          "n": 15885,
+          "p50": 198.81841700000223,
+          "p95": 258.72566599999845,
+          "p99": 355.0388329999987,
+          "max": 452.7861249999987
+        },
+        "disconnects": 55,
+        "reconnects": 28,
+        "timeouts": 0
+      },
+      "engine": [
+        {
+          "segment": 1,
+          "tickMs": {
+            "n": 980,
+            "total": 387.5648419999161,
+            "mean": 0.39547432857134296,
+            "p50": 0.10237499999857391,
+            "p95": 1.5713329999998678,
+            "p99": 5.554667000000336,
+            "max": 9.604583000000275
+          },
+          "ticksMeasured": 980,
+          "callbackMs": {
+            "n": 299,
+            "total": 1482.8934459999784,
+            "mean": 4.9595098528427375,
+            "p50": 2.1868339999991804,
+            "p95": 20.96337499999936,
+            "p99": 31.328874999999243,
+            "max": 35.22912499999802
+          },
+          "callbackCount": 299,
+          "intervalMs": {
+            "n": 299,
+            "total": 32297.89487499999,
+            "mean": 108.01971530100332,
+            "p50": 100.95274999999992,
+            "p95": 122.28812499999913,
+            "p99": 420.59137499999997,
+            "max": 443.4021250000005
+          },
+          "nominalIntervalMs": 100,
+          "meanIntervalDeviationPercent": 8.019715301003316,
+          "eventLoopMs": {
+            "p50": 11.313151,
+            "p95": 21.577727,
+            "p99": 38.895615,
+            "max": 392.429567
+          },
+          "persistenceMs": {
+            "n": 303,
+            "total": 2563.0519599999593,
+            "mean": 8.458917359735839,
+            "p50": 7.313999999998487,
+            "p95": 11.563874999999825,
+            "p99": 18.070583000000624,
+            "max": 23.958208000000013
+          },
+          "sqlChangedRows": 3784,
+          "commits": 303,
+          "rollbacks": 0,
+          "broadcastMs": {
+            "n": 271,
+            "total": 1750.663581000005,
+            "mean": 6.460013214022159,
+            "p50": 7.246750000002066,
+            "p95": 11.104959000000235,
+            "p99": 12.402792000000773,
+            "max": 16.32929200000217
+          },
+          "commandHandlerMs": {
+            "n": 400,
+            "total": 4245.6487560000405,
+            "mean": 10.614121890000101,
+            "p50": 13.85833300000013,
+            "p95": 18.339833000001818,
+            "p99": 20.36945900000137,
+            "max": 34.066624999999476
+          }
+        },
+        {
+          "segment": 2,
+          "tickMs": {
+            "n": 11000,
+            "total": 16722.14816400004,
+            "mean": 1.5201952876363671,
+            "p50": 1.3375410000007832,
+            "p95": 3.247583999997005,
+            "p99": 4.309083000000101,
+            "max": 27.04216599999927
+          },
+          "ticksMeasured": 11000,
+          "callbackMs": {
+            "n": 589,
+            "total": 29359.55208200003,
+            "mean": 49.84643816977934,
+            "p50": 41.03799999999319,
+            "p95": 115.30429200000071,
+            "p99": 177.94574999999895,
+            "max": 199.57170800000313
+          },
+          "callbackCount": 589,
+          "intervalMs": {
+            "n": 589,
+            "total": 63091.814709,
+            "mean": 107.11683312224109,
+            "p50": 101.10812499999884,
+            "p95": 149.8120830000007,
+            "p99": 222.6949999999997,
+            "max": 284.90962500000023
+          },
+          "nominalIntervalMs": 100,
+          "meanIntervalDeviationPercent": 7.116833122241095,
+          "eventLoopMs": {
+            "p50": 12.025855,
+            "p95": 77.725695,
+            "p99": 145.096703,
+            "max": 286.523391
+          },
+          "persistenceMs": {
+            "n": 89,
+            "total": 3709.6419579999497,
+            "mean": 41.68137031460618,
+            "p50": 36.269916999997804,
+            "p95": 88.78083299999707,
+            "p99": 99.46233299999585,
+            "max": 99.46233299999585
+          },
+          "sqlChangedRows": 453827,
+          "commits": 89,
+          "rollbacks": 1,
+          "broadcastMs": {
+            "n": 323,
+            "total": 10752.370744999957,
+            "mean": 33.289073513931754,
+            "p50": 35.39141699999891,
+            "p95": 41.9476250000007,
+            "p99": 44.311125000000175,
+            "max": 47.395125000002736
+          },
+          "commandHandlerMs": {
+            "n": 31,
+            "total": 1789.4427900000378,
+            "mean": 57.72396096774315,
+            "p50": 44.34958299999926,
+            "p95": 144.84116700000595,
+            "p99": 159.76954100000148,
+            "max": 159.76954100000148
+          }
+        }
+      ],
+      "dvr": {
+        "twoConcurrentLanes": true,
+        "exactFrames": 24,
+        "workerFailureObserved": true,
+        "workerRecovery": true,
+        "clientAborts": 7,
+        "saturation429": 1,
+        "saturation503": 3,
+        "frameHttpMs": {
+          "n": 24,
+          "p50": 222.99279099999694,
+          "p95": 1212.6746249999997,
+          "p99": 1222.0306249999994,
+          "max": 1222.0306249999994
+        },
+        "workers": [
+          {
+            "segment": 1,
+            "maxWorkers": 1,
+            "maxBusy": 1,
+            "maxQueued": 0,
+            "created": 1,
+            "exited": 0,
+            "injectedFailures": 0,
+            "workerErrors": 0,
+            "terminations": 0,
+            "workerTaskMs": {
+              "n": 1,
+              "total": 37.582666999998764,
+              "mean": 37.582666999998764,
+              "p50": 37.582666999998764,
+              "p95": 37.582666999998764,
+              "p99": 37.582666999998764,
+              "max": 37.582666999998764
+            }
+          },
+          {
+            "segment": 2,
+            "maxWorkers": 2,
+            "maxBusy": 2,
+            "maxQueued": 8,
+            "created": 7,
+            "exited": 7,
+            "injectedFailures": 1,
+            "workerErrors": 0,
+            "terminations": 7,
+            "workerTaskMs": {
+              "n": 40,
+              "total": 26316.644544000002,
+              "mean": 657.9161136,
+              "p50": 290.4322919999977,
+              "p95": 1238.4280409999992,
+              "p99": 1423.8553749999992,
+              "max": 1423.8553749999992
+            }
+          }
+        ]
+      },
+      "network": {
+        "logicalSnapshotBytes": 1515515225,
+        "observedSeconds": 95.794912957,
+        "logicalMbitPerSecond": 126.56331558484973,
+        "scope": "Server JSON snapshot bytes before transport encoding; includes all 27 connections, lobby/paused/running phases and possible post-disconnect emissions. Not physical wire throughput. The explicitly documented SIGKILL sampling tail may be omitted."
+      },
+      "memory": [
+        {
+          "segment": 1,
+          "peakSamplingMs": 20,
+          "heapMaxMiB": 114.87903594970703,
+          "rssMaxMiB": 299.609375,
+          "workerUsedHeapPeakMiB": 9.359611511230469,
+          "workerHeapSamples": 16,
+          "firstWorkerSampleMs": 16011.897166,
+          "mainOnlyRssTrend": {
+            "samples": 6,
+            "durationMinutes": 0.08340665833333333,
+            "slopeMiBPerMinute": 0.5084664102573395,
+            "firstDecileMeanMiB": 120.078125,
+            "lastDecileMeanMiB": 120.09375
+          },
+          "mainOnlyHeapTrend": {
+            "samples": 6,
+            "durationMinutes": 0.08340665833333333,
+            "slopeMiBPerMinute": 0.5716244139123967,
+            "firstDecileMeanMiB": 32.384056091308594,
+            "lastDecileMeanMiB": 32.43354797363281
+          },
+          "withWorkersRssTrend": {
+            "samples": 12,
+            "durationMinutes": 0.19150064513333334,
+            "slopeMiBPerMinute": 896.7366610326177,
+            "firstDecileMeanMiB": 147.546875,
+            "lastDecileMeanMiB": 276.65625
+          },
+          "wholeSegmentRssTrend": {
+            "samples": 32,
+            "durationMinutes": 0.5251432354166666,
+            "slopeMiBPerMinute": 264.28295983719386,
+            "firstDecileMeanMiB": 122.75,
+            "lastDecileMeanMiB": 283.7916666666667
+          }
+        },
+        {
+          "segment": 2,
+          "peakSamplingMs": 20,
+          "heapMaxMiB": 185.7808074951172,
+          "rssMaxMiB": 936.265625,
+          "workerUsedHeapPeakMiB": 100.92328643798828,
+          "workerHeapSamples": 37,
+          "firstWorkerSampleMs": 44001.278332999995,
+          "mainOnlyRssTrend": {
+            "samples": 33,
+            "durationMinutes": 0.5461709041666666,
+            "slopeMiBPerMinute": 274.84908624583153,
+            "firstDecileMeanMiB": 321.1041666666667,
+            "lastDecileMeanMiB": 465.3385416666667
+          },
+          "mainOnlyHeapTrend": {
+            "samples": 33,
+            "durationMinutes": 0.5461709041666666,
+            "slopeMiBPerMinute": 66.1066638110674,
+            "firstDecileMeanMiB": 56.83283233642578,
+            "lastDecileMeanMiB": 75.35266367594402
+          },
+          "withWorkersRssTrend": {
+            "samples": 14,
+            "durationMinutes": 0.22987433679999994,
+            "slopeMiBPerMinute": 761.6108196608478,
+            "firstDecileMeanMiB": 767.34375,
+            "lastDecileMeanMiB": 927.15625
+          },
+          "wholeSegmentRssTrend": {
+            "samples": 61,
+            "durationMinutes": 1.0326516520833333,
+            "slopeMiBPerMinute": 708.3412858421607,
+            "firstDecileMeanMiB": 196.04166666666666,
+            "lastDecileMeanMiB": 906.1822916666666
+          }
+        }
+      ],
+      "storage": {
+        "mainBeforeBytes": 878039040,
+        "walBeforeBytes": 100297312,
+        "shmBeforeBytes": 196608,
+        "mainAfterBytes": 884883456,
+        "walAfterBytes": 0,
+        "freePages": 1139,
+        "pageSize": 4096,
+        "archiveBytes": 428642304,
+        "perGeneration": [
+          {
+            "generation": 0,
+            "receipts": 227130,
+            "receiptLogicalBytes": 241122787,
+            "otherTables": {
+              "history_events": {
+                "rows": 228553,
+                "payloadBytes": 98621164
+              },
+              "history_inputs": {
+                "rows": 125,
+                "payloadBytes": 34159
+              },
+              "history_points": {
+                "rows": 240,
+                "payloadBytes": 210916
+              },
+              "slack_messages": {
+                "rows": 110,
+                "payloadBytes": 29502
+              },
+              "history_checkpoints": {
+                "rows": 21,
+                "payloadBytes": 2974089
+              },
+              "receipt_paths": {
+                "rows": 2,
+                "payloadBytes": 430
+              },
+              "commands": {
+                "rows": 0,
+                "payloadBytes": 0
+              }
+            }
+          },
+          {
+            "generation": 1,
+            "receipts": 227130,
+            "receiptLogicalBytes": 241143716,
+            "otherTables": {
+              "history_events": {
+                "rows": 228930,
+                "payloadBytes": 98705226
+              },
+              "history_inputs": {
+                "rows": 304,
+                "payloadBytes": 81673
+              },
+              "history_points": {
+                "rows": 241,
+                "payloadBytes": 211696
+              },
+              "slack_messages": {
+                "rows": 243,
+                "payloadBytes": 65458
+              },
+              "history_checkpoints": {
+                "rows": 24,
+                "payloadBytes": 3657993
+              },
+              "receipt_paths": {
+                "rows": 2,
+                "payloadBytes": 434
+              },
+              "commands": {
+                "rows": 304,
+                "payloadBytes": 5871
+              }
+            }
+          }
+        ],
+        "autocheckpoint": {
+          "wal_autocheckpoint": 1000
+        },
+        "explicitCheckpoints": 1,
+        "automaticCheckpoints": "not instrumented; SQLite default threshold reported",
+        "integrity": {
+          "integrity_check": "ok"
+        }
+      },
+      "budgets": {
+        "eventLoopP99Below150": true,
+        "engineIntervalP95Below200": true,
+        "nonChatCommandAckP95Below150": true,
+        "allCommandAckP95Below150": false,
+        "scope": "Investigative budgets on local loopback; crossing one is reported, never hidden or relaxed."
+      },
+      "security": {
+        "secondServerDenied": true,
+        "liveMaintenanceDenied": true,
+        "authorizedIndependentArchiveReadable": true,
+        "independentReadAndQueryWhileActive": true,
+        "studentArchiveDenied": true,
+        "studentDeletionDenied": true,
+        "studentAccessDenied": true,
+        "foreignReceiptDenied": true,
+        "foreignDvrDenied": true,
+        "unauthenticatedDvrDenied": true,
+        "localSecretsNotServed": true,
+        "historicalManifestExact": true
+      },
+      "crisis": {
+        "crisisCompanies": 5,
+        "crisisAndRecoveryFacts": [
+          {
+            "kind": "crisis.entered",
+            "companyId": 0,
+            "n": 1
+          },
+          {
+            "kind": "crisis.entered",
+            "companyId": 1,
+            "n": 1
+          },
+          {
+            "kind": "crisis.entered",
+            "companyId": 2,
+            "n": 1
+          },
+          {
+            "kind": "crisis.entered",
+            "companyId": 3,
+            "n": 1
+          },
+          {
+            "kind": "crisis.entered",
+            "companyId": 4,
+            "n": 1
+          },
+          {
+            "kind": "crisis.exited",
+            "companyId": 0,
+            "n": 1
+          },
+          {
+            "kind": "crisis.exited",
+            "companyId": 1,
+            "n": 1
+          },
+          {
+            "kind": "crisis.exited",
+            "companyId": 2,
+            "n": 1
+          },
+          {
+            "kind": "crisis.exited",
+            "companyId": 3,
+            "n": 1
+          },
+          {
+            "kind": "crisis.exited",
+            "companyId": 4,
+            "n": 1
+          },
+          {
+            "kind": "maintenance.changed",
+            "companyId": 0,
+            "n": 2
+          },
+          {
+            "kind": "maintenance.changed",
+            "companyId": 1,
+            "n": 2
+          },
+          {
+            "kind": "maintenance.changed",
+            "companyId": 2,
+            "n": 2
+          },
+          {
+            "kind": "maintenance.changed",
+            "companyId": 3,
+            "n": 2
+          },
+          {
+            "kind": "maintenance.changed",
+            "companyId": 4,
+            "n": 2
+          }
+        ],
+        "visualEconomyUnchanged": true,
+        "liveMutations": 0
+      },
+      "crash": {
+        "signal": "SIGKILL",
+        "persistedTick": 100,
+        "recoveredPaused": true,
+        "marketExact": true,
+        "pendingQaPreserved": true,
+        "pendingQaResumed": true,
+        "sessionReconnects": 27,
+        "confirmedChatDeduplicated": true,
+        "confirmedModuleDeduplicated": true,
+        "pendingCommandResult": true
+      },
+      "visual": {
+        "calls": 50000,
+        "totalMs": 32.83295899999939,
+        "economyUnchanged": true,
+        "scope": "Pure derived visual function, not browser FPS; server does not run paper animation."
+      }
+    },
+    {
+      "label": "certified-1500s-20x",
+      "sha": "346265103b55b9b6117efa42ce9b4b6bccc956c7",
+      "date": "2026-10-20T02:17:47.291Z",
+      "node": "v25.9.0",
+      "os": "darwin 27.0.0",
+      "cpu": "Apple M5",
+      "cores": 10,
+      "totalRamBytes": 17179869184,
+      "freeRamBytes": 2355691520,
+      "workers": 2,
+      "parameters": {
+        "duration": 1500,
+        "speed": 20,
+        "historyDuration": 1500,
+        "seed": 8,
+        "population": 5000,
+        "initialReputation": 34,
+        "oneXWarmupSeconds": 10,
+        "dvrConcurrency": 2
+      },
+      "clients": 27,
+      "result": "passed",
+      "exitCode": 0,
+      "wallSeconds": 158.437652792,
+      "activeWallSeconds": 93.170235958,
+      "simulatedSeconds": 1500,
+      "commandAckMs": {
+        "n": 188,
+        "p50": 29.48016700000153,
+        "p95": 122.1090419999964,
+        "p99": 158.4119170000049,
+        "max": 183.23762499997974
+      },
+      "allAckMs": {
+        "n": 440,
+        "p50": 83.92404199999874,
+        "p95": 355.1215830000001,
+        "p99": 389.34391699999105,
+        "max": 418.31720900000073
+      },
+      "successfulOperationalAckMs": {
+        "n": 186,
+        "p50": 29.54920900000434,
+        "p95": 122.1090419999964,
+        "p99": 158.4119170000049,
+        "max": 183.23762499997974
+      },
+      "expectedRejections": [
+        {
+          "identity": "0-backend",
+          "type": "room.reset",
+          "id": "276b183b-8a38-4ef7-b8f3-f55fe1148fd5",
+          "atTick": 0,
+          "purpose": "expected-denial",
+          "ok": false,
+          "code": "FORBIDDEN",
+          "error": "Acción ajena al rol.",
+          "ms": 24.174167000004672
+        },
+        {
+          "identity": "public",
+          "type": "room.start",
+          "id": "f2d969b6-5cdf-4f28-8838-7babc9cb4bc9",
+          "atTick": 0,
+          "purpose": "expected-denial",
+          "ok": false,
+          "code": "FORBIDDEN",
+          "error": "Sesión o comando no autorizado.",
+          "ms": 3.700874999994994
+        }
+      ],
+      "flowSlack": {
+        "sent": 125,
+        "authorizedDeliveries": 625,
+        "ackMs": {
+          "n": 252,
+          "p50": 191.560249999995,
+          "p95": 372.0096670000057,
+          "p99": 400.9775840000075,
+          "max": 418.31720900000073
+        },
+        "deliveryMs": {
+          "n": 625,
+          "p50": 400.94783299999835,
+          "p95": 431.91049999999814,
+          "p99": 432.8995830000058,
+          "max": 433.114041000008
+        },
+        "crossCompanyDeliveries": 0,
+        "confirmedMessageLoss": 0,
+        "duplicateApplications": 0
+      },
+      "socket": {
+        "snapshots": 18365,
+        "snapshotSizes": {
+          "n": 18365,
+          "p50": 125228,
+          "p95": 170597,
+          "p99": 179056,
+          "max": 183182
+        },
+        "snapshotDeliveryMs": {
+          "n": 18365,
+          "p50": 15.1494140625,
+          "p95": 70.453857421875,
+          "p99": 110.529296875,
+          "max": 153.0419921875
+        },
+        "cadenceMs": {
+          "n": 18338,
+          "p50": 199.78562500000407,
+          "p95": 258.54783399999724,
+          "p99": 311.3888750000042,
+          "max": 454.8196249999892
+        },
+        "disconnects": 55,
+        "reconnects": 28,
+        "timeouts": 0
+      },
+      "engine": [
+        {
+          "segment": 1,
+          "tickMs": {
+            "n": 1060,
+            "total": 441.48850100006166,
+            "mean": 0.41649858584911476,
+            "p50": 0.1060840000063763,
+            "p95": 1.5892499999972642,
+            "p99": 5.185124999996333,
+            "max": 9.46466700000019
+          },
+          "ticksMeasured": 1060,
+          "callbackMs": {
+            "n": 341,
+            "total": 1657.7278809999862,
+            "mean": 4.861372085043947,
+            "p50": 2.1891670000004524,
+            "p95": 20.59887499999968,
+            "p99": 33.14008300000205,
+            "max": 52.069707999995444
+          },
+          "callbackCount": 341,
+          "intervalMs": {
+            "n": 341,
+            "total": 36539.629417000004,
+            "mean": 107.15433846627568,
+            "p50": 100.85916599999837,
+            "p95": 118.51208300000144,
+            "p99": 415.09799999999814,
+            "max": 479.3356249999997
+          },
+          "nominalIntervalMs": 100,
+          "meanIntervalDeviationPercent": 7.154338466275667,
+          "eventLoopMs": {
+            "p50": 11.313151,
+            "p95": 20.185087,
+            "p99": 38.371327,
+            "max": 395.837439
+          },
+          "persistenceMs": {
+            "n": 308,
+            "total": 2563.865928000008,
+            "mean": 8.324240025974051,
+            "p50": 7.160499999998137,
+            "p95": 11.7490420000031,
+            "p99": 18.265792000001966,
+            "max": 23.113584000002447
+          },
+          "sqlChangedRows": 3992,
+          "commits": 308,
+          "rollbacks": 0,
+          "broadcastMs": {
+            "n": 292,
+            "total": 1819.7178800000036,
+            "mean": 6.231910547945217,
+            "p50": 6.944958000000042,
+            "p95": 10.73525000000518,
+            "p99": 19.193541999993613,
+            "max": 24.208207999996375
+          },
+          "commandHandlerMs": {
+            "n": 400,
+            "total": 4277.225177000051,
+            "mean": 10.693062942500127,
+            "p50": 14.091917000005196,
+            "p95": 18.520082999995793,
+            "p99": 21.37616700000217,
+            "max": 33.54558299999917
+          }
+        },
+        {
+          "segment": 2,
+          "tickMs": {
+            "n": 13940,
+            "total": 20647.231814000108,
+            "mean": 1.4811500583931212,
+            "p50": 1.3137920000008307,
+            "p95": 3.205666999999721,
+            "p99": 4.181375000000116,
+            "max": 25.3090830000001
+          },
+          "ticksMeasured": 13940,
+          "callbackMs": {
+            "n": 721,
+            "total": 35963.86429499989,
+            "mean": 49.880533002773774,
+            "p50": 42.36241700000028,
+            "p95": 113.64199999999983,
+            "p99": 166.26733300000342,
+            "max": 192.85583300000144
+          },
+          "callbackCount": 721,
+          "intervalMs": {
+            "n": 721,
+            "total": 77031.89000000012,
+            "mean": 106.84034674063817,
+            "p50": 101.23525000000154,
+            "p95": 144.7774580000114,
+            "p99": 216.83083299999998,
+            "max": 260.570458999995
+          },
+          "nominalIntervalMs": 100,
+          "meanIntervalDeviationPercent": 6.840346740638159,
+          "eventLoopMs": {
+            "p50": 12.025855,
+            "p95": 76.414975,
+            "p99": 153.354239,
+            "max": 302.514175
+          },
+          "persistenceMs": {
+            "n": 110,
+            "total": 4657.220168999995,
+            "mean": 42.33836517272722,
+            "p50": 40.07670800000051,
+            "p95": 88.78779100000247,
+            "p99": 99.20558300000266,
+            "max": 101.36649999999645
+          },
+          "sqlChangedRows": 567921,
+          "commits": 110,
+          "rollbacks": 1,
+          "broadcastMs": {
+            "n": 396,
+            "total": 12954.995416999976,
+            "mean": 32.71463489141408,
+            "p50": 35.47570800000176,
+            "p95": 39.93304200000421,
+            "p99": 45.94483300000138,
+            "max": 54.1820000000007
+          },
+          "commandHandlerMs": {
+            "n": 38,
+            "total": 2317.348462999993,
+            "mean": 60.9828542894735,
+            "p50": 40.840667000000394,
+            "p95": 133.60749999999825,
+            "p99": 153.5884589999987,
+            "max": 153.5884589999987
+          }
+        }
+      ],
+      "dvr": {
+        "twoConcurrentLanes": true,
+        "exactFrames": 24,
+        "workerFailureObserved": true,
+        "workerRecovery": true,
+        "clientAborts": 8,
+        "saturation429": 1,
+        "saturation503": 3,
+        "frameHttpMs": {
+          "n": 24,
+          "p50": 229.5853749999951,
+          "p95": 1244.487792,
+          "p99": 1278.3248750000057,
+          "max": 1278.3248750000057
+        },
+        "workers": [
+          {
+            "segment": 1,
+            "maxWorkers": 1,
+            "maxBusy": 1,
+            "maxQueued": 0,
+            "created": 1,
+            "exited": 0,
+            "injectedFailures": 0,
+            "workerErrors": 0,
+            "terminations": 0,
+            "workerTaskMs": {
+              "n": 1,
+              "total": 35.97941599999831,
+              "mean": 35.97941599999831,
+              "p50": 35.97941599999831,
+              "p95": 35.97941599999831,
+              "p99": 35.97941599999831,
+              "max": 35.97941599999831
+            }
+          },
+          {
+            "segment": 2,
+            "maxWorkers": 2,
+            "maxBusy": 2,
+            "maxQueued": 8,
+            "created": 10,
+            "exited": 10,
+            "injectedFailures": 1,
+            "workerErrors": 0,
+            "terminations": 10,
+            "workerTaskMs": {
+              "n": 40,
+              "total": 27314.305338,
+              "mean": 682.85763345,
+              "p50": 309.2201669999995,
+              "p95": 1266.7642919999998,
+              "p99": 1338.707875,
+              "max": 1338.707875
+            }
+          }
+        ]
+      },
+      "network": {
+        "logicalSnapshotBytes": 1797501491,
+        "observedSeconds": 113.936846458,
+        "logicalMbitPerSecond": 126.21037333432636,
+        "scope": "Server JSON snapshot bytes before transport encoding; includes all 27 connections, lobby/paused/running phases and possible post-disconnect emissions. Not physical wire throughput. The explicitly documented SIGKILL sampling tail may be omitted."
+      },
+      "memory": [
+        {
+          "segment": 1,
+          "peakSamplingMs": 20,
+          "heapMaxMiB": 110.59845733642578,
+          "rssMaxMiB": 293.734375,
+          "workerUsedHeapPeakMiB": 9.392547607421875,
+          "workerHeapSamples": 16,
+          "firstWorkerSampleMs": 20030.555125,
+          "mainOnlyRssTrend": {
+            "samples": 10,
+            "durationMinutes": 0.15019094028333332,
+            "slopeMiBPerMinute": -2.701501157903557,
+            "firstDecileMeanMiB": 117.796875,
+            "lastDecileMeanMiB": 117.5
+          },
+          "mainOnlyHeapTrend": {
+            "samples": 10,
+            "durationMinutes": 0.15019094028333332,
+            "slopeMiBPerMinute": -16.187478751988944,
+            "firstDecileMeanMiB": 30.286712646484375,
+            "lastDecileMeanMiB": 27.488739013671875
+          },
+          "withWorkersRssTrend": {
+            "samples": 12,
+            "durationMinutes": 0.19405089513333346,
+            "slopeMiBPerMinute": 875.412362547049,
+            "firstDecileMeanMiB": 145.375,
+            "lastDecileMeanMiB": 276.234375
+          },
+          "wholeSegmentRssTrend": {
+            "samples": 36,
+            "durationMinutes": 0.5945647138833334,
+            "slopeMiBPerMinute": 231.82985652162074,
+            "firstDecileMeanMiB": 112.125,
+            "lastDecileMeanMiB": 271.7604166666667
+          }
+        },
+        {
+          "segment": 2,
+          "peakSamplingMs": 20,
+          "heapMaxMiB": 159.77875518798828,
+          "rssMaxMiB": 976.78125,
+          "workerUsedHeapPeakMiB": 108.9960708618164,
+          "workerHeapSamples": 64,
+          "firstWorkerSampleMs": 42755.065,
+          "mainOnlyRssTrend": {
+            "samples": 32,
+            "durationMinutes": 0.5275776854166666,
+            "slopeMiBPerMinute": 334.663924836621,
+            "firstDecileMeanMiB": 300.84375,
+            "lastDecileMeanMiB": 455.296875
+          },
+          "mainOnlyHeapTrend": {
+            "samples": 32,
+            "durationMinutes": 0.5275776854166666,
+            "slopeMiBPerMinute": -49.793000275349065,
+            "firstDecileMeanMiB": 59.2785390218099,
+            "lastDecileMeanMiB": 59.4377187093099
+          },
+          "withWorkersRssTrend": {
+            "samples": 28,
+            "durationMinutes": 0.4742266027833333,
+            "slopeMiBPerMinute": 485.7663470443657,
+            "firstDecileMeanMiB": 758.7734375,
+            "lastDecileMeanMiB": 963.3203125
+          },
+          "wholeSegmentRssTrend": {
+            "samples": 74,
+            "durationMinutes": 1.2582091597166667,
+            "slopeMiBPerMinute": 675.2926709022622,
+            "firstDecileMeanMiB": 203.24776785714286,
+            "lastDecileMeanMiB": 944.3191964285714
+          }
+        }
+      ],
+      "storage": {
+        "mainBeforeBytes": 1103773696,
+        "walBeforeBytes": 88180392,
+        "shmBeforeBytes": 196608,
+        "mainAfterBytes": 1103773696,
+        "walAfterBytes": 0,
+        "freePages": 1138,
+        "pageSize": 4096,
+        "archiveBytes": 535822336,
+        "perGeneration": [
+          {
+            "generation": 0,
+            "receipts": 283910,
+            "receiptLogicalBytes": 302162444,
+            "otherTables": {
+              "history_events": {
+                "rows": 285608,
+                "payloadBytes": 123462894
+              },
+              "history_inputs": {
+                "rows": 125,
+                "payloadBytes": 34159
+              },
+              "history_points": {
+                "rows": 300,
+                "payloadBytes": 263831
+              },
+              "slack_messages": {
+                "rows": 135,
+                "payloadBytes": 36297
+              },
+              "history_checkpoints": {
+                "rows": 26,
+                "payloadBytes": 3700474
+              },
+              "receipt_paths": {
+                "rows": 2,
+                "payloadBytes": 430
+              },
+              "commands": {
+                "rows": 0,
+                "payloadBytes": 0
+              }
+            }
+          },
+          {
+            "generation": 1,
+            "receipts": 283910,
+            "receiptLogicalBytes": 302191748,
+            "otherTables": {
+              "history_events": {
+                "rows": 285997,
+                "payloadBytes": 123548159
+              },
+              "history_inputs": {
+                "rows": 311,
+                "payloadBytes": 83274
+              },
+              "history_points": {
+                "rows": 301,
+                "payloadBytes": 264661
+              },
+              "slack_messages": {
+                "rows": 266,
+                "payloadBytes": 71683
+              },
+              "history_checkpoints": {
+                "rows": 29,
+                "payloadBytes": 4503899
+              },
+              "receipt_paths": {
+                "rows": 2,
+                "payloadBytes": 434
+              },
+              "commands": {
+                "rows": 311,
+                "payloadBytes": 5948
+              }
+            }
+          }
+        ],
+        "autocheckpoint": {
+          "wal_autocheckpoint": 1000
+        },
+        "explicitCheckpoints": 1,
+        "automaticCheckpoints": "not instrumented; SQLite default threshold reported",
+        "integrity": {
+          "integrity_check": "ok"
+        }
+      },
+      "budgets": {
+        "eventLoopP99Below150": false,
+        "engineIntervalP95Below200": true,
+        "nonChatCommandAckP95Below150": true,
+        "allCommandAckP95Below150": false,
+        "scope": "Investigative budgets on local loopback; crossing one is reported, never hidden or relaxed."
+      },
+      "security": {
+        "secondServerDenied": true,
+        "liveMaintenanceDenied": true,
+        "authorizedIndependentArchiveReadable": true,
+        "independentReadAndQueryWhileActive": true,
+        "studentArchiveDenied": true,
+        "studentDeletionDenied": true,
+        "studentAccessDenied": true,
+        "foreignReceiptDenied": true,
+        "foreignDvrDenied": true,
+        "unauthenticatedDvrDenied": true,
+        "localSecretsNotServed": true,
+        "historicalManifestExact": true
+      },
+      "crisis": {
+        "crisisCompanies": 5,
+        "crisisAndRecoveryFacts": [
+          {
+            "kind": "crisis.entered",
+            "companyId": 0,
+            "n": 1
+          },
+          {
+            "kind": "crisis.entered",
+            "companyId": 1,
+            "n": 1
+          },
+          {
+            "kind": "crisis.entered",
+            "companyId": 2,
+            "n": 1
+          },
+          {
+            "kind": "crisis.entered",
+            "companyId": 3,
+            "n": 1
+          },
+          {
+            "kind": "crisis.entered",
+            "companyId": 4,
+            "n": 1
+          },
+          {
+            "kind": "crisis.exited",
+            "companyId": 0,
+            "n": 1
+          },
+          {
+            "kind": "crisis.exited",
+            "companyId": 1,
+            "n": 1
+          },
+          {
+            "kind": "crisis.exited",
+            "companyId": 2,
+            "n": 1
+          },
+          {
+            "kind": "crisis.exited",
+            "companyId": 3,
+            "n": 1
+          },
+          {
+            "kind": "crisis.exited",
+            "companyId": 4,
+            "n": 1
+          },
+          {
+            "kind": "maintenance.changed",
+            "companyId": 0,
+            "n": 2
+          },
+          {
+            "kind": "maintenance.changed",
+            "companyId": 1,
+            "n": 2
+          },
+          {
+            "kind": "maintenance.changed",
+            "companyId": 2,
+            "n": 2
+          },
+          {
+            "kind": "maintenance.changed",
+            "companyId": 3,
+            "n": 2
+          },
+          {
+            "kind": "maintenance.changed",
+            "companyId": 4,
+            "n": 2
+          }
+        ],
+        "visualEconomyUnchanged": true,
+        "liveMutations": 0
+      },
+      "crash": {
+        "signal": "SIGKILL",
+        "persistedTick": 106,
+        "recoveredPaused": true,
+        "marketExact": true,
+        "pendingQaPreserved": true,
+        "pendingQaResumed": true,
+        "sessionReconnects": 27,
+        "confirmedChatDeduplicated": true,
+        "confirmedModuleDeduplicated": true,
+        "pendingCommandResult": true
+      },
+      "visual": {
+        "calls": 50000,
+        "totalMs": 33.70362500000192,
+        "economyUnchanged": true,
+        "scope": "Pure derived visual function, not browser FPS; server does not run paper animation."
+      }
+    },
+    {
+      "label": "certified-1200s-1x",
+      "sha": "346265103b55b9b6117efa42ce9b4b6bccc956c7",
+      "date": "2026-10-20T02:20:26.145Z",
+      "node": "v25.9.0",
+      "os": "darwin 27.0.0",
+      "cpu": "Apple M5",
+      "cores": 10,
+      "totalRamBytes": 17179869184,
+      "freeRamBytes": 2798223360,
+      "workers": 2,
+      "parameters": {
+        "duration": 1200,
+        "speed": 1,
+        "historyDuration": 1200,
+        "seed": 8,
+        "population": 5000,
+        "initialReputation": 34,
+        "oneXWarmupSeconds": 10,
+        "dvrConcurrency": 2
+      },
+      "clients": 27,
+      "result": "passed",
+      "exitCode": 0,
+      "wallSeconds": 1281.7433037080002,
+      "activeWallSeconds": 1226.255100792,
+      "simulatedSeconds": 1200,
+      "commandAckMs": {
+        "n": 738,
+        "p50": 35.15329200000269,
+        "p95": 62.4210410000087,
+        "p99": 82.04066600000078,
+        "max": 95.23516599999857
+      },
+      "allAckMs": {
+        "n": 990,
+        "p50": 39.50641699996777,
+        "p95": 294.39599999999336,
+        "p99": 352.4632089999941,
+        "max": 375.61708300000464
+      },
+      "successfulOperationalAckMs": {
+        "n": 736,
+        "p50": 35.19783399999142,
+        "p95": 62.4210410000087,
+        "p99": 82.04066600000078,
+        "max": 95.23516599999857
+      },
+      "expectedRejections": [
+        {
+          "identity": "0-backend",
+          "type": "room.reset",
+          "id": "7a1ee0f3-18fc-4ab7-96f1-5b8ef88e66c6",
+          "atTick": 0,
+          "purpose": "expected-denial",
+          "ok": false,
+          "code": "FORBIDDEN",
+          "error": "Acción ajena al rol.",
+          "ms": 23.868666000002122
+        },
+        {
+          "identity": "public",
+          "type": "room.start",
+          "id": "39ae6abe-f684-49ca-b53e-dd937457959f",
+          "atTick": 0,
+          "purpose": "expected-denial",
+          "ok": false,
+          "code": "FORBIDDEN",
+          "error": "Sesión o comando no autorizado.",
+          "ms": 3.968709000000672
+        }
+      ],
+      "flowSlack": {
+        "sent": 125,
+        "authorizedDeliveries": 625,
+        "ackMs": {
+          "n": 252,
+          "p50": 181.17033300000185,
+          "p95": 345.99733299999207,
+          "p99": 368.8944579999952,
+          "max": 375.61708300000464
+        },
+        "deliveryMs": {
+          "n": 625,
+          "p50": 378.73416700000234,
+          "p95": 386.52583300000697,
+          "p99": 387.3612079999875,
+          "max": 387.5429579999909
+        },
+        "crossCompanyDeliveries": 0,
+        "confirmedMessageLoss": 0,
+        "duplicateApplications": 0
+      },
+      "socket": {
+        "snapshots": 183312,
+        "snapshotSizes": {
+          "n": 183312,
+          "p50": 143636,
+          "p95": 169311,
+          "p99": 178241,
+          "max": 181895
+        },
+        "snapshotDeliveryMs": {
+          "n": 183312,
+          "p50": 23.752685546875,
+          "p95": 51.834228515625,
+          "p99": 62.83740234375,
+          "max": 93.17724609375
+        },
+        "cadenceMs": {
+          "n": 183285,
+          "p50": 202.63608299999032,
+          "p95": 225.35654099995736,
+          "p99": 231.72375000000466,
+          "max": 449.2100000000064
+        },
+        "disconnects": 55,
+        "reconnects": 28,
+        "timeouts": 0
+      },
+      "engine": [
+        {
+          "segment": 1,
+          "tickMs": {
+            "n": 281,
+            "total": 379.0605879999421,
+            "mean": 1.3489700640567333,
+            "p50": 0.7697499999994761,
+            "p95": 6.252959000001283,
+            "p99": 6.995915999999852,
+            "max": 9.477083000001585
+          },
+          "ticksMeasured": 281,
+          "callbackMs": {
+            "n": 438,
+            "total": 2811.348704000033,
+            "mean": 6.418604347032039,
+            "p50": 2.2100000000000364,
+            "p95": 26.76866599999994,
+            "p99": 35.95787500000006,
+            "max": 41.2913750000007
+          },
+          "callbackCount": 438,
+          "intervalMs": {
+            "n": 438,
+            "total": 46091.73750000002,
+            "mean": 105.23227739726032,
+            "p50": 100.87474999999995,
+            "p95": 109.94041599999764,
+            "p99": 377.91204099999595,
+            "max": 439.32991700000275
+          },
+          "nominalIntervalMs": 100,
+          "meanIntervalDeviationPercent": 5.23227739726031,
+          "eventLoopMs": {
+            "p50": 11.304959,
+            "p95": 20.316159,
+            "p99": 34.930687,
+            "max": 366.739455
+          },
+          "persistenceMs": {
+            "n": 317,
+            "total": 2648.149494000036,
+            "mean": 8.353783892744593,
+            "p50": 6.829916999995476,
+            "p95": 16.984541000001627,
+            "p99": 22.12383299999783,
+            "max": 23.803124999998545
+          },
+          "sqlChangedRows": 2297,
+          "commits": 317,
+          "rollbacks": 0,
+          "broadcastMs": {
+            "n": 341,
+            "total": 2676.5012489999817,
+            "mean": 7.848977269794668,
+            "p50": 6.661916999997629,
+            "p95": 18.15137500000128,
+            "p99": 19.548917000000074,
+            "max": 21.720957999998063
+          },
+          "commandHandlerMs": {
+            "n": 400,
+            "total": 4066.759500999955,
+            "mean": 10.166898752499888,
+            "p50": 13.53691699999763,
+            "p95": 16.99145800000406,
+            "p99": 22.544458999997005,
+            "max": 31.873916000000463
+          }
+        },
+        {
+          "segment": 2,
+          "tickMs": {
+            "n": 11718,
+            "total": 33246.849387003815,
+            "mean": 2.837246064772471,
+            "p50": 2.3117919999931473,
+            "p95": 7.234166999929585,
+            "p99": 9.108041000028607,
+            "max": 40.51987499999814
+          },
+          "ticksMeasured": 11718,
+          "callbackMs": {
+            "n": 11759,
+            "total": 278483.0565140028,
+            "mean": 23.682545838421873,
+            "p50": 12.163708000036422,
+            "p95": 66.74679200001992,
+            "p99": 74.97691700002179,
+            "max": 93.92212500004098
+          },
+          "callbackCount": 11759,
+          "intervalMs": {
+            "n": 11759,
+            "total": 1198785.8413750022,
+            "mean": 101.94624044349028,
+            "p50": 101.04395799999475,
+            "p95": 103.03075000015087,
+            "p99": 125.94562499993481,
+            "max": 171.33170900004916
+          },
+          "nominalIntervalMs": 100,
+          "meanIntervalDeviationPercent": 1.946240443490277,
+          "eventLoopMs": {
+            "p50": 11.370495,
+            "p95": 47.972351,
+            "p99": 72.613887,
+            "max": 177.471487
+          },
+          "persistenceMs": {
+            "n": 1763,
+            "total": 37759.59824499638,
+            "mean": 21.41780955473419,
+            "p50": 22.06670900003519,
+            "p95": 28.921124999877065,
+            "p99": 34.3236250000773,
+            "max": 53.26904199994169
+          },
+          "sqlChangedRows": 461284,
+          "commits": 1763,
+          "rollbacks": 1,
+          "broadcastMs": {
+            "n": 6465,
+            "total": 231767.68851500345,
+            "mean": 35.84960379195722,
+            "p50": 37.82987499999581,
+            "p95": 42.933332999935374,
+            "p99": 44.891291000065394,
+            "max": 58.58479200000875
+          },
+          "commandHandlerMs": {
+            "n": 588,
+            "total": 21650.23299500103,
+            "mean": 36.82012414115822,
+            "p50": 35.71408299996983,
+            "p95": 49.411415999988094,
+            "p99": 57.833375000045635,
+            "max": 68.68833300005645
+          }
+        }
+      ],
+      "dvr": {
+        "twoConcurrentLanes": true,
+        "exactFrames": 24,
+        "workerFailureObserved": true,
+        "workerRecovery": true,
+        "clientAborts": 8,
+        "saturation429": 1,
+        "saturation503": 3,
+        "frameHttpMs": {
+          "n": 24,
+          "p50": 206.07237499998882,
+          "p95": 1113.4603750000242,
+          "p99": 1116.291874999879,
+          "max": 1116.291874999879
+        },
+        "workers": [
+          {
+            "segment": 1,
+            "maxWorkers": 1,
+            "maxBusy": 1,
+            "maxQueued": 0,
+            "created": 1,
+            "exited": 0,
+            "injectedFailures": 0,
+            "workerErrors": 0,
+            "terminations": 0,
+            "workerTaskMs": {
+              "n": 1,
+              "total": 35.956458000000566,
+              "mean": 35.956458000000566,
+              "p50": 35.956458000000566,
+              "p95": 35.956458000000566,
+              "p99": 35.956458000000566,
+              "max": 35.956458000000566
+            }
+          },
+          {
+            "segment": 2,
+            "maxWorkers": 2,
+            "maxBusy": 2,
+            "maxQueued": 8,
+            "created": 9,
+            "exited": 9,
+            "injectedFailures": 1,
+            "workerErrors": 0,
+            "terminations": 9,
+            "workerTaskMs": {
+              "n": 40,
+              "total": 24815.2382909999,
+              "mean": 620.3809572749975,
+              "p50": 214.44941700005438,
+              "p95": 1137.263917000033,
+              "p99": 1156.9112499998882,
+              "max": 1156.9112499998882
+            }
+          }
+        ]
+      },
+      "network": {
+        "logicalSnapshotBytes": 24506169435,
+        "observedSeconds": 1245.2535226669997,
+        "logicalMbitPerSecond": 157.43730245397322,
+        "scope": "Server JSON snapshot bytes before transport encoding; includes all 27 connections, lobby/paused/running phases and possible post-disconnect emissions. Not physical wire throughput. The explicitly documented SIGKILL sampling tail may be omitted."
+      },
+      "memory": [
+        {
+          "segment": 1,
+          "peakSamplingMs": 20,
+          "heapMaxMiB": 129.75782775878906,
+          "rssMaxMiB": 300.046875,
+          "workerUsedHeapPeakMiB": 9.369735717773438,
+          "workerHeapSamples": 30,
+          "firstWorkerSampleMs": 16021.874416999999,
+          "mainOnlyRssTrend": {
+            "samples": 6,
+            "durationMinutes": 0.08336911735000001,
+            "slopeMiBPerMinute": 0.21422946555920835,
+            "firstDecileMeanMiB": 121.625,
+            "lastDecileMeanMiB": 121.640625
+          },
+          "mainOnlyHeapTrend": {
+            "samples": 6,
+            "durationMinutes": 0.08336911735000001,
+            "slopeMiBPerMinute": -24.367671152720245,
+            "firstDecileMeanMiB": 30.283981323242188,
+            "lastDecileMeanMiB": 27.43207550048828
+          },
+          "withWorkersRssTrend": {
+            "samples": 26,
+            "durationMinutes": 0.42091855278333334,
+            "slopeMiBPerMinute": 303.25690429195754,
+            "firstDecileMeanMiB": 147.96875,
+            "lastDecileMeanMiB": 274.8828125
+          },
+          "wholeSegmentRssTrend": {
+            "samples": 46,
+            "durationMinutes": 0.7546878312499999,
+            "slopeMiBPerMinute": 196.37014995383024,
+            "firstDecileMeanMiB": 115.25390625,
+            "lastDecileMeanMiB": 273.4921875
+          }
+        },
+        {
+          "segment": 2,
+          "peakSamplingMs": 20,
+          "heapMaxMiB": 150.03728485107422,
+          "rssMaxMiB": 744.0625,
+          "workerUsedHeapPeakMiB": 90.68716430664062,
+          "workerHeapSamples": 604,
+          "firstWorkerSampleMs": 889234.385792,
+          "mainOnlyRssTrend": {
+            "samples": 864,
+            "durationMinutes": 14.636137261116668,
+            "slopeMiBPerMinute": 21.083682503906886,
+            "firstDecileMeanMiB": 230.0594113372093,
+            "lastDecileMeanMiB": 510.76344476744185
+          },
+          "mainOnlyHeapTrend": {
+            "samples": 864,
+            "durationMinutes": 14.636137261116668,
+            "slopeMiBPerMinute": 1.5350299121986197,
+            "firstDecileMeanMiB": 45.565197434536245,
+            "lastDecileMeanMiB": 64.63725280761719
+          },
+          "withWorkersRssTrend": {
+            "samples": 298,
+            "durationMinutes": 5.0648334298499975,
+            "slopeMiBPerMinute": -38.02878998828582,
+            "firstDecileMeanMiB": 670.5964439655172,
+            "lastDecileMeanMiB": 484.1632543103448
+          },
+          "wholeSegmentRssTrend": {
+            "samples": 1176,
+            "durationMinutes": 19.95417445693333,
+            "slopeMiBPerMinute": 18.978713901027625,
+            "firstDecileMeanMiB": 227.11404914529913,
+            "lastDecileMeanMiB": 539.8142361111111
+          }
+        }
+      ],
+      "storage": {
+        "mainBeforeBytes": 886468608,
+        "walBeforeBytes": 64131952,
+        "shmBeforeBytes": 131072,
+        "mainAfterBytes": 886468608,
+        "walAfterBytes": 0,
+        "freePages": 1196,
+        "pageSize": 4096,
+        "archiveBytes": 428642304,
+        "perGeneration": [
+          {
+            "generation": 0,
+            "receipts": 227130,
+            "receiptLogicalBytes": 241122787,
+            "otherTables": {
+              "history_events": {
+                "rows": 228553,
+                "payloadBytes": 98621164
+              },
+              "history_inputs": {
+                "rows": 125,
+                "payloadBytes": 34159
+              },
+              "history_points": {
+                "rows": 240,
+                "payloadBytes": 210916
+              },
+              "slack_messages": {
+                "rows": 110,
+                "payloadBytes": 29502
+              },
+              "history_checkpoints": {
+                "rows": 21,
+                "payloadBytes": 2974260
+              },
+              "receipt_paths": {
+                "rows": 2,
+                "payloadBytes": 430
+              },
+              "commands": {
+                "rows": 0,
+                "payloadBytes": 0
+              }
+            }
+          },
+          {
+            "generation": 1,
+            "receipts": 227130,
+            "receiptLogicalBytes": 241149145,
+            "otherTables": {
+              "history_events": {
+                "rows": 230041,
+                "payloadBytes": 98862969
+              },
+              "history_inputs": {
+                "rows": 861,
+                "payloadBytes": 211733
+              },
+              "history_points": {
+                "rows": 241,
+                "payloadBytes": 211684
+              },
+              "slack_messages": {
+                "rows": 240,
+                "payloadBytes": 64758
+              },
+              "history_checkpoints": {
+                "rows": 24,
+                "payloadBytes": 4228164
+              },
+              "receipt_paths": {
+                "rows": 2,
+                "payloadBytes": 434
+              },
+              "commands": {
+                "rows": 861,
+                "payloadBytes": 11998
+              }
+            }
+          }
+        ],
+        "autocheckpoint": {
+          "wal_autocheckpoint": 1000
+        },
+        "explicitCheckpoints": 1,
+        "automaticCheckpoints": "not instrumented; SQLite default threshold reported",
+        "integrity": {
+          "integrity_check": "ok"
+        }
+      },
+      "budgets": {
+        "eventLoopP99Below150": true,
+        "engineIntervalP95Below200": true,
+        "nonChatCommandAckP95Below150": true,
+        "allCommandAckP95Below150": false,
+        "scope": "Investigative budgets on local loopback; crossing one is reported, never hidden or relaxed."
+      },
+      "security": {
+        "secondServerDenied": true,
+        "liveMaintenanceDenied": true,
+        "authorizedIndependentArchiveReadable": true,
+        "independentReadAndQueryWhileActive": true,
+        "studentArchiveDenied": true,
+        "studentDeletionDenied": true,
+        "studentAccessDenied": true,
+        "foreignReceiptDenied": true,
+        "foreignDvrDenied": true,
+        "unauthenticatedDvrDenied": true,
+        "localSecretsNotServed": true,
+        "historicalManifestExact": true
+      },
+      "crisis": {
+        "crisisCompanies": 5,
+        "crisisAndRecoveryFacts": [
+          {
+            "kind": "crisis.entered",
+            "companyId": 0,
+            "n": 1
+          },
+          {
+            "kind": "crisis.entered",
+            "companyId": 1,
+            "n": 1
+          },
+          {
+            "kind": "crisis.entered",
+            "companyId": 2,
+            "n": 1
+          },
+          {
+            "kind": "crisis.entered",
+            "companyId": 3,
+            "n": 1
+          },
+          {
+            "kind": "crisis.entered",
+            "companyId": 4,
+            "n": 1
+          },
+          {
+            "kind": "crisis.exited",
+            "companyId": 0,
+            "n": 1
+          },
+          {
+            "kind": "crisis.exited",
+            "companyId": 1,
+            "n": 1
+          },
+          {
+            "kind": "crisis.exited",
+            "companyId": 2,
+            "n": 1
+          },
+          {
+            "kind": "crisis.exited",
+            "companyId": 3,
+            "n": 1
+          },
+          {
+            "kind": "crisis.exited",
+            "companyId": 4,
+            "n": 1
+          },
+          {
+            "kind": "maintenance.changed",
+            "companyId": 0,
+            "n": 2
+          },
+          {
+            "kind": "maintenance.changed",
+            "companyId": 1,
+            "n": 2
+          },
+          {
+            "kind": "maintenance.changed",
+            "companyId": 2,
+            "n": 2
+          },
+          {
+            "kind": "maintenance.changed",
+            "companyId": 3,
+            "n": 2
+          },
+          {
+            "kind": "maintenance.changed",
+            "companyId": 4,
+            "n": 2
+          }
+        ],
+        "visualEconomyUnchanged": true,
+        "liveMutations": 0
+      },
+      "crash": {
+        "signal": "SIGKILL",
+        "persistedTick": 28.2,
+        "recoveredPaused": true,
+        "marketExact": true,
+        "pendingQaPreserved": true,
+        "pendingQaResumed": true,
+        "sessionReconnects": 27,
+        "confirmedChatDeduplicated": true,
+        "confirmedModuleDeduplicated": true,
+        "pendingCommandResult": true
+      },
+      "visual": {
+        "calls": 50000,
+        "totalMs": 33.65558299999975,
+        "economyUnchanged": true,
+        "scope": "Pure derived visual function, not browser FPS; server does not run paper animation."
+      }
+    }
+  ],
+  "comparison": {
+    "beforeSha": "5d6fa41d65dd2ce94f2bc77fd360ce6447ad5dbe",
+    "afterSha": "cabf26b2218b1c401c99450feec4c50ef0dd94fc",
+    "sameParameters": true,
+    "before": {
+      "nonChat": {
+        "n": 180,
+        "p50": 31.28416699999798,
+        "p95": 120.77766700000211,
+        "p99": 184.98562500000116,
+        "max": 188.12141699998756
+      },
+      "all": {
+        "n": 432,
+        "p50": 112.12366699999984,
+        "p95": 580.7227920000005,
+        "p99": 633.2189999999973,
+        "max": 668.7019580000051
+      },
+      "chat": {
+        "n": 252,
+        "p50": 302.91020800000115,
+        "p95": 606.1947079999954,
+        "p99": 642.1196249999994,
+        "max": 668.7019580000051
+      },
+      "delivery": {
+        "n": 625,
+        "p50": 337.99954199999775,
+        "p95": 630.9389169999995,
+        "p99": 673.8111669999998,
+        "max": 685.0432500000024
+      },
+      "firstSegmentBroadcast": {
+        "n": 378,
+        "p50": 8.054125000002387,
+        "p95": 11.55937499999709,
+        "p99": 13.857625000000553,
+        "max": 22.00866700000188
+      },
+      "firstSegmentHandler": {
+        "n": 400,
+        "p50": 22.30462500000067,
+        "p95": 28.801791999998386,
+        "p99": 32.12504199999967,
+        "max": 37.6435419999998
+      },
+      "firstSegmentLoop": {
+        "p50": 12.025855,
+        "p95": 27.492351,
+        "p99": 56.360959,
+        "max": 651.689983
+      }
+    },
+    "after": {
+      "nonChat": {
+        "n": 180,
+        "p50": 30.0934999999954,
+        "p95": 115.91645900000003,
+        "p99": 169.15787500000442,
+        "max": 182.32712499999616
+      },
+      "all": {
+        "n": 432,
+        "p50": 83.66454099999828,
+        "p95": 361.82162500000413,
+        "p99": 396.15000000000146,
+        "max": 412.50991699999577
+      },
+      "chat": {
+        "n": 252,
+        "p50": 197.87487500000134,
+        "p95": 379.57129200000054,
+        "p99": 405.8547499999986,
+        "max": 412.50991699999577
+      },
+      "delivery": {
+        "n": 625,
+        "p50": 416.5867500000022,
+        "p95": 425.7719999999972,
+        "p99": 426.685083999997,
+        "max": 426.914165999995
+      },
+      "firstSegmentBroadcast": {
+        "n": 226,
+        "p50": 7.26745899999878,
+        "p95": 11.581334000002244,
+        "p99": 18.42741599999863,
+        "max": 21.306875000002037
+      },
+      "firstSegmentHandler": {
+        "n": 400,
+        "p50": 14.110500000002503,
+        "p95": 18.709875000000466,
+        "p99": 21.501083999999537,
+        "max": 23.612499999999272
+      },
+      "firstSegmentLoop": {
+        "p50": 12.025855,
+        "p95": 26.443775,
+        "p99": 59.899903,
+        "max": 390.332415
+      }
+    },
+    "scope": "Equivalent complete 27-client workload, local sequential runs, same observer and parameters; a single paired observation is not a universal speed guarantee."
+  },
+  "interpretation": {
+    "integrity": "All three full classroom runs passed the integrity and authorization assertions.",
+    "latency": "All-client bursts exceed the investigative 150 ms ACK p95 budget. The 25-minute 20x run also exceeds event-loop p99 by 3.35 ms. These exceptions remain open.",
+    "memory": "RSS includes native and worker memory; worker heap is not worker RSS. Slopes describe sampled observations, not proof of a leak or its absence.",
+    "cadence": "Per-process tick counts may omit the explicitly documented final SIGKILL sampling tail; final persisted game time is checked separately.",
+    "storage": "Per-generation payloads are logical bytes; physical SQLite pages/indices are shared and reported globally."
+  }
+}

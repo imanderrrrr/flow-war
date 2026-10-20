@@ -81,3 +81,9 @@ npm run bench:entrega5
 ```
 
 El dominio actual mantiene compras, inventario y pagos; la adaptación a plataformas de inversión queda pendiente. Esta entrega funciona localmente sin Anthropic, claves ni consumo de API.
+
+### Hardening final de Entrega 5
+
+[Informe, resultados de 27 conexiones y límites de rendimiento](docs/15-hardening-final-entrega-5.md). [Evidencia y verificación independiente](docs/benchmarks/final-hardening/README.md).
+
+`npm run bench:classroom -- --duration=1200 --speed=20 --label=mi-auditoria` ejecuta un servidor real con 25 sesiones estudiantiles, docente y proyector, cada vez sobre una base temporal. Use `--speed=1` para medir la duración real de una partida de veinte minutos. Las excepciones de latencia del ensayo publicado se conservan en el informe; no se declaran cumplidos todos los presupuestos.

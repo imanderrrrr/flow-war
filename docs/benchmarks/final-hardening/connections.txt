@@ -1,0 +1,5 @@
+
+> flow-war@0.1.0 bench:connections
+> tsx scripts/connection-benchmark.ts
+
+{"connections":27,"snapshots":1701,"maxSnapshotBytes":129644,"wallSeconds":7.576838958000001,"ackP95ms":58.44574999999986,"ackMaxMs":86.83854199999996,"finalTick":918,"companies":[{"id":0,"generated":5059,"pending":49,"queue":39,"legitimateAbandoned":2},{"id":1,"generated":5059,"pending":49,"queue":39,"legitimateAbandoned":2},{"id":2,"generated":5059,"pending":49,"queue":39,"legitimateAbandoned":2},{"id":3,"generated":5059,"pending":49,"queue":39,"legitimateAbandoned":2},{"id":4,"generated":5059,"pending":49,"queue":39,"legitimateAbandoned":2}]}

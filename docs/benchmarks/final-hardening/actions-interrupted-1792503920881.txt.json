@@ -1,0 +1,10 @@
+{
+  "status": "interrupted-without-exit-result",
+  "exitCode": null,
+  "originalLog": "actions.txt",
+  "preservedLog": "actions-interrupted-1792503920881.txt",
+  "sha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245",
+  "recordedAt": "2026-10-20T13:45:20.881Z",
+  "sha256": "718438b15a9183f8b7dd14d413fdfdb2c9cc06b01e9cee55347ec5f780bc7a38",
+  "note": "Partial output is preserved and is not a successful run. The complete command is rerun."
+}

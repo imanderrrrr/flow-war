@@ -1,0 +1,728 @@
+{
+  "sha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245",
+  "date": "2026-10-20T14:04:03.319Z",
+  "reference": "dd88729949dabbbf8c216c265dd580eef071a5aa",
+  "publishedReference": "docs/benchmarks/entrega-5-resultados.json",
+  "scenarios": 22,
+  "exactReconstructions": 176,
+  "economicEngineUnchanged": true,
+  "inheritedComparableCases": 42,
+  "inherited": [
+    {
+      "group": "traffic",
+      "duration": 1200,
+      "strategy": "baseline",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "traffic",
+      "duration": 1200,
+      "strategy": "scaled",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "traffic",
+      "duration": 1200,
+      "strategy": "protected-scaled",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "traffic",
+      "duration": 1500,
+      "strategy": "baseline",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "traffic",
+      "duration": 1500,
+      "strategy": "scaled",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "traffic",
+      "duration": 1500,
+      "strategy": "protected-scaled",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-results",
+      "duration": 1200,
+      "strategy": "A-equivalent",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-results",
+      "duration": 1200,
+      "strategy": "B-deficient",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-results",
+      "duration": 1200,
+      "strategy": "C-receiver",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-results",
+      "duration": 1200,
+      "strategy": "D-domino",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-results",
+      "duration": 1200,
+      "strategy": "E-recovery",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-results",
+      "duration": 1200,
+      "strategy": "F-elimination",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-results",
+      "duration": 1200,
+      "strategy": "G-multiple",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-results",
+      "duration": 1200,
+      "strategy": "H-empty",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-results",
+      "duration": 1500,
+      "strategy": "A-equivalent",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-results",
+      "duration": 1500,
+      "strategy": "B-deficient",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-results",
+      "duration": 1500,
+      "strategy": "C-receiver",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-results",
+      "duration": 1500,
+      "strategy": "D-domino",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-results",
+      "duration": 1500,
+      "strategy": "E-recovery",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-results",
+      "duration": 1500,
+      "strategy": "F-elimination",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-results",
+      "duration": 1500,
+      "strategy": "G-multiple",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-results",
+      "duration": 1500,
+      "strategy": "H-empty",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-controls",
+      "duration": 1200,
+      "strategy": "D-domino",
+      "control": true,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "market-controls",
+      "duration": 1500,
+      "strategy": "D-domino",
+      "control": true,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-results",
+      "duration": 1200,
+      "strategy": "A-equivalent",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-results",
+      "duration": 1200,
+      "strategy": "B-restart",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-results",
+      "duration": 1200,
+      "strategy": "C-insufficient",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-results",
+      "duration": 1200,
+      "strategy": "D-exhaustive",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-results",
+      "duration": 1200,
+      "strategy": "E-campaign",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-results",
+      "duration": 1200,
+      "strategy": "F-expulsion",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-results",
+      "duration": 1200,
+      "strategy": "G-migration",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-results",
+      "duration": 1200,
+      "strategy": "H-recovery",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-results",
+      "duration": 1500,
+      "strategy": "A-equivalent",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-results",
+      "duration": 1500,
+      "strategy": "B-restart",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-results",
+      "duration": 1500,
+      "strategy": "C-insufficient",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-results",
+      "duration": 1500,
+      "strategy": "D-exhaustive",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-results",
+      "duration": 1500,
+      "strategy": "E-campaign",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-results",
+      "duration": 1500,
+      "strategy": "F-expulsion",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-results",
+      "duration": 1500,
+      "strategy": "G-migration",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-results",
+      "duration": 1500,
+      "strategy": "H-recovery",
+      "control": false,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-controls",
+      "duration": 1200,
+      "strategy": "G-migration",
+      "control": true,
+      "identicalComparableResults": true
+    },
+    {
+      "group": "actions-controls",
+      "duration": 1500,
+      "strategy": "G-migration",
+      "control": true,
+      "identicalComparableResults": true
+    }
+  ],
+  "excludedNonComparableFields": "Timings, memory/size samples, serialized market digest with receivedAt wall-clock timestamps and optional prior-local baseline. Published economic states, samples, action causes and all 176 forensic hashes are compared unchanged.",
+  "projection": "Same published sample/field/effect projection as entrega5-report.mjs; all 176 state hashes compared literally.",
+  "comparisons": [
+    {
+      "name": "A-crisis",
+      "duration": 1200,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 0.988,
+        "p95": 4.012,
+        "p99": 6.021
+      },
+      "persist": {
+        "p50": 41.862,
+        "p95": 83.66,
+        "p99": 111.484
+      },
+      "peakHeapMiB": 116.08,
+      "dbBytes": 294178816
+    },
+    {
+      "name": "B-recovery",
+      "duration": 1200,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.291,
+        "p95": 3.962,
+        "p99": 6.92
+      },
+      "persist": {
+        "p50": 39.19,
+        "p95": 71.531,
+        "p99": 91.164
+      },
+      "peakHeapMiB": 145.51,
+      "dbBytes": 446369792
+    },
+    {
+      "name": "C-complaints",
+      "duration": 1200,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.317,
+        "p95": 3.781,
+        "p99": 5.789
+      },
+      "persist": {
+        "p50": 38.616,
+        "p95": 69.415,
+        "p99": 85.269
+      },
+      "peakHeapMiB": 235.03,
+      "dbBytes": 447242240
+    },
+    {
+      "name": "D-hidden-traffic",
+      "duration": 1200,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.291,
+        "p95": 3.961,
+        "p99": 6.498
+      },
+      "persist": {
+        "p50": 37.977,
+        "p95": 71.375,
+        "p99": 87.55
+      },
+      "peakHeapMiB": 99.42,
+      "dbBytes": 447242240
+    },
+    {
+      "name": "E-maint60",
+      "duration": 1200,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.262,
+        "p95": 3.449,
+        "p99": 4.852
+      },
+      "persist": {
+        "p50": 33.332,
+        "p95": 64.143,
+        "p99": 72.738
+      },
+      "peakHeapMiB": 97.73,
+      "dbBytes": 445480960
+    },
+    {
+      "name": "F-maint120",
+      "duration": 1200,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.201,
+        "p95": 3.298,
+        "p99": 4.965
+      },
+      "persist": {
+        "p50": 34.763,
+        "p95": 60.953,
+        "p99": 75.712
+      },
+      "peakHeapMiB": 94.79,
+      "dbBytes": 444809216
+    },
+    {
+      "name": "G-orders",
+      "duration": 1200,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.268,
+        "p95": 3.573,
+        "p99": 6.057
+      },
+      "persist": {
+        "p50": 35.306,
+        "p95": 69.806,
+        "p99": 89.104
+      },
+      "peakHeapMiB": 195.46,
+      "dbBytes": 445739008
+    },
+    {
+      "name": "H-domino",
+      "duration": 1200,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.276,
+        "p95": 3.838,
+        "p99": 6.152
+      },
+      "persist": {
+        "p50": 36.117,
+        "p95": 74.78,
+        "p99": 90.939
+      },
+      "peakHeapMiB": 98.02,
+      "dbBytes": 447844352
+    },
+    {
+      "name": "J-replay",
+      "duration": 1200,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.228,
+        "p95": 4.228,
+        "p99": 7.596
+      },
+      "persist": {
+        "p50": 37.574,
+        "p95": 80.93,
+        "p99": 103.866
+      },
+      "peakHeapMiB": 102.86,
+      "dbBytes": 446382080
+    },
+    {
+      "name": "K-defect-maint",
+      "duration": 1200,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.221,
+        "p95": 3.579,
+        "p99": 6.115
+      },
+      "persist": {
+        "p50": 36.814,
+        "p95": 74.595,
+        "p99": 114.421
+      },
+      "peakHeapMiB": 195.8,
+      "dbBytes": 430485504
+    },
+    {
+      "name": "L-equivalent",
+      "duration": 1200,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.357,
+        "p95": 4.442,
+        "p99": 7.72
+      },
+      "persist": {
+        "p50": 39.415,
+        "p95": 88.508,
+        "p99": 126.719
+      },
+      "peakHeapMiB": 198.26,
+      "dbBytes": 446365696
+    },
+    {
+      "name": "A-crisis",
+      "duration": 1500,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.023,
+        "p95": 5.268,
+        "p99": 12.446
+      },
+      "persist": {
+        "p50": 53.202,
+        "p95": 163.51,
+        "p99": 367.156
+      },
+      "peakHeapMiB": 219.75,
+      "dbBytes": 357203968
+    },
+    {
+      "name": "B-recovery",
+      "duration": 1500,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.297,
+        "p95": 4.085,
+        "p99": 6.707
+      },
+      "persist": {
+        "p50": 36.278,
+        "p95": 79.985,
+        "p99": 85.448
+      },
+      "peakHeapMiB": 161.82,
+      "dbBytes": 555741184
+    },
+    {
+      "name": "C-complaints",
+      "duration": 1500,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.307,
+        "p95": 4.271,
+        "p99": 7.463
+      },
+      "persist": {
+        "p50": 39.352,
+        "p95": 83.305,
+        "p99": 189.786
+      },
+      "peakHeapMiB": 237.6,
+      "dbBytes": 557662208
+    },
+    {
+      "name": "D-hidden-traffic",
+      "duration": 1500,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.261,
+        "p95": 3.781,
+        "p99": 6.221
+      },
+      "persist": {
+        "p50": 40.463,
+        "p95": 76.081,
+        "p99": 85.452
+      },
+      "peakHeapMiB": 108.05,
+      "dbBytes": 557662208
+    },
+    {
+      "name": "E-maint60",
+      "duration": 1500,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.148,
+        "p95": 3.297,
+        "p99": 5.378
+      },
+      "persist": {
+        "p50": 33.846,
+        "p95": 64.657,
+        "p99": 85.503
+      },
+      "peakHeapMiB": 195.87,
+      "dbBytes": 555233280
+    },
+    {
+      "name": "F-maint120",
+      "duration": 1500,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.094,
+        "p95": 3.205,
+        "p99": 4.394
+      },
+      "persist": {
+        "p50": 33.27,
+        "p95": 57.014,
+        "p99": 70.578
+      },
+      "peakHeapMiB": 104.09,
+      "dbBytes": 554610688
+    },
+    {
+      "name": "G-orders",
+      "duration": 1500,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.257,
+        "p95": 3.877,
+        "p99": 6.401
+      },
+      "persist": {
+        "p50": 32.844,
+        "p95": 70.377,
+        "p99": 93.644
+      },
+      "peakHeapMiB": 187.17,
+      "dbBytes": 555585536
+    },
+    {
+      "name": "H-domino",
+      "duration": 1500,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.14,
+        "p95": 3.087,
+        "p99": 4.259
+      },
+      "persist": {
+        "p50": 30.99,
+        "p95": 56.357,
+        "p99": 70.406
+      },
+      "peakHeapMiB": 188.79,
+      "dbBytes": 558338048
+    },
+    {
+      "name": "J-replay",
+      "duration": 1500,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.065,
+        "p95": 2.895,
+        "p99": 4.076
+      },
+      "persist": {
+        "p50": 28.737,
+        "p95": 52.632,
+        "p99": 69.283
+      },
+      "peakHeapMiB": 187.85,
+      "dbBytes": 555749376
+    },
+    {
+      "name": "K-defect-maint",
+      "duration": 1500,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.246,
+        "p95": 3.787,
+        "p99": 6.221
+      },
+      "persist": {
+        "p50": 36.586,
+        "p95": 69.865,
+        "p99": 82.417
+      },
+      "peakHeapMiB": 188.03,
+      "dbBytes": 534892544
+    },
+    {
+      "name": "L-equivalent",
+      "duration": 1500,
+      "reconstructions": 8,
+      "economyExact": true,
+      "forensicsExact": true,
+      "tick": {
+        "p50": 1.22,
+        "p95": 3.623,
+        "p99": 5.491
+      },
+      "persist": {
+        "p50": 33.377,
+        "p95": 69.036,
+        "p99": 91.354
+      },
+      "peakHeapMiB": 197.23,
+      "dbBytes": 555741184
+    }
+  ]
+}

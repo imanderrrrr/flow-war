@@ -1,0 +1,105 @@
+{
+  "date": "2026-10-20T14:04:35.769Z",
+  "verificationHead": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245",
+  "referenceSha": "dd88729949dabbbf8c216c265dd580eef071a5aa",
+  "classroomMeasuredSha": "346265103b55b9b6117efa42ce9b4b6bccc956c7",
+  "regressionMeasuredSha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245",
+  "productionAndClassroomSourcesUnchangedSinceMeasurement": true,
+  "previousHistoricalResultsUnchanged": true,
+  "inheritedComparableCases": 42,
+  "originalTestsUnedited": true,
+  "tests": {
+    "passed": 232,
+    "failed": 0,
+    "originalTestsPreserved": 226,
+    "newTests": 6
+  },
+  "requiredCommands": [
+    {
+      "command": "npm test",
+      "exitCode": 0,
+      "wallMs": 53136,
+      "sha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245"
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "wallMs": 2187,
+      "sha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245"
+    },
+    {
+      "command": "npm run bench:traffic",
+      "exitCode": 0,
+      "wallMs": 703983,
+      "sha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245"
+    },
+    {
+      "command": "npm run bench:actions",
+      "exitCode": 0,
+      "wallMs": 436461,
+      "sha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245"
+    },
+    {
+      "command": "npm run bench:connections",
+      "exitCode": 0,
+      "wallMs": 8454,
+      "sha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245"
+    },
+    {
+      "command": "npm run bench:chat",
+      "exitCode": 0,
+      "wallMs": 12614,
+      "sha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245"
+    },
+    {
+      "command": "npm run bench:entrega5",
+      "exitCode": 0,
+      "wallMs": 647275,
+      "sha": "f2895e462c60a6a0e5c4b7cde5998ccbb18e8245"
+    }
+  ],
+  "classroomRuns": [
+    {
+      "label": "certified-1200s-20x",
+      "result": "passed",
+      "simulatedSeconds": 1200,
+      "activeWallSeconds": 79.08679479099999,
+      "budgets": {
+        "eventLoopP99Below150": true,
+        "engineIntervalP95Below200": true,
+        "nonChatCommandAckP95Below150": true,
+        "allCommandAckP95Below150": false,
+        "scope": "Investigative budgets on local loopback; crossing one is reported, never hidden or relaxed."
+      }
+    },
+    {
+      "label": "certified-1500s-20x",
+      "result": "passed",
+      "simulatedSeconds": 1500,
+      "activeWallSeconds": 93.170235958,
+      "budgets": {
+        "eventLoopP99Below150": false,
+        "engineIntervalP95Below200": true,
+        "nonChatCommandAckP95Below150": true,
+        "allCommandAckP95Below150": false,
+        "scope": "Investigative budgets on local loopback; crossing one is reported, never hidden or relaxed."
+      }
+    },
+    {
+      "label": "certified-1200s-1x",
+      "result": "passed",
+      "simulatedSeconds": 1200,
+      "activeWallSeconds": 1226.255100792,
+      "budgets": {
+        "eventLoopP99Below150": true,
+        "engineIntervalP95Below200": true,
+        "nonChatCommandAckP95Below150": true,
+        "allCommandAckP95Below150": false,
+        "scope": "Investigative budgets on local loopback; crossing one is reported, never hidden or relaxed."
+      }
+    }
+  ],
+  "exactReconstructions": 176,
+  "liveExactFrames": 72,
+  "technicalConclusion": "Integrity, authorization and local 27-connection classroom operation validated. Performance closure is qualified: simultaneous chat bursts miss 150 ms ACK p95; 25-minute 20x event-loop p99 is 153.35 ms. No unconditional readiness claim for all classroom hardware or LANs."
+}

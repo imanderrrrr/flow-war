@@ -1,0 +1,18 @@
+
+> flow-war@0.1.0 bench:actions
+> tsx scripts/actions-benchmark.ts && tsx scripts/verify-actions-benchmark.ts
+
+{"strategy":"A-equivalent","control":false,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":2.757,"saveP95ms":55.288,"wallSeconds":21.472}
+{"strategy":"B-restart","control":false,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":3.172,"saveP95ms":56.574,"wallSeconds":21.849}
+{"strategy":"C-insufficient","control":false,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":3.046,"saveP95ms":56.402,"wallSeconds":21.339}
+{"strategy":"D-exhaustive","control":false,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":2.974,"saveP95ms":57.754,"wallSeconds":21.209}
+{"strategy":"E-campaign","control":false,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":3.171,"saveP95ms":66.614,"wallSeconds":22.77}
+{"strategy":"F-expulsion","control":false,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":2.909,"saveP95ms":54.472,"wallSeconds":20.771}
+{"strategy":"G-migration","control":false,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":3.045,"saveP95ms":67.315,"wallSeconds":21.991}
+{"strategy":"H-recovery","control":false,"duration":1200,"seed":8,"finalTick":1200,"tickP95ms":3.288,"saveP95ms":69.235,"wallSeconds":23.422}
+{"strategy":"A-equivalent","control":false,"duration":1500,"seed":8,"finalTick":1500,"tickP95ms":3.045,"saveP95ms":62.142,"wallSeconds":27.527}
+{"strategy":"B-restart","control":false,"duration":1500,"seed":8,"finalTick":1500,"tickP95ms":3.183,"saveP95ms":63.669,"wallSeconds":27.691}
+{"strategy":"C-insufficient","control":false,"duration":1500,"seed":8,"finalTick":1500,"tickP95ms":3.027,"saveP95ms":71.054,"wallSeconds":27.602}
+{"strategy":"D-exhaustive","control":false,"duration":1500,"seed":8,"finalTick":1500,"tickP95ms":3.019,"saveP95ms":60.365,"wallSeconds":26.507}
+{"strategy":"E-campaign","control":false,"duration":1500,"seed":8,"finalTick":1500,"tickP95ms":3.189,"saveP95ms":61.411,"wallSeconds":27.477}
+{"strategy":"F-expulsion","control":false,"duration":1500,"seed":8,"finalTick":1500,"tickP95ms":2.926,"saveP95ms":53.16,"wallSeconds":25.841}
