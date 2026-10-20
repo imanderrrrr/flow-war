@@ -1,0 +1,10 @@
+✔ H3 rapid seeks and context cancellation ignore stale replies even when transport ignores AbortSignal (15.870542ms)
+✔ H3 every request lane reports busy accurately and can retry without retaining stale state (0.607791ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 120.606584
