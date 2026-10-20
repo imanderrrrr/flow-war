@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {createHash,randomUUID} from 'node:crypto';
-import {spawn,spawnSync,execFileSync,type ChildProcess} from 'node:child_process';
+import {spawn,execFileSync,type ChildProcess} from 'node:child_process';
 import {once} from 'node:events';
 import {createServer} from 'node:net';
 import {mkdtempSync,mkdirSync,readFileSync,writeFileSync,existsSync,rmSync,statSync,readdirSync} from 'node:fs';
@@ -41,6 +41,11 @@ function noInternal(v:any){if(!v||typeof v!=='object')return;for(const [key,valu
 function publicState(s:Snapshot){return JSON.stringify({tick:s.tick,generation:s.generation,status:s.status,companies:s.companies.map(c=>({id:c.id,customers:c.customers,capital:c.capital,reputation:c.reputation})),unserved:s.unserved});}
 async function until(predicate:()=>boolean,description:string,timeout=30000){const at=performance.now();while(!predicate()){assert(performance.now()-at<timeout,description);if(child?.exitCode!==null&&child?.exitCode!==undefined)throw Error(`server exited: ${description}`);await delay(25);}}
 async function freePort(){const probe=createServer();probe.listen(0,'127.0.0.1');await once(probe,'listening');const port=(probe.address() as {port:number}).port;await new Promise<void>(r=>probe.close(()=>r()));return port;}
+
+async function runProcess(args:string[],env:NodeJS.ProcessEnv,timeout=10000){
+ const proc=spawn(process.execPath,args,{env,stdio:['ignore','pipe','pipe']});let stdout='',stderr='';proc.stdout.on('data',b=>stdout+=String(b));proc.stderr.on('data',b=>stderr+=String(b));const timer=setTimeout(()=>proc.kill('SIGKILL'),timeout);try{const [status,signal]=await once(proc,'exit');return{status,signal,stdout,stderr};}finally{clearTimeout(timer);}
+}
+
 const port=await freePort(),base=`http://127.0.0.1:${port}`;
 function get(url:string,e?:typeof entries[number]){return fetch(base+url,{headers:{Cookie:e?.cookie??''}});}
 async function launch(){segment++;child=spawn(process.execPath,['--require',resolve('scripts/audit-classroom-probe.cjs'),'--import','tsx','server/index.ts'],{env:{...process.env,NODE_ENV:'production',FLOW_DATA_DIR:dir,FLOW_PORT:String(port),FLOW_DVR_WORKERS:'2',FLOW_PROBE_OUTPUT:join(dir,`probe-${segment}.json`),FLOW_PROBE_CONTROL:control},stdio:['ignore','ignore','pipe']});child.stderr!.on('data',b=>stderr+=String(b));
@@ -101,10 +106,10 @@ try{
  assert.equal(entries.length,27);teacher=entries.find(e=>e.identity?.role==='operator')!;student=member(0,'backend');const projector=entries.find(e=>!e.identity)!;
  assert.equal(new Set(entries.filter(e=>e.identity).map(e=>e.identity!.id)).size,26);assert(entries.every(e=>e.latest?.status==='LOBBY'));assert.equal(new Set(entries.map(e=>publicState(e.latest!))).size,1);
  report.scenarios.A={connections:entries.length,uniqueAuthenticatedIdentities:26,rolesPerCompany:['backend','security','qa','cto','devops'],lobbyCoherent:true,initialPopulation:5000,initialCustomersPerCompany:[1000,1000,1000,1000,1000]};
- const otherPort=await freePort(),second=spawnSync(process.execPath,['--import','tsx','server/index.ts'],{env:{...process.env,NODE_ENV:'production',FLOW_DATA_DIR:dir,FLOW_PORT:String(otherPort)},encoding:'utf8',timeout:5000});assert.equal(second.status,1);assert.match(second.stderr,/usando el almacenamiento/);
+ const otherPort=await freePort(),second=await runProcess(['--import','tsx','server/index.ts'],{...process.env,NODE_ENV:'production',FLOW_DATA_DIR:dir,FLOW_PORT:String(otherPort)},5000);assert.equal(second.status,1);assert.match(second.stderr,/usando el almacenamiento/);
  const admin=credentials.find(c=>c.identity.role==='operator')!,studentCode=credentials.find(c=>c.identity.id==='0-backend')!;
- const cli=(code:string,args:string[])=>spawnSync(process.execPath,['--import','tsx','scripts/history-admin.ts',...args],{env:{...process.env,FLOW_DATA_DIR:dir,FLOW_ADMIN_CODE:code},encoding:'utf8',timeout:10000});
- assert.equal(cli(admin.code,['preview']).status,1);assert.equal(cli(admin.code,['verify',archive]).status,0);assert.equal(cli(studentCode.code,['verify',archive]).status,1);assert.equal(cli(studentCode.code,['delete','0','--confirm-generation','0']).status,1);
+ const cli=(code:string,args:string[])=>runProcess(['--import','tsx','scripts/history-admin.ts',...args],{...process.env,FLOW_DATA_DIR:dir,FLOW_ADMIN_CODE:code});
+ assert.equal((await cli(admin.code,['preview'])).status,1);assert.equal((await cli(admin.code,['verify',archive])).status,0);assert.equal((await cli(studentCode.code,['verify',archive])).status,1);assert.equal((await cli(studentCode.code,['delete','0','--confirm-generation','0'])).status,1);
  assert.equal((await get('/api/access',student)).status,403);assert.equal((await get('/api/requests/'+receipt)).status,403);assert.equal((await get('/api/requests/'+foreignReceipt,student)).status,404);noInternal(await(await get('/api/requests/'+receipt,student)).json());
  assert.equal((await get('/api/dvr/0?companyId=1&at=10.5',student)).status,403);assert.equal((await get('/api/dvr/0')).status,403);assert.equal((await get('/access.json')).status,404);assert.equal((await get('/game.sqlite')).status,404);
  assert.equal((await send(student,'room.reset',undefined,undefined,randomUUID(),'expected-denial')).ok,false);assert.equal((await send(projector,'room.start',undefined,undefined,randomUUID(),'expected-denial')).ok,false);
@@ -152,8 +157,9 @@ try{
  }
  let aborted=0;for(let i=0;i<8;i++){const controller=new AbortController(),p=fetch(`${base}/api/dvr/0?companyId=0&at=${ats[2]}`,{headers:{Cookie:teacher.cookie},signal:controller.signal}).catch(e=>{assert.equal(e.name,'AbortError');aborted++;});await delay(20);controller.abort();await p;}
  const requests=Array.from({length:3},()=>get(`/api/dvr/0?companyId=0&at=${ats[2]}`,teacher));const saturated=await Promise.all(requests);assert(saturated.some(r=>r.status===429));for(const r of saturated)await r.arrayBuffer();
- for(const endpoint of ['/api/dvr/0/metrics?companyId=0','/api/dvr/0/chat?companyId=0',`/api/dvr/0/requests/${receipt}`]){const t=performance.now(),res=await get(endpoint,student);assert.equal(res.status,200);noInternal(await res.json());report.dvr.push({purpose:'authorized-auxiliary',endpoint: endpoint.includes('/requests/')?'/api/dvr/0/requests/:id':endpoint,status:res.status,ms:performance.now()-t});}
- report.scenarios.E={twoConcurrentLanes:true,exactFrames:report.dvr.filter((q:any)=>q.status===200&&q.purpose==='exact-frame').length,workerFailureObserved,workerRecovery:true,clientAborts:aborted,saturation429:saturated.filter(r=>r.status===429).length};
+ const burst=await Promise.all(entries.filter(e=>e.identity?.companyId!=null).slice(0,13).map(async e=>{const t=performance.now(),r=await get(`/api/dvr/0?companyId=${e.identity!.companyId}&at=${ats[2]}`,e),body=await r.json();assert([200,503].includes(r.status));if(r.status===200){noInternal(body);assert.equal(body.historical.company.id,e.identity!.companyId);}report.dvr.push({purpose:'queue-saturation',status:r.status,ms:performance.now()-t});return r.status;}));assert(burst.includes(503),'bounded queue must reject overflow');
+ for(const endpoint of ['/api/dvr/0/metrics?companyId=0','/api/dvr/0/chat?companyId=0',`/api/dvr/0/requests/${receipt}`]){const t=performance.now(),res=await get(endpoint,student);assert.equal(res.status,200);const body=await res.json();noInternal(body);if(endpoint.includes('/chat'))assert(body.messages.some((m:any)=>m.source==='human'&&m.text==='Evidencia histórica de coordinación'));report.dvr.push({purpose:'authorized-auxiliary',endpoint: endpoint.includes('/requests/')?'/api/dvr/0/requests/:id':endpoint,status:res.status,ms:performance.now()-t});}
+ report.scenarios.E={twoConcurrentLanes:true,exactFrames:report.dvr.filter((q:any)=>q.status===200&&q.purpose==='exact-frame').length,workerFailureObserved,workerRecovery:true,clientAborts:aborted,saturation429:saturated.filter(r=>r.status===429).length,saturation503:burst.filter(status=>status===503).length};
  await until(()=>teacher.latest!.status==='FINISHED','complete classroom game',(duration-teacher.latest!.tick+10)*1000/speed*3);await background;clearInterval(progress);progress=undefined;
  const final=await(await get('/api/snapshot',teacher)).json() as Snapshot;await until(()=>entries.every(e=>e.latest?.status==='FINISHED'),'final distribution');assert.equal(new Set(entries.map(e=>publicState(e.latest!))).size,1);assert.equal(final.tick,duration);
  const finalState=JSON.parse((db.prepare('SELECT state FROM game WHERE id=1').get() as {state:string}).state);assertMarket(finalState);assert.equal(historyDigest(),savedHistoryDigest);
@@ -169,9 +175,9 @@ try{
 }catch(error){report.result='failed';report.exitCode=1;report.errors.push((error as Error).stack);process.exitCode=1;}
 finally{
  if(progress)clearInterval(progress);for(const e of entries)e.socket.disconnect();if(child?.exitCode===null&&child.signalCode===null)await stop('SIGTERM');
- report.wallMs=performance.now()-started;report.socket={snapshots,sizeBytes:pct(snapshotSizes),deliveryMs:pct(snapshotLatency),cadenceMs:pct(snapshotCadence),maximumConnections:Math.max(0,...report.segments.map((s:any)=>s.maxConnections??0)),disconnects,reconnects,timeouts,commandAckMs:pct(ack)};
+ report.wallMs=performance.now()-started;report.socket={snapshots,sizeBytes:pct(snapshotSizes),deliveryMs:pct(snapshotLatency),cadenceMs:pct(snapshotCadence),maximumConnections:Math.max(0,...report.segments.map((s:any)=>s.maxConnections??0)),disconnects,reconnects,timeouts,nonChatCommandAckMs:pct(ack),commandAckMs:pct([...ack,...chatAck])};
  report.flowSlack={sent:sent.size,authorizedDeliveries:chatDelivery.length,ackMs:pct(chatAck),deliveryMs:pct(chatDelivery),crossCompanyDeliveries:leaks,confirmedMessageLoss:finished?0:null,duplicateApplications:finished?0:null};report.explicitCheckpoints=checkpointCount;
- report.budgets={eventLoopP99Below150:report.segments.every((s:any)=>s.eventLoop?.p99<150),engineIntervalP95Below200:report.segments.every((s:any)=>s.engineIntervalMs?.p95<200),commandAckP95Below150:(pct(ack).p95??Infinity)<150,scope:'Investigative budgets on local loopback; crossing one is reported, never hidden or relaxed.'};
+ report.budgets={eventLoopP99Below150:report.segments.every((s:any)=>s.eventLoop?.p99<150),engineIntervalP95Below200:report.segments.every((s:any)=>s.engineIntervalMs?.p95<200),nonChatCommandAckP95Below150:(pct(ack).p95??Infinity)<150,allCommandAckP95Below150:(pct([...ack,...chatAck]).p95??Infinity)<150,scope:'Investigative budgets on local loopback; crossing one is reported, never hidden or relaxed.'};
  // No access.json, cookies, live SQLite or stdout containing credentials is saved.
  writeFileSync(output,JSON.stringify(report,null,2)+'\n');if(stderr)writeFileSync(`${root}/classroom-${label}-stderr.txt`,stderr.replaceAll(dir,'<temporary-data-dir>'));
  console.log(JSON.stringify({output,result:report.result,exitCode:report.exitCode,wallSeconds:report.wallMs/1000,commandAck:report.socket.commandAckMs,budgets:report.budgets,errors:report.errors}));rmSync(dir,{recursive:true,force:true});
