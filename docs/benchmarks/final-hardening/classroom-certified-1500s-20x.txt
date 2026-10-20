@@ -1,0 +1,10 @@
+
+> flow-war@0.1.0 bench:classroom
+> tsx scripts/audit-classroom-load.ts --duration=1500 --speed=20 --label=certified-1500s-20x
+
+{"label":"certified-1500s-20x","phase":"active","tick":254,"status":"RUNNING","snapshots":9023,"commands":408,"queries":0,"wallSeconds":25.03769695800001}
+{"label":"certified-1500s-20x","phase":"active","tick":546,"status":"RUNNING","snapshots":11183,"commands":415,"queries":0,"wallSeconds":40.037583625}
+{"label":"certified-1500s-20x","phase":"active","tick":834,"status":"RUNNING","snapshots":13343,"commands":423,"queries":0,"wallSeconds":55.037858875}
+{"label":"certified-1500s-20x","phase":"active","tick":1106,"status":"RUNNING","snapshots":15368,"commands":430,"queries":24,"wallSeconds":70.03939874999999}
+{"label":"certified-1500s-20x","phase":"active","tick":1374,"status":"RUNNING","snapshots":17366,"commands":437,"queries":42,"wallSeconds":85.04041000000001}
+{"output":"docs/benchmarks/final-hardening/classroom-certified-1500s-20x.json","result":"passed","exitCode":0,"wallSeconds":158.437652792,"commandAck":{"n":440,"p50":83.92404199999874,"p95":355.1215830000001,"p99":389.34391699999105,"max":418.31720900000073},"budgets":{"eventLoopP99Below150":false,"engineIntervalP95Below200":true,"nonChatCommandAckP95Below150":true,"allCommandAckP95Below150":false,"scope":"Investigative budgets on local loopback; crossing one is reported, never hidden or relaxed."},"errors":[]}

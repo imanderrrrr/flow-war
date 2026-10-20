@@ -1,0 +1,9 @@
+
+> flow-war@0.1.0 bench:classroom
+> tsx scripts/audit-classroom-load.ts --duration=1200 --speed=20 --label=certified-1200s-20x
+
+{"label":"certified-1200s-20x","phase":"active","tick":256,"status":"RUNNING","snapshots":8541,"commands":408,"queries":0,"wallSeconds":25.037639208}
+{"label":"certified-1200s-20x","phase":"active","tick":548,"status":"RUNNING","snapshots":10728,"commands":416,"queries":0,"wallSeconds":40.040670458}
+{"label":"certified-1200s-20x","phase":"active","tick":824,"status":"RUNNING","snapshots":12780,"commands":423,"queries":0,"wallSeconds":55.04038841599999}
+{"label":"certified-1200s-20x","phase":"active","tick":1092,"status":"RUNNING","snapshots":14778,"commands":430,"queries":23,"wallSeconds":70.040085666}
+{"output":"docs/benchmarks/final-hardening/classroom-certified-1200s-20x.json","result":"passed","exitCode":0,"wallSeconds":131.76108895800002,"commandAck":{"n":433,"p50":85.00504200000432,"p95":360.13408399999753,"p99":393.6965829999972,"max":412.55058299999655},"budgets":{"eventLoopP99Below150":true,"engineIntervalP95Below200":true,"nonChatCommandAckP95Below150":true,"allCommandAckP95Below150":false,"scope":"Investigative budgets on local loopback; crossing one is reported, never hidden or relaxed."},"errors":[]}

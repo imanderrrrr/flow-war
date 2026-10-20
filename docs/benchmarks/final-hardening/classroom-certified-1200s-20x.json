@@ -1,0 +1,7147 @@
+{
+  "sha": "346265103b55b9b6117efa42ce9b4b6bccc956c7",
+  "sourceDigest": "70c51c9ae65a788e718308f1b6efd9111fc74290d52c7c66f542f15bcd6b0535",
+  "sourceFiles": [
+    "scripts/audit-classroom-load.ts",
+    "scripts/audit-classroom-probe.cjs",
+    "scripts/market-scenarios.ts",
+    "server/action-validation.ts",
+    "server/agents.ts",
+    "server/artifacts.ts",
+    "server/blocks.ts",
+    "server/business.ts",
+    "server/chat.ts",
+    "server/crisis.ts",
+    "server/defects.ts",
+    "server/discipline.ts",
+    "server/dvr-pool.ts",
+    "server/dvr-query.ts",
+    "server/dvr-worker.mjs",
+    "server/dvr-worker.ts",
+    "server/dvr.ts",
+    "server/engine.ts",
+    "server/flowslack.ts",
+    "server/graphs.ts",
+    "server/history-admin.ts",
+    "server/history.ts",
+    "server/index.ts",
+    "server/infrastructure.ts",
+    "server/load.ts",
+    "server/maintenance.ts",
+    "server/market.ts",
+    "server/module-execution.ts",
+    "server/observability.ts",
+    "server/persistence.ts",
+    "server/postmortem.ts",
+    "server/projections.ts",
+    "server/qa.ts",
+    "server/receipt-storage.ts",
+    "server/requests.ts",
+    "server/scenarios.ts",
+    "server/security.ts",
+    "server/storage-lease.ts",
+    "server/storage.ts",
+    "server/traffic.ts",
+    "shared/actions.ts",
+    "shared/agents.ts",
+    "shared/blocks.ts",
+    "shared/crisis.ts",
+    "shared/observability.ts",
+    "shared/simulation.ts",
+    "shared/types.ts"
+  ],
+  "sourceDirty": "",
+  "date": "2026-10-20T02:15:35.129Z",
+  "node": "v25.9.0",
+  "os": "darwin 27.0.0",
+  "cpu": "Apple M5",
+  "cores": 10,
+  "totalRamBytes": 17179869184,
+  "freeRamBytes": 246136832,
+  "workers": 2,
+  "parameters": {
+    "duration": 1200,
+    "speed": 20,
+    "historyDuration": 1200,
+    "seed": 8,
+    "population": 5000,
+    "initialReputation": 34,
+    "oneXWarmupSeconds": 10,
+    "dvrConcurrency": 2
+  },
+  "clients": 27,
+  "students": 25,
+  "authenticatedSessions": 26,
+  "publicConnections": 1,
+  "scenarios": {
+    "preparation": {
+      "wallMs": 33442.002083,
+      "historicalTicks": 12000,
+      "historicalStatus": "FINISHED",
+      "archiveDigest": "f12f043d13f348158214023992ec5c2cf6a78e052bc73f8111436bf2388e098e",
+      "archiveBytes": 428642304,
+      "expectedFrames": 8
+    },
+    "A": {
+      "connections": 27,
+      "uniqueAuthenticatedIdentities": 26,
+      "rolesPerCompany": [
+        "backend",
+        "security",
+        "qa",
+        "cto",
+        "devops"
+      ],
+      "lobbyCoherent": true,
+      "initialPopulation": 5000,
+      "initialCustomersPerCompany": [
+        1000,
+        1000,
+        1000,
+        1000,
+        1000
+      ],
+      "firstTrafficGenerated": true
+    },
+    "oneXWarmup": {
+      "wallMs": 10000.585541,
+      "simulatedSeconds": 9.9,
+      "speed": 1
+    },
+    "C": {
+      "messages": 125,
+      "identicalRetries": 125,
+      "authorizedRecipientDeliveries": 625,
+      "wallMs": 2113.1425420000014,
+      "orderVerified": true,
+      "zeroDuplicateRows": true,
+      "reconnected": true
+    },
+    "B": {
+      "pipelineCompanies": 5,
+      "architectureQaAuthorizationDeployment": true,
+      "securityPipeline": true,
+      "scaling": true,
+      "maintenance": true,
+      "stopRecoverRestart": true
+    },
+    "G": {
+      "signal": "SIGKILL",
+      "persistedTick": 100,
+      "recoveredPaused": true,
+      "marketExact": true,
+      "pendingQaPreserved": true,
+      "pendingQaResumed": true,
+      "sessionReconnects": 27,
+      "confirmedChatDeduplicated": true,
+      "confirmedModuleDeduplicated": true,
+      "pendingCommandResult": true
+    },
+    "E": {
+      "twoConcurrentLanes": true,
+      "exactFrames": 24,
+      "workerFailureObserved": true,
+      "workerRecovery": true,
+      "clientAborts": 7,
+      "saturation429": 1,
+      "saturation503": 3
+    },
+    "D": {
+      "crisisCompanies": 5,
+      "crisisAndRecoveryFacts": [
+        {
+          "kind": "crisis.entered",
+          "companyId": 0,
+          "n": 1
+        },
+        {
+          "kind": "crisis.entered",
+          "companyId": 1,
+          "n": 1
+        },
+        {
+          "kind": "crisis.entered",
+          "companyId": 2,
+          "n": 1
+        },
+        {
+          "kind": "crisis.entered",
+          "companyId": 3,
+          "n": 1
+        },
+        {
+          "kind": "crisis.entered",
+          "companyId": 4,
+          "n": 1
+        },
+        {
+          "kind": "crisis.exited",
+          "companyId": 0,
+          "n": 1
+        },
+        {
+          "kind": "crisis.exited",
+          "companyId": 1,
+          "n": 1
+        },
+        {
+          "kind": "crisis.exited",
+          "companyId": 2,
+          "n": 1
+        },
+        {
+          "kind": "crisis.exited",
+          "companyId": 3,
+          "n": 1
+        },
+        {
+          "kind": "crisis.exited",
+          "companyId": 4,
+          "n": 1
+        },
+        {
+          "kind": "maintenance.changed",
+          "companyId": 0,
+          "n": 2
+        },
+        {
+          "kind": "maintenance.changed",
+          "companyId": 1,
+          "n": 2
+        },
+        {
+          "kind": "maintenance.changed",
+          "companyId": 2,
+          "n": 2
+        },
+        {
+          "kind": "maintenance.changed",
+          "companyId": 3,
+          "n": 2
+        },
+        {
+          "kind": "maintenance.changed",
+          "companyId": 4,
+          "n": 2
+        }
+      ],
+      "visualEconomyUnchanged": true,
+      "liveMutations": 0
+    },
+    "F": {
+      "simulatedSeconds": 1200,
+      "realActiveWallSeconds": 79.08679479099999,
+      "mainSpeed": 20,
+      "initialOneXSeconds": 9.9,
+      "finalStatus": "FINISHED",
+      "initialPopulation": 5000,
+      "finalPopulation": 5000,
+      "historyUnchanged": true,
+      "terminalRequestsSettled": true
+    }
+  },
+  "commands": [
+    {
+      "identity": "0-backend",
+      "type": "room.reset",
+      "id": "47e5cfee-c46f-48b2-9f4d-88f0495492e8",
+      "atTick": 0,
+      "purpose": "expected-denial",
+      "ok": false,
+      "code": "FORBIDDEN",
+      "error": "Acción ajena al rol.",
+      "ms": 23.863666999997804
+    },
+    {
+      "identity": "public",
+      "type": "room.start",
+      "id": "bb20399b-f287-40cd-84df-f0320999c3fd",
+      "atTick": 0,
+      "purpose": "expected-denial",
+      "ok": false,
+      "code": "FORBIDDEN",
+      "error": "Sesión o comando no autorizado.",
+      "ms": 3.7744579999998678
+    },
+    {
+      "identity": "operator",
+      "type": "room.start",
+      "id": "b2af4484-2bd8-4e74-b790-8571a4cc2121",
+      "atTick": 0,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 16.278959000002942
+    },
+    {
+      "identity": "operator",
+      "type": "room.speed",
+      "id": "5e72a179-3822-4d3f-887b-8a3822a20372",
+      "atTick": 9.9,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 34.85866700000042
+    },
+    {
+      "identity": "0-backend",
+      "type": "change.submit",
+      "id": "d2d2f997-d9e0-4505-b452-154475029b13",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 28.234292000001005
+    },
+    {
+      "identity": "1-backend",
+      "type": "change.submit",
+      "id": "556ae64b-780b-4b60-a810-9752c6347ff8",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 43.185041000004276
+    },
+    {
+      "identity": "2-backend",
+      "type": "change.submit",
+      "id": "c591643b-b827-4f45-982a-bb9875b8a6b0",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 56.246916000003694
+    },
+    {
+      "identity": "3-backend",
+      "type": "change.submit",
+      "id": "baa866a2-688b-42c5-a0ef-1c732a9d523d",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 71.81033300000126
+    },
+    {
+      "identity": "4-backend",
+      "type": "change.submit",
+      "id": "bb271ab3-c989-46dc-89c3-203a7c57c791",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 85.31587499999296
+    },
+    {
+      "identity": "0-qa",
+      "type": "qa.run",
+      "id": "65ca9a1b-9dc4-4b1c-b3c2-493a8f59cfa0",
+      "atTick": 12,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 13.119291999995767
+    },
+    {
+      "identity": "1-qa",
+      "type": "qa.run",
+      "id": "24ccc15a-9e33-46be-bd6d-f9da644900ef",
+      "atTick": 12,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 32.63695900000312
+    },
+    {
+      "identity": "2-qa",
+      "type": "qa.run",
+      "id": "da3a9930-df2a-4653-a9fa-aeea1ef9a142",
+      "atTick": 12,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 45.18224999999802
+    },
+    {
+      "identity": "3-qa",
+      "type": "qa.run",
+      "id": "979eda66-e043-41ca-8515-73b3155b4422",
+      "atTick": 12,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 57.62541699999565
+    },
+    {
+      "identity": "4-qa",
+      "type": "qa.run",
+      "id": "8a69399b-fdd8-4fc0-adde-c05fc0b12448",
+      "atTick": 12,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 72.10312500000146
+    },
+    {
+      "identity": "3-qa",
+      "type": "qa.approve",
+      "id": "4fdfd32e-dc8e-4281-8e58-86245beb6769",
+      "atTick": 16,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 20.62908299999981
+    },
+    {
+      "identity": "1-qa",
+      "type": "qa.approve",
+      "id": "f62a7507-dc00-4325-b281-8cdcc67d2785",
+      "atTick": 16,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 41.1651669999992
+    },
+    {
+      "identity": "0-qa",
+      "type": "qa.approve",
+      "id": "22c30c78-98ba-46b1-bb7b-73afbbaee954",
+      "atTick": 16,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 57.073833000002196
+    },
+    {
+      "identity": "2-qa",
+      "type": "qa.approve",
+      "id": "3f34cc1b-6adf-40af-9357-f793cfd4064b",
+      "atTick": 16,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 64.49850000000151
+    },
+    {
+      "identity": "4-qa",
+      "type": "qa.approve",
+      "id": "e1c64acd-2375-4e9c-a7f9-448c429768aa",
+      "atTick": 16,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 76.62220900000102
+    },
+    {
+      "identity": "3-cto",
+      "type": "cto.authorize",
+      "id": "8c5f9ce0-add9-485e-ad05-f058358d52fb",
+      "atTick": 16,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 77.21608299999934
+    },
+    {
+      "identity": "1-cto",
+      "type": "cto.authorize",
+      "id": "8772e7ad-38f9-403d-b130-7a6339e5bf66",
+      "atTick": 16,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 79.263082999998
+    },
+    {
+      "identity": "0-cto",
+      "type": "cto.authorize",
+      "id": "af2a79d6-b3f4-4666-913d-92727b2cef98",
+      "atTick": 16,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 75.11833399999887
+    },
+    {
+      "identity": "2-cto",
+      "type": "cto.authorize",
+      "id": "1f432b83-363f-4960-b2ed-4a49826bb69d",
+      "atTick": 16,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 77.96591700000135
+    },
+    {
+      "identity": "4-cto",
+      "type": "cto.authorize",
+      "id": "9ad115b6-0aba-431e-b6f7-c11170351056",
+      "atTick": 16,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 77.94445900000574
+    },
+    {
+      "identity": "3-devops",
+      "type": "deploy.start",
+      "id": "3b6db507-c8c0-40df-b177-9ca723205339",
+      "atTick": 16,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 75.38891600000352
+    },
+    {
+      "identity": "1-devops",
+      "type": "deploy.start",
+      "id": "6948f124-0930-410d-b7ec-158cca994f25",
+      "atTick": 18,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 73.42087499999616
+    },
+    {
+      "identity": "0-devops",
+      "type": "deploy.start",
+      "id": "5196f968-aad1-4b17-91cd-63f6a6ac7a63",
+      "atTick": 18,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 72.84929199999897
+    },
+    {
+      "identity": "2-devops",
+      "type": "deploy.start",
+      "id": "0f8acae7-96cc-4327-9a98-2beae0708d88",
+      "atTick": 18,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 69.92620800000441
+    },
+    {
+      "identity": "4-devops",
+      "type": "deploy.start",
+      "id": "857b5e28-1ad3-43c5-b89e-be2db7840ba9",
+      "atTick": 18,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 73.9963329999955
+    },
+    {
+      "identity": "0-security",
+      "type": "change.submit",
+      "id": "065ce86c-44a7-44d0-8b30-6d6674d3d983",
+      "atTick": 24,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 19.847500000003492
+    },
+    {
+      "identity": "1-security",
+      "type": "change.submit",
+      "id": "f97588fd-5452-4284-b5ab-4537a9abffb9",
+      "atTick": 24,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 43.99883299999783
+    },
+    {
+      "identity": "2-security",
+      "type": "change.submit",
+      "id": "70970dfd-751a-42e8-8ec0-14143df3da13",
+      "atTick": 24,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 57.40962500000023
+    },
+    {
+      "identity": "3-security",
+      "type": "change.submit",
+      "id": "d3b59e73-4cf2-4e7a-a862-fad07b99db21",
+      "atTick": 24,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 70.20904100000189
+    },
+    {
+      "identity": "4-security",
+      "type": "change.submit",
+      "id": "7cbb72ea-300b-4276-a737-a853489bf673",
+      "atTick": 24,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 85.5413750000007
+    },
+    {
+      "identity": "0-qa",
+      "type": "qa.run",
+      "id": "c68188b5-94b6-4bde-94a8-601693171d7a",
+      "atTick": 24,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 23.983500000002095
+    },
+    {
+      "identity": "1-qa",
+      "type": "qa.run",
+      "id": "bb5aacbd-d29e-4b6b-8c38-f68c849fb53d",
+      "atTick": 26,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 33.03595900000073
+    },
+    {
+      "identity": "2-qa",
+      "type": "qa.run",
+      "id": "403ec7e8-6539-4063-8c36-6ed446f9b87a",
+      "atTick": 26,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 50.086999999999534
+    },
+    {
+      "identity": "3-qa",
+      "type": "qa.run",
+      "id": "3b0ed9a8-870a-4919-beed-0fb4210af503",
+      "atTick": 26,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 65.35954099999799
+    },
+    {
+      "identity": "4-qa",
+      "type": "qa.run",
+      "id": "35fa8ac7-229d-43f6-aba9-93c44bab8d1a",
+      "atTick": 26,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 82.37316699999792
+    },
+    {
+      "identity": "3-qa",
+      "type": "qa.approve",
+      "id": "de7264c6-1abc-48f4-8872-2395eb85b11f",
+      "atTick": 28,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 13.970916999998735
+    },
+    {
+      "identity": "0-qa",
+      "type": "qa.approve",
+      "id": "4b4c840f-7aac-450b-b610-4ed9e26dc755",
+      "atTick": 28,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 26.98416599999473
+    },
+    {
+      "identity": "3-cto",
+      "type": "cto.authorize",
+      "id": "4431fcfb-c7da-4c2b-97ae-b3fd0ac72e34",
+      "atTick": 28,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 36.55170799999905
+    },
+    {
+      "identity": "2-qa",
+      "type": "qa.approve",
+      "id": "3f97989b-7917-4588-b628-8c33ab5a2588",
+      "atTick": 28,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 49.617874999996275
+    },
+    {
+      "identity": "4-qa",
+      "type": "qa.approve",
+      "id": "9162afc9-e878-4569-9a0c-a49edc991fa8",
+      "atTick": 28,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 59.90454100000352
+    },
+    {
+      "identity": "1-qa",
+      "type": "qa.approve",
+      "id": "4243cd2b-2460-44f8-950b-3a68fdbe0dfe",
+      "atTick": 28,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 76.39895899999829
+    },
+    {
+      "identity": "0-cto",
+      "type": "cto.authorize",
+      "id": "2f765910-011d-4845-9c57-8e50d78d813e",
+      "atTick": 28,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 79.37870800000383
+    },
+    {
+      "identity": "3-devops",
+      "type": "deploy.start",
+      "id": "cf801b84-1396-4965-8e69-84603e32e5a1",
+      "atTick": 28,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 81.05020800000057
+    },
+    {
+      "identity": "2-cto",
+      "type": "cto.authorize",
+      "id": "0e204f8a-8f79-453b-ab56-191611f58e1b",
+      "atTick": 28,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 84.43475000000035
+    },
+    {
+      "identity": "4-cto",
+      "type": "cto.authorize",
+      "id": "a08c6d68-b0b5-4bed-8b5d-6ad3635e5151",
+      "atTick": 28,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 84.8166659999988
+    },
+    {
+      "identity": "1-cto",
+      "type": "cto.authorize",
+      "id": "d040aa24-3b23-44f3-982b-cf9697b06d6d",
+      "atTick": 28,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 81.20695900000283
+    },
+    {
+      "identity": "0-devops",
+      "type": "deploy.start",
+      "id": "fda770ce-31b2-43f7-811e-dad7642cf05a",
+      "atTick": 28,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 83.23066600000311
+    },
+    {
+      "identity": "2-devops",
+      "type": "deploy.start",
+      "id": "0700cbea-15ca-4448-a0cd-56888752767f",
+      "atTick": 30,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 62.31720800000039
+    },
+    {
+      "identity": "4-devops",
+      "type": "deploy.start",
+      "id": "29fe5484-1abe-438c-be35-c6ce4eeaa175",
+      "atTick": 30,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 62.12183400000504
+    },
+    {
+      "identity": "1-devops",
+      "type": "deploy.start",
+      "id": "ee1543c8-ebbb-4e4d-9420-6b3a79d9b1eb",
+      "atTick": 30,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 64.90108299999702
+    },
+    {
+      "identity": "0-cto",
+      "type": "cto.budget",
+      "id": "df3ca855-1794-4fa8-895e-091f6fb91da5",
+      "atTick": 36,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 20.417959000005794
+    },
+    {
+      "identity": "0-cto",
+      "type": "cto.budget",
+      "id": "e14c4c6d-c70d-469b-bf83-bef09e8d7183",
+      "atTick": 36,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 24.026790999996592
+    },
+    {
+      "identity": "0-cto",
+      "type": "cto.budget",
+      "id": "e9cd9ef4-c2d3-4559-a13a-c7a3e1c1f0a4",
+      "atTick": 36,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 24.615165999995952
+    },
+    {
+      "identity": "0-cto",
+      "type": "cto.budget",
+      "id": "766e71c8-e416-4bbb-9f7e-6ed06fd87c31",
+      "atTick": 36,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 23.764750000002095
+    },
+    {
+      "identity": "0-cto",
+      "type": "cto.budget",
+      "id": "c763db2e-33fc-484b-b8cb-3c5f33b32757",
+      "atTick": 38,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 22.278750000004948
+    },
+    {
+      "identity": "0-cto",
+      "type": "cto.budget",
+      "id": "bc4cc220-9056-48cf-9b6a-a587c8ba24c1",
+      "atTick": 38,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 23.521459000003233
+    },
+    {
+      "identity": "0-devops",
+      "type": "infra.scale",
+      "id": "f4e6ee39-9b6f-4862-af4a-44f327d4c100",
+      "atTick": 38,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 20.922208000003593
+    },
+    {
+      "identity": "0-devops",
+      "type": "infra.scale",
+      "id": "d80a73bb-2e7e-4732-a436-9886ae0182a8",
+      "atTick": 38,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 20.564542000000074
+    },
+    {
+      "identity": "0-devops",
+      "type": "infra.scale",
+      "id": "e3513e22-e35b-4de8-a044-0b74e684ed00",
+      "atTick": 40,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 38.56295900000259
+    },
+    {
+      "identity": "0-devops",
+      "type": "infra.scale",
+      "id": "842e5109-4f32-437b-9ad5-a7ffae0ecc97",
+      "atTick": 40,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 20.856290999996418
+    },
+    {
+      "identity": "0-devops",
+      "type": "infra.scale",
+      "id": "7d248177-d5fb-4664-8fa0-4ed4bbdf0a26",
+      "atTick": 40,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 23.805417000003217
+    },
+    {
+      "identity": "0-devops",
+      "type": "infra.scale",
+      "id": "88025132-c9db-45f4-9fe7-2ff5fa080671",
+      "atTick": 40,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 20.478374999998778
+    },
+    {
+      "identity": "0-devops",
+      "type": "infra.scale",
+      "id": "ce7d994d-5884-4873-8a98-ba9914839345",
+      "atTick": 40,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 23.053791999998793
+    },
+    {
+      "identity": "0-devops",
+      "type": "infra.balancer",
+      "id": "7a3d2054-159c-43c8-ac54-dc572ece34b7",
+      "atTick": 42,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 24.362583999994968
+    },
+    {
+      "identity": "1-cto",
+      "type": "cto.budget",
+      "id": "76010a34-f969-48b7-86b8-8085c5a6d706",
+      "atTick": 42,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 20.72400000000198
+    },
+    {
+      "identity": "1-cto",
+      "type": "cto.budget",
+      "id": "2753ac13-8aca-4f39-83a5-25e2d6eb2e00",
+      "atTick": 42,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 21.666707999997016
+    },
+    {
+      "identity": "1-cto",
+      "type": "cto.budget",
+      "id": "99612dd8-b717-4d42-b04e-a143d8318d23",
+      "atTick": 42,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 24.430041999999958
+    },
+    {
+      "identity": "1-cto",
+      "type": "cto.budget",
+      "id": "b5bf355d-17ad-48c3-b127-ab1d1c49bbf0",
+      "atTick": 44,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 32.931917000001704
+    },
+    {
+      "identity": "1-cto",
+      "type": "cto.budget",
+      "id": "b3ba0a13-2230-4c78-99f4-98ac5d335fc1",
+      "atTick": 44,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 20.784333000003244
+    },
+    {
+      "identity": "1-cto",
+      "type": "cto.budget",
+      "id": "8a625ccc-4dea-42d9-8916-9ce1e90b6cb8",
+      "atTick": 44,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 23.829749999997148
+    },
+    {
+      "identity": "1-devops",
+      "type": "infra.scale",
+      "id": "6a2d3fc8-dd3e-4a5e-93fa-1a86d4bee623",
+      "atTick": 44,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 20.64774999999645
+    },
+    {
+      "identity": "1-devops",
+      "type": "infra.scale",
+      "id": "bdadca61-f91b-49a7-8c38-b5fb335d8ab0",
+      "atTick": 44,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 18.64520800000173
+    },
+    {
+      "identity": "1-devops",
+      "type": "infra.scale",
+      "id": "a5b484c5-a14b-4000-b4ab-0362fd86458d",
+      "atTick": 44,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 28.291417000000365
+    },
+    {
+      "identity": "1-devops",
+      "type": "infra.scale",
+      "id": "a406e8e3-eec5-4195-a0e6-8119131c18ed",
+      "atTick": 46,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 20.774540999998862
+    },
+    {
+      "identity": "1-devops",
+      "type": "infra.scale",
+      "id": "763580a3-9a67-4645-8a8f-52dc7a8bbe34",
+      "atTick": 46,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 21.465666000003694
+    },
+    {
+      "identity": "1-devops",
+      "type": "infra.scale",
+      "id": "5c8c2459-9bdb-49b8-82ba-c6ac7427248a",
+      "atTick": 46,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 24.372000000003027
+    },
+    {
+      "identity": "1-devops",
+      "type": "infra.scale",
+      "id": "8d81b3f8-6317-4f96-afd4-ecd87a97dae5",
+      "atTick": 46,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 21.1059580000001
+    },
+    {
+      "identity": "1-devops",
+      "type": "infra.balancer",
+      "id": "0257871a-9075-43a9-92a9-04e30a2c9c54",
+      "atTick": 48,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 35.284749999998894
+    },
+    {
+      "identity": "2-cto",
+      "type": "cto.budget",
+      "id": "4658bd13-8f91-4169-ba37-b5b41d08581d",
+      "atTick": 48,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 26.16887499999575
+    },
+    {
+      "identity": "2-cto",
+      "type": "cto.budget",
+      "id": "012cc675-0016-49e9-878f-df2cfe4a4ad8",
+      "atTick": 48,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 22.119958000002953
+    },
+    {
+      "identity": "2-cto",
+      "type": "cto.budget",
+      "id": "5696121e-9ce1-4c44-b55f-4fa6c23ddd13",
+      "atTick": 48,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 26.073499999998603
+    },
+    {
+      "identity": "2-cto",
+      "type": "cto.budget",
+      "id": "d95e3c2e-abb7-46ab-a1a9-57e101466d52",
+      "atTick": 48,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 31.866957999998704
+    },
+    {
+      "identity": "2-cto",
+      "type": "cto.budget",
+      "id": "151c8231-0c3b-4d68-a397-02499e2f5846",
+      "atTick": 50,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 22.041666999997688
+    },
+    {
+      "identity": "2-cto",
+      "type": "cto.budget",
+      "id": "429b07bd-3ed8-4609-b10c-2406bf912558",
+      "atTick": 50,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 23.019874999998137
+    },
+    {
+      "identity": "2-devops",
+      "type": "infra.scale",
+      "id": "2d2c31bc-8891-4d94-b78b-923d2bdcb811",
+      "atTick": 50,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 25.75154200000543
+    },
+    {
+      "identity": "2-devops",
+      "type": "infra.scale",
+      "id": "1745c689-85b8-4c64-be7c-e72ac89f823c",
+      "atTick": 52,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 36.762917000000016
+    },
+    {
+      "identity": "2-devops",
+      "type": "infra.scale",
+      "id": "fbfc7d7b-7f03-4895-895a-120cbeb2324c",
+      "atTick": 52,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 22.537833000002138
+    },
+    {
+      "identity": "2-devops",
+      "type": "infra.scale",
+      "id": "cd1ae17e-6f32-4d52-9832-5b45d8c77b93",
+      "atTick": 52,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 27.35612499999843
+    },
+    {
+      "identity": "2-devops",
+      "type": "infra.scale",
+      "id": "6a991800-0e7a-41aa-b322-a6dc2de92284",
+      "atTick": 52,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 23.875208000004932
+    },
+    {
+      "identity": "2-devops",
+      "type": "infra.scale",
+      "id": "570b35b0-04f6-4933-829a-ad9414b95eae",
+      "atTick": 52,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 28.724833000000217
+    },
+    {
+      "identity": "2-devops",
+      "type": "infra.scale",
+      "id": "2fe847f4-ef67-4dfa-b484-1f9c24a5df61",
+      "atTick": 54,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 24.18620799999917
+    },
+    {
+      "identity": "2-devops",
+      "type": "infra.balancer",
+      "id": "4cfba159-5515-4846-819f-e7a0f5cd129f",
+      "atTick": 54,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 21.664000000004307
+    },
+    {
+      "identity": "3-cto",
+      "type": "cto.budget",
+      "id": "5d9bff10-64a5-4b13-8b53-17090b8b710d",
+      "atTick": 54,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 21.39970799999719
+    },
+    {
+      "identity": "3-cto",
+      "type": "cto.budget",
+      "id": "7799e8a2-57eb-4fb5-adaa-469b8c65547f",
+      "atTick": 54,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 24.099667000002228
+    },
+    {
+      "identity": "3-cto",
+      "type": "cto.budget",
+      "id": "f067a9fd-96e6-44cd-95ff-b0ffac811708",
+      "atTick": 56,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 35.3793749999968
+    },
+    {
+      "identity": "3-cto",
+      "type": "cto.budget",
+      "id": "0efbbfb5-e4bb-4ec9-be4b-18150ed957f7",
+      "atTick": 56,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 21.73399999999674
+    },
+    {
+      "identity": "3-cto",
+      "type": "cto.budget",
+      "id": "1529dceb-fc0f-4d7b-b811-50e1d8dec690",
+      "atTick": 56,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 25.263249999996333
+    },
+    {
+      "identity": "3-cto",
+      "type": "cto.budget",
+      "id": "f1effe47-c66a-4af9-a863-040a5c20eea5",
+      "atTick": 56,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 22.47912499999802
+    },
+    {
+      "identity": "3-devops",
+      "type": "infra.scale",
+      "id": "b5dcbf5f-0d4c-48dd-a1d6-3b1cb4307f45",
+      "atTick": 56,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 26.0367499999993
+    },
+    {
+      "identity": "3-devops",
+      "type": "infra.scale",
+      "id": "f60eefac-ba43-4d67-8256-6c0e91c05749",
+      "atTick": 58,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 24.79554199999984
+    },
+    {
+      "identity": "3-devops",
+      "type": "infra.scale",
+      "id": "9ef6a3f1-3275-4008-bd49-82168d104328",
+      "atTick": 58,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 21.743666000002122
+    },
+    {
+      "identity": "3-devops",
+      "type": "infra.scale",
+      "id": "44d1eded-a2ef-40a9-a9ea-fe10f3ca1265",
+      "atTick": 58,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 21.8682919999992
+    },
+    {
+      "identity": "3-devops",
+      "type": "infra.scale",
+      "id": "8662fc63-5119-49de-b9e0-8a3a988716ac",
+      "atTick": 58,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 24.862458999996306
+    },
+    {
+      "identity": "3-devops",
+      "type": "infra.scale",
+      "id": "9c34f723-6651-4e17-b406-3e68169dce6a",
+      "atTick": 60,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 57.46458300000086
+    },
+    {
+      "identity": "3-devops",
+      "type": "infra.scale",
+      "id": "4133a279-661b-4c8d-b1b5-a2d50984deaa",
+      "atTick": 60,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 21.90225000000646
+    },
+    {
+      "identity": "3-devops",
+      "type": "infra.balancer",
+      "id": "da6616ba-7fcf-4e5a-80d9-2d0121dd3d56",
+      "atTick": 60,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 21.624582999997074
+    },
+    {
+      "identity": "4-cto",
+      "type": "cto.budget",
+      "id": "e5f545f2-f96e-4574-bd75-6d7fe23d5e8e",
+      "atTick": 60,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 29.251666999996814
+    },
+    {
+      "identity": "4-cto",
+      "type": "cto.budget",
+      "id": "74a58150-6b18-4244-83af-861b69f343a8",
+      "atTick": 62,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 22.656332999998995
+    },
+    {
+      "identity": "4-cto",
+      "type": "cto.budget",
+      "id": "6d583399-f904-4df3-bee9-695349c65382",
+      "atTick": 62,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 21.61633299999812
+    },
+    {
+      "identity": "4-cto",
+      "type": "cto.budget",
+      "id": "f5f4994e-d0e6-4fb8-b2a4-141906406537",
+      "atTick": 62,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 24.517166999998153
+    },
+    {
+      "identity": "4-cto",
+      "type": "cto.budget",
+      "id": "cf0da340-ab77-480e-8b33-458e2b9a4442",
+      "atTick": 62,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 23.897166999995534
+    },
+    {
+      "identity": "4-cto",
+      "type": "cto.budget",
+      "id": "39f44f01-6bc5-4b2c-8ec8-1b43dae1355a",
+      "atTick": 64,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 40.56820800000423
+    },
+    {
+      "identity": "4-devops",
+      "type": "infra.scale",
+      "id": "9c4689d9-153b-4185-b4e7-0ff6c608c7fe",
+      "atTick": 64,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 23.61004200000025
+    },
+    {
+      "identity": "4-devops",
+      "type": "infra.scale",
+      "id": "dbc54783-adaf-424b-acdf-9354426db4f0",
+      "atTick": 64,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 22.413500000002387
+    },
+    {
+      "identity": "4-devops",
+      "type": "infra.scale",
+      "id": "54e383d7-08bc-4f4d-a86b-f20250cb1f2d",
+      "atTick": 64,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 25.03337499999907
+    },
+    {
+      "identity": "4-devops",
+      "type": "infra.scale",
+      "id": "2d0a7105-44c9-4e37-aba1-7e516b1e8f2a",
+      "atTick": 64,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 27.30170800000633
+    },
+    {
+      "identity": "4-devops",
+      "type": "infra.scale",
+      "id": "e2e4a6ba-a314-4542-846c-7e075f86aa91",
+      "atTick": 66,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 25.382207999995444
+    },
+    {
+      "identity": "4-devops",
+      "type": "infra.scale",
+      "id": "ce28688d-276e-4048-b9a8-7844e5bdbe83",
+      "atTick": 66,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 22.70783300000039
+    },
+    {
+      "identity": "4-devops",
+      "type": "infra.scale",
+      "id": "8a3129bf-198f-4a63-8a17-5c5bd099d183",
+      "atTick": 66,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 22.047124999997322
+    },
+    {
+      "identity": "4-devops",
+      "type": "infra.balancer",
+      "id": "b39a5bbb-88e7-4d97-a809-321396a19004",
+      "atTick": 66,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 24.7143750000032
+    },
+    {
+      "identity": "4-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-0-4-devops",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 37.59375
+    },
+    {
+      "identity": "0-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-0-0-backend",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 55.73695900000166
+    },
+    {
+      "identity": "0-security",
+      "type": "chat.send",
+      "id": "classroom-chat-0-0-security",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 69.6308330000029
+    },
+    {
+      "identity": "0-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-0-0-qa",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 83.31999999999971
+    },
+    {
+      "identity": "0-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-0-0-cto",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 100.66629100000137
+    },
+    {
+      "identity": "0-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-0-0-devops",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 114.55500000000029
+    },
+    {
+      "identity": "1-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-0-1-backend",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 128.36337500000081
+    },
+    {
+      "identity": "1-security",
+      "type": "chat.send",
+      "id": "classroom-chat-0-1-security",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 144.78691699999763
+    },
+    {
+      "identity": "1-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-0-1-qa",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 158.59274999999616
+    },
+    {
+      "identity": "1-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-0-1-cto",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 172.99783300000126
+    },
+    {
+      "identity": "1-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-0-1-devops",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 189.481832999998
+    },
+    {
+      "identity": "2-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-0-2-backend",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 203.21541699999943
+    },
+    {
+      "identity": "2-security",
+      "type": "chat.send",
+      "id": "classroom-chat-0-2-security",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 216.79441600000428
+    },
+    {
+      "identity": "2-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-0-2-qa",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 233.6427909999984
+    },
+    {
+      "identity": "2-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-0-2-cto",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 247.36012499999924
+    },
+    {
+      "identity": "2-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-0-2-devops",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 260.94608300000255
+    },
+    {
+      "identity": "3-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-0-3-backend",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 277.64058300000033
+    },
+    {
+      "identity": "3-security",
+      "type": "chat.send",
+      "id": "classroom-chat-0-3-security",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 291.40575000000536
+    },
+    {
+      "identity": "3-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-0-3-qa",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 305.28533400000015
+    },
+    {
+      "identity": "3-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-0-3-cto",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 321.90000000000146
+    },
+    {
+      "identity": "3-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-0-3-devops",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 335.60054200000013
+    },
+    {
+      "identity": "4-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-0-4-backend",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 349.2097500000018
+    },
+    {
+      "identity": "4-security",
+      "type": "chat.send",
+      "id": "classroom-chat-0-4-security",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 365.7559170000022
+    },
+    {
+      "identity": "4-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-0-4-qa",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 380.08941599999525
+    },
+    {
+      "identity": "4-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-0-4-cto",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 393.6965829999972
+    },
+    {
+      "identity": "4-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-0-4-devops",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 369.55025000000023
+    },
+    {
+      "identity": "0-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-0-0-backend",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 351.96225000000413
+    },
+    {
+      "identity": "0-security",
+      "type": "chat.send",
+      "id": "classroom-chat-0-0-security",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 338.00666600000113
+    },
+    {
+      "identity": "0-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-0-0-qa",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 324.3077080000003
+    },
+    {
+      "identity": "0-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-0-0-cto",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 306.95645800000057
+    },
+    {
+      "identity": "0-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-0-0-devops",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 293.06291699999565
+    },
+    {
+      "identity": "1-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-0-1-backend",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 279.24866699999984
+    },
+    {
+      "identity": "1-security",
+      "type": "chat.send",
+      "id": "classroom-chat-0-1-security",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 262.8219579999932
+    },
+    {
+      "identity": "1-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-0-1-qa",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 249.01208400000178
+    },
+    {
+      "identity": "1-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-0-1-cto",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 234.6013329999987
+    },
+    {
+      "identity": "1-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-0-1-devops",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 218.1105000000025
+    },
+    {
+      "identity": "2-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-0-2-backend",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 204.37145800000144
+    },
+    {
+      "identity": "2-security",
+      "type": "chat.send",
+      "id": "classroom-chat-0-2-security",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 190.78966600000422
+    },
+    {
+      "identity": "2-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-0-2-qa",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 173.93566600000486
+    },
+    {
+      "identity": "2-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-0-2-cto",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 160.21733400000085
+    },
+    {
+      "identity": "2-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-0-2-devops",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 146.61762499999895
+    },
+    {
+      "identity": "3-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-0-3-backend",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 129.91366600000038
+    },
+    {
+      "identity": "3-security",
+      "type": "chat.send",
+      "id": "classroom-chat-0-3-security",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 116.14425000000483
+    },
+    {
+      "identity": "3-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-0-3-qa",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 102.26204199999484
+    },
+    {
+      "identity": "3-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-0-3-cto",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 85.64304199999606
+    },
+    {
+      "identity": "3-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-0-3-devops",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 71.93645899999683
+    },
+    {
+      "identity": "4-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-0-4-backend",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 58.32504200000403
+    },
+    {
+      "identity": "4-security",
+      "type": "chat.send",
+      "id": "classroom-chat-0-4-security",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 41.76933399999689
+    },
+    {
+      "identity": "4-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-0-4-qa",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 27.430625000000873
+    },
+    {
+      "identity": "4-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-0-4-cto",
+      "atTick": 68,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 13.820834000005561
+    },
+    {
+      "identity": "0-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-1-0-backend",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 17.447666000000027
+    },
+    {
+      "identity": "0-security",
+      "type": "chat.send",
+      "id": "classroom-chat-1-0-security",
+      "atTick": 68,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 31.33808300000237
+    },
+    {
+      "identity": "0-security",
+      "type": "chat.send",
+      "id": "classroom-chat-1-0-security",
+      "atTick": 70,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 9.375749999999243
+    },
+    {
+      "identity": "0-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-1-0-backend",
+      "atTick": 70,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 27.87512499999866
+    },
+    {
+      "identity": "0-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-1-0-qa",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 54.40754200000083
+    },
+    {
+      "identity": "0-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-1-0-cto",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 71.24387500000012
+    },
+    {
+      "identity": "0-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-1-0-devops",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 85.00504200000432
+    },
+    {
+      "identity": "1-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-1-1-backend",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 98.65916699999798
+    },
+    {
+      "identity": "1-security",
+      "type": "chat.send",
+      "id": "classroom-chat-1-1-security",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 115.71670799999993
+    },
+    {
+      "identity": "1-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-1-1-qa",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 130.23737499999697
+    },
+    {
+      "identity": "1-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-1-1-cto",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 143.75595800000156
+    },
+    {
+      "identity": "1-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-1-1-devops",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 160.79291699999885
+    },
+    {
+      "identity": "2-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-1-2-backend",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 174.59395799999766
+    },
+    {
+      "identity": "2-security",
+      "type": "chat.send",
+      "id": "classroom-chat-1-2-security",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 188.13358300000255
+    },
+    {
+      "identity": "2-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-1-2-qa",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 204.91204099999595
+    },
+    {
+      "identity": "2-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-1-2-cto",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 218.7164580000026
+    },
+    {
+      "identity": "2-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-1-2-devops",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 235.47149999999965
+    },
+    {
+      "identity": "3-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-1-3-backend",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 249.25704199999745
+    },
+    {
+      "identity": "3-security",
+      "type": "chat.send",
+      "id": "classroom-chat-1-3-security",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 262.90141700000095
+    },
+    {
+      "identity": "3-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-1-3-qa",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 279.5536659999998
+    },
+    {
+      "identity": "3-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-1-3-cto",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 293.2450000000026
+    },
+    {
+      "identity": "3-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-1-3-devops",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 309.9904170000009
+    },
+    {
+      "identity": "4-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-1-4-backend",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 323.9712500000023
+    },
+    {
+      "identity": "4-security",
+      "type": "chat.send",
+      "id": "classroom-chat-1-4-security",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 341.5756249999977
+    },
+    {
+      "identity": "4-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-1-4-qa",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 355.4626669999998
+    },
+    {
+      "identity": "4-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-1-4-cto",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 372.3624159999963
+    },
+    {
+      "identity": "4-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-1-4-devops",
+      "atTick": 70,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 386.0561249999955
+    },
+    {
+      "identity": "0-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-1-0-qa",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 355.5796659999978
+    },
+    {
+      "identity": "0-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-1-0-cto",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 338.92670799999905
+    },
+    {
+      "identity": "0-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-1-0-devops",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 325.34012500000244
+    },
+    {
+      "identity": "1-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-1-1-backend",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 311.8608329999988
+    },
+    {
+      "identity": "1-security",
+      "type": "chat.send",
+      "id": "classroom-chat-1-1-security",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 294.9746249999953
+    },
+    {
+      "identity": "1-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-1-1-qa",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 280.62687499999447
+    },
+    {
+      "identity": "1-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-1-1-cto",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 267.28775000000314
+    },
+    {
+      "identity": "1-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-1-1-devops",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 250.42295800000284
+    },
+    {
+      "identity": "2-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-1-2-backend",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 236.80545799999527
+    },
+    {
+      "identity": "2-security",
+      "type": "chat.send",
+      "id": "classroom-chat-1-2-security",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 223.44591700000456
+    },
+    {
+      "identity": "2-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-1-2-qa",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 206.83724999999686
+    },
+    {
+      "identity": "2-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-1-2-cto",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 193.2114170000059
+    },
+    {
+      "identity": "2-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-1-2-devops",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 176.6284999999989
+    },
+    {
+      "identity": "3-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-1-3-backend",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 163.02249999999913
+    },
+    {
+      "identity": "3-security",
+      "type": "chat.send",
+      "id": "classroom-chat-1-3-security",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 149.5594590000037
+    },
+    {
+      "identity": "3-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-1-3-qa",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 133.07737500000076
+    },
+    {
+      "identity": "3-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-1-3-cto",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 119.63366600000154
+    },
+    {
+      "identity": "3-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-1-3-devops",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 103.07637499999691
+    },
+    {
+      "identity": "4-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-1-4-backend",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 89.27920900000026
+    },
+    {
+      "identity": "4-security",
+      "type": "chat.send",
+      "id": "classroom-chat-1-4-security",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 71.84979100000055
+    },
+    {
+      "identity": "4-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-1-4-qa",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 58.1318750000064
+    },
+    {
+      "identity": "4-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-1-4-cto",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 41.38870799999859
+    },
+    {
+      "identity": "4-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-1-4-devops",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 27.863250000002154
+    },
+    {
+      "identity": "0-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-2-0-backend",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 18.568041999998968
+    },
+    {
+      "identity": "0-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-2-0-backend",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 13.891208000000915
+    },
+    {
+      "identity": "0-security",
+      "type": "chat.send",
+      "id": "classroom-chat-2-0-security",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 42.01283300000068
+    },
+    {
+      "identity": "0-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-2-0-qa",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 59.16150000000198
+    },
+    {
+      "identity": "0-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-2-0-cto",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 73.9187080000047
+    },
+    {
+      "identity": "0-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-2-0-devops",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 90.7314170000027
+    },
+    {
+      "identity": "1-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-2-1-backend",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 104.85095900000306
+    },
+    {
+      "identity": "1-security",
+      "type": "chat.send",
+      "id": "classroom-chat-2-1-security",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 122.23779099999956
+    },
+    {
+      "identity": "1-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-2-1-qa",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 136.01766700000007
+    },
+    {
+      "identity": "1-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-2-1-cto",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 153.1470829999962
+    },
+    {
+      "identity": "1-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-2-1-devops",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 167.0642499999958
+    },
+    {
+      "identity": "2-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-2-2-backend",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 184.29183300000295
+    },
+    {
+      "identity": "2-security",
+      "type": "chat.send",
+      "id": "classroom-chat-2-2-security",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 198.38658399999986
+    },
+    {
+      "identity": "2-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-2-2-qa",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 215.51462500000343
+    },
+    {
+      "identity": "2-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-2-2-cto",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 229.8860829999976
+    },
+    {
+      "identity": "2-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-2-2-devops",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 246.31145800000377
+    },
+    {
+      "identity": "3-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-2-3-backend",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 260.0630000000019
+    },
+    {
+      "identity": "3-security",
+      "type": "chat.send",
+      "id": "classroom-chat-2-3-security",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 277.7821250000052
+    },
+    {
+      "identity": "3-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-2-3-qa",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 293.1656659999935
+    },
+    {
+      "identity": "3-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-2-3-cto",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 310.6678329999995
+    },
+    {
+      "identity": "3-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-2-3-devops",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 324.6114580000067
+    },
+    {
+      "identity": "4-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-2-4-backend",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 341.37533400000393
+    },
+    {
+      "identity": "4-security",
+      "type": "chat.send",
+      "id": "classroom-chat-2-4-security",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 355.24295800000255
+    },
+    {
+      "identity": "4-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-2-4-qa",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 372.42970900000364
+    },
+    {
+      "identity": "4-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-2-4-cto",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 386.1008750000037
+    },
+    {
+      "identity": "4-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-2-4-devops",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 403.1021669999973
+    },
+    {
+      "identity": "0-security",
+      "type": "chat.send",
+      "id": "classroom-chat-2-0-security",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 375.81104100000084
+    },
+    {
+      "identity": "0-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-2-0-qa",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 358.66570800000045
+    },
+    {
+      "identity": "0-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-2-0-cto",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 343.90812500000175
+    },
+    {
+      "identity": "0-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-2-0-devops",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 327.0951669999995
+    },
+    {
+      "identity": "1-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-2-1-backend",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 312.97358299999905
+    },
+    {
+      "identity": "1-security",
+      "type": "chat.send",
+      "id": "classroom-chat-2-1-security",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 295.5857909999977
+    },
+    {
+      "identity": "1-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-2-1-qa",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 281.8055000000022
+    },
+    {
+      "identity": "1-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-2-1-cto",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 264.6753749999989
+    },
+    {
+      "identity": "1-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-2-1-devops",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 250.7570410000044
+    },
+    {
+      "identity": "2-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-2-2-backend",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 233.52741599999717
+    },
+    {
+      "identity": "2-security",
+      "type": "chat.send",
+      "id": "classroom-chat-2-2-security",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 219.43308299999626
+    },
+    {
+      "identity": "2-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-2-2-qa",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 202.30512499999895
+    },
+    {
+      "identity": "2-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-2-2-cto",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 187.93312499999593
+    },
+    {
+      "identity": "2-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-2-2-devops",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 171.50358399999823
+    },
+    {
+      "identity": "3-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-2-3-backend",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 157.75058399999398
+    },
+    {
+      "identity": "3-security",
+      "type": "chat.send",
+      "id": "classroom-chat-2-3-security",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 140.03199999999924
+    },
+    {
+      "identity": "3-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-2-3-qa",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 124.64737500000047
+    },
+    {
+      "identity": "3-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-2-3-cto",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 107.14454199999454
+    },
+    {
+      "identity": "3-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-2-3-devops",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 93.19941600000311
+    },
+    {
+      "identity": "4-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-2-4-backend",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 76.43491599999834
+    },
+    {
+      "identity": "4-security",
+      "type": "chat.send",
+      "id": "classroom-chat-2-4-security",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 62.56391699999949
+    },
+    {
+      "identity": "4-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-2-4-qa",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 45.52045899999939
+    },
+    {
+      "identity": "4-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-2-4-cto",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 31.851500000004307
+    },
+    {
+      "identity": "4-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-2-4-devops",
+      "atTick": 72,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 14.850250000003143
+    },
+    {
+      "identity": "0-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-3-0-backend",
+      "atTick": 72,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 17.321209000001545
+    },
+    {
+      "identity": "0-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-3-0-backend",
+      "atTick": 74,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 10.21891599999799
+    },
+    {
+      "identity": "0-security",
+      "type": "chat.send",
+      "id": "classroom-chat-3-0-security",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 45.47941699999501
+    },
+    {
+      "identity": "0-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-3-0-qa",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 59.86441700000432
+    },
+    {
+      "identity": "0-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-3-0-cto",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 76.9489590000012
+    },
+    {
+      "identity": "0-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-3-0-devops",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 91.20599999999831
+    },
+    {
+      "identity": "1-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-3-1-backend",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 108.67062499999884
+    },
+    {
+      "identity": "1-security",
+      "type": "chat.send",
+      "id": "classroom-chat-3-1-security",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 122.77504200000112
+    },
+    {
+      "identity": "1-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-3-1-qa",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 139.45324999999866
+    },
+    {
+      "identity": "1-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-3-1-cto",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 153.44416600000113
+    },
+    {
+      "identity": "1-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-3-1-devops",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 170.9149580000012
+    },
+    {
+      "identity": "2-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-3-2-backend",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 186.27716599999985
+    },
+    {
+      "identity": "2-security",
+      "type": "chat.send",
+      "id": "classroom-chat-3-2-security",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 203.48266700000386
+    },
+    {
+      "identity": "2-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-3-2-qa",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 217.46579199999542
+    },
+    {
+      "identity": "2-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-3-2-cto",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 234.71166600000288
+    },
+    {
+      "identity": "2-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-3-2-devops",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 249.56095800000185
+    },
+    {
+      "identity": "3-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-3-3-backend",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 266.7902909999975
+    },
+    {
+      "identity": "3-security",
+      "type": "chat.send",
+      "id": "classroom-chat-3-3-security",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 280.9933749999982
+    },
+    {
+      "identity": "3-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-3-3-qa",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 297.9246670000066
+    },
+    {
+      "identity": "3-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-3-3-cto",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 311.91525000000547
+    },
+    {
+      "identity": "3-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-3-3-devops",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 328.97725000000355
+    },
+    {
+      "identity": "4-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-3-4-backend",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 342.8295419999995
+    },
+    {
+      "identity": "4-security",
+      "type": "chat.send",
+      "id": "classroom-chat-3-4-security",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 360.13408399999753
+    },
+    {
+      "identity": "4-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-3-4-qa",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 374.02483299999585
+    },
+    {
+      "identity": "4-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-3-4-cto",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 391.48283300000185
+    },
+    {
+      "identity": "4-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-3-4-devops",
+      "atTick": 74,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 405.4960829999982
+    },
+    {
+      "identity": "0-security",
+      "type": "chat.send",
+      "id": "classroom-chat-3-0-security",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 385.1719159999993
+    },
+    {
+      "identity": "0-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-3-0-qa",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 370.96908400000393
+    },
+    {
+      "identity": "0-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-3-0-cto",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 354.083375000002
+    },
+    {
+      "identity": "0-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-3-0-devops",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 340.01558300000033
+    },
+    {
+      "identity": "1-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-3-1-backend",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 322.752833999999
+    },
+    {
+      "identity": "1-security",
+      "type": "chat.send",
+      "id": "classroom-chat-3-1-security",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 308.8419169999979
+    },
+    {
+      "identity": "1-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-3-1-qa",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 292.35225000000355
+    },
+    {
+      "identity": "1-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-3-1-cto",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 278.5534590000025
+    },
+    {
+      "identity": "1-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-3-1-devops",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 261.28600000000006
+    },
+    {
+      "identity": "2-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-3-2-backend",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 246.125291999997
+    },
+    {
+      "identity": "2-security",
+      "type": "chat.send",
+      "id": "classroom-chat-3-2-security",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 229.12441599999875
+    },
+    {
+      "identity": "2-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-3-2-qa",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 215.33424999999988
+    },
+    {
+      "identity": "2-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-3-2-cto",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 198.278624999999
+    },
+    {
+      "identity": "2-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-3-2-devops",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 183.61895900000673
+    },
+    {
+      "identity": "3-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-3-3-backend",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 166.60141600000497
+    },
+    {
+      "identity": "3-security",
+      "type": "chat.send",
+      "id": "classroom-chat-3-3-security",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 152.59912499999336
+    },
+    {
+      "identity": "3-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-3-3-qa",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 135.86379199999647
+    },
+    {
+      "identity": "3-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-3-3-cto",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 122.06270799999766
+    },
+    {
+      "identity": "3-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-3-3-devops",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 105.19441599999845
+    },
+    {
+      "identity": "4-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-3-4-backend",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 91.54154099999869
+    },
+    {
+      "identity": "4-security",
+      "type": "chat.send",
+      "id": "classroom-chat-3-4-security",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 74.43137500000012
+    },
+    {
+      "identity": "4-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-3-4-qa",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 60.725540999999794
+    },
+    {
+      "identity": "4-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-3-4-cto",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 43.45650000000023
+    },
+    {
+      "identity": "4-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-3-4-devops",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 29.629416000003403
+    },
+    {
+      "identity": "0-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-4-0-backend",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 21.10783399999491
+    },
+    {
+      "identity": "0-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-4-0-backend",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 15.064166999996814
+    },
+    {
+      "identity": "0-security",
+      "type": "chat.send",
+      "id": "classroom-chat-4-0-security",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 45.927457999998296
+    },
+    {
+      "identity": "0-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-4-0-qa",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 63.72304200000508
+    },
+    {
+      "identity": "0-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-4-0-cto",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 78.26695800000016
+    },
+    {
+      "identity": "0-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-4-0-devops",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 95.89199999999983
+    },
+    {
+      "identity": "1-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-4-1-backend",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 110.15804100000241
+    },
+    {
+      "identity": "1-security",
+      "type": "chat.send",
+      "id": "classroom-chat-4-1-security",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 127.6293749999968
+    },
+    {
+      "identity": "1-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-4-1-qa",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 141.98662499999773
+    },
+    {
+      "identity": "1-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-4-1-cto",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 159.81262499999866
+    },
+    {
+      "identity": "1-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-4-1-devops",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 174.07266700000037
+    },
+    {
+      "identity": "2-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-4-2-backend",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 191.44866699999693
+    },
+    {
+      "identity": "2-security",
+      "type": "chat.send",
+      "id": "classroom-chat-4-2-security",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 206.76729199999681
+    },
+    {
+      "identity": "2-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-4-2-qa",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 224.2075410000034
+    },
+    {
+      "identity": "2-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-4-2-cto",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 238.45249999999942
+    },
+    {
+      "identity": "2-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-4-2-devops",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 255.79925000000367
+    },
+    {
+      "identity": "3-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-4-3-backend",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 269.9516670000012
+    },
+    {
+      "identity": "3-security",
+      "type": "chat.send",
+      "id": "classroom-chat-4-3-security",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 287.4129580000008
+    },
+    {
+      "identity": "3-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-4-3-qa",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 301.5005000000019
+    },
+    {
+      "identity": "3-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-4-3-cto",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 318.4862080000021
+    },
+    {
+      "identity": "3-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-4-3-devops",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 332.51533299999574
+    },
+    {
+      "identity": "4-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-4-4-backend",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 349.7741249999963
+    },
+    {
+      "identity": "4-security",
+      "type": "chat.send",
+      "id": "classroom-chat-4-4-security",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 364.1774580000056
+    },
+    {
+      "identity": "4-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-4-4-qa",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 381.3215409999975
+    },
+    {
+      "identity": "4-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-4-4-cto",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 395.64279199999874
+    },
+    {
+      "identity": "4-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-4-4-devops",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 412.55058299999655
+    },
+    {
+      "identity": "0-security",
+      "type": "chat.send",
+      "id": "classroom-chat-4-0-security",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 382.58458399999654
+    },
+    {
+      "identity": "0-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-4-0-qa",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 364.78741699999955
+    },
+    {
+      "identity": "0-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-4-0-cto",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 350.24020899999596
+    },
+    {
+      "identity": "0-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-4-0-devops",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 332.61125000000175
+    },
+    {
+      "identity": "1-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-4-1-backend",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 318.3423750000002
+    },
+    {
+      "identity": "1-security",
+      "type": "chat.send",
+      "id": "classroom-chat-4-1-security",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 300.8670420000053
+    },
+    {
+      "identity": "1-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-4-1-qa",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 286.5072500000024
+    },
+    {
+      "identity": "1-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-4-1-cto",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 268.679833999995
+    },
+    {
+      "identity": "1-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-4-1-devops",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 254.41904200000135
+    },
+    {
+      "identity": "2-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-4-2-backend",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 237.03841599999578
+    },
+    {
+      "identity": "2-security",
+      "type": "chat.send",
+      "id": "classroom-chat-4-2-security",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 221.71754099999816
+    },
+    {
+      "identity": "2-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-4-2-qa",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 204.27474999999686
+    },
+    {
+      "identity": "2-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-4-2-cto",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 190.0292499999996
+    },
+    {
+      "identity": "2-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-4-2-devops",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 172.68045800000255
+    },
+    {
+      "identity": "3-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-4-3-backend",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 158.51987499999814
+    },
+    {
+      "identity": "3-security",
+      "type": "chat.send",
+      "id": "classroom-chat-4-3-security",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 141.05558400000155
+    },
+    {
+      "identity": "3-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-4-3-qa",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 126.97837500000605
+    },
+    {
+      "identity": "3-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-4-3-cto",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 109.99070800000482
+    },
+    {
+      "identity": "3-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-4-3-devops",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 95.9598330000008
+    },
+    {
+      "identity": "4-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-4-4-backend",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 78.69749999999476
+    },
+    {
+      "identity": "4-security",
+      "type": "chat.send",
+      "id": "classroom-chat-4-4-security",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 64.29262500000186
+    },
+    {
+      "identity": "4-qa",
+      "type": "chat.send",
+      "id": "classroom-chat-4-4-qa",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 47.14666600000055
+    },
+    {
+      "identity": "4-cto",
+      "type": "chat.send",
+      "id": "classroom-chat-4-4-cto",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 32.82316600000195
+    },
+    {
+      "identity": "4-devops",
+      "type": "chat.send",
+      "id": "classroom-chat-4-4-devops",
+      "atTick": 76,
+      "purpose": "retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 15.912625000004482
+    },
+    {
+      "identity": "0-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-0-0-backend",
+      "atTick": 78,
+      "purpose": "reconnect-retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 0.8318749999962165
+    },
+    {
+      "identity": "0-devops",
+      "type": "infra.maintenance",
+      "id": "e82ec9e6-1080-4789-b0be-1369f9e033ac",
+      "atTick": 76,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 15.818500000001222
+    },
+    {
+      "identity": "0-devops",
+      "type": "infra.maintenance",
+      "id": "d623fff7-fa60-45bf-aa2b-0e932c5e5ac6",
+      "atTick": 78,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 28.507541999999376
+    },
+    {
+      "identity": "0-devops",
+      "type": "infra.stop",
+      "id": "c070d7f4-6513-4ae2-8c1e-e5c0f8533e72",
+      "atTick": 78,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 25.26695800000016
+    },
+    {
+      "identity": "0-devops",
+      "type": "infra.recover",
+      "id": "016fdb9d-6660-442e-9ead-c456a0fd868e",
+      "atTick": 78,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 28.81079100000352
+    },
+    {
+      "identity": "0-devops",
+      "type": "infra.restart",
+      "id": "df49d624-8fd7-4c11-9ac7-ce650605a24a",
+      "atTick": 80,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 52.53104099999473
+    },
+    {
+      "identity": "1-devops",
+      "type": "infra.maintenance",
+      "id": "cd3cefc7-3a4a-4cb8-a88e-54391e851a62",
+      "atTick": 80,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 26.52391699999862
+    },
+    {
+      "identity": "1-devops",
+      "type": "infra.maintenance",
+      "id": "b5e1c9d7-2f18-4b9e-900c-b8c77b38cfd1",
+      "atTick": 80,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 29.444750000002387
+    },
+    {
+      "identity": "1-devops",
+      "type": "infra.stop",
+      "id": "13ca36b1-a6e8-4c65-aaa5-c176174284d7",
+      "atTick": 80,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 32.532415999994555
+    },
+    {
+      "identity": "1-devops",
+      "type": "infra.recover",
+      "id": "daf3ec16-688c-492c-8393-221e08a07f61",
+      "atTick": 82,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 30.425250000000233
+    },
+    {
+      "identity": "1-devops",
+      "type": "infra.restart",
+      "id": "ffa9d3d0-4248-4f34-bd7a-1a8c57cad3ca",
+      "atTick": 82,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 26.566790999997465
+    },
+    {
+      "identity": "2-devops",
+      "type": "infra.maintenance",
+      "id": "e327e987-4e77-4004-90e8-d12b22425863",
+      "atTick": 82,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 29.807499999995343
+    },
+    {
+      "identity": "2-devops",
+      "type": "infra.maintenance",
+      "id": "bc82ba35-7223-4f00-b907-48b217dab56a",
+      "atTick": 84,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 48.535125000002154
+    },
+    {
+      "identity": "2-devops",
+      "type": "infra.stop",
+      "id": "2136e2f8-29ae-4238-9c63-294aeb5d38af",
+      "atTick": 84,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 31.374292000000423
+    },
+    {
+      "identity": "2-devops",
+      "type": "infra.recover",
+      "id": "2a1497a4-58ea-48e0-aff0-957124aa1836",
+      "atTick": 84,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 27.972916999999143
+    },
+    {
+      "identity": "2-devops",
+      "type": "infra.restart",
+      "id": "46f66edc-6207-4558-8c58-63a254ba8cfe",
+      "atTick": 84,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 37.47579200000473
+    },
+    {
+      "identity": "3-devops",
+      "type": "infra.maintenance",
+      "id": "eab19b54-afb4-40e4-9857-48a3f78d8c23",
+      "atTick": 86,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 26.433083000003535
+    },
+    {
+      "identity": "3-devops",
+      "type": "infra.maintenance",
+      "id": "78de1b8e-4f62-4cc4-bf2f-63107cd51074",
+      "atTick": 86,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 30.169541999996
+    },
+    {
+      "identity": "3-devops",
+      "type": "infra.stop",
+      "id": "6be74bd4-8c77-432f-8c72-7a95eeb61de0",
+      "atTick": 86,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 26.382499999992433
+    },
+    {
+      "identity": "3-devops",
+      "type": "infra.recover",
+      "id": "574253e3-86e5-4773-bdc4-dda9729c3863",
+      "atTick": 88,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 49.20662500000617
+    },
+    {
+      "identity": "3-devops",
+      "type": "infra.restart",
+      "id": "6f878afc-46c5-43b3-9d95-4ce1a7635891",
+      "atTick": 88,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 28.672000000005937
+    },
+    {
+      "identity": "4-devops",
+      "type": "infra.maintenance",
+      "id": "28519445-5e36-4239-a18f-f728c10f9848",
+      "atTick": 88,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 30.97987499998999
+    },
+    {
+      "identity": "4-devops",
+      "type": "infra.maintenance",
+      "id": "3bf96525-bbba-4deb-a245-990134db9e3c",
+      "atTick": 88,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 33.4864579999994
+    },
+    {
+      "identity": "4-devops",
+      "type": "infra.stop",
+      "id": "a064d1e4-0f38-44b5-b722-04d7f43402d4",
+      "atTick": 90,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 32.315125000008265
+    },
+    {
+      "identity": "4-devops",
+      "type": "infra.recover",
+      "id": "f5d98462-3cb7-40b2-bb81-54d7ec048ccc",
+      "atTick": 90,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 28.652709000001778
+    },
+    {
+      "identity": "4-devops",
+      "type": "infra.restart",
+      "id": "3712853b-5540-4fb7-ba5d-8a887b879f99",
+      "atTick": 90,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 30.544041000001016
+    },
+    {
+      "identity": "0-backend",
+      "type": "module.create",
+      "id": "8b1a6c72-fa64-4c9b-8621-9d8a55a722bf",
+      "atTick": 96,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 31.1011659999931
+    },
+    {
+      "identity": "0-qa",
+      "type": "qa.run",
+      "id": "014ad95a-c711-4411-84a1-a8e4e77d49d1",
+      "atTick": 100,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 20.47220799999195
+    },
+    {
+      "identity": "0-backend",
+      "type": "module.create",
+      "id": "8b1a6c72-fa64-4c9b-8621-9d8a55a722bf",
+      "atTick": 100,
+      "purpose": "post-crash-retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 0.4299580000079004
+    },
+    {
+      "identity": "0-backend",
+      "type": "chat.send",
+      "id": "classroom-chat-0-0-backend",
+      "atTick": 100,
+      "purpose": "post-crash-retry",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 0.13524999999208376
+    },
+    {
+      "identity": "operator",
+      "type": "room.start",
+      "id": "e1806551-159a-47a9-a176-242f0ad4d604",
+      "atTick": 100,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 22.12895899999421
+    },
+    {
+      "identity": "0-cto",
+      "type": "cto.prioritize",
+      "id": "fb51c35d-b422-4dbe-8c20-aa6698dfec1b",
+      "atTick": 144,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 30.782833000004757
+    },
+    {
+      "identity": "1-cto",
+      "type": "cto.prioritize",
+      "id": "a824a957-83aa-4430-b1b9-fbdb954fcbaa",
+      "atTick": 184,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 27.62820800000918
+    },
+    {
+      "identity": "2-cto",
+      "type": "cto.prioritize",
+      "id": "4e4d7b80-52d6-4aca-a1e8-056e12002112",
+      "atTick": 224,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 29.257792000003974
+    },
+    {
+      "identity": "3-cto",
+      "type": "cto.prioritize",
+      "id": "3b50aca8-6380-41b8-922a-867eb2df9eb6",
+      "atTick": 264,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 29.718416000003344
+    },
+    {
+      "identity": "4-cto",
+      "type": "cto.prioritize",
+      "id": "6a36492c-ac38-4d9d-b8c6-e65a995e47ed",
+      "atTick": 304,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 30.051958000010927
+    },
+    {
+      "identity": "0-cto",
+      "type": "cto.prioritize",
+      "id": "2bab1655-4ecf-4dba-b718-347c0527fc3a",
+      "atTick": 344,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 44.2840409999917
+    },
+    {
+      "identity": "1-cto",
+      "type": "cto.prioritize",
+      "id": "721f341e-84b5-4acd-8cf7-daab4eb45751",
+      "atTick": 384,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 51.042082999993
+    },
+    {
+      "identity": "2-cto",
+      "type": "cto.prioritize",
+      "id": "dfcf28e0-9d2e-4f95-b449-846bceb0e35f",
+      "atTick": 424,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 72.11754200000723
+    },
+    {
+      "identity": "3-cto",
+      "type": "cto.prioritize",
+      "id": "275152c9-bbc2-4a9a-92e0-ec6db4042dfa",
+      "atTick": 464,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 75.78987500000221
+    },
+    {
+      "identity": "4-cto",
+      "type": "cto.prioritize",
+      "id": "b6ecf355-eb70-43a9-a251-96a6d9bdb9d8",
+      "atTick": 504,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 54.55708300000697
+    },
+    {
+      "identity": "0-cto",
+      "type": "cto.prioritize",
+      "id": "adfc6260-1f4c-4bfb-b5bb-32b66cbf9ca6",
+      "atTick": 544,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 76.91466599999694
+    },
+    {
+      "identity": "1-cto",
+      "type": "cto.prioritize",
+      "id": "d0210a87-f0df-42a2-8d84-674f2c83af37",
+      "atTick": 584,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 92.3191669999942
+    },
+    {
+      "identity": "2-cto",
+      "type": "cto.prioritize",
+      "id": "b65ed08a-d349-478e-b7c0-c806b48f0f7b",
+      "atTick": 624,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 93.32200000000012
+    },
+    {
+      "identity": "3-cto",
+      "type": "cto.prioritize",
+      "id": "1a505f92-cf43-4bb1-8ec2-bcb2833e8114",
+      "atTick": 660,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 44.72883300000103
+    },
+    {
+      "identity": "4-cto",
+      "type": "cto.prioritize",
+      "id": "4ba050d5-9143-48bc-bb7c-437ecf5e92d8",
+      "atTick": 700,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 55.06379200000083
+    },
+    {
+      "identity": "0-cto",
+      "type": "cto.prioritize",
+      "id": "0016b7cb-744b-40a1-9b25-dd4f5b3cf801",
+      "atTick": 736,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 99.02249999999185
+    },
+    {
+      "identity": "1-cto",
+      "type": "cto.prioritize",
+      "id": "0855bec2-dec1-4dfb-9e76-5c0085049049",
+      "atTick": 776,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 90.64175000000978
+    },
+    {
+      "identity": "2-cto",
+      "type": "cto.prioritize",
+      "id": "82f33cf9-6d41-4c11-8dcc-ab586cc3bc68",
+      "atTick": 816,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 161.08574999999837
+    },
+    {
+      "identity": "3-cto",
+      "type": "cto.prioritize",
+      "id": "9662dba2-3e86-4237-a5ab-456128358893",
+      "atTick": 852,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 103.69450000001234
+    },
+    {
+      "identity": "4-cto",
+      "type": "cto.prioritize",
+      "id": "a16a82e0-d50f-494b-9393-5a1ae09d31ae",
+      "atTick": 892,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 107.85079100000439
+    },
+    {
+      "identity": "0-cto",
+      "type": "cto.prioritize",
+      "id": "5f71d32c-4d64-419e-a620-f4308a8f67fb",
+      "atTick": 928,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 91.60329199999978
+    },
+    {
+      "identity": "1-cto",
+      "type": "cto.prioritize",
+      "id": "cbe4f066-f798-415c-8972-b17b3dcaa9d9",
+      "atTick": 968,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 145.4252919999999
+    },
+    {
+      "identity": "2-cto",
+      "type": "cto.prioritize",
+      "id": "361f5deb-3597-45b9-852d-f4e8dc5fa898",
+      "atTick": 1004,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 57.31495800000266
+    },
+    {
+      "identity": "3-cto",
+      "type": "cto.prioritize",
+      "id": "1ef0b419-670a-4099-8feb-726cf670fc3e",
+      "atTick": 1040,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 82.40012500000012
+    },
+    {
+      "identity": "4-cto",
+      "type": "cto.prioritize",
+      "id": "073fc320-cbec-4468-948c-379720ba009a",
+      "atTick": 1080,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 143.11687499999243
+    },
+    {
+      "identity": "0-cto",
+      "type": "cto.prioritize",
+      "id": "4e035e4d-e00a-4dcb-b010-7d52f61ff8ce",
+      "atTick": 1116,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 160.0955840000097
+    },
+    {
+      "identity": "1-cto",
+      "type": "cto.prioritize",
+      "id": "7326c490-91c9-43ad-a79f-5c47c56a378a",
+      "atTick": 1152,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 145.18658300000243
+    },
+    {
+      "identity": "2-cto",
+      "type": "cto.prioritize",
+      "id": "c77e5a86-2cea-414a-b198-79e0de98ee48",
+      "atTick": 1192,
+      "purpose": "background",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 229.5648749999964
+    }
+  ],
+  "dvr": [
+    {
+      "identity": "operator",
+      "purpose": "worker-failure",
+      "at": 1199.5,
+      "status": 503,
+      "ms": 26.905916999996407
+    },
+    {
+      "identity": "0-backend",
+      "purpose": "worker-failure",
+      "at": 1199.5,
+      "status": 200,
+      "ms": 1128.6377499999944
+    },
+    {
+      "identity": "operator",
+      "purpose": "exact-frame",
+      "at": 0.5,
+      "status": 200,
+      "ms": 88.00095800000418
+    },
+    {
+      "identity": "0-backend",
+      "purpose": "exact-frame",
+      "at": 10.5,
+      "status": 200,
+      "ms": 195.64450000000943
+    },
+    {
+      "identity": "operator",
+      "purpose": "exact-frame",
+      "at": 10.5,
+      "status": 200,
+      "ms": 303.1197919999977
+    },
+    {
+      "identity": "0-backend",
+      "purpose": "exact-frame",
+      "at": 1199.5,
+      "status": 200,
+      "ms": 1145.0464169999905
+    },
+    {
+      "identity": "0-backend",
+      "purpose": "exact-frame",
+      "at": 1200,
+      "status": 200,
+      "ms": 222.40325000000303
+    },
+    {
+      "identity": "operator",
+      "purpose": "exact-frame",
+      "at": 1199.5,
+      "status": 200,
+      "ms": 1153.9341249999998
+    },
+    {
+      "identity": "operator",
+      "purpose": "exact-frame",
+      "at": 1200,
+      "status": 200,
+      "ms": 242.53958300000522
+    },
+    {
+      "identity": "0-backend",
+      "purpose": "exact-frame",
+      "at": 0.5,
+      "status": 200,
+      "ms": 243.21124999999302
+    },
+    {
+      "identity": "operator",
+      "purpose": "exact-frame",
+      "at": 0.5,
+      "status": 200,
+      "ms": 177.91162499999336
+    },
+    {
+      "identity": "0-backend",
+      "purpose": "exact-frame",
+      "at": 10.5,
+      "status": 200,
+      "ms": 187.90037499999744
+    },
+    {
+      "identity": "operator",
+      "purpose": "exact-frame",
+      "at": 10.5,
+      "status": 200,
+      "ms": 195.09595900001295
+    },
+    {
+      "identity": "0-backend",
+      "purpose": "exact-frame",
+      "at": 1199.5,
+      "status": 200,
+      "ms": 1222.0306249999994
+    },
+    {
+      "identity": "0-backend",
+      "purpose": "exact-frame",
+      "at": 1200,
+      "status": 200,
+      "ms": 154.29133300000103
+    },
+    {
+      "identity": "operator",
+      "purpose": "exact-frame",
+      "at": 1199.5,
+      "status": 200,
+      "ms": 1212.6746249999997
+    },
+    {
+      "identity": "operator",
+      "purpose": "exact-frame",
+      "at": 1200,
+      "status": 200,
+      "ms": 204.65662500000326
+    },
+    {
+      "identity": "0-backend",
+      "purpose": "exact-frame",
+      "at": 0.5,
+      "status": 200,
+      "ms": 205.22033399999782
+    },
+    {
+      "identity": "operator",
+      "purpose": "exact-frame",
+      "at": 0.5,
+      "status": 200,
+      "ms": 222.99279099999694
+    },
+    {
+      "identity": "0-backend",
+      "purpose": "exact-frame",
+      "at": 10.5,
+      "status": 200,
+      "ms": 270.7342500000086
+    },
+    {
+      "identity": "operator",
+      "purpose": "exact-frame",
+      "at": 10.5,
+      "status": 200,
+      "ms": 175.9419590000034
+    },
+    {
+      "identity": "0-backend",
+      "purpose": "exact-frame",
+      "at": 1199.5,
+      "status": 200,
+      "ms": 1178.1655840000021
+    },
+    {
+      "identity": "0-backend",
+      "purpose": "exact-frame",
+      "at": 1200,
+      "status": 200,
+      "ms": 190.95425000000978
+    },
+    {
+      "identity": "operator",
+      "purpose": "exact-frame",
+      "at": 1199.5,
+      "status": 200,
+      "ms": 1124.829792000004
+    },
+    {
+      "identity": "operator",
+      "purpose": "exact-frame",
+      "at": 1200,
+      "status": 200,
+      "ms": 301.36791699999594
+    },
+    {
+      "identity": "0-backend",
+      "purpose": "exact-frame",
+      "at": 0.5,
+      "status": 200,
+      "ms": 301.96454200000153
+    },
+    {
+      "purpose": "queue-saturation",
+      "status": 503,
+      "ms": 42.36137500000768
+    },
+    {
+      "purpose": "queue-saturation",
+      "status": 503,
+      "ms": 42.434290999997756
+    },
+    {
+      "purpose": "queue-saturation",
+      "status": 503,
+      "ms": 42.46266600000672
+    },
+    {
+      "purpose": "queue-saturation",
+      "status": 200,
+      "ms": 1475.7189999999973
+    },
+    {
+      "purpose": "queue-saturation",
+      "status": 200,
+      "ms": 1476.0757090000116
+    },
+    {
+      "purpose": "queue-saturation",
+      "status": 200,
+      "ms": 2615.1457089999894
+    },
+    {
+      "purpose": "queue-saturation",
+      "status": 200,
+      "ms": 2616.422792000012
+    },
+    {
+      "purpose": "queue-saturation",
+      "status": 200,
+      "ms": 3816.5875830000004
+    },
+    {
+      "purpose": "queue-saturation",
+      "status": 200,
+      "ms": 3817.1078750000015
+    },
+    {
+      "purpose": "queue-saturation",
+      "status": 200,
+      "ms": 4948.65125000001
+    },
+    {
+      "purpose": "queue-saturation",
+      "status": 200,
+      "ms": 4953.259625000006
+    },
+    {
+      "purpose": "queue-saturation",
+      "status": 200,
+      "ms": 6088.335332999995
+    },
+    {
+      "purpose": "queue-saturation",
+      "status": 200,
+      "ms": 6088.812875000003
+    },
+    {
+      "purpose": "authorized-auxiliary",
+      "endpoint": "/api/dvr/0/metrics?companyId=0",
+      "status": 200,
+      "ms": 382.564458000008
+    },
+    {
+      "purpose": "authorized-auxiliary",
+      "endpoint": "/api/dvr/0/chat?companyId=0",
+      "status": 200,
+      "ms": 4.095916999998735
+    },
+    {
+      "purpose": "authorized-auxiliary",
+      "endpoint": "/api/dvr/0/requests/:id",
+      "status": 200,
+      "ms": 2.2943339999910677
+    }
+  ],
+  "security": {
+    "secondServerDenied": true,
+    "liveMaintenanceDenied": true,
+    "authorizedIndependentArchiveReadable": true,
+    "independentReadAndQueryWhileActive": true,
+    "studentArchiveDenied": true,
+    "studentDeletionDenied": true,
+    "studentAccessDenied": true,
+    "foreignReceiptDenied": true,
+    "foreignDvrDenied": true,
+    "unauthenticatedDvrDenied": true,
+    "localSecretsNotServed": true,
+    "historicalManifestExact": true
+  },
+  "errors": [],
+  "segments": [
+    {
+      "segment": 1,
+      "exitCode": null,
+      "signal": "SIGKILL",
+      "hookedStep": true,
+      "hookedQueue": true,
+      "ticks": 980,
+      "idleSteps": 155,
+      "snapshots": 7299,
+      "snapshotBytes": 253849486,
+      "maxSnapshotBytes": 100952,
+      "maxConnections": 27,
+      "connections": 27,
+      "disconnects": 1,
+      "writes": 3784,
+      "commits": 303,
+      "rollbacks": 0,
+      "checkpoints": 0,
+      "workersCreated": 1,
+      "workersExited": 0,
+      "workerErrors": 0,
+      "workerInjectedFailures": 0,
+      "workerTerminations": 0,
+      "workerReplies": 1,
+      "maxWorkers": 1,
+      "maxWorkersBusy": 1,
+      "maxQueued": 0,
+      "lastControl": "62874edf-e847-4a58-bc90-a292557463c2",
+      "elapsedMs": 32508.952041,
+      "final": false,
+      "eventLoop": {
+        "p50": 11.313151,
+        "p95": 21.577727,
+        "p99": 38.895615,
+        "max": 392.429567
+      },
+      "broadcastMs": {
+        "n": 271,
+        "total": 1750.663581000005,
+        "mean": 6.460013214022159,
+        "p50": 7.246750000002066,
+        "p95": 11.104959000000235,
+        "p99": 12.402792000000773,
+        "max": 16.32929200000217
+      },
+      "commandHandlerMs": {
+        "n": 400,
+        "total": 4245.6487560000405,
+        "mean": 10.614121890000101,
+        "p50": 13.85833300000013,
+        "p95": 18.339833000001818,
+        "p99": 20.36945900000137,
+        "max": 34.066624999999476
+      },
+      "tickMs": {
+        "n": 980,
+        "total": 387.5648419999161,
+        "mean": 0.39547432857134296,
+        "p50": 0.10237499999857391,
+        "p95": 1.5713329999998678,
+        "p99": 5.554667000000336,
+        "max": 9.604583000000275
+      },
+      "engineIntervalMs": {
+        "n": 299,
+        "total": 32297.89487499999,
+        "mean": 108.01971530100332,
+        "p50": 100.95274999999992,
+        "p95": 122.28812499999913,
+        "p99": 420.59137499999997,
+        "max": 443.4021250000005
+      },
+      "engineCallbackMs": {
+        "n": 299,
+        "total": 1482.8934459999784,
+        "mean": 4.9595098528427375,
+        "p50": 2.1868339999991804,
+        "p95": 20.96337499999936,
+        "p99": 31.328874999999243,
+        "max": 35.22912499999802
+      },
+      "persistenceMs": {
+        "n": 303,
+        "total": 2563.0519599999593,
+        "mean": 8.458917359735839,
+        "p50": 7.313999999998487,
+        "p95": 11.563874999999825,
+        "p99": 18.070583000000624,
+        "max": 23.958208000000013
+      },
+      "workerTaskMs": {
+        "n": 1,
+        "total": 37.582666999998764,
+        "mean": 37.582666999998764,
+        "p50": 37.582666999998764,
+        "p95": 37.582666999998764,
+        "p99": 37.582666999998764,
+        "max": 37.582666999998764
+      },
+      "activeWorkers": 1,
+      "busyWorkers": 0,
+      "memory": [
+        {
+          "atMs": 1000.1762080000001,
+          "heapUsed": 19429680,
+          "rss": 124682240,
+          "external": 6189288
+        },
+        {
+          "atMs": 2000.692125,
+          "heapUsed": 19572144,
+          "rss": 126697472,
+          "external": 6189296
+        },
+        {
+          "atMs": 3001.492333,
+          "heapUsed": 19731056,
+          "rss": 134758400,
+          "external": 6189026
+        },
+        {
+          "atMs": 4002.188958,
+          "heapUsed": 19732424,
+          "rss": 134758400,
+          "external": 6197218
+        },
+        {
+          "atMs": 5003.541915999999,
+          "heapUsed": 19881320,
+          "rss": 134774784,
+          "external": 6197218
+        },
+        {
+          "atMs": 6004.611540999999,
+          "heapUsed": 34225920,
+          "rss": 126828544,
+          "external": 6197218
+        },
+        {
+          "atMs": 7004.761165999999,
+          "heapUsed": 34071528,
+          "rss": 125845504,
+          "external": 6197218
+        },
+        {
+          "atMs": 8004.130832999999,
+          "heapUsed": 33979744,
+          "rss": 125878272,
+          "external": 6205410
+        },
+        {
+          "atMs": 9004.338416,
+          "heapUsed": 33935640,
+          "rss": 125911040,
+          "external": 6205410
+        },
+        {
+          "atMs": 10004.996375,
+          "heapUsed": 33957144,
+          "rss": 125911040,
+          "external": 6205410
+        },
+        {
+          "atMs": 11005.984416000001,
+          "heapUsed": 33975696,
+          "rss": 125845504,
+          "external": 6213602
+        },
+        {
+          "atMs": 12007.102375,
+          "heapUsed": 33957192,
+          "rss": 125878272,
+          "external": 6213602
+        },
+        {
+          "atMs": 13008.087791,
+          "heapUsed": 33975560,
+          "rss": 125911040,
+          "external": 6213602
+        },
+        {
+          "atMs": 14008.546916000001,
+          "heapUsed": 33999736,
+          "rss": 125911040,
+          "external": 6213602
+        },
+        {
+          "atMs": 15009.395875,
+          "heapUsed": 34009040,
+          "rss": 125927424,
+          "external": 6221794
+        },
+        {
+          "atMs": 16011.000875,
+          "heapUsed": 34525240,
+          "rss": 150487040,
+          "external": 6254850
+        },
+        {
+          "atMs": 17012.484,
+          "heapUsed": 24710040,
+          "rss": 152600576,
+          "external": 6345002
+        },
+        {
+          "atMs": 18013.1605,
+          "heapUsed": 30941000,
+          "rss": 153157632,
+          "external": 6345002
+        },
+        {
+          "atMs": 19015.3805,
+          "heapUsed": 25970904,
+          "rss": 153026560,
+          "external": 6435154
+        },
+        {
+          "atMs": 20016.887875,
+          "heapUsed": 33493848,
+          "rss": 154124288,
+          "external": 6525306
+        },
+        {
+          "atMs": 21018.731625,
+          "heapUsed": 28115712,
+          "rss": 154714112,
+          "external": 6599074
+        },
+        {
+          "atMs": 22020.485916,
+          "heapUsed": 21803504,
+          "rss": 156303360,
+          "external": 6689226
+        },
+        {
+          "atMs": 23020.698041,
+          "heapUsed": 33050320,
+          "rss": 156827648,
+          "external": 6861338
+        },
+        {
+          "atMs": 24021.094250000002,
+          "heapUsed": 28448976,
+          "rss": 157089792,
+          "external": 6951490
+        },
+        {
+          "atMs": 25021.985583,
+          "heapUsed": 22144176,
+          "rss": 156811264,
+          "external": 7041642
+        },
+        {
+          "atMs": 26067.140416000002,
+          "heapUsed": 29069824,
+          "rss": 163708928,
+          "external": 7219541
+        },
+        {
+          "atMs": 27099.769500000002,
+          "heapUsed": 42977288,
+          "rss": 208781312,
+          "external": 8113009
+        },
+        {
+          "atMs": 28115.979083000002,
+          "heapUsed": 63981496,
+          "rss": 218136576,
+          "external": 10705247
+        },
+        {
+          "atMs": 29123.19,
+          "heapUsed": 32406744,
+          "rss": 287178752,
+          "external": 9530139
+        },
+        {
+          "atMs": 30467.506958,
+          "heapUsed": 98152472,
+          "rss": 306659328,
+          "external": 11028068
+        },
+        {
+          "atMs": 31507.523833,
+          "heapUsed": 78593296,
+          "rss": 295976960,
+          "external": 7791593
+        },
+        {
+          "atMs": 32508.770333,
+          "heapUsed": 21704784,
+          "rss": 290095104,
+          "external": 12791990
+        }
+      ],
+      "workerMemory": [
+        {
+          "atMs": 16011.897166,
+          "id": 2,
+          "usedHeapBytes": 9812416,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 17013.822708,
+          "id": 2,
+          "usedHeapBytes": 9812528,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 18014.380041,
+          "id": 2,
+          "usedHeapBytes": 9812640,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 19016.7455,
+          "id": 2,
+          "usedHeapBytes": 9812752,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 20018.047083,
+          "id": 2,
+          "usedHeapBytes": 9812864,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 21020.100333000002,
+          "id": 2,
+          "usedHeapBytes": 9812976,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 22021.815375000002,
+          "id": 2,
+          "usedHeapBytes": 9813088,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 23021.348666,
+          "id": 2,
+          "usedHeapBytes": 9813200,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 24022.513083,
+          "id": 2,
+          "usedHeapBytes": 9813480,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 25025.590500000002,
+          "id": 2,
+          "usedHeapBytes": 9813592,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 26067.514583,
+          "id": 2,
+          "usedHeapBytes": 9813704,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 27134.330333,
+          "id": 2,
+          "usedHeapBytes": 9813816,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 28143.951791,
+          "id": 2,
+          "usedHeapBytes": 9813928,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 29137.924208,
+          "id": 2,
+          "usedHeapBytes": 9814040,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 30472.986541000002,
+          "id": 2,
+          "usedHeapBytes": 9814152,
+          "totalHeapBytes": 15876096
+        },
+        {
+          "atMs": 31523.484958,
+          "id": 2,
+          "usedHeapBytes": 9814264,
+          "totalHeapBytes": 15876096
+        }
+      ],
+      "sampling": {
+        "peakMs": 20,
+        "trendMs": 1000,
+        "workerHeapMs": 1000
+      },
+      "heapMaxBytes": 120459400,
+      "rssMaxBytes": 314163200
+    },
+    {
+      "segment": 2,
+      "exitCode": 0,
+      "signal": null,
+      "hookedStep": true,
+      "hookedQueue": true,
+      "ticks": 11000,
+      "idleSteps": 780,
+      "snapshots": 8748,
+      "snapshotBytes": 1261665739,
+      "maxSnapshotBytes": 183056,
+      "maxConnections": 27,
+      "connections": 0,
+      "disconnects": 27,
+      "writes": 453827,
+      "commits": 89,
+      "rollbacks": 1,
+      "checkpoints": 0,
+      "workersCreated": 7,
+      "workersExited": 7,
+      "workerErrors": 0,
+      "workerInjectedFailures": 1,
+      "workerTerminations": 7,
+      "workerReplies": 40,
+      "maxWorkers": 2,
+      "maxWorkersBusy": 2,
+      "maxQueued": 8,
+      "lastControl": "bde3bfc9-8606-4dbd-b65a-8a68ad083535",
+      "elapsedMs": 63285.960915999996,
+      "final": true,
+      "eventLoop": {
+        "p50": 12.025855,
+        "p95": 77.725695,
+        "p99": 145.096703,
+        "max": 286.523391
+      },
+      "broadcastMs": {
+        "n": 323,
+        "total": 10752.370744999957,
+        "mean": 33.289073513931754,
+        "p50": 35.39141699999891,
+        "p95": 41.9476250000007,
+        "p99": 44.311125000000175,
+        "max": 47.395125000002736
+      },
+      "commandHandlerMs": {
+        "n": 31,
+        "total": 1789.4427900000378,
+        "mean": 57.72396096774315,
+        "p50": 44.34958299999926,
+        "p95": 144.84116700000595,
+        "p99": 159.76954100000148,
+        "max": 159.76954100000148
+      },
+      "tickMs": {
+        "n": 11000,
+        "total": 16722.14816400004,
+        "mean": 1.5201952876363671,
+        "p50": 1.3375410000007832,
+        "p95": 3.247583999997005,
+        "p99": 4.309083000000101,
+        "max": 27.04216599999927
+      },
+      "engineIntervalMs": {
+        "n": 589,
+        "total": 63091.814709,
+        "mean": 107.11683312224109,
+        "p50": 101.10812499999884,
+        "p95": 149.8120830000007,
+        "p99": 222.6949999999997,
+        "max": 284.90962500000023
+      },
+      "engineCallbackMs": {
+        "n": 589,
+        "total": 29359.55208200003,
+        "mean": 49.84643816977934,
+        "p50": 41.03799999999319,
+        "p95": 115.30429200000071,
+        "p99": 177.94574999999895,
+        "max": 199.57170800000313
+      },
+      "persistenceMs": {
+        "n": 89,
+        "total": 3709.6419579999497,
+        "mean": 41.68137031460618,
+        "p50": 36.269916999997804,
+        "p95": 88.78083299999707,
+        "p99": 99.46233299999585,
+        "max": 99.46233299999585
+      },
+      "workerTaskMs": {
+        "n": 40,
+        "total": 26316.644544000002,
+        "mean": 657.9161136,
+        "p50": 290.4322919999977,
+        "p95": 1238.4280409999992,
+        "p99": 1423.8553749999992,
+        "max": 1423.8553749999992
+      },
+      "activeWorkers": 0,
+      "busyWorkers": 0,
+      "memory": [
+        {
+          "atMs": 1000.536416,
+          "heapUsed": 29754064,
+          "rss": 148684800,
+          "external": 11283783
+        },
+        {
+          "atMs": 2000.119083,
+          "heapUsed": 22466792,
+          "rss": 173031424,
+          "external": 12278603
+        },
+        {
+          "atMs": 3000.855125,
+          "heapUsed": 41635304,
+          "rss": 190742528,
+          "external": 15227856
+        },
+        {
+          "atMs": 4006.0495,
+          "heapUsed": 69587952,
+          "rss": 205504512,
+          "external": 20074340
+        },
+        {
+          "atMs": 5022.863582999999,
+          "heapUsed": 44837752,
+          "rss": 250511360,
+          "external": 17675004
+        },
+        {
+          "atMs": 6036.996708,
+          "heapUsed": 70086472,
+          "rss": 264912896,
+          "external": 23162004
+        },
+        {
+          "atMs": 7056.982040999999,
+          "heapUsed": 75460904,
+          "rss": 291667968,
+          "external": 24405777
+        },
+        {
+          "atMs": 8068.1314999999995,
+          "heapUsed": 87458368,
+          "rss": 322633728,
+          "external": 48616745
+        },
+        {
+          "atMs": 9087.249375,
+          "heapUsed": 59938904,
+          "rss": 329285632,
+          "external": 22162009
+        },
+        {
+          "atMs": 10116.207124999999,
+          "heapUsed": 82474560,
+          "rss": 333348864,
+          "external": 28971041
+        },
+        {
+          "atMs": 11153.155332999999,
+          "heapUsed": 25863088,
+          "rss": 331726848,
+          "external": 59091462
+        },
+        {
+          "atMs": 12153.470583,
+          "heapUsed": 70442984,
+          "rss": 345030656,
+          "external": 32042054
+        },
+        {
+          "atMs": 13194.022832999999,
+          "heapUsed": 50181384,
+          "rss": 350158848,
+          "external": 26933689
+        },
+        {
+          "atMs": 14207.847541,
+          "heapUsed": 55632184,
+          "rss": 350945280,
+          "external": 34880089
+        },
+        {
+          "atMs": 15252.277291,
+          "heapUsed": 74501224,
+          "rss": 355794944,
+          "external": 29549454
+        },
+        {
+          "atMs": 16280.569040999999,
+          "heapUsed": 73042592,
+          "rss": 367919104,
+          "external": 38366518
+        },
+        {
+          "atMs": 17325.875166,
+          "heapUsed": 28125016,
+          "rss": 378175488,
+          "external": 79953270
+        },
+        {
+          "atMs": 18330.948375,
+          "heapUsed": 45961512,
+          "rss": 379191296,
+          "external": 75807137
+        },
+        {
+          "atMs": 19333.098083,
+          "heapUsed": 50066912,
+          "rss": 392396800,
+          "external": 29499502
+        },
+        {
+          "atMs": 20333.498750000002,
+          "heapUsed": 51888288,
+          "rss": 392462336,
+          "external": 40070894
+        },
+        {
+          "atMs": 21334.270291,
+          "heapUsed": 28450712,
+          "rss": 395853824,
+          "external": 31352249
+        },
+        {
+          "atMs": 22336.142875,
+          "heapUsed": 34728896,
+          "rss": 396574720,
+          "external": 43325921
+        },
+        {
+          "atMs": 23337.681416000003,
+          "heapUsed": 33792848,
+          "rss": 400687104,
+          "external": 39516982
+        },
+        {
+          "atMs": 24339.737500000003,
+          "heapUsed": 33210240,
+          "rss": 402292736,
+          "external": 40770454
+        },
+        {
+          "atMs": 25341.049583,
+          "heapUsed": 53497192,
+          "rss": 410288128,
+          "external": 24064438
+        },
+        {
+          "atMs": 26341.469625,
+          "heapUsed": 37046320,
+          "rss": 409960448,
+          "external": 36567495
+        },
+        {
+          "atMs": 27342.355916,
+          "heapUsed": 79563864,
+          "rss": 420773888,
+          "external": 19189437
+        },
+        {
+          "atMs": 28364.881625,
+          "heapUsed": 91291240,
+          "rss": 421150720,
+          "external": 32524261
+        },
+        {
+          "atMs": 29366.130500000003,
+          "heapUsed": 108486992,
+          "rss": 431226880,
+          "external": 92418605
+        },
+        {
+          "atMs": 30367.408791,
+          "heapUsed": 80238016,
+          "rss": 464797696,
+          "external": 88765118
+        },
+        {
+          "atMs": 31433.503333,
+          "heapUsed": 74754952,
+          "rss": 486146048,
+          "external": 90699067
+        },
+        {
+          "atMs": 32480.600708,
+          "heapUsed": 100354720,
+          "rss": 418512896,
+          "external": 21815268
+        },
+        {
+          "atMs": 33480.701125,
+          "heapUsed": 80857416,
+          "rss": 442613760,
+          "external": 21607365
+        },
+        {
+          "atMs": 34548.963375,
+          "heapUsed": 56966368,
+          "rss": 434028544,
+          "external": 14431013
+        },
+        {
+          "atMs": 35549.791333,
+          "heapUsed": 58483656,
+          "rss": 440860672,
+          "external": 77712402
+        },
+        {
+          "atMs": 36550.987791,
+          "heapUsed": 73218712,
+          "rss": 450969600,
+          "external": 79763347
+        },
+        {
+          "atMs": 37642.927875,
+          "heapUsed": 73403832,
+          "rss": 469155840,
+          "external": 81999299
+        },
+        {
+          "atMs": 38643.006166,
+          "heapUsed": 105392704,
+          "rss": 480329728,
+          "external": 75371838
+        },
+        {
+          "atMs": 39785.505957999994,
+          "heapUsed": 83778120,
+          "rss": 490684416,
+          "external": 77023051
+        },
+        {
+          "atMs": 40814.268124999995,
+          "heapUsed": 68092232,
+          "rss": 481083392,
+          "external": 79606843
+        },
+        {
+          "atMs": 41858.124790999995,
+          "heapUsed": 101008008,
+          "rss": 496615424,
+          "external": 71817899
+        },
+        {
+          "atMs": 42886.461375,
+          "heapUsed": 67938744,
+          "rss": 486129664,
+          "external": 73304382
+        },
+        {
+          "atMs": 43999.5265,
+          "heapUsed": 112896440,
+          "rss": 641990656,
+          "external": 65130883
+        },
+        {
+          "atMs": 45000.606958,
+          "heapUsed": 44714400,
+          "rss": 690405376,
+          "external": 106390636
+        },
+        {
+          "atMs": 46108.928958,
+          "heapUsed": 68706800,
+          "rss": 767164416,
+          "external": 57554923
+        },
+        {
+          "atMs": 47127.034916,
+          "heapUsed": 116073856,
+          "rss": 804569088,
+          "external": 110211358
+        },
+        {
+          "atMs": 48166.910416,
+          "heapUsed": 54068776,
+          "rss": 790315008,
+          "external": 38556817
+        },
+        {
+          "atMs": 49167.175333,
+          "heapUsed": 124560760,
+          "rss": 804618240,
+          "external": 114942003
+        },
+        {
+          "atMs": 50209.695499999994,
+          "heapUsed": 139473472,
+          "rss": 814923776,
+          "external": 127553659
+        },
+        {
+          "atMs": 51255.340291,
+          "heapUsed": 119030736,
+          "rss": 823148544,
+          "external": 119700167
+        },
+        {
+          "atMs": 52404.275208,
+          "heapUsed": 138554176,
+          "rss": 829423616,
+          "external": 133545068
+        },
+        {
+          "atMs": 53484.038708,
+          "heapUsed": 83339096,
+          "rss": 822149120,
+          "external": 136388661
+        },
+        {
+          "atMs": 54673.283833,
+          "heapUsed": 103453536,
+          "rss": 864354304,
+          "external": 131135003
+        },
+        {
+          "atMs": 55767.948832999995,
+          "heapUsed": 147004784,
+          "rss": 965443584,
+          "external": 249243254
+        },
+        {
+          "atMs": 56814.106083,
+          "heapUsed": 90816504,
+          "rss": 919502848,
+          "external": 119011427
+        },
+        {
+          "atMs": 57861.124875,
+          "heapUsed": 68109344,
+          "rss": 938475520,
+          "external": 121347028
+        },
+        {
+          "atMs": 58950.587457999995,
+          "heapUsed": 104305832,
+          "rss": 946307072,
+          "external": 97608300
+        },
+        {
+          "atMs": 59952.594375,
+          "heapUsed": 98359504,
+          "rss": 927924224,
+          "external": 139564540
+        },
+        {
+          "atMs": 60954.280332999995,
+          "heapUsed": 157746632,
+          "rss": 965328896,
+          "external": 139772012
+        },
+        {
+          "atMs": 61954.683625,
+          "heapUsed": 129471904,
+          "rss": 950976512,
+          "external": 139761723
+        },
+        {
+          "atMs": 62959.635540999996,
+          "heapUsed": 184246968,
+          "rss": 972193792,
+          "external": 139580924
+        }
+      ],
+      "workerMemory": [
+        {
+          "atMs": 44001.278332999995,
+          "id": 2,
+          "usedHeapBytes": 105825736,
+          "totalHeapBytes": 124747776
+        },
+        {
+          "atMs": 45002.320083,
+          "id": 2,
+          "usedHeapBytes": 7976864,
+          "totalHeapBytes": 47333376
+        },
+        {
+          "atMs": 45002.322,
+          "id": 3,
+          "usedHeapBytes": 72105560,
+          "totalHeapBytes": 102236160
+        },
+        {
+          "atMs": 46110.618208,
+          "id": 2,
+          "usedHeapBytes": 66690864,
+          "totalHeapBytes": 100663296
+        },
+        {
+          "atMs": 46110.620624999996,
+          "id": 3,
+          "usedHeapBytes": 90178216,
+          "totalHeapBytes": 129515520
+        },
+        {
+          "atMs": 47128.778708,
+          "id": 2,
+          "usedHeapBytes": 21268544,
+          "totalHeapBytes": 46448640
+        },
+        {
+          "atMs": 47134.276332999994,
+          "id": 3,
+          "usedHeapBytes": 28874464,
+          "totalHeapBytes": 81379328
+        },
+        {
+          "atMs": 48168.642583,
+          "id": 2,
+          "usedHeapBytes": 8166760,
+          "totalHeapBytes": 45498368
+        },
+        {
+          "atMs": 48168.644208,
+          "id": 3,
+          "usedHeapBytes": 8372568,
+          "totalHeapBytes": 70926336
+        },
+        {
+          "atMs": 49169.857874999994,
+          "id": 3,
+          "usedHeapBytes": 8085768,
+          "totalHeapBytes": 44711936
+        },
+        {
+          "atMs": 49169.861915999994,
+          "id": 2,
+          "usedHeapBytes": 87217368,
+          "totalHeapBytes": 116178944
+        },
+        {
+          "atMs": 50301.962457999995,
+          "id": 2,
+          "usedHeapBytes": 8872536,
+          "totalHeapBytes": 54411264
+        },
+        {
+          "atMs": 50301.966374999996,
+          "id": 3,
+          "usedHeapBytes": 16059008,
+          "totalHeapBytes": 45563904
+        },
+        {
+          "atMs": 51257.498041,
+          "id": 2,
+          "usedHeapBytes": 15288520,
+          "totalHeapBytes": 55263232
+        },
+        {
+          "atMs": 51257.498958,
+          "id": 3,
+          "usedHeapBytes": 8373536,
+          "totalHeapBytes": 45236224
+        },
+        {
+          "atMs": 52410.852833,
+          "id": 2,
+          "usedHeapBytes": 8271304,
+          "totalHeapBytes": 46809088
+        },
+        {
+          "atMs": 52410.856625,
+          "id": 3,
+          "usedHeapBytes": 8454824,
+          "totalHeapBytes": 56246272
+        },
+        {
+          "atMs": 53485.946665999996,
+          "id": 2,
+          "usedHeapBytes": 90882296,
+          "totalHeapBytes": 118636544
+        },
+        {
+          "atMs": 53485.947958,
+          "id": 3,
+          "usedHeapBytes": 8253352,
+          "totalHeapBytes": 44711936
+        },
+        {
+          "atMs": 54675.313208,
+          "id": 6,
+          "usedHeapBytes": 58119800,
+          "totalHeapBytes": 89128960
+        },
+        {
+          "atMs": 54675.314583,
+          "id": 7,
+          "usedHeapBytes": 61669712,
+          "totalHeapBytes": 90324992
+        },
+        {
+          "atMs": 55837.430333,
+          "id": 6,
+          "usedHeapBytes": 43284432,
+          "totalHeapBytes": 79609856
+        },
+        {
+          "atMs": 55837.433082999996,
+          "id": 7,
+          "usedHeapBytes": 54485504,
+          "totalHeapBytes": 75579392
+        },
+        {
+          "atMs": 56994.463124999995,
+          "id": 7,
+          "usedHeapBytes": 8684944,
+          "totalHeapBytes": 72761344
+        },
+        {
+          "atMs": 56994.466,
+          "id": 6,
+          "usedHeapBytes": 88380384,
+          "totalHeapBytes": 122765312
+        },
+        {
+          "atMs": 57863.217124999996,
+          "id": 7,
+          "usedHeapBytes": 100111760,
+          "totalHeapBytes": 124747776
+        },
+        {
+          "atMs": 57863.218540999995,
+          "id": 6,
+          "usedHeapBytes": 87471272,
+          "totalHeapBytes": 123699200
+        },
+        {
+          "atMs": 58952.71875,
+          "id": 7,
+          "usedHeapBytes": 92201168,
+          "totalHeapBytes": 119799808
+        },
+        {
+          "atMs": 58952.720666,
+          "id": 6,
+          "usedHeapBytes": 85323032,
+          "totalHeapBytes": 117227520
+        },
+        {
+          "atMs": 59954.615541,
+          "id": 6,
+          "usedHeapBytes": 72214544,
+          "totalHeapBytes": 103366656
+        },
+        {
+          "atMs": 59954.616375,
+          "id": 7,
+          "usedHeapBytes": 67676064,
+          "totalHeapBytes": 108085248
+        },
+        {
+          "atMs": 60956.373083,
+          "id": 6,
+          "usedHeapBytes": 65478624,
+          "totalHeapBytes": 98713600
+        },
+        {
+          "atMs": 60956.373875,
+          "id": 7,
+          "usedHeapBytes": 67965808,
+          "totalHeapBytes": 95469568
+        },
+        {
+          "atMs": 61959.135540999996,
+          "id": 6,
+          "usedHeapBytes": 8072904,
+          "totalHeapBytes": 64372736
+        },
+        {
+          "atMs": 61959.136374999995,
+          "id": 7,
+          "usedHeapBytes": 8134384,
+          "totalHeapBytes": 65421312
+        },
+        {
+          "atMs": 62965.096832999996,
+          "id": 6,
+          "usedHeapBytes": 8073184,
+          "totalHeapBytes": 64372736
+        },
+        {
+          "atMs": 62965.098583,
+          "id": 7,
+          "usedHeapBytes": 8134664,
+          "totalHeapBytes": 65421312
+        }
+      ],
+      "sampling": {
+        "peakMs": 20,
+        "trendMs": 1000,
+        "workerHeapMs": 1000
+      },
+      "heapMaxBytes": 194805296,
+      "rssMaxBytes": 981745664
+    }
+  ],
+  "limitations": [
+    "Local loopback; Node Socket.IO clients do not render 27 browser UIs.",
+    "The 34-point reputation is an explicit pre-start scenario condition for all five companies. No live engine state is mutated.",
+    "Total process RSS includes worker memory; worker heap samples are not additive RSS.",
+    "SIGKILL telemetry is explicitly flushed immediately before killing; crash tail may omit the last sampling interval."
+  ],
+  "visual": {
+    "calls": 50000,
+    "totalMs": 32.83295899999939,
+    "economyUnchanged": true,
+    "scope": "Pure derived visual function, not browser FPS; server does not run paper animation."
+  },
+  "storage": {
+    "beforeShutdown": {
+      "sqliteBytes": 878039040,
+      "walBytes": 100297312,
+      "shmBytes": 196608,
+      "pageSize": 4096,
+      "freePages": 1139,
+      "freeBytes": 4665344,
+      "pages": [
+        {
+          "name": "request_receipts",
+          "type": "table",
+          "tableName": "request_receipts",
+          "physicalBytes": 602320896,
+          "payloadBytes": 521494359
+        },
+        {
+          "name": "history_events",
+          "type": "table",
+          "tableName": "history_events",
+          "physicalBytes": 233914368,
+          "payloadBytes": 212792374
+        },
+        {
+          "name": "sqlite_autoindex_request_receipts_1",
+          "type": "index",
+          "tableName": "request_receipts",
+          "physicalBytes": 10395648,
+          "payloadBytes": 8032725
+        },
+        {
+          "name": "history_events_time",
+          "type": "index",
+          "tableName": "history_events",
+          "physicalBytes": 9879552,
+          "payloadBytes": 7266441
+        },
+        {
+          "name": "sqlite_autoindex_history_events_1",
+          "type": "index",
+          "tableName": "history_events",
+          "physicalBytes": 6713344,
+          "payloadBytes": 4476590
+        },
+        {
+          "name": "history_checkpoints",
+          "type": "table",
+          "tableName": "history_checkpoints",
+          "physicalBytes": 6676480,
+          "payloadBytes": 6635555
+        },
+        {
+          "name": "game",
+          "type": "table",
+          "tableName": "game",
+          "physicalBytes": 4743168,
+          "payloadBytes": 4735334
+        },
+        {
+          "name": "receipts_generation",
+          "type": "index",
+          "tableName": "request_receipts",
+          "physicalBytes": 4644864,
+          "payloadBytes": 2692665
+        },
+        {
+          "name": "history_points",
+          "type": "table",
+          "tableName": "history_points",
+          "physicalBytes": 499712,
+          "payloadBytes": 425927
+        },
+        {
+          "name": "history_inputs",
+          "type": "table",
+          "tableName": "history_inputs",
+          "physicalBytes": 135168,
+          "payloadBytes": 119705
+        },
+        {
+          "name": "slack_messages",
+          "type": "table",
+          "tableName": "slack_messages",
+          "physicalBytes": 118784,
+          "payloadBytes": 106097
+        },
+        {
+          "name": "commands",
+          "type": "table",
+          "tableName": "commands",
+          "physicalBytes": 49152,
+          "payloadBytes": 38986
+        },
+        {
+          "name": "sqlite_autoindex_commands_1",
+          "type": "index",
+          "tableName": "commands",
+          "physicalBytes": 20480,
+          "payloadBytes": 13226
+        },
+        {
+          "name": "slack_tenant",
+          "type": "index",
+          "tableName": "slack_messages",
+          "physicalBytes": 16384,
+          "payloadBytes": 8754
+        },
+        {
+          "name": "sqlite_autoindex_slack_messages_1",
+          "type": "index",
+          "tableName": "slack_messages",
+          "physicalBytes": 12288,
+          "payloadBytes": 4245
+        },
+        {
+          "name": "sqlite_autoindex_history_points_1",
+          "type": "index",
+          "tableName": "history_points",
+          "physicalBytes": 12288,
+          "payloadBytes": 3668
+        },
+        {
+          "name": "sqlite_autoindex_history_inputs_1",
+          "type": "index",
+          "tableName": "history_inputs",
+          "physicalBytes": 12288,
+          "payloadBytes": 3295
+        },
+        {
+          "name": "storage_lease",
+          "type": "table",
+          "tableName": "storage_lease",
+          "physicalBytes": 4096,
+          "payloadBytes": 63
+        },
+        {
+          "name": "sqlite_autoindex_sessions_1",
+          "type": "index",
+          "tableName": "sessions",
+          "physicalBytes": 4096,
+          "payloadBytes": 1793
+        },
+        {
+          "name": "sqlite_autoindex_receipt_paths_1",
+          "type": "index",
+          "tableName": "receipt_paths",
+          "physicalBytes": 4096,
+          "payloadBytes": 279
+        },
+        {
+          "name": "sqlite_autoindex_history_checkpoints_1",
+          "type": "index",
+          "tableName": "history_checkpoints",
+          "physicalBytes": 4096,
+          "payloadBytes": 334
+        },
+        {
+          "name": "sessions",
+          "type": "table",
+          "tableName": "sessions",
+          "physicalBytes": 4096,
+          "payloadBytes": 3137
+        },
+        {
+          "name": "receipt_paths",
+          "type": "table",
+          "tableName": "receipt_paths",
+          "physicalBytes": 4096,
+          "payloadBytes": 1144
+        },
+        {
+          "name": "history_protection",
+          "type": "table",
+          "tableName": "history_protection",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "history_policy",
+          "type": "table",
+          "tableName": "history_policy",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "history_games",
+          "type": "table",
+          "tableName": "history_games",
+          "physicalBytes": 4096,
+          "payloadBytes": 98
+        },
+        {
+          "name": "history_checkpoint_time",
+          "type": "index",
+          "tableName": "history_checkpoints",
+          "physicalBytes": 4096,
+          "payloadBytes": 302
+        },
+        {
+          "name": "history_archives",
+          "type": "table",
+          "tableName": "history_archives",
+          "physicalBytes": 4096,
+          "payloadBytes": 1189
+        },
+        {
+          "name": "commands_generation",
+          "type": "index",
+          "tableName": "commands",
+          "physicalBytes": 4096,
+          "payloadBytes": 1392
+        }
+      ],
+      "generations": [
+        {
+          "generation": 0,
+          "tables": {
+            "history_games": {
+              "rows": 1
+            },
+            "history_events": {
+              "rows": 228553
+            },
+            "history_inputs": {
+              "rows": 125
+            },
+            "history_checkpoints": {
+              "rows": 21
+            },
+            "history_points": {
+              "rows": 240
+            },
+            "slack_messages": {
+              "rows": 110
+            },
+            "request_receipts": {
+              "rows": 227130
+            },
+            "receipt_paths": {
+              "rows": 2
+            },
+            "commands": {
+              "rows": 0
+            }
+          }
+        },
+        {
+          "generation": 1,
+          "tables": {
+            "history_games": {
+              "rows": 1
+            },
+            "history_events": {
+              "rows": 228930
+            },
+            "history_inputs": {
+              "rows": 304
+            },
+            "history_checkpoints": {
+              "rows": 24
+            },
+            "history_points": {
+              "rows": 241
+            },
+            "slack_messages": {
+              "rows": 243
+            },
+            "request_receipts": {
+              "rows": 227130
+            },
+            "receipt_paths": {
+              "rows": 2
+            },
+            "commands": {
+              "rows": 304
+            }
+          }
+        }
+      ],
+      "unassignedLegacyReceipts": {
+        "rows": 0
+      },
+      "evidence": {
+        "logicalJsonBytes": 197326390
+      },
+      "checkpoints": {
+        "compressedBytes": 6632082
+      },
+      "policy": {
+        "keepGenerations": null,
+        "olderThanDays": null,
+        "deleteEnabled": false
+      }
+    },
+    "walAutocheckpointPages": {
+      "wal_autocheckpoint": 1000
+    },
+    "perGenerationLogicalBytes": [
+      {
+        "generation": 0,
+        "receipts": 227130,
+        "receiptLogicalBytes": 241122787,
+        "otherTables": {
+          "history_events": {
+            "rows": 228553,
+            "payloadBytes": 98621164
+          },
+          "history_inputs": {
+            "rows": 125,
+            "payloadBytes": 34159
+          },
+          "history_points": {
+            "rows": 240,
+            "payloadBytes": 210916
+          },
+          "slack_messages": {
+            "rows": 110,
+            "payloadBytes": 29502
+          },
+          "history_checkpoints": {
+            "rows": 21,
+            "payloadBytes": 2974089
+          },
+          "receipt_paths": {
+            "rows": 2,
+            "payloadBytes": 430
+          },
+          "commands": {
+            "rows": 0,
+            "payloadBytes": 0
+          }
+        }
+      },
+      {
+        "generation": 1,
+        "receipts": 227130,
+        "receiptLogicalBytes": 241143716,
+        "otherTables": {
+          "history_events": {
+            "rows": 228930,
+            "payloadBytes": 98705226
+          },
+          "history_inputs": {
+            "rows": 304,
+            "payloadBytes": 81673
+          },
+          "history_points": {
+            "rows": 241,
+            "payloadBytes": 211696
+          },
+          "slack_messages": {
+            "rows": 243,
+            "payloadBytes": 65458
+          },
+          "history_checkpoints": {
+            "rows": 24,
+            "payloadBytes": 3657993
+          },
+          "receipt_paths": {
+            "rows": 2,
+            "payloadBytes": 434
+          },
+          "commands": {
+            "rows": 304,
+            "payloadBytes": 5871
+          }
+        }
+      }
+    ],
+    "integrity": {
+      "integrity_check": "ok"
+    },
+    "automaticCheckpointCount": "not instrumented; SQLite default threshold reported",
+    "afterCheckpoint": {
+      "sqliteBytes": 884883456,
+      "walBytes": 0,
+      "shmBytes": 196608,
+      "pageSize": 4096,
+      "freePages": 1139,
+      "freeBytes": 4665344,
+      "pages": [
+        {
+          "name": "request_receipts",
+          "type": "table",
+          "tableName": "request_receipts",
+          "physicalBytes": 602320896,
+          "payloadBytes": 521494359
+        },
+        {
+          "name": "history_events",
+          "type": "table",
+          "tableName": "history_events",
+          "physicalBytes": 233914368,
+          "payloadBytes": 212792374
+        },
+        {
+          "name": "sqlite_autoindex_request_receipts_1",
+          "type": "index",
+          "tableName": "request_receipts",
+          "physicalBytes": 10395648,
+          "payloadBytes": 8032725
+        },
+        {
+          "name": "history_events_time",
+          "type": "index",
+          "tableName": "history_events",
+          "physicalBytes": 9879552,
+          "payloadBytes": 7266441
+        },
+        {
+          "name": "sqlite_autoindex_history_events_1",
+          "type": "index",
+          "tableName": "history_events",
+          "physicalBytes": 6713344,
+          "payloadBytes": 4476590
+        },
+        {
+          "name": "history_checkpoints",
+          "type": "table",
+          "tableName": "history_checkpoints",
+          "physicalBytes": 6676480,
+          "payloadBytes": 6635555
+        },
+        {
+          "name": "game",
+          "type": "table",
+          "tableName": "game",
+          "physicalBytes": 4743168,
+          "payloadBytes": 4735334
+        },
+        {
+          "name": "receipts_generation",
+          "type": "index",
+          "tableName": "request_receipts",
+          "physicalBytes": 4644864,
+          "payloadBytes": 2692665
+        },
+        {
+          "name": "history_points",
+          "type": "table",
+          "tableName": "history_points",
+          "physicalBytes": 499712,
+          "payloadBytes": 425927
+        },
+        {
+          "name": "history_inputs",
+          "type": "table",
+          "tableName": "history_inputs",
+          "physicalBytes": 135168,
+          "payloadBytes": 119705
+        },
+        {
+          "name": "slack_messages",
+          "type": "table",
+          "tableName": "slack_messages",
+          "physicalBytes": 118784,
+          "payloadBytes": 106097
+        },
+        {
+          "name": "commands",
+          "type": "table",
+          "tableName": "commands",
+          "physicalBytes": 49152,
+          "payloadBytes": 38986
+        },
+        {
+          "name": "sqlite_autoindex_commands_1",
+          "type": "index",
+          "tableName": "commands",
+          "physicalBytes": 20480,
+          "payloadBytes": 13226
+        },
+        {
+          "name": "slack_tenant",
+          "type": "index",
+          "tableName": "slack_messages",
+          "physicalBytes": 16384,
+          "payloadBytes": 8754
+        },
+        {
+          "name": "sqlite_autoindex_slack_messages_1",
+          "type": "index",
+          "tableName": "slack_messages",
+          "physicalBytes": 12288,
+          "payloadBytes": 4245
+        },
+        {
+          "name": "sqlite_autoindex_history_points_1",
+          "type": "index",
+          "tableName": "history_points",
+          "physicalBytes": 12288,
+          "payloadBytes": 3668
+        },
+        {
+          "name": "sqlite_autoindex_history_inputs_1",
+          "type": "index",
+          "tableName": "history_inputs",
+          "physicalBytes": 12288,
+          "payloadBytes": 3295
+        },
+        {
+          "name": "storage_lease",
+          "type": "table",
+          "tableName": "storage_lease",
+          "physicalBytes": 4096,
+          "payloadBytes": 63
+        },
+        {
+          "name": "sqlite_autoindex_sessions_1",
+          "type": "index",
+          "tableName": "sessions",
+          "physicalBytes": 4096,
+          "payloadBytes": 1793
+        },
+        {
+          "name": "sqlite_autoindex_receipt_paths_1",
+          "type": "index",
+          "tableName": "receipt_paths",
+          "physicalBytes": 4096,
+          "payloadBytes": 279
+        },
+        {
+          "name": "sqlite_autoindex_history_checkpoints_1",
+          "type": "index",
+          "tableName": "history_checkpoints",
+          "physicalBytes": 4096,
+          "payloadBytes": 334
+        },
+        {
+          "name": "sessions",
+          "type": "table",
+          "tableName": "sessions",
+          "physicalBytes": 4096,
+          "payloadBytes": 3137
+        },
+        {
+          "name": "receipt_paths",
+          "type": "table",
+          "tableName": "receipt_paths",
+          "physicalBytes": 4096,
+          "payloadBytes": 1144
+        },
+        {
+          "name": "history_protection",
+          "type": "table",
+          "tableName": "history_protection",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "history_policy",
+          "type": "table",
+          "tableName": "history_policy",
+          "physicalBytes": 4096,
+          "payloadBytes": 0
+        },
+        {
+          "name": "history_games",
+          "type": "table",
+          "tableName": "history_games",
+          "physicalBytes": 4096,
+          "payloadBytes": 98
+        },
+        {
+          "name": "history_checkpoint_time",
+          "type": "index",
+          "tableName": "history_checkpoints",
+          "physicalBytes": 4096,
+          "payloadBytes": 302
+        },
+        {
+          "name": "history_archives",
+          "type": "table",
+          "tableName": "history_archives",
+          "physicalBytes": 4096,
+          "payloadBytes": 1189
+        },
+        {
+          "name": "commands_generation",
+          "type": "index",
+          "tableName": "commands",
+          "physicalBytes": 4096,
+          "payloadBytes": 1392
+        }
+      ],
+      "generations": [
+        {
+          "generation": 0,
+          "tables": {
+            "history_games": {
+              "rows": 1
+            },
+            "history_events": {
+              "rows": 228553
+            },
+            "history_inputs": {
+              "rows": 125
+            },
+            "history_checkpoints": {
+              "rows": 21
+            },
+            "history_points": {
+              "rows": 240
+            },
+            "slack_messages": {
+              "rows": 110
+            },
+            "request_receipts": {
+              "rows": 227130
+            },
+            "receipt_paths": {
+              "rows": 2
+            },
+            "commands": {
+              "rows": 0
+            }
+          }
+        },
+        {
+          "generation": 1,
+          "tables": {
+            "history_games": {
+              "rows": 1
+            },
+            "history_events": {
+              "rows": 228930
+            },
+            "history_inputs": {
+              "rows": 304
+            },
+            "history_checkpoints": {
+              "rows": 24
+            },
+            "history_points": {
+              "rows": 241
+            },
+            "slack_messages": {
+              "rows": 243
+            },
+            "request_receipts": {
+              "rows": 227130
+            },
+            "receipt_paths": {
+              "rows": 2
+            },
+            "commands": {
+              "rows": 304
+            }
+          }
+        }
+      ],
+      "unassignedLegacyReceipts": {
+        "rows": 0
+      },
+      "evidence": {
+        "logicalJsonBytes": 197326390
+      },
+      "checkpoints": {
+        "compressedBytes": 6632082
+      },
+      "policy": {
+        "keepGenerations": null,
+        "olderThanDays": null,
+        "deleteEnabled": false
+      }
+    }
+  },
+  "result": "passed",
+  "exitCode": 0,
+  "wallMs": 131761.088958,
+  "socket": {
+    "snapshots": 15912,
+    "sizeBytes": {
+      "n": 15912,
+      "p50": 97535,
+      "p95": 169362,
+      "p99": 178747,
+      "max": 183056
+    },
+    "deliveryMs": {
+      "n": 15912,
+      "p50": 14.45849609375,
+      "p95": 67.425537109375,
+      "p99": 112.019775390625,
+      "max": 138.902099609375
+    },
+    "cadenceMs": {
+      "n": 15885,
+      "p50": 198.81841700000223,
+      "p95": 258.72566599999845,
+      "p99": 355.0388329999987,
+      "max": 452.7861249999987
+    },
+    "maximumConnections": 27,
+    "disconnects": 55,
+    "reconnects": 28,
+    "timeouts": 0,
+    "nonChatCommandAckMs": {
+      "n": 181,
+      "p50": 29.807499999995343,
+      "p95": 93.32200000000012,
+      "p99": 161.08574999999837,
+      "max": 229.5648749999964
+    },
+    "commandAckMs": {
+      "n": 433,
+      "p50": 85.00504200000432,
+      "p95": 360.13408399999753,
+      "p99": 393.6965829999972,
+      "max": 412.55058299999655
+    }
+  },
+  "flowSlack": {
+    "sent": 125,
+    "authorizedDeliveries": 625,
+    "ackMs": {
+      "n": 252,
+      "p50": 202.30512499999895,
+      "p95": 375.81104100000084,
+      "p99": 403.1021669999973,
+      "max": 412.55058299999655
+    },
+    "deliveryMs": {
+      "n": 625,
+      "p50": 414.4909589999952,
+      "p95": 426.9749159999992,
+      "p99": 427.9400830000013,
+      "max": 428.1485410000023
+    },
+    "crossCompanyDeliveries": 0,
+    "confirmedMessageLoss": 0,
+    "duplicateApplications": 0
+  },
+  "explicitCheckpoints": 1,
+  "budgets": {
+    "eventLoopP99Below150": true,
+    "engineIntervalP95Below200": true,
+    "nonChatCommandAckP95Below150": true,
+    "allCommandAckP95Below150": false,
+    "scope": "Investigative budgets on local loopback; crossing one is reported, never hidden or relaxed."
+  }
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "label": "certified-1200s-20x",
+    "command": "npm run bench:classroom -- --duration=1200 --speed=20 --label=certified-1200s-20x",
+    "startedAt": "2026-10-20T02:15:34.839Z",
+    "wallMs": 132116,
+    "exitCode": 0,
+    "signal": null
+  },
+  {
+    "label": "certified-1500s-20x",
+    "command": "npm run bench:classroom -- --duration=1500 --speed=20 --label=certified-1500s-20x",
+    "startedAt": "2026-10-20T02:17:46.955Z",
+    "wallMs": 158848,
+    "exitCode": 0,
+    "signal": null
+  },
+  {
+    "label": "certified-1200s-1x",
+    "command": "npm run bench:classroom -- --duration=1200 --speed=1 --label=certified-1200s-1x",
+    "startedAt": "2026-10-20T02:20:25.804Z",
+    "wallMs": 1282225,
+    "exitCode": 0,
+    "signal": null
+  }
+]
