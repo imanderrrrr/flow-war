@@ -112,7 +112,7 @@ function Workspace() {
       </> : <div className="empty-state detail-empty"><Icon name={role==='qa'?'flask':role==='cto'?'crown':'server'} size={42}/><strong>0 CAMBIOS PENDIENTES</strong></div>}</section><section className="panel"><div className="panel-title">EVENTOS DE {c.name}</div><EventRows companyId={c.id}/></section>
     </div></div>}
     {role==='devops'&&<Maintenance active={active}/>}
-    <FlowSlack key={s.generation}/>{s.status==='FINISHED'&&<a className="secondary-button" href="/dvr">REVISAR MI EMPRESA EN EL DVR</a>}
+    <FlowSlack key={s.generation}/><a className="secondary-button" href="/dvr">REVISAR HISTORIAL DE MI EMPRESA</a>
     <OperationsPanel active={active} changeId={change?.id}/>
   </main>;
 }
