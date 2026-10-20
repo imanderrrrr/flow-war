@@ -1,0 +1,31 @@
+✖ final retention: preview agrees with actual archive and deletion, independently of protection and retention (163.526625ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 283.618333
+
+✖ failing tests:
+
+test at tests/final-retention.test.ts:1:613
+✖ final retention: preview agrees with actual archive and deletion, independently of protection and retention (163.526625ms)
+  AssertionError [ERR_ASSERTION]: archive 0
+  
+  false !== true
+  
+      at check (/Users/anderson/Documents/proyecto aseguramiento/tests/final-retention.test.ts:18:68)
+      at TestContext.<anonymous> (/Users/anderson/Documents/proyecto aseguramiento/tests/final-retention.test.ts:24:54)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
