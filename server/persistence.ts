@@ -11,6 +11,8 @@ import { initialTraffic } from './traffic.js';
 export function recoverGame(serialized: string): GameState {
   const saved = JSON.parse(serialized);
   const originalSchema = saved.schema;
+  // Missing mode means a pre-5.5 recorded generation, never a new lightweight room.
+  saved.dvrEnabled ??= true;
   if (![1, 2, 3, 4, 5, 6].includes(saved.schema)) throw new Error('Versión de partida no soportada.');
   if (saved.schema === 1) {
     for (const company of saved.companies) company.concurrency = initialConcurrency(saved.duration, saved.tick);

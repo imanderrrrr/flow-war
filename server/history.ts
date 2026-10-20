@@ -17,16 +17,24 @@ export function historySchema(db: DatabaseSync) {
  CREATE INDEX IF NOT EXISTS slack_tenant ON slack_messages(generation,companyId,channel,seq);
  CREATE TABLE IF NOT EXISTS history_points (generation INTEGER, at REAL, body TEXT, PRIMARY KEY(generation,at));`);
  const columns = db.prepare('PRAGMA table_info(history_games)').all() as {name:string}[];
+ if (!columns.some(c=>c.name==='dvrEnabled')) db.exec('ALTER TABLE history_games ADD COLUMN dvrEnabled INTEGER NOT NULL DEFAULT 1 CHECK(dvrEnabled IN (0,1))');
  if (!columns.some(c=>c.name==='closure')) db.exec('ALTER TABLE history_games ADD COLUMN closure TEXT');
  if (!columns.some(c=>c.name==='closedAt')) db.exec('ALTER TABLE history_games ADD COLUMN closedAt INTEGER');
 }
 export function writeHistory(db: DatabaseSync, g: GameState) {
- const meta = db.prepare('SELECT generation FROM history_games WHERE generation=?').get(g.generation);
- if (!meta && !buffer(g).checkpoints.length) checkpoint(g,serializeGame,true);
- db.prepare('INSERT INTO history_games (generation,start,tick,duration,status,version,closure,closedAt) VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(generation) DO UPDATE SET tick=excluded.tick,status=excluded.status,closure=excluded.closure,closedAt=coalesce(history_games.closedAt,excluded.closedAt)').run(g.generation,g.observability.startTick,g.tick,g.duration,g.status,g.observability.version,g.closure?JSON.stringify(g.closure):null,['FINISHED','ABORTED'].includes(g.status)?Date.now():null);
+ const meta = db.prepare('SELECT generation,dvrEnabled FROM history_games WHERE generation=?').get(g.generation) as {dvrEnabled:number}|undefined;
+ if (g.dvrEnabled && !meta && !buffer(g).checkpoints.length) checkpoint(g,serializeGame,true);
+ db.prepare('INSERT INTO history_games (generation,start,tick,duration,status,version,closure,closedAt,dvrEnabled) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(generation) DO UPDATE SET dvrEnabled=excluded.dvrEnabled,tick=excluded.tick,status=excluded.status,closure=excluded.closure,closedAt=coalesce(history_games.closedAt,excluded.closedAt)').run(g.generation,g.observability.startTick,g.tick,g.duration,g.status,g.observability.version,g.closure?JSON.stringify(g.closure):null,['FINISHED','ABORTED'].includes(g.status)?Date.now():null,g.dvrEnabled?1:0);
  const p=buffer(g);
+ // FlowSlack durability is operational and independent of forensic recording.
+ const slack=db.prepare('INSERT OR IGNORE INTO slack_messages VALUES (?,?,?,?,?,?)');
+ for(const m of p.slack) slack.run(g.generation,m.id,m.sequence,m.companyId,m.channel,JSON.stringify(m));
+ if (!g.dvrEnabled) {
+  if(meta?.dvrEnabled===1) for(const table of ['history_events','history_inputs','history_points','history_checkpoints','request_receipts','receipt_paths']) db.prepare(`DELETE FROM ${table} WHERE generation=?`).run(g.generation);
+  return;
+ }
  const event=db.prepare('INSERT OR IGNORE INTO history_events VALUES (?,?,?,?,?,?)');
- for(const e of p.events) { event.run(g.generation,e.id,e.at,e.companyId,e.kind,JSON.stringify(e)); if(e.kind==='slack.message'){const m=e.data.message as import('../shared/observability.js').SlackMessage;db.prepare('INSERT OR IGNORE INTO slack_messages VALUES (?,?,?,?,?,?)').run(g.generation,m.id,m.sequence,m.companyId,m.channel,JSON.stringify(m));} }
+ for(const e of p.events) event.run(g.generation,e.id,e.at,e.companyId,e.kind,JSON.stringify(e));
  const input=db.prepare('INSERT OR IGNORE INTO history_inputs VALUES (?,?,?,?)');
  for(const i of p.commands) input.run(g.generation,i.id,i.at,JSON.stringify(i));
  const point=db.prepare('INSERT OR REPLACE INTO history_points VALUES (?,?,?)');
@@ -36,15 +44,17 @@ export function writeHistory(db: DatabaseSync, g: GameState) {
 }
 export { clearBuffer as commitHistory };
 export function historyAccess(db: DatabaseSync, generation: number, identity: Identity | null) {
- const meta=db.prepare('SELECT * FROM history_games WHERE generation=?').get(generation) as {generation:number;start:number;tick:number;duration:number;status:string;version:string}|undefined;
+ const meta=db.prepare('SELECT * FROM history_games WHERE generation=?').get(generation) as {generation:number;start:number;tick:number;duration:number;status:string;version:string;dvrEnabled?:number}|undefined;
  if(!identity || !meta || !['FINISHED','ABORTED'].includes(meta.status)) throw new Error('El DVR requiere una partida cerrada y una sesión autorizada.');
+ if(meta.dvrEnabled===0) throw new Error('DVR_NOT_RECORDED: Esta partida se creó sin grabación forense.');
  return meta;
 }
 export function historyEvents(db: DatabaseSync, generation: number, companyId: number | null, before = Number.MAX_SAFE_INTEGER, limit = 100): Observation[] {
  return (db.prepare('SELECT body FROM history_events WHERE generation=? AND seq<? AND (? IS NULL OR companyId=? OR companyId IS NULL) ORDER BY seq DESC LIMIT ?').all(generation,before,companyId,companyId,limit) as {body:string}[]).map(r=>JSON.parse(r.body));
 }
 export function reconstruct(db: DatabaseSync, generation: number, at: number): GameState {
- const meta=db.prepare('SELECT start,tick,version FROM history_games WHERE generation=?').get(generation) as {start:number;tick:number;version:string}|undefined;
+ const meta=db.prepare('SELECT * FROM history_games WHERE generation=?').get(generation) as {start:number;tick:number;version:string;dvrEnabled?:number}|undefined;
+ if(meta?.dvrEnabled===0) throw new Error('DVR_NOT_RECORDED: Esta partida se creó sin grabación forense.');
  if(!meta || !Number.isFinite(at) || at<meta.start || at>meta.tick || meta.version!=='flow-observability-5.1') throw new Error('Intervalo sin evidencia reconstruible con esta versión del motor.');
  at=Math.floor((at+1e-7)*10)/10;
  const row=db.prepare('SELECT seq,at,state,digest FROM history_checkpoints WHERE generation=? AND at<=? ORDER BY at DESC,seq DESC LIMIT 1').get(generation,at) as {seq:number;at:number;state:Uint8Array;digest:string}|undefined;
@@ -61,7 +71,7 @@ export function historyPoints(db: DatabaseSync, generation:number):HistoricalPoi
 
 /** Recover only durable, reconstructible orphan generations left by the old reset path. */
 export function sealLegacyGenerations(db: DatabaseSync, current: number) {
- const rows=db.prepare("SELECT generation FROM history_games WHERE generation!=? AND status NOT IN ('FINISHED','ABORTED')").all(current) as {generation:number}[];
+ const rows=db.prepare("SELECT generation FROM history_games WHERE generation!=? AND dvrEnabled=1 AND status NOT IN ('FINISHED','ABORTED')").all(current) as {generation:number}[];
  for (const row of rows) {
   const meta=db.prepare('SELECT tick FROM history_games WHERE generation=?').get(row.generation) as {tick:number};
   const g=reconstruct(db,row.generation,meta.tick);

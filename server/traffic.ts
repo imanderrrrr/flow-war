@@ -1,5 +1,5 @@
 import {prepareReceipt} from './receipt-storage.js';
-import {isLiveEvidence} from './observability.js';
+import {isLiveEvidence,capturesReceipts} from './observability.js';
 import { visibleRequest } from './projections.js';
 import { admissionReason } from './maintenance.js';
 import { observeCompany } from './observability.js';
@@ -172,12 +172,12 @@ export function settleTraffic(company: Company, now: number) {
     company.oversold += request.oversold; company.breaches += Number(request.breach);
     if (request.trafficClass === 'legitimate') recordCustomerExperience(company, request, request.type, request.latencyMs!);
     request.accounted = true;
-    observeCompany(company, 'request.settled', { requestId: request.id, customerId: request.customerId, trafficClass: request.trafficClass, type: request.type, version: request.executionVersion, result: request.result, transaction: request.transaction, duplicates: request.duplicates ?? 0, oversold: request.oversold, defects: request.effectCodes ?? [], modules: request.execution?.modules.map(m => ({ id: m.id, version: m.version, defects: m.defects.filter(d => request.effectCodes?.includes(d.code)).map(d => d.code) })) ?? [], latencyMs: request.latencyMs }, [request.id]);
+    observeCompany(company, 'request.settled', { requestId: request.id, customerId: request.customerId, trafficClass: request.trafficClass, type: request.type, version: request.executionVersion, result: request.result, transaction: request.transaction, duplicates: request.duplicates ?? 0, oversold: request.oversold, defects: request.effectCodes ?? [], modules: capturesReceipts(company) ? request.execution?.modules.map(m => ({ id: m.id, version: m.version, defects: m.defects.filter(d => request.effectCodes?.includes(d.code)).map(d => d.code) })) ?? [] : [], latencyMs: request.latencyMs }, [request.id]);
     if (request.transaction === 'PENDING_RESOLUTION') state.unresolvedCount++;
     state.observations.push({ at: now, legitimate: request.trafficClass === 'legitimate', status: result.status, latency: request.latencyMs!, breach: request.breach, oversold: request.oversold });
-    const receipt=trafficReceipt(request, true);
+    if(capturesReceipts(company)){const receipt=trafficReceipt(request, true);
     state.outbox.push(receipt);
-    if(isLiveEvidence(company))prepareReceipt(receipt);
+    if(isLiveEvidence(company))prepareReceipt(receipt);}
   }
 }
 

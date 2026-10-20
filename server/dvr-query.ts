@@ -10,7 +10,7 @@ export class DvrError extends Error {constructor(public status:number,message:st
 /** Runs inside a read transaction on the worker's independent read-only connection. */
 export function queryDvr(db:DatabaseSync,q:DvrQuery):unknown {
  const {identity,generation,companyId}=q;
- if(q.kind==='games')return db.prepare("SELECT generation,start,tick,duration,status,version FROM history_games WHERE status IN ('FINISHED','ABORTED') ORDER BY generation DESC").all();
+ if(q.kind==='games')return db.prepare("SELECT * FROM history_games WHERE status IN ('FINISHED','ABORTED') ORDER BY generation DESC").all().filter(row=>row.dvrEnabled!==0);
  if(!Number.isSafeInteger(generation)||generation<0)throw new DvrError(400,'Generación inválida.');
  const meta=historyAccess(db,generation,identity);
  if(!Number.isInteger(companyId)||companyId<0||companyId>4)throw new DvrError(400,'Empresa inválida.');

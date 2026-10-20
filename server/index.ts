@@ -44,7 +44,7 @@ if (saved && [1, 2, 3, 4, 5].includes(JSON.parse(saved.state).schema)) {
   db.exec('CREATE TABLE IF NOT EXISTS game_migrations (schema INTEGER PRIMARY KEY, state TEXT NOT NULL)');
   db.prepare('INSERT OR IGNORE INTO game_migrations (schema,state) VALUES (?,?)').run(JSON.parse(saved.state).schema, saved.state);
 }
-let game: GameState = saved ? recoverGame(saved.state) : createGame();
+let game: GameState = saved ? recoverGame(saved.state) : createGame(1500, 7357, 0, false);
 if (saved) { observe(game,'server.recovered',null,{status:game.status}); checkpoint(game,serializeGame,true); }
 const writeGame = createGameWriter(db);
 sealLegacyGenerations(db, game.generation);

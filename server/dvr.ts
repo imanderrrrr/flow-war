@@ -2,7 +2,7 @@ import type {Express,Request} from 'express';
 import type {DatabaseSync} from 'node:sqlite';
 import type {Identity} from '../shared/types.js';
 import {DvrPool,DvrBusy} from './dvr-pool.js';
-import type {DvrQuery} from './dvr-query.js';
+import {queryDvr,type DvrQuery} from './dvr-query.js';
 export {visibleFact} from './projections.js';
 export function installDvr(app:Express,db:DatabaseSync,identityFor:(req:Request)=>Identity|null){
  const path=(db.prepare('PRAGMA database_list').get()as{file:string}).file;
@@ -13,6 +13,12 @@ export function installDvr(app:Express,db:DatabaseSync,identityFor:(req:Request)
   const controller=new AbortController();const abort=()=>{if(!res.writableEnded)controller.abort();};req.once('aborted',abort);res.once('close',abort);
   try{
    const query:DvrQuery={kind,identity,generation:Number(req.params.generation??0),companyId:Number(req.query.companyId??identity.companyId??0),at:req.query.at===undefined?undefined:Number(req.query.at),before:req.query.before===undefined?undefined:Number(req.query.before),requestId:typeof req.params.id==='string'?req.params.id:undefined};
+   if (kind === 'games') return res.json(queryDvr(db,query));
+   {
+    if(identity.role!=='operator' && query.companyId!==identity.companyId) return res.sendStatus(403);
+    const meta=db.prepare('SELECT * FROM history_games WHERE generation=?').get(query.generation);
+    if(meta?.dvrEnabled===0) return res.status(409).json({code:'DVR_NOT_RECORDED',error:'Esta partida se creó sin grabación forense.'});
+   }
    const data=await pool.run(query,controller.signal);if(!controller.signal.aborted)res.json(data);
   }catch(e){if(!controller.signal.aborted){const error=e instanceof DvrBusy?e:new DvrBusy();if(error.status===429||error.status===503)res.setHeader('Retry-After','1');res.status(error.status).json({error:error.message});}}
   finally{req.off('aborted',abort);res.off('close',abort);}

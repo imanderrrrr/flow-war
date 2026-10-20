@@ -64,6 +64,7 @@ export const ACTION_CATALOG = {
   'cto.authorize': entry(['cto'], 'finance'), 'cto.reject': entry(['cto'], 'finance'),
   'cto.budget': entry(['cto'], 'finance'), 'cto.prioritize': entry(['cto'], 'operation'),
   'infra.scale': entry(['devops'], 'operation'), 'infra.balancer': entry(['devops'], 'operation'), 'deploy.start': entry(['devops'], 'publication'),
+  'room.dvr': entry(['operator'], 'administration'),
   'room.start': entry(['operator'], 'administration'), 'room.pause': entry(['operator'], 'administration'),
   'room.reset': entry(['operator'], 'administration'), 'room.speed': entry(['operator'], 'administration'), 'room.finish': entry(['operator'], 'administration'),
 } as const;

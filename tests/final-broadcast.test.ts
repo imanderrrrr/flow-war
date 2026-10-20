@@ -22,6 +22,7 @@ test('final broadcast: bursts preserve every durable command and the latest priv
    const socket=io(base,{forceNew:true,autoConnect:false,transports:['websocket'],extraHeaders:{Cookie:cookie}});sockets.push(socket);socket.on('snapshot',s=>latest.set(socket,s));const connected=new Promise<void>((resolve,reject)=>{socket.once('connect',resolve);socket.once('connect_error',reject);});socket.connect();await connected;
   }
   const send=(socket:Socket,type:string,payload?:Record<string,unknown>,companyId?:number,id=crypto.randomUUID())=>new Promise<Result>((res,rej)=>socket.timeout(5000).emit('command',{id,type,payload,companyId},(error:Error|null,result:Result)=>error?rej(error):res(result)));
+  assert((await send(sockets[0],'room.dvr',{enabled:true})).ok);
   assert((await send(sockets[0],'room.start')).ok);
   const messages=Array.from({length:25},(_,i)=>({socket:sockets[i%5+1],companyId:i%5,id:crypto.randomUUID(),payload:{channel:'equipo-interno',text:`burst ${i}`,refs:[]}}));
   const results=await Promise.all(messages.map(m=>send(m.socket,'chat.send',m.payload,m.companyId,m.id)));assert(results.every(r=>r.ok));

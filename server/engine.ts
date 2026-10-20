@@ -4,7 +4,7 @@ import { postChat } from './chat.js';
 import { slackFact, sampleTelemetry } from './flowslack.js';
 import { updateCrisis } from './crisis.js';
 import { serializeGame } from './persistence.js';
-import { initialObservability, bindObservability, observe, observeCompany, recordInput, checkpoint, sampleHistory, clearBuffer, buffer, copyHistoryBuffer, projectHistoryPoint } from './observability.js';
+import { initialObservability, bindObservability, observe, observeCompany, recordInput, checkpoint, sampleHistory, clearBuffer, buffer, copyHistoryBuffer, projectHistoryPoint, capturingHistory } from './observability.js';
 import { runLocalAgent } from './agents.js';
 import { initialActionState, dispatchCommand, correctEmployee, auditCompletion } from './discipline.js';
 import { businessCommand, advanceCampaigns } from './business.js';
@@ -32,14 +32,14 @@ export function initialGraph(domain: 'backend' | 'security' | 'product'): Graph 
   const labels: Record<string, string> = { entry: 'Request IN', read: 'Read Stock', write: 'Write Stock', payment: 'Payment', exit: 'Response OUT' };
   return { nodes: types.map((type, i) => ({ id: `${domain}-${type}`, type, position: { x: i * 190, y: 160 }, data: { label: labels[type] } })), edges: types.slice(1).map((type, i) => ({ id: `${domain}-e${i}`, source: `${domain}-${types[i]}`, target: `${domain}-${type}` })) };
 }
-export function createGame(duration = 1500, seed = 7357, generation = 0): GameState {
+export function createGame(duration = 1500, seed = 7357, generation = 0, dvrEnabled = true): GameState {
   const companies: Company[] = NAMES.map((name, id) => ({
     crisis: { active: false, episode: 0, lastReputation: 80 }, serviceMode: { mode: 'OPERATING', since: 0 }, runtime: initialRuntime(), infrastructure: initialInfrastructure(), id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
     servers: 1, balancer: false, infraBudget: duration * .5, reserved: 0, version: 1, deployments: 0, active: 0, requests: 0, successes: 0, errors: 0, breaches: 0, oversold: 0, duplicates: 0,
     lostRevenue: 0, revenue: 0, latency: 0, utilization: 0, queue: 0, migratedIn: 0, migratedOut: 0, eliminated: false, crisisTicks: 0, deadTicks: 0, bankruptTicks: 0, concurrencyUntil: 0,
     backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
   }));
-  const game: GameState = { actions: initialActionState(), schema: 6, observability: initialObservability(), slack: { sequence: 0, messages: [], receipts: {}, buckets: {}, groups: {}, automaticCount: 0, sampledCount: 0 }, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
+  const game: GameState = { dvrEnabled, actions: initialActionState(), schema: 6, observability: initialObservability(), slack: { sequence: 0, messages: [], receipts: {}, buckets: {}, groups: {}, automaticCount: 0, sampledCount: 0 }, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
   bindMarket(game); bindObservability(game, f=>slackFact(game,f)); assertMarket(game); checkpoint(game, serializeGame, true); return game;
 }
 export function event(g: GameState, companyId: number | null, text: string, tone: 'good' | 'bad' | 'neutral' = 'neutral', category = 'SISTEMA') {
@@ -114,6 +114,14 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
   if (!identity || !allowedAction(command.type, identity.role)) return { ok: false, code: 'FORBIDDEN', error: 'Acción no autorizada para este rol.' };
   if (identity.role === 'operator') {
     if (command.type === 'employee.correct') return correctEmployee(g, command.payload ?? {});
+    if (command.type === 'room.dvr') {
+      if (g.status !== 'LOBBY') return { ok: false, code: 'DVR_MODE_LOCKED', error: 'Elige el DVR antes de iniciar la partida.' };
+      if (typeof command.payload?.enabled !== 'boolean') return { ok: false, error: 'Modo DVR inválido.' };
+      g.dvrEnabled = command.payload.enabled;
+      if (!g.dvrEnabled) { const p=buffer(g); p.events=[]; p.commands=[]; p.points=[]; p.checkpoints=[]; }
+      else checkpoint(g, serializeGame, true);
+      return { ok: true };
+    }
     if (command.type === 'room.reset') {
       const closed = structuredClone(g); copyHistoryBuffer(g, closed); bindObservability(closed); bindMarket(closed);
       if (closed.status !== 'FINISHED' && closed.status !== 'ABORTED') {
@@ -121,13 +129,13 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
         closed.closure = { generation: closed.generation, tick: closed.tick, previousStatus: closed.status, reason: 'TEACHER_RESET', actor: { ...identity }, receivedAt };
         closed.status = 'ABORTED';
         observe(closed, 'generation.interrupted', null, { ...closed.closure, commandId: command.id });
-        buffer(closed).points.push(projectHistoryPoint(closed));
+        if (capturingHistory(closed)) buffer(closed).points.push(projectHistoryPoint(closed));
         checkpoint(closed, serializeGame, true);
       }
       // Keep both generations and all pending evidence until one durable transaction commits.
       const earlier = buffer(closed).closed; buffer(closed).closed = [];
       clearBuffer(g); delete g.closure;
-      Object.assign(g, createGame(Number(command.payload?.duration) === 1200 ? 1200 : 1500, 7357, g.generation + 1));
+      Object.assign(g, createGame(Number(command.payload?.duration) === 1200 ? 1200 : 1500, 7357, g.generation + 1, g.dvrEnabled));
       buffer(g).closed.push(...earlier, closed);
       bindObservability(g, f => slackFact(g, f));
       checkpoint(g, serializeGame, true);
@@ -338,7 +346,7 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
   }
   return {
     operations: identity ? { modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
-    generation: g.generation,
+    dvrEnabled: g.dvrEnabled, generation: g.generation,
     slack: ownCompany ? structuredClone(g.slack.messages.filter(m=>m.companyId===ownCompany.id)) : undefined,
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
     companies: common?.companies ?? g.companies.map(c => {

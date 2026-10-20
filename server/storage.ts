@@ -17,7 +17,7 @@ export function createGameWriter(db: DatabaseSync) {
     db.exec('BEGIN IMMEDIATE');
     try {
       for (const state of generations) {
-      for (const company of state.companies) for (const receipt of company.traffic.outbox) { const encoded=encodeReceipt(db,state.generation,receipt); receiptStatement.run(receipt.id, receipt.companyId, encoded.receipt,state.generation,encoded.details,encoded.detailDigest); }
+      if (state.dvrEnabled) for (const company of state.companies) for (const receipt of company.traffic.outbox) { const encoded=encodeReceipt(db,state.generation,receipt); receiptStatement.run(receipt.id, receipt.companyId, encoded.receipt,state.generation,encoded.details,encoded.detailDigest); }
       writeHistory(db, state);
       }
       save.run(serializeGame(game));
