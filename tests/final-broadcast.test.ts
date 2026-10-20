@@ -7,7 +7,7 @@ import {mkdtempSync,readFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
-import {io,type Socket} from 'socket.io-client';
+import {io,type Socket} from '../shared/live-client.js';
 import type {Snapshot,Result} from '../shared/types.js';
 
 test('final broadcast: bursts preserve every durable command and the latest private snapshot',{timeout:20000},async()=>{

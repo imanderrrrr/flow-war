@@ -323,13 +323,13 @@ function finishRequests(g: GameState, reason: 'ROOM_FINISHED' | 'ROOM_INTERRUPTE
   }
   flushMigrations(g); assertMarket(g);
 }
-export function project(g: GameState, identity: Identity | null): Snapshot {
+export function project(g: GameState, identity: Identity | null, common?: Pick<Snapshot, 'companies'>): Snapshot {
   bindMarket(g);
   const internal = identity?.role === 'operator';
   const particles = (c: Company) => [...trafficParticles(c, g.tick), ...concurrencyParticles(c.concurrency.run, c.color, g.tick, c)].map(p => internal || p.kind !== 'attack' ? p : { ...p, kind: p.finishedAt !== undefined && p.status !== 'COMPLETED' ? 'error' as const : 'success' as const });
   const ownCompany = identity?.companyId != null ? g.companies[identity.companyId] : undefined;
   const { runtime: _runtime, breaches: _breaches, ...ownVisible } = ownCompany ?? {} as Company;
-  const privateC = ownCompany ? structuredClone({ ...ownVisible, particles: particles(ownCompany), traffic: trafficView(ownCompany.traffic, internal) }) : undefined;
+  const privateC = ownCompany ? structuredClone({ ...ownVisible, particles: common?.companies[ownCompany.id].particles ?? particles(ownCompany), traffic: trafficView(ownCompany.traffic, internal) }) : undefined;
   if (privateC) {
     if (privateC.concurrency.run) delete privateC.concurrency.run.operationsState;
     if (privateC.concurrency.run && !internal) privateC.concurrency.run.requests = privateC.concurrency.run.requests.map(r => visibleRequest(r)) as unknown as typeof privateC.concurrency.run.requests;
@@ -341,11 +341,11 @@ export function project(g: GameState, identity: Identity | null): Snapshot {
     generation: g.generation,
     slack: ownCompany ? structuredClone(g.slack.messages.filter(m=>m.companyId===ownCompany.id)) : undefined,
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
-    companies: g.companies.map(c => {
+    companies: common?.companies ?? g.companies.map(c => {
       const { runtime, drafts, backend, security, product, breaches, migrationRemainder, arrivalRemainder, processedRemainder, crisisTicks, deadTicks, bankruptTicks, concurrencyUntil, concurrency, traffic, ...pub } = c;
       return { ...pub, ...(internal?{breaches}:{}), traffic: trafficView(traffic, internal), concurrency: { runId: concurrency.run?.id, inventory: concurrency.run && { ...concurrency.run.inventory }, totals: { ...concurrency.totals } }, particles: particles(c), modules: [...route(backend), ...route(security)].map(n => n.type), pipelineCounts: [['QA_PENDING', 'QA_RUNNING'], ['CTO_PENDING'], ['AUTHORIZED', 'DEPLOYING'], ['DEPLOYED']].map(states => g.changes.filter(ch => ch.companyId === c.id && states.includes(ch.status)).length) };
     }),
-    events: g.events, migrations: g.migrations, unserved: g.unserved, privateCompany: privateC,
+    events: internal ? g.events : g.events.filter(e=>e.companyId===null||e.companyId===identity?.companyId), migrations: g.migrations, unserved: g.unserved, privateCompany: privateC,
     changes: (identity?.role === 'operator' ? g.changes : g.changes.filter(ch => ch.companyId === identity?.companyId)).map(({ qaLoad, qaScenario, testJob, context, ...change }) => ({ ...change, ...(context ? { context: { backend: context.backend, security: context.security, executionVersion: context.executionVersion } } : {}) })),
   };
 }

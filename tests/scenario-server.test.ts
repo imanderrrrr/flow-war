@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { once } from 'node:events';
 import { createServer } from 'node:net';
 import { DatabaseSync } from 'node:sqlite';
-import { io, type Socket } from 'socket.io-client';
+import { io, type Socket } from '../shared/live-client.js';
 import type { Command, Identity, Result, Snapshot } from '../shared/types.js';
 import { createGame } from '../server/engine.js';
 import { advanceConcurrency } from '../server/requests.js';

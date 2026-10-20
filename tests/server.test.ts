@@ -5,7 +5,7 @@ import { mkdtemp,readFile,rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { once } from 'node:events';
-import { io,type Socket } from 'socket.io-client';
+import { io,type Socket } from '../shared/live-client.js';
 import { initialGraph } from '../server/engine.js';
 import type { Command,Result,Snapshot } from '../shared/types.js';
 

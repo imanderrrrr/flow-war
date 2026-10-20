@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { DatabaseSync } from 'node:sqlite';
-import { io, type Socket } from 'socket.io-client';
+import { io, type Socket } from '../shared/live-client.js';
 import { createGame } from '../server/engine.js';
 import { admitTraffic } from '../server/traffic.js';
 import { createGameWriter } from '../server/storage.js';

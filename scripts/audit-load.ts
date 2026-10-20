@@ -5,7 +5,7 @@ import {join} from 'node:path';
 import {spawn} from 'node:child_process';
 import {once} from 'node:events';
 import {performance} from 'node:perf_hooks';
-import {io,type Socket} from 'socket.io-client';
+import {io,type Socket} from '../shared/live-client.js';
 import {createGame,applyCommand,step} from '../server/engine.js';
 import {createGameWriter} from '../server/storage.js';
 import type {Command,Result,Snapshot} from '../shared/types.js';

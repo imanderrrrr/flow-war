@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { once } from 'node:events';
 import { createServer } from 'node:net';
-import { io, type Socket } from 'socket.io-client';
+import { io, type Socket } from '../shared/live-client.js';
 import type { Command, Identity, Result, Snapshot } from '../shared/types.js';
 import { DEFAULT_TEST } from '../shared/actions.js';
 
@@ -32,9 +32,9 @@ test('4A real authenticated server executes structured artifacts and recovers ex
     assert.equal((await snapshot(qa.cookie)).changes[0].status,'QA_PENDING');await run(qa.socket,{type:'qa.approve',companyId:0,changeId:ch.id});await run(cto.socket,{type:'cto.authorize',companyId:0,changeId:ch.id});await run(devops.socket,{type:'deploy.start',companyId:0,changeId:ch.id,payload:{strategy:'rolling'}});await wait(devops.cookie,s=>s.changes[0].status==='DEPLOYED');
     await run(op.socket,{type:'room.speed',payload:{speed:1}});await run(devops.socket,{id:'pending-restart',type:'infra.restart_all',companyId:0,payload:{duration:20}});
     for(let i=0;i<5;i++){const cmd={id:`violation-${i}`,type:'infra.restart_all',companyId:0,payload:{duration:10}};assert.equal((await run(backend.socket,cmd)).code,'FORBIDDEN');assert.equal((await run(backend.socket,cmd)).code,'FORBIDDEN');}
-    assert.equal((await snapshot(backend.cookie)).operations!.employees.find(e=>e.role==='backend')!.status,'EXPELLED');await run(op.socket,{type:'room.pause'});
+    assert.equal((await snapshot(backend.cookie)).privateCompany,undefined);assert.equal((await snapshot(op.cookie)).operations!.employees.find(e=>e.id==='0-backend')!.status,'EXPELLED');await run(op.socket,{type:'room.pause'});
     sockets.forEach(s=>s.disconnect());await stop();await boot();
-    const restored=await snapshot(backend.cookie);assert.equal(restored.status,'PAUSED');assert.equal(restored.operations!.modules.length,1);assert.equal(restored.operations!.employees.find(e=>e.role==='backend')!.violations.length,5);assert.equal(restored.companies[0].infrastructure.instances[0].status,'RESTARTING');
+    const restored=await snapshot(devops.cookie);assert.equal(restored.status,'PAUSED');assert.equal(restored.operations!.modules.length,1);assert.equal(restored.operations!.employees.find(e=>e.role==='backend')!.violations.length,5);assert.equal(restored.companies[0].infrastructure.instances[0].status,'RESTARTING');
     const be=await socket(backend.cookie),ops=await socket(op.cookie),de=await socket(devops.cookie);
     assert.equal((await run(be,{type:'module.create',companyId:0,payload:action.parameters})).code,'EXPELLED');
     assert.equal((await run(de,{id:'pending-restart',type:'infra.restart_all',companyId:0,payload:{duration:20}})).ok,true);

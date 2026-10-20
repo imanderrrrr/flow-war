@@ -1,3 +1,5 @@
+import { slackFact } from './flowslack.js';
+import { SnapshotSync } from './snapshot-sync.js';
 import { acquireStorageLease } from './storage-lease.js';
 import { decodeReceipt } from './receipt-storage.js';
 import { visibleRequest } from './projections.js';
@@ -49,12 +51,13 @@ sealLegacyGenerations(db, game.generation);
 const persist = (command?: {identity: string; id: string; digest: string; result: string}) => writeGame(game, command);
 persist();
 const sessionLookup = db.prepare('SELECT identity,expires FROM sessions WHERE token=?');
-function session(cookie?: string): Identity | null {
+function session(cookie?: string, includeExpelled = false): Identity | null {
   const match = cookie?.match(/(?:^|;\s*)fw_session=([^;]+)/);
   if (!match) return null;
   const value = sessionLookup.get(hash(match[1])) as { identity: string; expires: number } | undefined;
   if (!value || value.expires < Date.now()) return null;
-  return JSON.parse(value.identity);
+  const identity = JSON.parse(value.identity) as Identity;
+  return !includeExpelled && game.actions.employees[identity.id]?.status === 'EXPELLED' ? null : identity;
 }
 const app = express();
 app.disable('x-powered-by');
@@ -82,7 +85,9 @@ app.post('/api/login', (req, res) => {
 });
 app.post('/api/logout', (req, res) => {
   const token = req.headers.cookie?.match(/(?:^|;\s*)fw_session=([^;]+)/)?.[1];
-  if (token) db.prepare('DELETE FROM sessions WHERE token=?').run(hash(token));
+  if (token) { db.prepare('DELETE FROM sessions WHERE token=?').run(hash(token));
+    for (const socket of io.sockets.sockets.values()) if (socket.request.headers.cookie?.match(/(?:^|;\s*)fw_session=([^;]+)/)?.[1] === token) socket.disconnect(true);
+  }
   res.setHeader('Set-Cookie', 'fw_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); res.json({ ok: true });
 });
 app.get('/api/health', (_req, res) => res.json({ ok: true, room: 'FW-001' }));
@@ -115,17 +120,23 @@ app.get('/api/access', (req, res) => {
   res.json({ credentials });
 });
 const http = createServer(app);
-const io = new Server(http, { maxHttpBufferSize: 80000, allowRequest: (req, callback) => {
+const io = new Server(http, { maxHttpBufferSize: 80000, perMessageDeflate: { threshold: 1024, serverNoContextTakeover: true, clientNoContextTakeover: true, concurrencyLimit: 4, zlibDeflateOptions: { level: 1 } }, allowRequest: (req, callback) => {
   try { callback(null, !req.headers.origin || new URL(req.headers.origin).host === req.headers.host); } catch { callback(null, false); }
 } });
+const synchronizers = new Map<string, SnapshotSync>();
 io.on('connection', socket => {
-  socket.emit('snapshot', project(game, session(socket.request.headers.cookie)));
+  socket.data.authenticated = !!session(socket.request.headers.cookie);
+  const sync = new SnapshotSync(socket); synchronizers.set(socket.id, sync);
+  sync.send(() => project(game, session(socket.request.headers.cookie)));
+  socket.on('disconnect', () => synchronizers.delete(socket.id));
+  let resyncAt = 0;
+  socket.on('state:resync', () => { if (Date.now()-resyncAt<250) return; resyncAt=Date.now(); sync.resync(); sync.send(() => project(game, session(socket.request.headers.cookie))); });
   let count = 0, at = Date.now();
   socket.on('command', (command: Command, ack: (result: unknown) => void) => {
     if (typeof ack !== 'function') return;
     if (Date.now() - at > 1000) { at = Date.now(); count = 0; }
     if (++count > 20) return ack({ ok: false, error: 'Límite de comandos alcanzado.' });
-    const identity = session(socket.request.headers.cookie);
+    const identity = session(socket.request.headers.cookie, true);
     if (!identity || !command || typeof command.id !== 'string' || command.id.length > 100 || typeof command.type !== 'string') return ack({ ok: false, code: 'FORBIDDEN', error: 'Sesión o comando no autorizado.' });
     const digest = hash(JSON.stringify(command));
     const prior = db.prepare('SELECT digest,result FROM commands WHERE identity=? AND id=?').get(identity.id, command.id) as { digest: string; result: string } | undefined;
@@ -135,7 +146,7 @@ io.on('connection', socket => {
     try {
       persist({ identity: identity.id, id: command.id, digest, result: JSON.stringify(result) });
       ack(result); scheduleBroadcast();
-    } catch { game = before; bindObservability(game); ack({ ok: false, error: 'No se pudo confirmar el comando.' }); }
+    } catch { game = before; bindObservability(game,f=>slackFact(game,f)); ack({ ok: false, error: 'No se pudo confirmar el comando.' }); }
   });
 });
 let pendingBroadcast: ReturnType<typeof setImmediate> | undefined;
@@ -146,7 +157,18 @@ function scheduleBroadcast() {
 }
 function broadcast() {
   if (pendingBroadcast) { clearImmediate(pendingBroadcast); pendingBroadcast = undefined; }
-  for (const socket of io.sockets.sockets.values()) socket.emit('snapshot', project(game, session(socket.request.headers.cookie)));
+  const projections = new Map<string, ReturnType<typeof project>>();
+  let publicProjection: ReturnType<typeof project> | undefined;
+  for (const socket of io.sockets.sockets.values()) {
+    const identity = session(socket.request.headers.cookie);
+    if (socket.data.authenticated && !identity) { socket.data.authenticated=false; socket.emit('state:clear'); synchronizers.get(socket.id)?.resync(); }
+    synchronizers.get(socket.id)?.send(() => {
+    const key = JSON.stringify(identity);
+    let value = projections.get(key); if (!value) { if (identity?.role === 'operator') value = project(game,identity);
+      else { publicProjection ??= project(game,null); value = identity ? project(game,identity,publicProjection) : publicProjection; }
+      projections.set(key,value); } return value;
+  });
+  }
 }
 let iterations = 0;
 const timer = setInterval(() => {

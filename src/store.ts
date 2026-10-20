@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { io } from 'socket.io-client';
+import { io } from '../shared/live-client';
 import type { Command, Result, Snapshot } from '../shared/types';
 
 export const socket = io({ reconnection: true });
@@ -12,9 +12,10 @@ export const useGame = create<Store>((set) => ({
   toggleSound: () => set(s => ({ sound: !s.sound })),
 }));
 let lastEvent = -1;
+socket.on('snapshot:clear', () => { lastEvent=-1; useGame.setState({snapshot:null}); });
 let audio: AudioContext | undefined;
 socket.on('connect', () => useGame.setState({ connected: true }));
-socket.on('disconnect', () => useGame.setState({ connected: false }));
+socket.on('disconnect', () => { lastEvent = -1; useGame.setState({ connected: false, snapshot: null }); });
 socket.on('snapshot', (snapshot: Snapshot) => {
   useGame.setState({ snapshot });
   const e = snapshot.events[0];

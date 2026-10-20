@@ -8,7 +8,7 @@ import {mkdtempSync,mkdirSync,readFileSync,writeFileSync,existsSync,rmSync,statS
 import {tmpdir,cpus,totalmem,freemem,platform,release} from 'node:os';
 import {join,resolve} from 'node:path';
 import {performance} from 'node:perf_hooks';
-import {io,type Socket} from 'socket.io-client';
+import {io,type Socket} from '../shared/live-client.js';
 import {createGame,applyCommand,step,initialGraph} from '../server/engine.js';
 import {createGameWriter} from '../server/storage.js';
 import {serializeGame} from '../server/persistence.js';
