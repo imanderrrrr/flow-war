@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {once} from 'node:events';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {createGame,applyCommand,step} from '../server/engine.js';
@@ -21,3 +22,10 @@ test('DVR OFF rollback retains operational messages and retries atomically',()=>
 test('DVR ON/OFF economics, all 5000 customers, incidents, QA, deployments and communications are identical',()=>{const games=[createGame(1200,8,0,true),createGame(1200,8,0,false)];for(const g of games){action(g,'start','room.start');action(g,'submit','change.submit',{graph:insertBlock('atomic'),revision:0},'backend');action(g,'qa','qa.run',{suite:'Concurrencia'},'qa',g.changes[0].id);}
  for(let i=0;i<3000;i++)for(const g of games){step(g);if(i===49){const id=g.changes[0].id;for(const [cmd,role]of [['qa.approve','qa'],['cto.authorize','cto'],['deploy.start','devops']] as const)assert(action(g,cmd,cmd,cmd==='deploy.start'?{strategy:'rolling'}:{},role,id).ok);}if(i===100){action(g,'stop','infra.stop',{service:'web'},'devops');action(g,'chat','chat.send',{channel:'equipo-interno',text:'misma comunicación',refs:[]},'security');}if(i===200)action(g,'recover','infra.recover',{service:'web'},'devops');if(i%100===0)clearBuffer(g);}
  const normalize=(g:GameState)=>{const raw=JSON.parse(serializeGame(g));delete raw.dvrEnabled;delete raw.observability.checkpointAt;delete raw.observability.sampleAt;return raw;};assert.deepEqual(normalize(games[0]),normalize(games[1]));assert.equal(Object.keys(games[0].market.customers).length,5000);assert.equal(games[0].changes[0].status,'DEPLOYED');});
+
+test('DVR OFF HTTP rejects before worker dispatch and preserves access to an older ON generation',async()=>{
+ const {default:express}=await import('express'),{installDvr}=await import('../server/dvr.js'),{mkdtempSync,rmSync}=await import('node:fs'),{join}=await import('node:path'),{tmpdir}=await import('node:os');
+ const dir=mkdtempSync(join(tmpdir(),'flow-modes-dvr-')),db=new DatabaseSync(join(dir,'game.sqlite'));db.exec('PRAGMA journal_mode=WAL;CREATE TABLE commands(identity TEXT,id TEXT,digest TEXT,result TEXT)');const write=createGameWriter(db),g=createGame(2,8,0,true);action(g,'start','room.start');while(g.status==='RUNNING')step(g);write(g);action(g,'reset','room.reset');action(g,'off','room.dvr',{enabled:false});write(g);
+ const app=express(),pool=installDvr(app,db,()=>operator),run=pool.run.bind(pool);let dispatches=0;pool.run=(...args)=>{dispatches++;return run(...args);};const server=app.listen(0,'127.0.0.1');await once(server,'listening');const base=`http://127.0.0.1:${(server.address() as any).port}`;
+ try{const off=await fetch(base+'/api/dvr/1?at=0');assert.equal(off.status,409);assert.equal((await off.json()).code,'DVR_NOT_RECORDED');assert.equal(dispatches,0);const games=await(await fetch(base+'/api/dvr/games')).json();assert.deepEqual(games.map((v:any)=>v.generation),[0]);assert.equal(dispatches,0);assert.equal((await fetch(base+'/api/dvr/0?at=1')).status,200);assert.equal(dispatches,1);}finally{await pool.close();await new Promise<void>(r=>server.close(()=>r()));db.close();rmSync(dir,{recursive:true,force:true});}
+});

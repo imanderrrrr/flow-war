@@ -162,6 +162,7 @@ function broadcast() {
   for (const socket of io.sockets.sockets.values()) {
     const identity = session(socket.request.headers.cookie);
     if (socket.data.authenticated && !identity) { socket.data.authenticated=false; socket.emit('state:clear'); synchronizers.get(socket.id)?.resync(); }
+    if (identity) socket.data.authenticated = true;
     synchronizers.get(socket.id)?.send(() => {
     const key = JSON.stringify(identity);
     let value = projections.get(key); if (!value) { if (identity?.role === 'operator') value = project(game,identity);
