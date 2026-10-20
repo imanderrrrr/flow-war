@@ -1,0 +1,21 @@
+✖ final lease: stale diagnostics with a reused live PID do not block ownership (2.435542ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 142.303
+
+✖ failing tests:
+
+test at tests/final-storage-lease.test.ts:1:351
+✖ final lease: stale diagnostics with a reused live PID do not block ownership (2.435542ms)
+  Error: El servidor u otro administrador está usando el almacenamiento. Detén Node antes del mantenimiento.
+      at acquireStorageLease (/Users/anderson/Documents/proyecto aseguramiento/server/storage-lease.ts:9:143)
+      at TestContext.<anonymous> (/Users/anderson/Documents/proyecto aseguramiento/tests/final-storage-lease.test.ts:17:17)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)

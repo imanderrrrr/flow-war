@@ -1,0 +1,13 @@
+✔ H4 complete generations export losslessly, verify, preview, protect, delete atomically and remain readable after reopen (1340.948333ms)
+✔ H4 exact legacy references migrate without ID guessing or loss; active leases and unauthorized CLI credentials are denied (761.856458ms)
+✔ final lease: stale diagnostics with a reused live PID do not block ownership (3.434875ms)
+✔ final lease: independent owners exclude each other and recover after SIGTERM and SIGKILL (152.13575ms)
+✔ final lease: admission and release write failures cannot strand the OS lock (3.463792ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2236.091167
