@@ -139,3 +139,18 @@ test('E6 gateway bounds calls per user and global concurrency without a per-requ
  const input:AiInput={id:'quota',kind:'security.propose',text:'Preparar.'},gateway=new AiGateway(fixture({text:'Texto'}));for(let i=0;i<8;i++)await gateway.generate('actor',input,insertBlock('atomic'));await assert.rejects(()=>gateway.generate('actor',input,insertBlock('atomic')),/Límite/);await gateway.generate('other',input,insertBlock('atomic'));
  let release!:()=>void;const gate=new Promise<void>(r=>release=r),slow=new AiGateway({name:'test',model:'slow',async generate(){await gate;return {text:'Texto'};}});const a=slow.generate('a',input,insertBlock('atomic')),b=slow.generate('b',input,insertBlock('atomic'));await assert.rejects(()=>slow.generate('c',input,insertBlock('atomic')),/ocupado/);release();await Promise.all([a,b]);
 });
+
+test('E6 compiled policies do not call Claude while 5000 customers advance',async()=>{
+ const g=pending(),ch=g.changes[0];let calls=0;const provider:Provider={name:'test',model:'counted',async generate(){calls++;return {rules:[{kind:'input'}],executable:true};}};
+ const input:AiInput={id:'once',kind:'security.compile',text:'Validar entradas maliciosas.',changeId:ch.id,nodeId:'backend-payment'},gateway=new AiGateway(provider);
+ const proposal=await prepareAi(g,actor('security'),input,gateway);commitAi(g,actor('security'),input,proposal);
+ assert.deepEqual(await prepareAi(g,actor('security'),input,gateway),proposal);assert.equal(calls,1);
+ command(g,'security','security.save',{changeId:ch.id,nodeId:input.nodeId,text:input.text,revision:0,interpretationId:proposal.id});reviewForQa(g);advanceGame(g,20);assert.equal(calls,1);assert.equal(Object.keys(g.market.customers).length,5000);
+});
+
+test('E6 DVR reconstructs interpreted text and exact policies without contacting a provider',async()=>{
+ const {DatabaseSync}=await import('node:sqlite'),{createGameWriter}=await import('../server/storage.js'),{checkpoint}=await import('../server/observability.js'),{reconstruct}=await import('../server/history.js');
+ const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE commands(identity TEXT,id TEXT,digest TEXT,result TEXT,PRIMARY KEY(identity,id))');const write=createGameWriter(db),g=pending(),ch=g.changes[0];write(g);
+ await compile(g,'Comprobar propietario.',[{kind:'owner'}]);checkpoint(g,serializeGame,true);write(g);reviewForQa(g);advanceGame(g,2);write(g);
+ const restored=reconstruct(db,0,2);assert.deepEqual(restored.changes[0].implementation,g.changes[0].implementation);assert.deepEqual(restored.companies[0].runtime.collaboration,g.companies[0].runtime.collaboration);assertBundle(restored.changes[0]);db.close();
+});

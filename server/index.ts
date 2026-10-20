@@ -95,11 +95,14 @@ app.post('/api/logout', (req, res) => {
 });
 const aiGateway = new AiGateway();
 const aiPending = new Set<string>();
+const aiAttempts = new Map<string,{at:number;count:number}>();
 app.post('/api/ai', async (req,res) => {
   res.setHeader('Cache-Control','no-store');
   const identity=session(req.headers.cookie);
   if(!identity)return res.status(403).json({ok:false,code:'FORBIDDEN',error:'Sesión no autorizada.'});
-  const key=identity.id;
+  const key=identity.id,now=Date.now();let budget=aiAttempts.get(key);
+  if(!budget||now-budget.at>=60000){budget={at:now,count:0};aiAttempts.set(key,budget);}
+  if(++budget.count>8)return res.status(429).json({ok:false,code:'AI_RATE_LIMIT',error:'Límite de solicitudes de Claude alcanzado.'});
   if(aiPending.has(key))return res.status(429).json({ok:false,code:'AI_BUSY',error:'Hay una solicitud en curso.'});
   aiPending.add(key);const generation=game.generation;
   try {
@@ -115,7 +118,7 @@ app.post('/api/ai', async (req,res) => {
   }catch(e){const code=e instanceof AiError?e.code:'AI_INVALID';
     if(game.generation===generation&&session(req.headers.cookie)?.id===identity.id){
       const before=structuredClone(game);copyHistoryBuffer(game,before);
-      try{auditCompletion(game,identity.companyId!,'ai.failed',[],[code]);persist();}catch{game=before;bindObservability(game,f=>slackFact(game,f));}
+      try{auditCompletion(game,identity.companyId!,'ai.failed',[],[code]);checkpoint(game,serializeGame,true);persist();}catch{game=before;bindObservability(game,f=>slackFact(game,f));}
     }
     res.status(code==='FORBIDDEN'?403:code==='AI_RATE_LIMIT'||code==='AI_BUSY'?429:503).json({ok:false,code,error:e instanceof AiError?e.message:'No se pudo preparar la propuesta.'});}
   finally{aiPending.delete(key);}

@@ -12,6 +12,7 @@ export function aiContext(g:GameState,actor:Identity,input:AiInput) {
     if(actor.role!=='backend')throw new AiError('FORBIDDEN');
     return {c,graph:c.drafts.backend?.graph??c.backend,revision:c.drafts.backend?.revision??0};
   }
+  if(actor.role!=='security')throw new AiError('FORBIDDEN','Operación no autorizada.');
   const {ch,draft}=editableChange(g,actor,input.changeId!,input.nodeId);
   return {c,graph:ch.graph,revision:draft.revision};
 }
