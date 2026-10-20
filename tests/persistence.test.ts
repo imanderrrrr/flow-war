@@ -7,7 +7,7 @@ import { join } from 'node:path';
 import { createGame } from '../server/engine.js';
 import { recoverGame } from '../server/persistence.js';
 import { startConcurrency } from '../server/scenarios.js';
-import { advanceGame, command, insertBlock } from './helpers.js';
+import { advanceGame, command, insertBlock , reviewForQa } from './helpers.js';
 
 for (const boundary of [0, 1, 1.5, 2, 2.5, 4]) test(`SQLite recovery at ${boundary}s preserves pending context, money and exactly-once effects`, () => {
   const directory = mkdtempSync(join(tmpdir(), 'flow-war-persist-'));
@@ -31,7 +31,7 @@ for (const boundary of [0, 1, 1.5, 2, 2.5, 4]) test(`SQLite recovery at ${bounda
 test('a QA scenario resumes after a restart without contaminating production or repeating its report', () => {
   const game = createGame(); game.status = 'RUNNING';
   command(game, 'backend', 'change.submit', { graph: insertBlock('atomic'), revision: 0 });
-  const change = game.changes[0]; command(game, 'qa', 'qa.run', { suite: 'Concurrencia' }, change.id); advanceGame(game, 1);
+  const change = game.changes[0]; reviewForQa(game);command(game, 'qa', 'qa.run', { suite: 'Concurrencia' }, change.id); advanceGame(game, 1);
   assert.equal(change.qaScenario?.requests[0].read?.stock, 1);
   const recovered = recoverGame(JSON.stringify(game)); command(recovered, 'operator', 'room.start'); advanceGame(recovered, 4);
   const restored = recovered.changes[0];
@@ -64,7 +64,7 @@ test('v1 migration preserves the old market, economy and stock, and never invent
 test('v1 QA evidence remains historical and cannot authorize the upgraded simulation', () => {
   const game = createGame(); game.status = 'RUNNING';
   command(game, 'backend', 'change.submit', { graph: insertBlock('atomic'), revision: 0 });
-  const change = game.changes[0]; command(game, 'qa', 'qa.run', { suite: 'Concurrencia' }, change.id); advanceGame(game, 3.5);
+  const change = game.changes[0]; reviewForQa(game);command(game, 'qa', 'qa.run', { suite: 'Concurrencia' }, change.id); advanceGame(game, 3.5);
   command(game, 'qa', 'qa.approve', {}, change.id); command(game, 'cto', 'cto.authorize', {}, change.id);
   const legacy = JSON.parse(JSON.stringify(game)); legacy.schema = 1;
   for (const company of legacy.companies) delete company.concurrency;

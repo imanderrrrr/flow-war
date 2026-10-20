@@ -28,9 +28,11 @@ export function moduleConfiguration(input: unknown): ModuleConfiguration {
   }
 }
 export function testScenario(input: unknown): TestScenario {
-  const p = object(input); keys(p, ['suite','requests','stock','concurrency','retries','duplicateIntent','coupons','newCustomer','invalidInput','attack','interrupt']);
+  const p = object(input); keys(p, ['suite','requests','stock','concurrency','retries','duplicateIntent','coupons','newCustomer','invalidInput','attack','interrupt','authenticated','ownsPurchase','automated','origin']);
+  const context:Record<string,unknown>={};for(const key of ['authenticated','ownsPurchase','automated'])if(p[key]!==undefined)context[key]=bool(p[key]);
+  if(p.origin!==undefined){if(!/^sim-\d{1,3}$/.test(string(p.origin)))throw new ActionError('INVALID','Origen sintético requerido.');context.origin=p.origin;}
   const requests = integer(p.requests, 1, 500);
-  return { suite: oneOf(p.suite, ['unit','integration','concurrency','load','security','regression']), requests, stock: integer(p.stock, 0, 2000), concurrency: integer(p.concurrency, 1, requests), retries: integer(p.retries, 0, 5), duplicateIntent: bool(p.duplicateIntent), coupons: integer(p.coupons, 0, 3), newCustomer: bool(p.newCustomer), invalidInput: bool(p.invalidInput), attack: oneOf(p.attack, ['none','forged','injection','bot']), interrupt: bool(p.interrupt) };
+  return { ...context, suite: oneOf(p.suite, ['unit','integration','concurrency','load','security','regression']), requests, stock: integer(p.stock, 0, 2000), concurrency: integer(p.concurrency, 1, requests), retries: integer(p.retries, 0, 5), duplicateIntent: bool(p.duplicateIntent), coupons: integer(p.coupons, 0, 3), newCustomer: bool(p.newCustomer), invalidInput: bool(p.invalidInput), attack: oneOf(p.attack, ['none','forged','injection','bot']), interrupt: bool(p.interrupt) };
 }
 export function securityConfiguration(input: unknown): SecurityConfiguration {
   const p = object(input); keys(p, ['auth','authorization','waf','botThreshold','blockedOrigins','rate']);
@@ -43,6 +45,11 @@ export function securityConfiguration(input: unknown): SecurityConfiguration {
 export function validateParameters(type: string, input: unknown) {
   const p = object(input);
   switch (type) {
+    case 'security.save':
+      keys(p, ['changeId','nodeId','text','revision','interpretationId']); string(p.changeId); string(p.nodeId); freeText(p.text); integer(p.revision,0,100000); if(p.interpretationId!==undefined)string(p.interpretationId); break;
+    case 'security.submit': keys(p,['changeId','revision']); string(p.changeId); integer(p.revision,0,100000); break;
+    case 'security.correction': keys(p,['changeId','nodeId','text']); string(p.changeId); string(p.nodeId); freeText(p.text); if(!String(p.text).trim())throw new ActionError('INVALID','Observación vacía.'); break;
+    case 'ai.accept': case 'ai.reject': keys(p,['proposalId']); string(p.proposalId); break;
     case 'module.create': case 'module.revise':
       keys(p, ['name','configuration','dependencies', ...(type === 'module.revise' ? ['moduleId'] : [])]); string(p.name); moduleConfiguration(p.configuration);
       if (type === 'module.revise') string(p.moduleId);
@@ -78,3 +85,5 @@ export function parseAction(input: unknown): SimulatedAction {
   validateParameters(p.type as ActionType, p.parameters);
   return structuredClone(p) as SimulatedAction;
 }
+
+export function freeText(v: unknown): string { if(typeof v !== 'string' || v.length>4000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(v))throw new ActionError('INVALID','Texto inválido.'); return v; }

@@ -24,10 +24,17 @@ export function advanceGame(game: GameState, seconds: number) { for (let i = 0; 
 export function authorizeAtomic(game: GameState, strategy?: string) {
   assert.equal(command(game, 'backend', 'change.submit', { graph: insertBlock('atomic'), revision: 0 }).ok, true);
   const change = game.changes[0];
+  reviewForQa(game,change.id);
   assert.equal(command(game, 'qa', 'qa.run', { suite: 'Concurrencia' }, change.id).ok, true);
   advanceGame(game, 3.5);
   assert.equal(command(game, 'qa', 'qa.approve', {}, change.id).ok, true);
   assert.equal(command(game, 'cto', 'cto.authorize', {}, change.id).ok, true);
   if (strategy) assert.equal(command(game, 'devops', 'deploy.start', { strategy }, change.id).ok, true);
   return change;
+}
+
+/** Explicit empty review preserves historical test scenarios without adding protections. */
+export function reviewForQa(game:GameState,changeId=game.changes[0].id){
+ const ch=game.changes.find(c=>c.id===changeId)!;
+ if(ch.status==='SECURITY_PENDING')assert.equal(command(game,'security','security.submit',{changeId,revision:game.companies[ch.companyId].runtime.collaboration!.reviews[changeId].revision},undefined,ch.companyId).ok,true);
 }

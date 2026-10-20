@@ -23,11 +23,13 @@ test('4A real authenticated server executes structured artifacts and recovers ex
   try {
     await boot();const credentials=JSON.parse(await readFile(join(directory,'access.json'),'utf8')).credentials as {code:string;identity:Identity}[];
     async function login(role:Identity['role']){const code=credentials.find(c=>c.identity.role===role&&(role==='operator'||c.identity.companyId===0))!.code;const response=await fetch(`${base}/api/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code})});assert.equal(response.status,200);const cookie=response.headers.get('set-cookie')!.split(';')[0];return {socket:await socket(cookie),cookie};}
-    const op=await login('operator'),backend=await login('backend'),qa=await login('qa'),cto=await login('cto'),devops=await login('devops');
+    const op=await login('operator'),backend=await login('backend'),qa=await login('qa'),security=await login('security'),cto=await login('cto'),devops=await login('devops');
     await run(op.socket,{type:'room.start'});await run(op.socket,{type:'room.speed',payload:{speed:20}});
     const action={version:1,id:'artifact-once',companyId:0,source:'agent',type:'module.create',parameters:{name:'Descuento',configuration:{kind:'discount',percent:20,audience:'new',stackable:false},dependencies:[]}};
     assert.equal((await run(backend.socket,{type:'action.execute',payload:{action}})).ok,true);assert.equal((await run(backend.socket,{type:'action.execute',payload:{action}})).ok,true);
     const prepared=await snapshot(backend.cookie),ch=prepared.changes[0];assert.equal(prepared.operations?.modules.length,1);assert.equal(prepared.companies[0].version,1);assert.ok(!JSON.stringify(prepared).includes('defects'));
+    assert.equal((await run(qa.socket,{type:'qa.execute',companyId:0,payload:{changeId:ch.id,scenario:DEFAULT_TEST}})).ok,false);
+    assert.equal((await run(security.socket,{type:'security.submit',companyId:0,payload:{changeId:ch.id,revision:0}})).ok,true);
     assert.equal((await run(qa.socket,{type:'qa.execute',companyId:0,payload:{changeId:ch.id,scenario:DEFAULT_TEST}})).ok,true);await wait(qa.cookie,s=>s.changes[0].reports.length===1);
     assert.equal((await snapshot(qa.cookie)).changes[0].status,'QA_PENDING');await run(qa.socket,{type:'qa.approve',companyId:0,changeId:ch.id});await run(cto.socket,{type:'cto.authorize',companyId:0,changeId:ch.id});await run(devops.socket,{type:'deploy.start',companyId:0,changeId:ch.id,payload:{strategy:'rolling'}});await wait(devops.cookie,s=>s.changes[0].status==='DEPLOYED');
     await run(op.socket,{type:'room.speed',payload:{speed:1}});await run(devops.socket,{id:'pending-restart',type:'infra.restart_all',companyId:0,payload:{duration:20}});

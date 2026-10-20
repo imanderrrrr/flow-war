@@ -5,7 +5,7 @@ export const ROLES = ['backend', 'security', 'qa', 'cto', 'devops', 'product'] a
 export type Role = typeof ROLES[number];
 export type Identity = { id: string; role: Role | 'operator'; companyId: number | null };
 export type Domain = 'backend' | 'security' | 'product';
-export type ChangeStatus = 'QA_PENDING' | 'QA_RUNNING' | 'QA_REJECTED' | 'CTO_PENDING' | 'CTO_REJECTED' | 'AUTHORIZED' | 'DEPLOYING' | 'DEPLOYED' | 'DEPLOY_FAILED' | 'EXPIRED' | 'STALE';
+export type ChangeStatus = 'SECURITY_PENDING' | 'QA_PENDING' | 'QA_RUNNING' | 'QA_REJECTED' | 'CTO_PENDING' | 'CTO_REJECTED' | 'AUTHORIZED' | 'DEPLOYING' | 'DEPLOYED' | 'DEPLOY_FAILED' | 'EXPIRED' | 'STALE';
 export type GraphNode = { id: string; type: string; position: { x: number; y: number }; data: { label: string; value?: number; module?: ModuleRef; config?: BlockConfiguration } };
 export type GraphEdge = { id: string; source: string; target: string };
 export type Graph = { nodes: GraphNode[]; edges: GraphEdge[] };
@@ -63,8 +63,8 @@ export type TrafficState = { operations?: OperationRuntime;
 };
 export type TrafficView = { scenario: string; totals: ScenarioTotals; legitimate?: ScenarioTotals; malicious?: ScenarioTotals; metrics: Omit<TrafficMetrics,'fraudRate'> & {fraudRate?:number}; inventory: InventoryState; queues: { id: ServiceId; capacity: number; depth: number; processing: number; rate: number }[]; pendingResolution: number };
 export type ScenarioEvidence = { engineVersion: string; fixture: string; backendHash: string; securityHash: string; executionVersion: number; seed: number; inventory: ConcurrencyRun['inventory']; outcomes: { requestId: string; status: RequestStatus; reason: TerminalReason; read?: PurchaseRequest['read']; committed: number; oversold: number }[] };
-export type Report = { testEvidence?: TestEvidence; suite: string; requests: number; completed: number; rejected: number; oversold: number; breaches: number; duplicates: number; latency: number; tick: number; abandoned?: number; failed?: number; evidence?: ScenarioEvidence; obsolete?: boolean; loadEvidence?: { engineVersion: string; fixture: string; seed: number; maxQueue: number; pending: number } };
-export type Change = { artifactRefs?: ModuleRef[]; testJob?: TestJob; id: string; companyId: number; domain: Domain; name: string; graph: Graph; status: ChangeStatus; cost: number; reserved: number; baseVersion: number; created: number; reports: Report[]; runningSuite?: string; due?: number; strategy?: string; expires?: number; actorId: string; context?: ScenarioContext; qaScenario?: ConcurrencyRun; qaLoad?: { company: Company; startedAt: number; elapsed: number; maxQueue: number; latencySum: number; terminated: number } };
+export type Report = { securityOutcomes?: { attempts:number; blocked:number; successful:number; legitimateRejected:number }; testEvidence?: TestEvidence; suite: string; requests: number; completed: number; rejected: number; oversold: number; breaches: number; duplicates: number; latency: number; tick: number; abandoned?: number; failed?: number; evidence?: ScenarioEvidence; obsolete?: boolean; loadEvidence?: { engineVersion: string; fixture: string; seed: number; maxQueue: number; pending: number } };
+export type Change = { implementation?: import('./collaboration.js').SharedImplementation; artifactRefs?: ModuleRef[]; testJob?: TestJob; id: string; companyId: number; domain: Domain; name: string; graph: Graph; status: ChangeStatus; cost: number; reserved: number; baseVersion: number; created: number; reports: Report[]; runningSuite?: string; due?: number; strategy?: string; expires?: number; actorId: string; context?: ScenarioContext; qaScenario?: ConcurrencyRun; qaLoad?: { company: Company; startedAt: number; elapsed: number; maxQueue: number; latencySum: number; terminated: number } };
 export type Migration = { id: string; from: number | null; to: number | null; count: number; at: number; color: string; customerId: string; reason: string };
 export type CustomerMigration = { id: string; from: number | null; to: number | null; at: number; reason: string; color: string };
 export type MarketCustomer = {
@@ -132,4 +132,4 @@ export const BLOCKS: Record<'backend' | 'security', { type: string; label: strin
   ],
 };
 export const SUITES = ['Concurrencia', 'Regresión', 'Carga', 'Seguridad', 'Integración', 'Unitarias'];
-export const STATUS_LABELS: Record<ChangeStatus, string> = { QA_PENDING: 'En QA', QA_RUNNING: 'Prueba en curso', QA_REJECTED: 'Rechazado por QA', CTO_PENDING: 'Pendiente de CTO', CTO_REJECTED: 'Rechazado por CTO', AUTHORIZED: 'Autorizado', DEPLOYING: 'Desplegando', DEPLOYED: 'En producción', DEPLOY_FAILED: 'Deploy fallido', EXPIRED: 'Autorización vencida', STALE: 'Base modificada' };
+export const STATUS_LABELS: Record<ChangeStatus, string> = { SECURITY_PENDING: 'En Seguridad', QA_PENDING: 'En QA', QA_RUNNING: 'Prueba en curso', QA_REJECTED: 'Rechazado por QA', CTO_PENDING: 'Pendiente de CTO', CTO_REJECTED: 'Rechazado por CTO', AUTHORIZED: 'Autorizado', DEPLOYING: 'Desplegando', DEPLOYED: 'En producción', DEPLOY_FAILED: 'Deploy fallido', EXPIRED: 'Autorización vencida', STALE: 'Base modificada' };

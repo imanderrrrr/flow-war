@@ -5,6 +5,7 @@ import type { TestJob, TestEvidence } from '../shared/simulation.js';
 import { initialOperations, initialRuntime, releaseFor } from './artifacts.js';
 import { createConcurrencyRun, advanceConcurrency, finishRequest } from './requests.js';
 import { admitTraffic, advanceTraffic, initialTraffic } from './traffic.js';
+import type { RequestSecurityContext } from '../shared/collaboration.js';
 import { admitSecurity } from './security.js';
 import { settleReservation } from './module-execution.js';
 
@@ -23,7 +24,7 @@ export function createTestJob(c: Company, ch: Change, scenario: TestScenario): T
     r.id = `qa-${ch.id}-${ch.reports.length}-R${index + 1}`; r.intentId = scenario.duplicateIntent ? 'qa-shared-payment' : `${r.id}-intent`;
     r.arrivalAt = at; r.nextAt = at + .5; r.deadline = at + 16; r.journey.at = at;
     r.transportFailures = scenario.retries; r.newCustomer = scenario.newCustomer; r.couponCount = scenario.coupons; r.invalidInput = scenario.invalidInput;
-    r.securityAllowed = admitSecurity(staging, r.execution ?? { modules: [] }, scenario.attack === 'none' ? 'valid' : scenario.attack, index, at, 'sim-1', `qa-${index}`, 'purchase');
+    r.securityAllowed = admitSecurity(staging, r.execution ?? { modules: [] }, scenario.attack === 'none' ? 'valid' : scenario.attack, index, at, 'sim-1', `qa-${index}`, 'purchase',securityContext(scenario,index));
     return r;
   });
   return { finished: [], scenario: structuredClone(scenario), staging, elapsed: 0, next: 0, requests: scenario.suite === 'load' ? [] : template.requests, run: scenario.suite === 'load' ? undefined : template, reports: [] };
@@ -35,7 +36,7 @@ export function advanceTestJob(job: TestJob) {
     if (job.scenario.suite === 'load') {
       const target = Math.min(job.scenario.requests, Math.floor(job.elapsed * job.scenario.concurrency));
       while (job.next < target) {
-        const r = admitTraffic(job.staging, job.elapsed, 'purchase', job.scenario.attack === 'none' ? 'legitimate' : 'malicious', job.scenario.attack === 'none' ? undefined : job.scenario.attack);
+        const r = admitTraffic(job.staging, job.elapsed, 'purchase', job.scenario.attack === 'none' ? 'legitimate' : 'malicious', job.scenario.attack === 'none' ? undefined : job.scenario.attack,undefined,securityContext(job.scenario,job.next));
         r.transportFailures = job.scenario.retries; r.couponCount = job.scenario.coupons; r.newCustomer = job.scenario.newCustomer; r.invalidInput = job.scenario.invalidInput;
         if (job.scenario.duplicateIntent) r.intentId = 'qa-shared-payment';
         job.next++;
@@ -78,7 +79,7 @@ export function testReport(job: TestJob, at: number): Report {
   const passed = observed.revenue === expected.revenue && observed.committed <= expected.maxCommitted && observed.duplicates === 0 && observed.pendingReservations === 0 && observed.accepted === expected.accepted && (job.scenario.suite !== 'load' || requests.every(r => r.result?.status === 'COMPLETED'));
   const evidence: TestEvidence = { input: job.scenario, expected, observed, passed, outcomes: requests.map(r => ({ id: r.id, status: r.status, revenue: r.result!.revenue, committed: r.committed, price: r.price ?? 45, attempts: 1 + (r.retryCount ?? 0) })), graphHash: createHash('sha256').update(JSON.stringify([job.staging.backend, job.staging.security, job.staging.version, job.staging.runtime.releases[job.staging.version]])).digest('hex'), elapsed: job.elapsed };
   job.evidence = evidence;
-  return { suite: job.scenario.suite, requests: requests.length, completed: sum(r => Number(r.status === 'COMPLETED')), rejected: sum(r => Number(r.status === 'REJECTED')), abandoned: sum(r => Number(r.status === 'ABANDONED')), failed: sum(r => Number(r.status === 'FAILED')), oversold: sum(r => r.oversold), duplicates: observed.duplicates, breaches: job.scenario.attack !== 'none' ? sum(r => Number(r.committed > 0)) : 0, latency: Math.round(sum(r => (r.result!.at - r.arrivalAt) * 1000) / requests.length), tick: at, testEvidence: evidence };
+  return { securityOutcomes: { attempts:job.scenario.attack!=='none'?requests.length:0, blocked:job.scenario.attack!=='none'?sum(r=>Number(r.result?.reason==='SECURITY_REJECTED')):0, successful:job.scenario.attack!=='none'?sum(r=>Number(r.paid)):0, legitimateRejected:job.scenario.attack==='none'?sum(r=>Number(r.result?.reason==='SECURITY_REJECTED')):0 }, suite: job.scenario.suite, requests: requests.length, completed: sum(r => Number(r.status === 'COMPLETED')), rejected: sum(r => Number(r.status === 'REJECTED')), abandoned: sum(r => Number(r.status === 'ABANDONED')), failed: sum(r => Number(r.status === 'FAILED')), oversold: sum(r => r.oversold), duplicates: observed.duplicates, breaches: job.scenario.attack !== 'none' ? sum(r => Number(r.committed > 0)) : 0, latency: Math.round(sum(r => (r.result!.at - r.arrivalAt) * 1000) / requests.length), tick: at, testEvidence: evidence };
 }
 export function scenarioForSuite(suite: string): TestScenario {
   const base: TestScenario = { suite: 'unit', requests: 1, stock: 100, concurrency: 1, retries: 0, duplicateIntent: false, coupons: 1, newCustomer: true, invalidInput: false, attack: 'none', interrupt: false };
@@ -88,4 +89,8 @@ export function scenarioForSuite(suite: string): TestScenario {
   if (suite === 'Carga') return { ...base, suite: 'load', requests: 200, concurrency: 100 };
   if (suite === 'Regresión') return { ...base, suite: 'regression', requests: 50, concurrency: 50, duplicateIntent: true, coupons: 2 };
   return base;
+}
+
+function securityContext(s:TestScenario,index:number):RequestSecurityContext {
+ return {authenticated:s.authenticated??s.attack!=='forged',ownsPurchase:s.ownsPurchase??s.attack!=='forged',maliciousInput:s.invalidInput||s.attack==='injection',automated:s.automated??s.attack==='bot',origin:s.origin??'sim-1',customerId:`qa-${index}`,type:'purchase'};
 }

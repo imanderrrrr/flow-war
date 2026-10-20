@@ -4,7 +4,7 @@ import { applyCommand, createGame, project } from '../server/engine.js';
 import { admitTraffic, advanceTraffic } from '../server/traffic.js';
 import { admitSecurity } from '../server/security.js';
 import { DEFAULT_TEST } from '../shared/actions.js';
-import { command, advanceGame, insertBlock } from './helpers.js';
+import { command, advanceGame, insertBlock , reviewForQa } from './helpers.js';
 import { defectFixture } from './defect-fixtures.js';
 import { createConcurrencyRun, advanceConcurrency } from '../server/requests.js';
 import { recoverGame, serializeGame } from '../server/persistence.js';
@@ -20,7 +20,7 @@ const cases = [
 for (const [role,allowed,params,denied,other] of cases) {
   test(`4A role ${role} executes its supported operation through the common catalog`, () => {
     const g=createGame();g.status='RUNNING';
-    if(role==='qa') {command(g,'backend','module.create',{name:'QA',configuration:{kind:'inventory',minimum:1},dependencies:[]});assert.equal(command(g,role,allowed,{changeId:g.changes[0].id,scenario:DEFAULT_TEST}).ok,true);}
+    if(role==='qa') {command(g,'backend','module.create',{name:'QA',configuration:{kind:'inventory',minimum:1},dependencies:[]});reviewForQa(g);assert.equal(command(g,role,allowed,{changeId:g.changes[0].id,scenario:DEFAULT_TEST}).ok,true);}
     else assert.equal(command(g,role,allowed,{...params}).ok,true);
     assert.equal(g.actions.employees[`0-${role}`].violations.length,0);
   });

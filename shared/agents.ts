@@ -6,6 +6,6 @@ export type AgentContext = { identity: Identity; generation: number; tick: numbe
 export type AgentInterpretation =
   | { version: 1; intent: 'EXECUTE_ACTION' | 'PREPARE_CHANGE' | 'RUN_TEST'; action: SimulatedAction }
   | { version: 1; intent: 'REQUEST_INFORMATION' | 'OUT_OF_ROLE' | 'OUT_OF_SCOPE' | 'AMBIGUOUS' | 'UNSUPPORTED'; action?: SimulatedAction };
-export type AgentStatus = 'ORDER_RECEIVED' | 'PREPARED' | 'EXECUTED' | 'SENT_TO_QA' | 'PENDING_AUTHORIZATION' | 'DEPLOY_STARTED' | 'DEPLOY_COMPLETED' | 'UNAUTHORIZED' | 'OUT_OF_ROLE' | 'OUT_OF_SCOPE' | 'AMBIGUOUS' | 'UNSUPPORTED' | 'TECHNICAL_ERROR';
+export type AgentStatus = 'ORDER_RECEIVED' | 'PREPARED' | 'EXECUTED' | 'SENT_TO_SECURITY' | 'SENT_TO_QA' | 'PENDING_AUTHORIZATION' | 'DEPLOY_STARTED' | 'DEPLOY_COMPLETED' | 'UNAUTHORIZED' | 'OUT_OF_ROLE' | 'OUT_OF_SCOPE' | 'AMBIGUOUS' | 'UNSUPPORTED' | 'TECHNICAL_ERROR';
 export type AgentResult = Result & { version: 1; status: AgentStatus; message: string };
 export interface AgentInterpreter { interpret(input: AgentInput, context: Readonly<AgentContext>): AgentInterpretation | Promise<AgentInterpretation> }

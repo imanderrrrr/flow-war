@@ -23,7 +23,7 @@ test('real server validates roles, confirms a complete pipeline and deduplicates
       const cookie=response.headers.get('set-cookie')!.split(';')[0];
       const socket=io(base,{forceNew:true,transports:['websocket'],extraHeaders:{Cookie:cookie}});sockets.push(socket);await new Promise<void>((resolve,reject)=>{socket.once('connect',()=>resolve());socket.once('connect_error',reject);});return socket;
     }
-    const op=await connect('operator',null),backend=await connect('backend',0),qa=await connect('qa',0),cto=await connect('cto',0),devops=await connect('devops',0),other=await connect('qa',1);
+    const op=await connect('operator',null),backend=await connect('backend',0),qa=await connect('qa',0),security=await connect('security',0),cto=await connect('cto',0),devops=await connect('devops',0),other=await connect('qa',1);
     const run=(socket:Socket,command:Omit<Command,'id'> & {id?:string})=>new Promise<Result>((resolve,reject)=>socket.timeout(3000).emit('command',{...command,id:command.id??crypto.randomUUID()},(err:Error|null,r:Result)=>err?reject(err):resolve(r)));
     const waitState=(socket:Socket,predicate:(s:Snapshot)=>boolean)=>new Promise<Snapshot>((resolve,reject)=>{const timer=setTimeout(()=>{socket.off('snapshot',listener);reject(new Error('Timed out waiting for snapshot'));},6000);const listener=(s:Snapshot)=>{if(predicate(s)){clearTimeout(timer);socket.off('snapshot',listener);resolve(s);}};socket.on('snapshot',listener);});
     assert.equal((await run(op,{type:'room.start'})).ok,true);assert.equal((await run(op,{type:'room.speed',payload:{speed:20}})).ok,true);
@@ -32,6 +32,7 @@ test('real server validates roles, confirms a complete pipeline and deduplicates
     const submit={id:'submit-exactly-once',type:'change.submit',companyId:0,payload:{graph:initialGraph('backend'),revision:0}};
     assert.equal((await run(backend,submit)).ok,true);assert.equal((await run(backend,submit)).ok,true);
     const submitted=await waitState(qa,s=>s.changes.length===1);const id=submitted.changes[0].id;
+    assert.equal((await run(security,{type:'security.submit',companyId:0,payload:{changeId:id,revision:0}})).ok,true);
     assert.equal((await run(qa,{type:'qa.run',companyId:0,changeId:id,payload:{suite:'Concurrencia'}})).ok,true);
     await waitState(qa,s=>s.changes[0]?.reports.length===1);
     assert.equal((await run(qa,{type:'qa.approve',companyId:0,changeId:id})).ok,true);

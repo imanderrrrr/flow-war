@@ -1,3 +1,4 @@
+import { beginSecurityReview, bindLegacySecurity, securityCommand, assertBundle, collaborationView, proposalCommand } from './collaboration.js';
 import { visibleRequest } from './projections.js';
 import { setMaintenance, MAINTENANCE_POLICY } from './maintenance.js';
 import { postChat } from './chat.js';
@@ -75,6 +76,7 @@ export function validateGraph(input: unknown, domain: 'backend' | 'security' | '
     while (id) { if (seen.has(id)) throw new Error('Ciclo no soportado.'); seen.add(id); id = graph.edges.find(e => e.source === id)?.target; }
   }
   const path = route(graph);
+  if (complete && path.length !== graph.nodes.length) throw new Error('Todos los bloques deben estar conectados en la ruta ejecutable.');
   if (complete && path.at(-1)?.type !== 'exit') throw new Error('No existe una ruta de entrada a salida.');
   if (complete && domain === 'backend' && !['read', 'write', 'payment'].every(t => path.some(n => n.type === t))) throw new Error('La ruta debe atravesar inventario y pagos.');
   return graph;
@@ -155,9 +157,16 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
   const p = command.payload ?? {};
   try {
     validateParameters(command.type, p);
+    if(identity.role==='backend' && ['module.create','module.revise','change.submit'].includes(command.type) && g.changes.some(x=>x.companyId===c.id&&x.status==='DEPLOYING'))throw new Error('Espera a que finalice la publicación en curso.');
     if (command.type.startsWith('campaign.') || command.type === 'product.propose') { const result = businessCommand(g, c, identity, command.type, p); event(g, c.id, command.type === 'campaign.activate' ? 'Campaña activada.' : 'Operación comercial registrada.', 'neutral', 'PRODUCTO'); return result; }
+    if (command.type.startsWith('security.') && ['security.save','security.submit','security.correction'].includes(command.type)) return securityCommand(g,identity,command.type,p);
+    if (command.type==='ai.accept'||command.type==='ai.reject') {
+      const proposal=c.runtime.collaboration?.proposals.find(r=>r.id===p.proposalId);
+      if(proposal?.kind==='security.propose' && command.type==='ai.accept') { const linked=g.changes.find(x=>x.id===proposal.changeId&&x.companyId===c.id); if(linked?.status!=='SECURITY_PENDING')throw new Error('Revisión no disponible.'); }
+      return proposalCommand(c,identity,command.type,p);
+    }
     if (['module.create','module.revise','security.prepare'].includes(command.type)) {
-      const change = prepareArtifact(g, c, identity, command.type, p); event(g, c.id, `${change.id} preparado. Pendiente de pruebas QA.`, 'neutral', 'PIPELINE'); return { ok: true, refs: [change.id, ...(change.artifactRefs?.map(ref => `${ref.id}@${ref.version}`) ?? [])] };
+      const change = prepareArtifact(g, c, identity, command.type, p); if(change.domain==='backend')beginSecurityReview(g,c,change); else bindLegacySecurity(g,c,change); event(g, c.id, `${change.id} preparado. Pendiente de pruebas QA.`, 'neutral', 'PIPELINE'); return { ok: true, refs: [change.id, ...(change.artifactRefs?.map(ref => `${ref.id}@${ref.version}`) ?? [])] };
     }
     if (command.type === 'infra.maintenance') { setMaintenance(g,c,p.mode as import('../shared/observability.js').ServiceMode,identity.id); return {ok:true}; }
     if (['infra.restart','infra.restart_all','infra.stop','infra.recover'].includes(command.type)) {
@@ -168,16 +177,17 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
     }
     if (command.type === 'draft.save' || command.type === 'change.submit') {
       const domain = identity.role as 'backend' | 'security';
+      if(domain==='security')throw new Error('Selecciona una versión Backend y guarda sus protecciones por bloque.');
       const current = c.drafts[domain]?.revision ?? 0;
       if (Number(p.revision) !== current) throw new Error('La revisión cambió. Recarga el borrador.');
       const graph = validateGraph(p.graph, domain, command.type === 'change.submit');
       const execution = releaseFor(c, domain === 'backend' ? graph : c.backend);
-      if (domain === 'security') delete execution.security;
+
       c.drafts[domain] = { graph, revision: current + 1 };
       if (command.type === 'change.submit') {
         const cost = 100 + graph.nodes.reduce((sum, n) => sum + (BLOCKS[domain].find(b => b.type === n.type)?.cost ?? 0), 0);
-        const change: Change = { id: `CH-${String(g.changes.length + 1).padStart(3, '0')}`, companyId: c.id, domain, name: `${domain === 'backend' ? 'Lógica' : 'Seguridad'} · revisión ${current + 1}`, graph: structuredClone(graph), status: 'QA_PENDING', cost, reserved: 0, baseVersion: c.version, created: g.tick, reports: [], actorId: identity.id, context: { backend: structuredClone(domain === 'backend' ? graph : c.backend), security: structuredClone(domain === 'security' ? graph : c.security), executionVersion: c.version, execution } };
-        g.changes.unshift(change); event(g, c.id, `${change.id} enviado a QA.`, 'neutral', 'PIPELINE'); return { ok: true, refs: [change.id] };
+        const change: Change = { id: `CH-${String(g.changes.length + 1).padStart(3, '0')}`, companyId: c.id, domain, name: `${domain === 'backend' ? 'Lógica' : 'Seguridad'} · revisión ${current + 1}`, graph: structuredClone(graph), status: 'QA_PENDING', cost, reserved: 0, baseVersion: c.version, created: g.tick, reports: [], actorId: identity.id, context: { backend: structuredClone(domain === 'backend' ? graph : c.backend), security: structuredClone(c.security), executionVersion: c.version, execution } };
+        beginSecurityReview(g,c,change); g.changes.unshift(change); event(g, c.id, `${change.id} enviado a Seguridad.`, 'neutral', 'PIPELINE'); return { ok: true, refs: [change.id] };
       }
       return { ok: true };
     }
@@ -196,6 +206,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
     if (command.type === 'infra.balancer') { c.balancer = Boolean(p.enabled); event(g, c.id, `Balanceador ${c.balancer ? 'activo' : 'desactivado'}.`, 'neutral', 'DEVOPS'); return { ok: true }; }
     if (!ch) throw new Error('Cambio no encontrado.');
     if (ch.baseVersion !== c.version && !['DEPLOYED', 'QA_REJECTED', 'CTO_REJECTED'].includes(ch.status)) throw new Error('La versión base cambió.');
+    if(ch.implementation && command.type!=='qa.reject')assertBundle(ch);
     if (command.type === 'qa.execute') {
       validateParameters(command.type, p);
       if (ch.status !== 'QA_PENDING') throw new Error('QA requiere un cambio pendiente.');
@@ -204,7 +215,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
     }
     if (command.type === 'qa.run') {
       if (ch.status !== 'QA_PENDING' || !SUITES.includes(String(p.suite))) throw new Error('No se puede ejecutar esa suite en este estado.');
-      if (ch.context?.execution?.modules.length || ch.context?.execution?.security || !['Concurrencia','Carga'].includes(String(p.suite))) {
+      if (ch.context?.execution?.modules.length || ch.context?.execution?.security || ch.context?.execution?.blockPolicies?.some(b=>b.rules.length) || !['Concurrencia','Carga'].includes(String(p.suite))) {
         ch.testJob = createTestJob(c, ch, scenarioForSuite(String(p.suite))); ch.status = 'QA_RUNNING'; ch.runningSuite = String(p.suite); return { ok: true };
       }
       ch.status = 'QA_RUNNING'; ch.runningSuite = String(p.suite); ch.due = g.tick + 4;
@@ -254,7 +265,8 @@ function jobs(g: GameState) {
       }
     }
     if (ch.status === 'DEPLOYING' && g.tick >= (ch.due ?? Infinity)) {
-      c[ch.domain] = structuredClone(ch.graph); c.version++; c.runtime.releases[c.version] = structuredClone(ch.context?.execution ?? releaseFor(c)); c.deployments++; c.capital -= ch.cost; releaseReservation(c, ch); ch.status = 'DEPLOYED';
+      assertBundle(ch);
+      if(ch.implementation){c.backend=structuredClone(ch.context!.backend);c.security=structuredClone(ch.context!.security);}else c[ch.domain] = structuredClone(ch.graph); c.version++; c.runtime.releases[c.version] = structuredClone(ch.context?.execution ?? releaseFor(c)); c.deployments++; c.capital -= ch.cost; releaseReservation(c, ch); ch.status = 'DEPLOYED';
       auditCompletion(g, c.id, 'deploy.completed', [ch.id, ...(ch.artifactRefs?.map(ref=>`${ref.id}@${ref.version}`) ?? [])], [`production.version:${c.version}`, `capital.delta:${-ch.cost}`]);
       event(g, c.id, `${ch.id} EN PRODUCCIÓN · v${c.version}`, 'good', 'DEPLOY');
       for (const other of g.changes) if (other.companyId === c.id && other.id !== ch.id && ['QA_PENDING', 'QA_RUNNING', 'CTO_PENDING', 'AUTHORIZED', 'EXPIRED'].includes(other.status)) { other.status = 'STALE'; releaseReservation(c, other); }
@@ -345,7 +357,7 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
     privateC.drafts = ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {};
   }
   return {
-    operations: identity ? { modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
+    operations: identity ? { ...(ownCompany ? { collaboration: collaborationView(ownCompany,identity!) } : {}), modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
     dvrEnabled: g.dvrEnabled, generation: g.generation,
     slack: ownCompany ? structuredClone(g.slack.messages.filter(m=>m.companyId===ownCompany.id)) : undefined,
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
@@ -354,6 +366,6 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
       return { ...pub, ...(internal?{breaches}:{}), traffic: trafficView(traffic, internal), concurrency: { runId: concurrency.run?.id, inventory: concurrency.run && { ...concurrency.run.inventory }, totals: { ...concurrency.totals } }, particles: particles(c), modules: [...route(backend), ...route(security)].map(n => n.type), pipelineCounts: [['QA_PENDING', 'QA_RUNNING'], ['CTO_PENDING'], ['AUTHORIZED', 'DEPLOYING'], ['DEPLOYED']].map(states => g.changes.filter(ch => ch.companyId === c.id && states.includes(ch.status)).length) };
     }),
     events: internal ? g.events : g.events.filter(e=>e.companyId===null||e.companyId===identity?.companyId||['CONCURRENCIA','COLAPSO'].includes(e.category)), migrations: g.migrations, unserved: g.unserved, privateCompany: privateC,
-    changes: (identity?.role === 'operator' ? g.changes : g.changes.filter(ch => ch.companyId === identity?.companyId)).map(({ qaLoad, qaScenario, testJob, context, ...change }) => ({ ...change, ...(context ? { context: { backend: context.backend, security: context.security, executionVersion: context.executionVersion } } : {}) })),
+    changes: (identity?.role === 'operator' ? g.changes : g.changes.filter(ch => ch.companyId === identity?.companyId)).map(({ qaLoad, qaScenario, testJob, context, implementation, ...change }) => ({ ...change, ...(implementation ? { implementation: { ...implementation, security: implementation.security ? { ...implementation.security, blocks: [] } : undefined } } : {}), ...(context ? { context: { backend: context.backend, security: context.security, executionVersion: context.executionVersion } } : {}) })),
   };
 }

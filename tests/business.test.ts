@@ -25,11 +25,11 @@ test('4A T40 campaign load saturates insufficient capacity and prices only succe
 });
 test('4A T41 CTO priority chooses a real limited staging worker without altering production', () => {
   const g = createGame(); g.status = 'RUNNING';
-  command(g, 'backend', 'change.submit', { graph: initialGraph('backend'), revision: 0 }); const backend = g.changes[0];
-  command(g, 'security', 'change.submit', { graph: initialGraph('security'), revision: 0 }); const security = g.changes[0];
+  command(g, 'backend', 'change.submit', { graph: initialGraph('backend'), revision: 0 }); const backend = g.changes[0]; command(g,'security','security.submit',{changeId:backend.id,revision:0});
+  command(g, 'security', 'security.prepare', {auth:false,authorization:false,waf:false,botThreshold:0,blockedOrigins:[],rate:null}); const security = g.changes[0];
   command(g, 'qa', 'qa.run', { suite: 'Carga' }, backend.id); command(g, 'qa', 'qa.run', { suite: 'Carga' }, security.id);
   command(g, 'cto', 'cto.prioritize', { incident: 'security' }); advanceGame(g, .1);
-  assert.ok(security.qaLoad!.elapsed > 0); assert.equal(backend.qaLoad!.elapsed, 0); assert.equal(g.companies[0].version, 1);
+  assert.ok(security.testJob!.elapsed > 0); assert.equal(backend.qaLoad!.elapsed, 0); assert.equal(g.companies[0].version, 1);
 });
 test('4A campaign reservation expiration and product proposals remain separate from technical changes', () => {
   const g = createGame(); g.status = 'RUNNING';

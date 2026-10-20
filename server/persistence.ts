@@ -72,6 +72,7 @@ export function recoverGame(serialized: string): GameState {
       }
     }
   }
+  if(originalSchema<6)for(const change of saved.changes)delete change.implementation;
   if (saved.schema === 3) { importLegacyMarket(saved); saved.schema = 4; }
   if (saved.schema === 4) {
     saved.schema = 5; saved.actions = initialActionState();
