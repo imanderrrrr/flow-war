@@ -1,0 +1,5 @@
+
+> flow-war@0.1.0 bench:classroom
+> tsx scripts/audit-classroom-load.ts --label=diagnostic-1200s-20x
+
+{"output":"docs/benchmarks/final-hardening/classroom-diagnostic-1200s-20x.json","result":"failed","exitCode":1,"wallSeconds":58.884458791,"commandAck":{"n":402,"p50":121.38004200000432,"p95":582.8377079999991,"p99":629.3181669999976,"max":665.1514999999999},"budgets":{"eventLoopP99Below150":true,"engineIntervalP95Below200":true,"nonChatCommandAckP95Below150":true,"allCommandAckP95Below150":false,"scope":"Investigative budgets on local loopback; crossing one is reported, never hidden or relaxed."},"errors":["AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n109.9 !== 99.9\n\n    at <anonymous> (/Users/anderson/Documents/proyecto aseguramiento/scripts/audit-classroom-load.ts:141:194)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"]}

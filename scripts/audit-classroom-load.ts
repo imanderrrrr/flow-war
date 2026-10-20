@@ -134,10 +134,11 @@ try{
  report.scenarios.B={pipelineCompanies:5,architectureQaAuthorizationDeployment:true,securityPipeline:true,scaling:true,maintenance:true,stopRecoverRestart:true};
  // Confirmed work, an in-flight QA job, active requests, SIGKILL and same-cookie
  // reconnection. The saved state, rather than a stale client frame, is oracle.
+ await flushProbe();
  const pendingId=randomUUID(),pendingPayload={name:'Pendiente ante cierre',configuration:{kind:'inventory',minimum:3},dependencies:[]};const pending=requireOk(await send(student,'module.create',pendingPayload,undefined,pendingId));
  const current=await(await get('/api/snapshot',student)).json() as Snapshot,newChange=current.changes.find(c=>c.name==='Pendiente ante cierre')!;assert(newChange);requireOk(await send(member(0,'qa'),'qa.run',{suite:'Concurrencia'},newChange.id));
- const committed=JSON.parse((db.prepare('SELECT state FROM game WHERE id=1').get() as {state:string}).state);assert(committed.changes.some((c:any)=>c.id===newChange.id&&c.status==='QA_RUNNING'));
- await flushProbe();for(const e of entries)e.socket.disconnect();await stop('SIGKILL');await launch();
+ let committed=JSON.parse((db.prepare('SELECT state FROM game WHERE id=1').get() as {state:string}).state);assert(committed.changes.some((c:any)=>c.id===newChange.id&&c.status==='QA_RUNNING'));
+ for(const e of entries)e.socket.disconnect();await stop('SIGKILL');committed=JSON.parse((db.prepare('SELECT state FROM game WHERE id=1').get() as {state:string}).state);assert(committed.changes.some((c:any)=>c.id===newChange.id&&c.status==='QA_RUNNING'));await launch();
  const recovered=JSON.parse((db.prepare('SELECT state FROM game WHERE id=1').get() as {state:string}).state);assert.equal(recovered.status,'PAUSED');assert.equal(recovered.generation,1);assert.equal(recovered.tick,committed.tick);assert.deepEqual(recovered.market,committed.market);assert.deepEqual(recovered.changes,committed.changes);
  for(const e of entries){await connect(e);reconnects++;}
  assert.deepEqual(await send(student,'module.create',pendingPayload,undefined,pendingId,'post-crash-retry'),pending);assert.equal((await(await get('/api/snapshot',student)).json()).changes.filter((c:any)=>c.name==='Pendiente ante cierre').length,1);
