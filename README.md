@@ -87,3 +87,20 @@ El dominio actual mantiene compras, inventario y pagos; la adaptación a platafo
 [Informe, resultados de 27 conexiones y límites de rendimiento](docs/15-hardening-final-entrega-5.md). [Evidencia y verificación independiente](docs/benchmarks/final-hardening/README.md).
 
 `npm run bench:classroom -- --duration=1200 --speed=20 --label=mi-auditoria` ejecuta un servidor real con 25 sesiones estudiantiles, docente y proyector, cada vez sobre una base temporal. Use `--speed=1` para medir la duración real de una partida de veinte minutos. Las excepciones de latencia del ensayo publicado se conservan en el informe; no se declaran cumplidos todos los presupuestos.
+
+## Entrega 6
+
+Backend entrega su funcionalidad a Seguridad, que escribe protecciones libres sobre los mismos bloques.
+QA, CTO y DevOps trabajan con la combinación exacta de versiones. Ambos departamentos pueden preparar
+borradores revisables con Claude. La integración real requiere `ANTHROPIC_API_KEY` y `ANTHROPIC_MODEL`
+en el servidor; no hay sustitución simulada en producción.
+
+- [Arquitectura, configuración, migración y límites](docs/17-backend-seguridad-colaborativos-ia.md)
+- [Pruebas y mediciones de 27/32 conexiones](docs/benchmarks/entrega-6/README.md)
+
+```sh
+npm test
+npm run build
+npm run bench:collaboration -- --students=25 --duration=1200 --dvr=off --label=mi-aula-27
+npm run bench:collaboration -- --students=30 --duration=1200 --dvr=off --label=mi-aula-32
+```
