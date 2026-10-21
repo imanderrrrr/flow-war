@@ -20,8 +20,17 @@ const emit=Socket.prototype.emit;Socket.prototype.emit=function(event,...args){
  return emit.call(this,event,...args);
 };
 const WebSocket=require('ws'),frame=WebSocket.Sender.frame;WebSocket.Sender.frame=function(data,options){const result=frame.call(this,data,options);websocketFrames++;websocketFrameBytes+=result.reduce((n,b)=>n+(typeof b==='string'?Buffer.byteLength(b):b.byteLength),0);websocketPayloadBytes+=typeof data==='string'?Buffer.byteLength(data):data.byteLength;return result;};
-const encode=Encoder.prototype.encode;Encoder.prototype.encode=function(packet){
- const at=performance.now(),result=encode.call(this,packet),elapsed=performance.now()-at;
+// Each packet is counted once: inside encode() for the stock encoder, or in encodeAsString() when a server
+// encoder subclass answers state:update without the hasBinary scan. Calls nested in encode() are not recounted.
+const encode=Encoder.prototype.encode,encodeAsString=Encoder.prototype.encodeAsString;let encoding=0;
+Encoder.prototype.encode=function(packet){
+ const at=performance.now();let result;encoding++;try{result=encode.call(this,packet);}finally{encoding--;}return account(packet,result,performance.now()-at);
+};
+Encoder.prototype.encodeAsString=function(packet){
+ if(encoding)return encodeAsString.call(this,packet);
+ const at=performance.now(),result=encodeAsString.call(this,packet);return account(packet,[result],performance.now()-at)[0];
+};
+function account(packet,result,elapsed){
  const event=packet.data?.[0];for(const part of result){const bytes=typeof part==='string'?Buffer.byteLength(part):part.byteLength;encoded+=bytes;
   if(typeof part==='string'&&(event==='snapshot'||event==='state:update')){
    // Socket.IO header + [event,payload]. Subtract only the existing envelope.

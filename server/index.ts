@@ -13,6 +13,7 @@ import { CHANNELS } from '../shared/observability.js';
 import { bindObservability, checkpoint, observe, copyHistoryBuffer } from './observability.js';
 import { serializeGame } from './persistence.js';
 import { createGameWriter } from './storage.js';
+import { stateUpdateParser } from './socket-encoder.js';
 import express from 'express';
 import { createServer } from 'node:http';
 import { randomBytes, createHash } from 'node:crypto';
@@ -183,7 +184,7 @@ app.get('/api/access', (req, res) => {
   res.json({ credentials });
 });
 const http = createServer(app);
-const io = new Server(http, { maxHttpBufferSize: 80000, perMessageDeflate: { threshold: 1024, serverNoContextTakeover: true, clientNoContextTakeover: true, concurrencyLimit: 4, zlibDeflateOptions: { level: 1 } }, allowRequest: (req, callback) => {
+const io = new Server(http, { parser: stateUpdateParser, maxHttpBufferSize: 80000, perMessageDeflate: { threshold: 1024, serverNoContextTakeover: true, clientNoContextTakeover: true, concurrencyLimit: 4, zlibDeflateOptions: { level: 1 } }, allowRequest: (req, callback) => {
   try { callback(null, !req.headers.origin || new URL(req.headers.origin).host === req.headers.host); } catch { callback(null, false); }
 } });
 const synchronizers = new Map<string, SnapshotSync>();
