@@ -38,7 +38,7 @@ test('shared packed public companies preserve independent private snapshots for 
   const optimized=wire(compactSnapshot(view,shared));
   assert.deepEqual(optimized,previous,`${companyId}/${role}`);
   assert.deepEqual(wire(expandSnapshot(optimized)),wire(view),`${companyId}/${role} expansion`);
-  assert.equal(optimized.privateCompany?.id,companyId);
+  assert.equal(wire(expandSnapshot(optimized)).privateCompany?.id,companyId);
  }
  const first=wire(compactSnapshot(project(g,{id:'0-backend',role:'backend',companyId:0},publicProjection),shared));
  first.companies[0].name='MUTATED';
