@@ -112,3 +112,10 @@ y conversaciones Claude aisladas por empresa y rol. Configuración y límites en
 [docs/18-qa-cto-asistentes-por-empresa.md](docs/18-qa-cto-asistentes-por-empresa.md);
 resultados reproducibles en [docs/benchmarks/entrega-7/README.md](docs/benchmarks/entrega-7/README.md).
 La conexión real se comprueba con `npm run verify:anthropic` después de configurar `.env`.
+
+Rendimiento E7 (fases 1 y 2): los comandos que llegan en la misma vuelta del bucle se confirman
+en una sola transacción SQLite (group commit; `FLOW_GROUP_COMMIT=0` vuelve a la ruta por comando y
+`FLOW_GROUP_COMMIT_MAX` acota el lote, 64 por defecto) y `state:update` se codifica sin el escaneo
+binario de socket.io, con bytes idénticos. Diseño, garantías y riesgos en
+[docs/19-group-commit-y-codificador.md](docs/19-group-commit-y-codificador.md); benchmark pareado en
+[docs/benchmarks/entrega-7-group-commit/README.md](docs/benchmarks/entrega-7-group-commit/README.md).
