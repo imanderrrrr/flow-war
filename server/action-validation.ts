@@ -45,6 +45,18 @@ export function securityConfiguration(input: unknown): SecurityConfiguration {
 export function validateParameters(type: string, input: unknown) {
   const p = object(input);
   switch (type) {
+    case 'ai.confirm':keys(p,['proposalId','confirmed']);string(p.proposalId);if(p.confirmed!==true)throw new ActionError('INVALID','Confirma la decisión.');break;
+    case 'investment.link':keys(p,['orderId','changeId']);string(p.orderId);string(p.changeId);break;
+    case 'qa.return':
+      keys(p,['changeId','recipient','subject','description','steps','observed','expected','severity','evidenceIds','observationRefs']);string(p.changeId);oneOf(p.recipient,['backend','security']);oneOf(p.severity,['low','medium','high','critical']);
+      for(const k of ['subject','description','steps','observed','expected'])if(!freeText(p[k]).trim())throw new ActionError('INVALID','Carta incompleta.');
+      for(const k of ['evidenceIds','observationRefs']){if(!Array.isArray(p[k])||(p[k] as unknown[]).length>160)throw new ActionError('INVALID','Referencias inválidas.');(p[k] as unknown[]).forEach(v=>string(v));}break;
+    case 'qa.repeat':keys(p,['runId']);string(p.runId);break;
+    case 'qa.review':keys(p,['changeId','risks','evidenceIds']);string(p.changeId);if(!freeText(p.risks).trim())throw new ActionError('INVALID','Registra tu evaluación de riesgos.');if(!Array.isArray(p.evidenceIds)||!p.evidenceIds.length||p.evidenceIds.length>160)throw new ActionError('INVALID','Selecciona evidencia.');p.evidenceIds.forEach(v=>string(v));break;
+    case 'change.cancel':keys(p,['changeId','reason','confirmed']);string(p.changeId);if(p.confirmed!==true||!freeText(p.reason).trim())throw new ActionError('INVALID','Confirmación y motivo requeridos.');break;
+    case 'cto.decide':keys(p,['changeId','decision','reason','confirmed']);string(p.changeId);oneOf(p.decision,['authorize','reject','evidence']);if(p.confirmed!==true||!freeText(p.reason).trim())throw new ActionError('INVALID','Confirmación y motivo requeridos.');break;
+    case 'investment.create':keys(p,['department','objective','justification','maximum','changeId','confirmed']);oneOf(p.department,['backend','security']);for(const k of ['objective','justification'])if(!freeText(p[k]).trim())throw new ActionError('INVALID','Objetivo y justificación requeridos.');integer(p.maximum,1,10000);if(p.changeId!==undefined)string(p.changeId);if(p.confirmed!==true)throw new ActionError('INVALID','Confirma la orden.');break;
+    case 'investment.transition':keys(p,['orderId','status','spent','confirmed']);string(p.orderId);oneOf(p.status,['AUTHORIZED','IN_PROGRESS','COMPLETED','CANCELLED']);integer(p.spent,0,10000);if(p.confirmed!==true)throw new ActionError('INVALID','Confirma la transición.');break;
     case 'security.save':
       keys(p, ['changeId','nodeId','text','revision','interpretationId']); string(p.changeId); string(p.nodeId); freeText(p.text); integer(p.revision,0,100000); if(p.interpretationId!==undefined)string(p.interpretationId); break;
     case 'security.submit': keys(p,['changeId','revision']); string(p.changeId); integer(p.revision,0,100000); break;

@@ -1,6 +1,6 @@
 import { auditCompletion } from './discipline.js';
-import { AiGateway, AiError } from './claude.js';
-import { prepareAi, commitAi, visibleProposal } from './ai-service.js';
+import { AiGateway, AiError, AnthropicProvider, parseAiInput } from './claude.js';
+import { prepareAi, commitAi, visibleProposal, proposalText, beginAiAttempt, finishAiAttempt } from './ai-service.js';
 import { slackFact } from './flowslack.js';
 import { SnapshotSync } from './snapshot-sync.js';
 import { acquireStorageLease } from './storage-lease.js';
@@ -87,6 +87,7 @@ app.post('/api/login', (req, res) => {
   res.json({ identity });
 });
 app.post('/api/logout', (req, res) => {
+  const identity=session(req.headers.cookie);if(identity)for(const task of aiGateway.scheduler.status(identity.id))if(['QUEUED','RUNNING'].includes(task.state))aiGateway.scheduler.cancel(identity.id,task.id);
   const token = req.headers.cookie?.match(/(?:^|;\s*)fw_session=([^;]+)/)?.[1];
   if (token) { db.prepare('DELETE FROM sessions WHERE token=?').run(hash(token));
     for (const socket of io.sockets.sockets.values()) if (socket.request.headers.cookie?.match(/(?:^|;\s*)fw_session=([^;]+)/)?.[1] === token) socket.disconnect(true);
@@ -106,25 +107,53 @@ app.post('/api/ai', async (req,res) => {
   if(aiPending.has(key))return res.status(429).json({ok:false,code:'AI_BUSY',error:'Hay una solicitud en curso.'});
   aiPending.add(key);const generation=game.generation;
   try {
+    const input=parseAiInput(req.body);
+    const initial=structuredClone(game);copyHistoryBuffer(game,initial);
+    try{beginAiAttempt(game,identity,input);persist();}catch(e){game=initial;bindObservability(game,f=>slackFact(game,f));throw e;}
     const proposal=await prepareAi(game,identity,req.body,aiGateway);
     const current=session(req.headers.cookie);
     if(!current||current.id!==identity.id||game.generation!==generation)throw new AiError('FORBIDDEN','La sesión o la partida cambió.');
     const before=structuredClone(game);copyHistoryBuffer(game,before);
     try {
       const stored=commitAi(game,current,req.body,proposal);
+      finishAiAttempt(game,identity,stored.id,'COMPLETED');
       auditCompletion(game,identity.companyId!,'ai.prepared',[stored.id],[`provider:${stored.provider}`,`kind:${stored.kind}`]);
-      checkpoint(game,serializeGame,true);persist();scheduleBroadcast();res.json({ok:true,proposal:visibleProposal(stored)});
+      checkpoint(game,serializeGame,true);persist();scheduleBroadcast();res.json({ok:true,proposal:{...visibleProposal(stored),message:proposalText(game,identity,stored)}});
     }catch(e){game=before;bindObservability(game,f=>slackFact(game,f));throw e;}
   }catch(e){const code=e instanceof AiError?e.code:'AI_INVALID';
     if(game.generation===generation&&session(req.headers.cookie)?.id===identity.id){
       const before=structuredClone(game);copyHistoryBuffer(game,before);
-      try{auditCompletion(game,identity.companyId!,'ai.failed',[],[code]);checkpoint(game,serializeGame,true);persist();}catch{game=before;bindObservability(game,f=>slackFact(game,f));}
+      try{finishAiAttempt(game,identity,String(req.body?.id),['CANCELLED','TIMEOUT'].includes(code)?code:'FAILED',code);auditCompletion(game,identity.companyId!,'ai.failed',[],[code]);checkpoint(game,serializeGame,true);persist();}catch{game=before;bindObservability(game,f=>slackFact(game,f));}
     }
     res.status(code==='FORBIDDEN'?403:code==='AI_RATE_LIMIT'||code==='AI_BUSY'?429:503).json({ok:false,code,error:e instanceof AiError?e.message:'No se pudo preparar la propuesta.'});}
   finally{aiPending.delete(key);}
 });
+app.get('/api/ai/status',(req,res)=>{
+ res.setHeader('Cache-Control','no-store');const identity=session(req.headers.cookie);if(!identity)return res.sendStatus(403);
+ if(identity.role==='operator')return res.json({provider:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.status():{state:'TEST_PROVIDER'},usage:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.metrics():[],scheduler:aiGateway.scheduler.metrics()});
+ const attempts=game.companies[identity.companyId!].runtime.aiAttempts?.filter(a=>a.actor===identity.id&&a.role===identity.role&&a.generation===game.generation)??[];
+ res.json({requests:attempts.map(a=>({...a,...aiGateway.scheduler.status(identity.id,a.id)[0]}))});
+});
+app.post('/api/ai/cancel',(req,res)=>{const identity=session(req.headers.cookie);if(!identity)return res.sendStatus(403);try{const input=req.body;if(typeof input?.id!=='string'||input.id.length>100)return res.sendStatus(400);res.json({ok:aiGateway.scheduler.cancel(identity.id,input.id)});}catch{res.sendStatus(400);}});
+let diagnosticPending=false;
+app.post('/api/ai/diagnose',async(req,res)=>{
+ res.setHeader('Cache-Control','no-store');if(session(req.headers.cookie)?.role!=='operator')return res.sendStatus(403);
+ if(diagnosticPending)return res.status(429).json({ok:false,code:'AI_BUSY'});diagnosticPending=true;
+ try{await aiGateway.generate('operator-diagnostic',{id:crypto.randomUUID(),kind:'security.propose',text:'Devuelve un texto breve: diagnóstico de conexión, sin sugerir protecciones.'},game.companies[0].backend,0);res.json({ok:true,status:(aiGateway.provider as AnthropicProvider).status()});}
+ catch(e){res.status(503).json({ok:false,code:e instanceof AiError?e.code:'PROVIDER_ERROR',status:(aiGateway.provider as AnthropicProvider).status()});}finally{diagnosticPending=false;}
+});
 app.get('/api/health', (_req, res) => res.json({ ok: true, room: 'FW-001' }));
 app.get('/api/snapshot', (req, res) => { res.setHeader('Cache-Control', 'no-store'); res.json(project(game, session(req.headers.cookie))); });
+app.get('/api/qa/runs/:id',(req,res)=>{
+ res.setHeader('Cache-Control','no-store');const identity=session(req.headers.cookie);if(!identity||identity.companyId===null)return res.sendStatus(403);
+ const c=game.companies[identity.companyId],run=c.runtime.workflow?.runs.find(r=>r.id===req.params.id&&r.generation===game.generation),ch=run&&game.changes.find(ch=>ch.companyId===c.id&&ch.id===run.changeId);
+ const report=ch?.reports.find(r=>r.testEvidence?.runId===run?.id);if(!run||!report)return res.sendStatus(404);res.json({run,report});
+});
+app.get('/api/ai/conversation/:id',(req,res)=>{
+ res.setHeader('Cache-Control','no-store');const identity=session(req.headers.cookie);if(!identity||identity.companyId===null)return res.sendStatus(403);
+ const thread=game.companies[identity.companyId].runtime.conversations?.find(t=>t.id===req.params.id&&t.actor===identity.id&&t.role===identity.role&&t.generation===game.generation);if(!thread)return res.sendStatus(404);
+ const before=Number(req.query.before??thread.messages.length);if(!Number.isSafeInteger(before)||before<0||before>thread.messages.length)return res.sendStatus(400);const start=Math.max(0,before-40);res.json({messages:thread.messages.slice(start,before),nextBefore:start});
+});
 app.get('/api/requests/:id', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const identity = session(req.headers.cookie);
@@ -179,6 +208,7 @@ io.on('connection', socket => {
     const result = applyCommand(game, identity, command);
     try {
       persist({ identity: identity.id, id: command.id, digest, result: JSON.stringify(result) });
+      if(result.ok&&['room.reset','room.finish'].includes(command.type))for(const task of aiGateway.scheduler.metrics().recent)if(['QUEUED','RUNNING'].includes(task.state))aiGateway.scheduler.cancel(task.actor,task.id);
       ack(result); scheduleBroadcast();
     } catch { game = before; bindObservability(game,f=>slackFact(game,f)); ack({ ok: false, error: 'No se pudo confirmar el comando.' }); }
   });

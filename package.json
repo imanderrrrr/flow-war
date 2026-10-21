@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx server/index.ts",
+    "dev": "node --env-file-if-exists=.env --import tsx server/index.ts",
     "build": "tsc --noEmit && vite build",
-    "start": "NODE_ENV=production tsx server/index.ts",
+    "start": "NODE_ENV=production node --env-file-if-exists=.env --import tsx server/index.ts",
     "test": "tsx --test tests/*.test.ts",
     "bench:traffic": "tsx scripts/traffic-benchmark.ts && tsx scripts/market-benchmark.ts",
     "bench:actions": "tsx scripts/actions-benchmark.ts && tsx scripts/verify-actions-benchmark.ts",
@@ -19,7 +19,9 @@
     "bench:snapshots": "tsx scripts/performance-classroom.ts",
     "bench:dvr-modes": "tsx scripts/performance-modes.ts",
     "bench:performance-matrix": "node scripts/performance-matrix.mjs",
-    "bench:collaboration": "tsx scripts/collaboration-classroom.ts"
+    "bench:collaboration": "tsx scripts/collaboration-classroom.ts",
+    "bench:ai": "node --import tsx scripts/ai-concurrency-benchmark.ts",
+    "verify:anthropic": "node --env-file-if-exists=.env --import tsx scripts/anthropic-smoke.ts"
   },
   "dependencies": {
     "@fontsource/press-start-2p": "^5.2.5",

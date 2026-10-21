@@ -1,3 +1,4 @@
+import { lockBackend, assertBackendEditable } from './workflow.js';
 import type { Company, GameState, Change, Identity, Result } from '../shared/types.js';
 import type { AiProposal, CollaborationState, CollaborationView, ProtectionRule } from '../shared/collaboration.js';
 import { stableDigest, employeeFor } from './discipline.js';
@@ -5,6 +6,7 @@ import { validateParameters, object, keys, integer, oneOf, string } from './acti
 
 export function collaboration(c: Company): CollaborationState { return c.runtime.collaboration ??= { nextVersion: 1, reviews: {}, proposals: [] }; }
 export function beginSecurityReview(g: GameState, c: Company, ch: Change) {
+  assertBackendEditable(c);
   const state = collaboration(c);
   // A newer functional revision requires a new explicit decision, including unchanged blocks.
   for (const old of g.changes) if (old.id !== ch.id && old.companyId === c.id && old.implementation && !['DEPLOYED','DEPLOY_FAILED','STALE','QA_REJECTED','CTO_REJECTED'].includes(old.status)) {
@@ -15,6 +17,8 @@ export function beginSecurityReview(g: GameState, c: Company, ch: Change) {
     old.reports.forEach(r => r.obsolete = true); delete old.testJob; delete old.qaScenario; delete old.qaLoad;
   }
   ch.implementation = { featureId: 'purchase-flow', backendVersion: state.nextVersion++, backendAuthor: ch.actorId, graphDigest: stableDigest(ch.graph) };
+  const returned=c.runtime.workflow?.letters.slice().reverse().find(l=>l.recipient==='backend'&&!l.successorId);if(returned){ch.parentChangeId=returned.changeId;returned.successorId=ch.id;}
+  lockBackend(c,ch,g.tick);
   ch.status = 'SECURITY_PENDING'; state.reviews[ch.id] = { revision: 0, blocks: {}, observations: [] };
   // No protection is inherited implicitly from a different functional version.
   delete ch.context!.execution!.security; ch.context!.execution!.blockPolicies = [];
@@ -66,7 +70,7 @@ export function assertBundle(ch: Change) {
   if(!i.security||i.graphDigest!==stableDigest(ch.context?.backend)||i.graphDigest!==stableDigest(ch.graph)||i.bundleDigest!==stableDigest([ch.companyId,i.featureId,i.backendVersion,ch.graph,execution,ch.artifactRefs??[],i.security]))throw new Error('La combinación revisada no coincide.');
 }
 export function collaborationView(c: Company, actor: Identity): CollaborationView|undefined {
-  if(!['backend','security','operator'].includes(actor.role))return;
+  if(!['backend','security','qa','cto','operator'].includes(actor.role))return;
   const state=c.runtime.collaboration;if(!state)return;
   return {reviews:Object.fromEntries(Object.entries(state.reviews).map(([id,r])=>[id,{revision:r.revision,blocks:actor.role==='security'?Object.fromEntries(Object.entries(r.blocks).map(([id,b])=>[id,{text:b.text,executable:b.executable,author:b.author}])):{},observations:structuredClone(r.observations)}])),proposals:state.proposals.filter(p=>p.actor===actor.id).map(({output,inputDigest,sourceText,...p})=>p)};
 }
@@ -75,6 +79,7 @@ export function proposalCommand(c: Company, actor: Identity, type: string, p: Re
   if(!proposal||proposal.status!=='PENDING')throw new Error('Propuesta no disponible.');
   if(type==='ai.reject'){proposal.status='REJECTED';return {ok:true,refs:[proposal.id]};}
   if(proposal.kind==='backend.propose'){
+    assertBackendEditable(c);
     if(actor.role!=='backend'||proposal.draftRevision!==(c.drafts.backend?.revision??0))throw new Error('El borrador cambió.');
     c.drafts.backend={graph:structuredClone(proposal.output.graph!),revision:proposal.draftRevision+1};
   }else{

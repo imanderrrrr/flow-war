@@ -26,6 +26,8 @@ for (const configuration of [{ kind: 'coupon', percent: 20, audience: 'all', sta
   assert.equal(command(g, 'devops', 'deploy.start', { strategy: 'rolling' }, ch.id).ok, true); advanceGame(g, 7);
   assert.equal(ch.status, 'DEPLOYED'); assert.equal(c.runtime.releases[c.version].modules[0].configuration.kind, configuration.kind);
   const previous = structuredClone(c.runtime.releases[c.version]);
+  assert.equal(command(g,'backend','module.revise',{moduleId:ch.artifactRefs![0].id,name:'blocked',configuration,dependencies:[]}).ok,false);
+  assert(command(g,'qa','qa.return',{changeId:ch.id,recipient:'backend',subject:'Nueva revisión',description:'Solicito revisar esta implementación publicada.',steps:'Repetir la prueba registrada.',observed:'Consultar resultados adjuntos al cambio.',expected:'Reevaluación del comportamiento.',severity:'medium',evidenceIds:[],observationRefs:[]}).ok);
   assert.equal(command(g, 'backend', 'module.revise', { moduleId: ch.artifactRefs![0].id, name: 'v2', configuration, dependencies: [] }).ok, true);
   assert.deepEqual(c.runtime.releases[c.version], previous); assert.equal(c.runtime.modules[ch.artifactRefs![0].id].length, 2);
 });

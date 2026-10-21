@@ -81,12 +81,16 @@ test('E6 combined bundle passes QA, CTO and DevOps and remains immutable across 
  const g=pending(),ch=g.changes[0];await compile(g,'Autenticar.',[{kind:'authenticated'}]);reviewForQa(g);
  assert(command(g,'qa','qa.execute',{changeId:ch.id,scenario:DEFAULT_TEST}).ok);advanceGame(g,1);assert(command(g,'qa','qa.approve',{},ch.id).ok);assert(command(g,'cto','cto.authorize',{},ch.id).ok);assert(command(g,'devops','deploy.start',{strategy:'rolling'},ch.id).ok);advanceGame(g,7);
  const c=g.companies[0],release=structuredClone(c.runtime.releases[c.version]);assert.equal(ch.status,'DEPLOYED');assert.equal(release.bundleDigest,ch.implementation!.bundleDigest);
- assert(command(g,'backend','draft.save',{graph:ch.graph,revision:1}).ok);assert.deepEqual(c.runtime.releases[c.version],release);
+ assert.equal(command(g,'backend','draft.save',{graph:ch.graph,revision:1}).ok,false);assert.deepEqual(c.runtime.releases[c.version],release);
  const frozen=structuredClone(ch);frozen.context!.backend.nodes[0].position.x++;assert.throws(()=>assertBundle(frozen));
 });
-test('E6 a newer Backend version invalidates reviewed work, releases money and keeps authorship',()=>{
- const g=pending(),old=g.changes[0];reviewForQa(g);command(g,'qa','qa.run',{suite:'Concurrencia'},old.id);advanceGame(g,4);command(g,'qa','qa.approve',{},old.id);assert(command(g,'cto','cto.authorize',{},old.id).ok);assert(g.companies[0].reserved>0);
- assert(command(g,'backend','change.submit',{graph:old.graph,revision:1}).ok);assert.equal(old.status,'STALE');assert.equal(old.implementation!.backendAuthor,'0-backend');assert.equal(g.companies[0].reserved,0);assert(old.reports.every(r=>r.obsolete));assert.equal(g.changes[0].implementation!.backendVersion,2);assert(!g.changes[0].implementation!.security);
+test('E7 new Backend revision requires a formal QA return and preserves the previous implementation',()=>{
+ const g=pending(),old=g.changes[0];reviewForQa(g);command(g,'qa','qa.execute',{changeId:old.id,scenario:DEFAULT_TEST});advanceGame(g,1);
+ command(g,'qa','qa.approve',{},old.id);assert(command(g,'cto','cto.authorize',{},old.id).ok);assert(g.companies[0].reserved>0);
+ assert.equal(command(g,'backend','change.submit',{graph:old.graph,revision:1}).ok,false);
+ const frozen=structuredClone(old.graph);
+ assert(command(g,'qa','qa.return',{changeId:old.id,recipient:'backend',subject:'Revisar',description:'Solicito revisar el resultado observado.',steps:'Ejecutar el caso adjunto.',observed:'Resultado registrado.',expected:'Resultado esperado por QA.',severity:'medium',evidenceIds:[g.companies[0].runtime.workflow!.runs[0].id],observationRefs:[]}).ok);
+ assert(command(g,'backend','change.submit',{graph:old.graph,revision:g.companies[0].drafts.backend!.revision}).ok);assert.equal(old.status,'QA_REJECTED');assert.equal(g.companies[0].reserved,0);assert.deepEqual(old.graph,frozen);assert.equal(g.changes[0].implementation!.backendVersion,2);assert(!g.changes[0].implementation!.security);
 });
 test('E6 AI Backend proposals need acceptance and still require the same complete pipeline',async()=>{
  const g=start(),production=structuredClone(g.companies[0].backend),input:AiInput={id:'proposal',kind:'backend.propose',text:'Preparar compra con inventario y pago.'};
@@ -135,9 +139,9 @@ test('E6 Anthropic HTTP contract uses structured output and never propagates key
  const absent=new AnthropicProvider('', 'model',transport);await assert.rejects(()=>absent.generate(input,insertBlock('atomic')),/no está configurado/);
  for(const response of [{stop_reason:'max_tokens',content:[]},{stop_reason:'end_turn',content:[{type:'tool_use'}]}])await assert.rejects(()=>new AnthropicProvider('key','model',async()=>new Response(JSON.stringify(response))).generate(input,insertBlock('atomic')));
 });
-test('E6 gateway bounds calls per user and global concurrency without a per-request simulator dependency',async()=>{
+test('E7 gateway bounds calls per user and distributes queued work among companies',async()=>{
  const input:AiInput={id:'quota',kind:'security.propose',text:'Preparar.'},gateway=new AiGateway(fixture({text:'Texto'}));for(let i=0;i<8;i++)await gateway.generate('actor',input,insertBlock('atomic'));await assert.rejects(()=>gateway.generate('actor',input,insertBlock('atomic')),/Límite/);await gateway.generate('other',input,insertBlock('atomic'));
- let release!:()=>void;const gate=new Promise<void>(r=>release=r),slow=new AiGateway({name:'test',model:'slow',async generate(){await gate;return {text:'Texto'};}});const a=slow.generate('a',input,insertBlock('atomic')),b=slow.generate('b',input,insertBlock('atomic'));await assert.rejects(()=>slow.generate('c',input,insertBlock('atomic')),/ocupado/);release();await Promise.all([a,b]);
+ let release!:()=>void;const gate=new Promise<void>(r=>release=r),slow=new AiGateway({name:'test',model:'slow',async generate(){await gate;return {text:'Texto'};}});const a=slow.generate('a',input,insertBlock('atomic'),0),b=slow.generate('b',input,insertBlock('atomic'),0),c=slow.generate('c',input,insertBlock('atomic'),1);assert.equal(slow.scheduler.status('b')[0].state,'QUEUED');assert.equal(slow.scheduler.status('c')[0].state,'RUNNING');release();await Promise.all([a,b,c]);
 });
 
 test('E6 compiled policies do not call Claude while 5000 customers advance',async()=>{

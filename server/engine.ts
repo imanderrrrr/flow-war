@@ -1,3 +1,4 @@
+import { assertBackendEditable, workflowCommand, startQa, completeQa, workflowView, expireInvestments, settleInvestment, workflow } from './workflow.js';
 import { beginSecurityReview, bindLegacySecurity, securityCommand, assertBundle, collaborationView, proposalCommand } from './collaboration.js';
 import { visibleRequest } from './projections.js';
 import { setMaintenance, MAINTENANCE_POLICY } from './maintenance.js';
@@ -157,9 +158,25 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
   const p = command.payload ?? {};
   try {
     validateParameters(command.type, p);
+    if(identity.role==='backend'&&['draft.save','change.submit','module.create','module.revise','ai.accept'].includes(command.type))assertBackendEditable(c);
+    const handled=workflowCommand(g,c,identity,command.type,p);if(handled)return handled;
     if(identity.role==='backend' && ['module.create','module.revise','change.submit'].includes(command.type) && g.changes.some(x=>x.companyId===c.id&&x.status==='DEPLOYING'))throw new Error('Espera a que finalice la publicación en curso.');
     if (command.type.startsWith('campaign.') || command.type === 'product.propose') { const result = businessCommand(g, c, identity, command.type, p); event(g, c.id, command.type === 'campaign.activate' ? 'Campaña activada.' : 'Operación comercial registrada.', 'neutral', 'PRODUCTO'); return result; }
     if (command.type.startsWith('security.') && ['security.save','security.submit','security.correction'].includes(command.type)) return securityCommand(g,identity,command.type,p);
+    if(command.type==='ai.accept'||command.type==='ai.confirm'){
+      const receipt=c.runtime.collaboration?.proposals.find(r=>r.id===p.proposalId&&r.actor===identity.id&&r.companyId===c.id&&r.generation===g.generation&&r.status==='PENDING');
+      if(receipt?.kind==='qa.interpret'){
+        if(identity.role!=='qa'||!receipt.output.scenario)throw new Error('Escenario no disponible.');
+        const target=g.changes.find(ch=>ch.id===receipt.changeId&&ch.companyId===c.id);if(!target)throw new Error('Cambio no encontrado.');
+        startQa(g,c,target,identity,receipt.output.scenario,receipt.requestText);c.runtime.workflow!.runs.at(-1)!.threadId=receipt.threadId;receipt.status='ACCEPTED';return {ok:true,refs:[target.id,target.qaRunId!]};
+      }
+      if(receipt?.kind==='cto.interpret'){
+        if(identity.role!=='cto'||command.type!=='ai.confirm'||p.confirmed!==true)throw new Error('Se requiere confirmación del CTO.');
+        const o=receipt.output;if(o.intent==='query')throw new Error('La consulta no prepara acciones.');
+        const type=o.intent==='investment'?'investment.create':'cto.decide',parameters=o.intent==='investment'?{department:o.department,objective:receipt.requestText,justification:receipt.requestText,maximum:o.maximum,...(o.changeId?{changeId:o.changeId}:{}),confirmed:true}:{changeId:o.changeId,decision:o.intent,reason:receipt.requestText,confirmed:true};validateParameters(type,parameters);const result=workflowCommand(g,c,identity,type,parameters);receipt.status='ACCEPTED';return result!;
+      }
+      if(command.type==='ai.confirm')throw new Error('Decisión no disponible.');
+    }
     if (command.type==='ai.accept'||command.type==='ai.reject') {
       const proposal=c.runtime.collaboration?.proposals.find(r=>r.id===p.proposalId);
       if(proposal?.kind==='security.propose' && command.type==='ai.accept') { const linked=g.changes.find(x=>x.id===proposal.changeId&&x.companyId===c.id); if(linked?.status!=='SECURITY_PENDING')throw new Error('Revisión no disponible.'); }
@@ -206,12 +223,11 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
     if (command.type === 'infra.balancer') { c.balancer = Boolean(p.enabled); event(g, c.id, `Balanceador ${c.balancer ? 'activo' : 'desactivado'}.`, 'neutral', 'DEVOPS'); return { ok: true }; }
     if (!ch) throw new Error('Cambio no encontrado.');
     if (ch.baseVersion !== c.version && !['DEPLOYED', 'QA_REJECTED', 'CTO_REJECTED'].includes(ch.status)) throw new Error('La versión base cambió.');
-    if(ch.implementation && command.type!=='qa.reject')assertBundle(ch);
+    if(ch.implementation && !['qa.reject','cto.reject'].includes(command.type))assertBundle(ch);
     if (command.type === 'qa.execute') {
       validateParameters(command.type, p);
       if (ch.status !== 'QA_PENDING') throw new Error('QA requiere un cambio pendiente.');
-      const job = createTestJob(c, ch, testScenario(p.scenario));
-      ch.testJob = job; ch.status = 'QA_RUNNING'; ch.runningSuite = job.scenario.suite; return { ok: true };
+      startQa(g,c,ch,identity,testScenario(p.scenario));return {ok:true,refs:[ch.id]};
     }
     if (command.type === 'qa.run') {
       if (ch.status !== 'QA_PENDING' || !SUITES.includes(String(p.suite))) throw new Error('No se puede ejecutar esa suite en este estado.');
@@ -222,18 +238,24 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       if (p.suite === 'Carga') ch.qaLoad = createLoadRun(c, ch.context ?? productionContext(c), g.tick);
       if (p.suite === 'Concurrencia') ch.qaScenario = createConcurrencyRun(`${ch.id}-QA${ch.reports.length + 1}`, ch.context ?? productionContext(c), g.tick);
     } else if (command.type === 'qa.approve') {
+      if(ch.implementation&&c.runtime.workflow?.runs.some(r=>r.changeId===ch.id&&r.report))return workflowCommand(g,c,identity,'qa.review',{changeId:ch.id,risks:'Aprobación manual explícita; revisar todas las pruebas adjuntas.',evidenceIds:c.runtime.workflow?.runs.filter(r=>r.changeId===ch.id&&r.report).map(r=>r.id)??[]})!;
       if (ch.status !== 'QA_PENDING' || !ch.reports.some(report => !report.obsolete)) throw new Error('Se requiere una prueba terminada.');
+      if(ch.implementation){const state=workflow(c);state.decisions.push({id:`D${state.decisions.length+1}`,changeId:ch.id,actor:identity.id,at:g.tick,kind:'qa.approve',reason:'Aprobación manual explícita; sin observaciones escritas.',evidenceIds:ch.reports.map((r,i)=>`${ch.id}:report:${i}`),failedIds:ch.reports.flatMap((r,i)=>r.testEvidence?.passed===false||r.oversold>0||r.duplicates>0?[`${ch.id}:report:${i}`]:[])});}
       ch.status = 'CTO_PENDING'; event(g, c.id, `${ch.id} aprobado por QA.`, 'neutral', 'PIPELINE');
     } else if (command.type === 'qa.reject') {
+      if(ch.implementation)throw new Error('Redacta una carta formal para devolver esta implementación.');
       if (ch.status !== 'QA_PENDING') throw new Error('Estado de cambio inválido.'); ch.status = 'QA_REJECTED';
     } else if (command.type === 'cto.authorize') {
+      if(ch.implementation)return workflowCommand(g,c,identity,'cto.decide',{changeId:ch.id,decision:'authorize',reason:'Autorización manual explícita del CTO.',confirmed:true})!;
       if (ch.status !== 'CTO_PENDING') throw new Error('Falta aprobación de QA.');
       if (c.capital - c.reserved - c.infraBudget < ch.cost) throw new Error('Saldo disponible insuficiente.');
       c.reserved += ch.cost; ch.reserved = ch.cost; ch.status = 'AUTHORIZED'; ch.expires = g.tick + 60;
       event(g, c.id, `${ch.id} autorizado · Q${ch.cost}.`, 'neutral', 'CTO');
     } else if (command.type === 'cto.reject') {
+      if(ch.implementation)return workflowCommand(g,c,identity,'cto.decide',{changeId:ch.id,decision:'reject',reason:'Rechazo manual explícito del CTO. Se solicita revisión QA.',confirmed:true})!;
       if (ch.status !== 'CTO_PENDING') throw new Error('Estado de cambio inválido.'); ch.status = 'CTO_REJECTED';
     } else if (command.type === 'deploy.start') {
+      if(c.capital-c.infraBudget<c.reserved)throw new Error('Saldo reservado insuficiente. Solicita evaluación del CTO.');
       if (ch.status !== 'AUTHORIZED' || g.tick > (ch.expires ?? 0)) throw new Error('No existe autorización vigente.');
       if (g.changes.some(x => x.companyId === c.id && x.status === 'DEPLOYING')) throw new Error('Ya existe un despliegue activo.');
       if (!['rolling', 'restart'].includes(String(p.strategy))) throw new Error('Estrategia no disponible.');
@@ -258,15 +280,17 @@ function jobs(g: GameState) {
       const completed = ch.testJob ? advanceTestJob(ch.testJob) : ch.qaLoad ? advanceLoadRun(ch.qaLoad) : ch.qaScenario ? isRunFinished(ch.qaScenario) : g.tick >= (ch.due ?? Infinity);
       if (completed) {
         ch.reports.push(ch.testJob ? testReport(ch.testJob, g.tick) : ch.qaLoad ? loadReport(ch.qaLoad, g.tick) : ch.qaScenario ? concurrencyReport(ch.qaScenario, g.tick) : reportFor(g, ch, ch.runningSuite!));
+        completeQa(c,ch);const restore=(ch.testJob as any)?.restoreStatus;
         delete ch.qaScenario; delete ch.qaLoad; delete ch.testJob;
-        ch.status = 'QA_PENDING';
+        ch.status = restore??'QA_PENDING';
         auditCompletion(g, c.id, 'qa.completed', [ch.id], [`requests.executed:${ch.reports.at(-1)!.requests}`, 'reports.added:1']);
         event(g, c.id, `${ch.id} · ${ch.runningSuite} completada.`, 'neutral', 'QA');
       }
     }
     if (ch.status === 'DEPLOYING' && g.tick >= (ch.due ?? Infinity)) {
+      if(c.capital<ch.cost||c.capital-c.infraBudget<c.reserved){ch.status='DEPLOY_FAILED';releaseReservation(c,ch);event(g,c.id,`${ch.id} · publicación cancelada por saldo insuficiente.`, 'neutral','CTO');continue;}
       assertBundle(ch);
-      if(ch.implementation){c.backend=structuredClone(ch.context!.backend);c.security=structuredClone(ch.context!.security);}else c[ch.domain] = structuredClone(ch.graph); c.version++; c.runtime.releases[c.version] = structuredClone(ch.context?.execution ?? releaseFor(c)); c.deployments++; c.capital -= ch.cost; releaseReservation(c, ch); ch.status = 'DEPLOYED';
+      if(ch.implementation){c.backend=structuredClone(ch.context!.backend);c.security=structuredClone(ch.context!.security);}else c[ch.domain] = structuredClone(ch.graph); c.version++; c.runtime.releases[c.version] = structuredClone(ch.context?.execution ?? releaseFor(c)); c.deployments++; c.capital -= ch.cost;settleInvestment(c,ch); releaseReservation(c, ch); ch.status = 'DEPLOYED';
       auditCompletion(g, c.id, 'deploy.completed', [ch.id, ...(ch.artifactRefs?.map(ref=>`${ref.id}@${ref.version}`) ?? [])], [`production.version:${c.version}`, `capital.delta:${-ch.cost}`]);
       event(g, c.id, `${ch.id} EN PRODUCCIÓN · v${c.version}`, 'good', 'DEPLOY');
       for (const other of g.changes) if (other.companyId === c.id && other.id !== ch.id && ['QA_PENDING', 'QA_RUNNING', 'CTO_PENDING', 'AUTHORIZED', 'EXPIRED'].includes(other.status)) { other.status = 'STALE'; releaseReservation(c, other); }
@@ -288,7 +312,7 @@ export function step(g: GameState, dt = .1) {
   for (const c of g.companies) {
     if (c.eliminated) continue;
     const recovered = c.infrastructure.instances.filter(instance=>instance.status==='RESTARTING'&&g.tick>=instance.readyAt!).map(instance=>`APP-${instance.id}`);
-    advanceInfrastructure(c, g.tick); advanceCampaigns(c, g.tick);
+    advanceInfrastructure(c, g.tick); advanceCampaigns(c, g.tick);expireInvestments(c,g.tick,false,g.changes.filter(ch=>ch.companyId===c.id&&['AUTHORIZED','DEPLOYING'].includes(ch.status)).map(ch=>ch.id));
     if (recovered.length) auditCompletion(g, c.id, 'infra.recovered', recovered, ['availability.restored']);
     const deploying = g.changes.find(ch => ch.companyId === c.id && ch.status === 'DEPLOYING');
     const rates = serviceRates(c, deploying);
@@ -338,6 +362,8 @@ export function step(g: GameState, dt = .1) {
 }
 function finishRequests(g: GameState, reason: 'ROOM_FINISHED' | 'ROOM_INTERRUPTED' = 'ROOM_FINISHED') {
   for (const company of g.companies) {
+    expireInvestments(company,g.tick,true);
+    for(const ch of g.changes)if(ch.companyId===company.id&&ch.reserved){releaseReservation(company,ch);if(ch.status==='AUTHORIZED')ch.status='EXPIRED';}
     cancelTraffic(company, g.tick, reason);
     if (company.concurrency.run) { cancelConcurrency(company.concurrency.run, g.tick, reason); settleConcurrency(company); }
   }
@@ -357,7 +383,7 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
     privateC.drafts = ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {};
   }
   return {
-    operations: identity ? { ...(ownCompany ? { collaboration: collaborationView(ownCompany,identity!) } : {}), modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
+    operations: identity ? { ...(ownCompany ? { workflow:workflowView(ownCompany), conversations:ownCompany.runtime.conversations?.filter(t=>t.actor===identity!.id&&t.role===identity!.role&&t.generation===g.generation).map(t=>({...t,messages:t.messages.slice(-20)})), collaboration: collaborationView(ownCompany,identity!) } : {}), modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
     dvrEnabled: g.dvrEnabled, generation: g.generation,
     slack: ownCompany ? structuredClone(g.slack.messages.filter(m=>m.companyId===ownCompany.id)) : undefined,
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
@@ -366,6 +392,6 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
       return { ...pub, ...(internal?{breaches}:{}), traffic: trafficView(traffic, internal), concurrency: { runId: concurrency.run?.id, inventory: concurrency.run && { ...concurrency.run.inventory }, totals: { ...concurrency.totals } }, particles: particles(c), modules: [...route(backend), ...route(security)].map(n => n.type), pipelineCounts: [['QA_PENDING', 'QA_RUNNING'], ['CTO_PENDING'], ['AUTHORIZED', 'DEPLOYING'], ['DEPLOYED']].map(states => g.changes.filter(ch => ch.companyId === c.id && states.includes(ch.status)).length) };
     }),
     events: internal ? g.events : g.events.filter(e=>e.companyId===null||e.companyId===identity?.companyId||['CONCURRENCIA','COLAPSO'].includes(e.category)), migrations: g.migrations, unserved: g.unserved, privateCompany: privateC,
-    changes: (identity?.role === 'operator' ? g.changes : g.changes.filter(ch => ch.companyId === identity?.companyId)).map(({ qaLoad, qaScenario, testJob, context, implementation, ...change }) => ({ ...change, ...(implementation ? { implementation: { ...implementation, security: implementation.security ? { ...implementation.security, blocks: [] } : undefined } } : {}), ...(context ? { context: { backend: context.backend, security: context.security, executionVersion: context.executionVersion } } : {}) })),
+    changes: (identity?.role === 'operator' ? g.changes : g.changes.filter(ch => ch.companyId === identity?.companyId)).map(({ qaLoad, qaScenario, testJob, context, implementation, ...change }) => ({ ...change, reports:change.reports.map(r=>r.testEvidence?.runId?{...r,testEvidence:{...r.testEvidence,outcomeCount:r.testEvidence.outcomes.length,eventCount:r.testEvidence.events?.length??0,outcomes:[],events:[]}}:r), ...(implementation ? { implementation: { ...implementation, security: implementation.security ? { ...implementation.security, blocks: [] } : undefined } } : {}), ...(context ? { context: { backend: context.backend, security: context.security, executionVersion: context.executionVersion } } : {}) })),
   };
 }

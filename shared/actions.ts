@@ -19,6 +19,15 @@ export type TestScenario = {
 export const DEFAULT_TEST: TestScenario = { suite: 'unit', requests: 1, stock: 100, concurrency: 1, retries: 0, duplicateIntent: false, coupons: 1, newCustomer: true, invalidInput: false, attack: 'none', interrupt: false };
 export type CampaignConfiguration = { percent: number; audience: 'all' | 'new'; duration: number; budget: number; demandMultiplier: number };
 export type ActionParameters = {
+  'ai.confirm': {proposalId:string;confirmed:true};
+  'investment.link': {orderId:string;changeId:string};
+  'qa.return': {changeId:string; recipient:'backend'|'security'; subject:string; description:string; steps:string; observed:string; expected:string; severity:'low'|'medium'|'high'|'critical'; evidenceIds:string[]; observationRefs:string[]};
+  'qa.repeat': {runId:string};
+  'qa.review': {changeId:string; risks:string; evidenceIds:string[]};
+  'change.cancel': {changeId:string; reason:string; confirmed:true};
+  'cto.decide': {changeId:string; decision:'authorize'|'reject'|'evidence'; reason:string; confirmed:true};
+  'investment.create': {department:'backend'|'security'; objective:string; justification:string; maximum:number; changeId?:string; confirmed:true};
+  'investment.transition': {orderId:string; status:'AUTHORIZED'|'IN_PROGRESS'|'COMPLETED'|'CANCELLED'; spent:number; confirmed:true};
   'security.save': { changeId: string; nodeId: string; text: string; revision: number; interpretationId?: string };
   'security.submit': { changeId: string; revision: number };
   'security.correction': { changeId: string; nodeId: string; text: string };
@@ -56,8 +65,12 @@ export type ActionCategory = 'artifact' | 'preparation' | 'qa' | 'finance' | 'op
 const entry = (roles: (Role | 'operator')[], category: ActionCategory) => ({ roles, category, version: ACTION_VERSION });
 /** Shared by the existing UI, structured adapter and future provider. */
 export const ACTION_CATALOG = {
+  'ai.confirm': entry(['cto'], 'finance'), 'investment.link': entry(['backend','security'], 'preparation'),
+  'qa.return': entry(['qa'], 'qa'), 'qa.repeat': entry(['qa'], 'qa'), 'qa.review': entry(['qa'], 'qa'),
+  'change.cancel': entry(['qa'], 'qa'), 'cto.decide': entry(['cto'], 'finance'),
+  'investment.create': entry(['cto'], 'finance'), 'investment.transition': entry(['cto','backend','security'], 'finance'),
   'security.save': entry(['security'], 'preparation'), 'security.submit': entry(['security'], 'preparation'),
-  'security.correction': entry(['security'], 'preparation'), 'ai.accept': entry(['backend', 'security'], 'preparation'), 'ai.reject': entry(['backend', 'security'], 'preparation'),
+  'security.correction': entry(['security'], 'preparation'), 'ai.accept': entry(['backend', 'security','qa'], 'preparation'), 'ai.reject': entry(['backend', 'security','qa','cto'], 'preparation'),
   'module.create': entry(['backend'], 'artifact'), 'module.revise': entry(['backend'], 'artifact'),
   'security.prepare': entry(['security'], 'preparation'), 'qa.execute': entry(['qa'], 'qa'),
   'infra.maintenance': entry(['devops'], 'operation'),
