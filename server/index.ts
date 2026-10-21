@@ -13,6 +13,7 @@ import { CHANNELS } from '../shared/observability.js';
 import { bindObservability, checkpoint, observe, copyHistoryBuffer } from './observability.js';
 import { serializeGame } from './persistence.js';
 import { createGameWriter } from './storage.js';
+import { createCommandPipeline } from './command-pipeline.js';
 import { stateUpdateParser } from './socket-encoder.js';
 import express from 'express';
 import { createServer } from 'node:http';
@@ -22,7 +23,7 @@ import { resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { Server } from 'socket.io';
 import { ROLES, type Identity, type GameState, type Command, type Snapshot } from '../shared/types.js';
-import { applyCommand, createGame, project, step } from './engine.js';
+import { createGame, project, step } from './engine.js';
 import { recoverGame } from './persistence.js';
 import { trafficReceipt } from './traffic.js';
 
@@ -53,7 +54,7 @@ let game: GameState = saved ? recoverGame(saved.state) : createGame(1500, 7357, 
 if (saved) { observe(game,'server.recovered',null,{status:game.status}); checkpoint(game,serializeGame,true); }
 const writeGame = createGameWriter(db);
 sealLegacyGenerations(db, game.generation);
-const persist = (command?: {identity: string; id: string; digest: string; result: string}) => writeGame(game, command);
+const persist = () => writeGame(game);
 persist();
 const sessionLookup = db.prepare('SELECT identity,expires FROM sessions WHERE token=?');
 function session(cookie?: string, includeExpelled = false): Identity | null {
@@ -107,13 +108,13 @@ app.post('/api/ai', async (req,res) => {
   if(!budget||now-budget.at>=60000){budget={at:now,count:0};aiAttempts.set(key,budget);}
   if(++budget.count>8)return res.status(429).json({ok:false,code:'AI_RATE_LIMIT',error:'Límite de solicitudes de Claude alcanzado.'});
   if(aiPending.has(key))return res.status(429).json({ok:false,code:'AI_BUSY',error:'Hay una solicitud en curso.'});
-  aiPending.add(key);const generation=game.generation;
+  aiPending.add(key);flushCommands();const generation=game.generation;
   try {
     const input=parseAiInput(req.body);
     const initial=structuredClone(game);copyHistoryBuffer(game,initial);
     try{beginAiAttempt(game,identity,input);persist();}catch(e){game=initial;bindObservability(game,f=>slackFact(game,f));throw e;}
     const proposal=await prepareAi(game,identity,req.body,aiGateway);
-    const current=session(req.headers.cookie);
+    flushCommands();const current=session(req.headers.cookie);
     if(!current||current.id!==identity.id||game.generation!==generation)throw new AiError('FORBIDDEN','La sesión o la partida cambió.');
     const before=structuredClone(game);copyHistoryBuffer(game,before);
     try {
@@ -123,7 +124,7 @@ app.post('/api/ai', async (req,res) => {
       checkpoint(game,serializeGame,true);persist();scheduleBroadcast();res.json({ok:true,proposal:{...visibleProposal(stored),message:proposalText(game,identity,stored)}});
     }catch(e){game=before;bindObservability(game,f=>slackFact(game,f));throw e;}
   }catch(e){const code=e instanceof AiError?e.code:'AI_INVALID';
-    if(game.generation===generation){
+    flushCommands();if(game.generation===generation){
       const before=structuredClone(game);copyHistoryBuffer(game,before);
       try{finishAiAttempt(game,identity,String(req.body?.id),['CANCELLED','TIMEOUT'].includes(code)?code:'FAILED',code);auditCompletion(game,identity.companyId!,'ai.failed',[],[code]);checkpoint(game,serializeGame,true);persist();}catch{game=before;bindObservability(game,f=>slackFact(game,f));}
     }
@@ -188,6 +189,17 @@ const io = new Server(http, { parser: stateUpdateParser, maxHttpBufferSize: 8000
   try { callback(null, !req.headers.origin || new URL(req.headers.origin).host === req.headers.host); } catch { callback(null, false); }
 } });
 const synchronizers = new Map<string, SnapshotSync>();
+// FLOW_GROUP_COMMIT=0 keeps the original route: one rollback image, transaction and ACK per command.
+// FLOW_GROUP_COMMIT_MAX bounds a batch (1–1000, default 64); invalid values use the default.
+const batchLimit = Number(process.env.FLOW_GROUP_COMMIT_MAX);
+const commands = createCommandPipeline({
+  db, hash, game: () => game, write: (state, rows) => writeGame(state, rows), broadcast: () => scheduleBroadcast(),
+  restore: state => { game = state; bindObservability(game,f=>slackFact(game,f)); },
+  committed: (command, result) => { if(result.ok&&['room.reset','room.finish'].includes(command.type))for(const task of aiGateway.scheduler.metrics().recent)if(['QUEUED','RUNNING'].includes(task.state))aiGateway.scheduler.cancel(task.actor,task.id); },
+  groupCommit: process.env.FLOW_GROUP_COMMIT !== '0', maxBatch: Number.isInteger(batchLimit) && batchLimit >= 1 && batchLimit <= 1000 ? batchLimit : 64,
+});
+/** Applies commands received earlier in this event-loop turn; no-op on the per-command route. */
+function flushCommands() { commands.flush(); }
 io.on('connection', socket => {
   socket.data.authenticated = !!session(socket.request.headers.cookie);
   const sync = new SnapshotSync(socket); synchronizers.set(socket.id, sync);
@@ -203,23 +215,15 @@ io.on('connection', socket => {
     if(command?.type==='agent.fixture')return ack({ok:false,code:'UNSUPPORTED',error:'Intérprete disponible únicamente en pruebas.'});
     const identity = session(socket.request.headers.cookie, true);
     if (!identity || !command || typeof command.id !== 'string' || command.id.length > 100 || typeof command.type !== 'string') return ack({ ok: false, code: 'FORBIDDEN', error: 'Sesión o comando no autorizado.' });
-    const digest = hash(JSON.stringify(command));
-    const prior = db.prepare('SELECT digest,result FROM commands WHERE identity=? AND id=?').get(identity.id, command.id) as { digest: string; result: string } | undefined;
-    if (prior) return ack(prior.digest === digest ? JSON.parse(prior.result) : { ok: false, error: 'ID de comando ya utilizado.' });
-    const before = structuredClone(game); copyHistoryBuffer(game,before);
-    const result = applyCommand(game, identity, command);
-    try {
-      persist({ identity: identity.id, id: command.id, digest, result: JSON.stringify(result) });
-      if(result.ok&&['room.reset','room.finish'].includes(command.type))for(const task of aiGateway.scheduler.metrics().recent)if(['QUEUED','RUNNING'].includes(task.state))aiGateway.scheduler.cancel(task.actor,task.id);
-      ack(result); scheduleBroadcast();
-    } catch { game = before; bindObservability(game,f=>slackFact(game,f)); ack({ ok: false, error: 'No se pudo confirmar el comando.' }); }
+    commands.receive(identity, command, ack);
   });
 });
 let pendingBroadcast: ReturnType<typeof setImmediate> | undefined;
-// Commands remain individually durable. Notifications can share the latest
-// committed state within one event-loop turn; every forensic input is retained.
+// Every ACK follows its COMMIT. Notifications can share the latest committed
+// state within one event-loop turn; every forensic input is retained. Queued
+// commands are applied first, so the broadcast never precedes their ACK.
 function scheduleBroadcast() {
-  pendingBroadcast ??= setImmediate(() => { pendingBroadcast = undefined; broadcast(); });
+  pendingBroadcast ??= setImmediate(() => { flushCommands(); broadcast(); });
 }
 function broadcast() {
   if (pendingBroadcast) { clearImmediate(pendingBroadcast); pendingBroadcast = undefined; }
@@ -244,6 +248,7 @@ function broadcast() {
 let iterations = 0;
 const timer = setInterval(() => {
   try {
+    flushCommands();
     for (let i = 0; i < game.speed; i++) step(game);
     // Deferred to the check phase: commands that arrive meanwhile are answered before the broadcast.
     if (++iterations % 2 === 0) scheduleBroadcast();
@@ -260,5 +265,5 @@ if (process.env.NODE_ENV === 'production') {
 }
 const port = Number(process.env.FLOW_PORT ?? 4173);
 http.listen(port, '0.0.0.0', () => console.log(`FLOW WAR listo: http://localhost:${port}\nCredenciales locales: ${accessFile}`));
-async function shutdown() { clearInterval(timer); if (pendingBroadcast) clearImmediate(pendingBroadcast); persist(); await dvr.close(); io.close(); http.close(); releaseStorage(); db.close(); process.exit(0); }
+async function shutdown() { clearInterval(timer); if (pendingBroadcast) clearImmediate(pendingBroadcast); flushCommands(); persist(); await dvr.close(); io.close(); http.close(); releaseStorage(); db.close(); process.exit(0); }
 process.on('SIGINT', shutdown); process.on('SIGTERM', shutdown);

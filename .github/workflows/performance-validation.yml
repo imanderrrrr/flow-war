@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - codex/entrega-7-qa-cto-team-ai
+      - codex/entrega-7-performance-pass-1
 
 permissions:
   contents: read
@@ -24,4 +25,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: npm test on the per-command route (FLOW_GROUP_COMMIT=0)
+        run: npm test
+        env:
+          FLOW_GROUP_COMMIT: '0'
       - run: npm run build
