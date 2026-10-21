@@ -9,11 +9,11 @@ export class SnapshotSync {
  readonly metrics={full:0,delta:0,coalesced:0,resyncs:0};
  constructor(private socket:Socket){ socket.data.stateMetrics=this.metrics; }
  resync(){this.force=true;this.inFlight=undefined;this.metrics.resyncs++;}
- send(build:()=>Snapshot,now=Date.now()){
+ send(build:()=>Snapshot,now=Date.now(),sharedCompanies?:()=>Snapshot['companies']){
   if(this.inFlight){if(now-this.inFlight.since<2000){this.metrics.coalesced++;return;}this.inFlight=undefined;this.force=true;}
   if(!this.socket.conn.transport.writable){this.metrics.coalesced++;return;}
   // Wire normalization also detaches every shared projection from mutable engine state.
-  const next=JSON.parse(JSON.stringify(compactSnapshot(build()))) as Snapshot,identity=identityKey(next),previous=this.base;
+  const next=JSON.parse(JSON.stringify(compactSnapshot(build(),sharedCompanies?.()))) as Snapshot,identity=identityKey(next),previous=this.base;
   const full=this.force||!previous||previous.generation!==next.generation||identityKey(previous)!==identity;
   const patch=full?undefined:difference(previous as unknown as Json,next as unknown as Json);
   if(!full&&!patch)return;
