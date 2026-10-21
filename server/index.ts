@@ -121,7 +121,7 @@ app.post('/api/ai', async (req,res) => {
       checkpoint(game,serializeGame,true);persist();scheduleBroadcast();res.json({ok:true,proposal:{...visibleProposal(stored),message:proposalText(game,identity,stored)}});
     }catch(e){game=before;bindObservability(game,f=>slackFact(game,f));throw e;}
   }catch(e){const code=e instanceof AiError?e.code:'AI_INVALID';
-    if(game.generation===generation&&session(req.headers.cookie)?.id===identity.id){
+    if(game.generation===generation){
       const before=structuredClone(game);copyHistoryBuffer(game,before);
       try{finishAiAttempt(game,identity,String(req.body?.id),['CANCELLED','TIMEOUT'].includes(code)?code:'FAILED',code);auditCompletion(game,identity.companyId!,'ai.failed',[],[code]);checkpoint(game,serializeGame,true);persist();}catch{game=before;bindObservability(game,f=>slackFact(game,f));}
     }
@@ -132,7 +132,7 @@ app.get('/api/ai/status',(req,res)=>{
  res.setHeader('Cache-Control','no-store');const identity=session(req.headers.cookie);if(!identity)return res.sendStatus(403);
  if(identity.role==='operator')return res.json({provider:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.status():{state:'TEST_PROVIDER'},usage:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.metrics():[],scheduler:aiGateway.scheduler.metrics()});
  const attempts=game.companies[identity.companyId!].runtime.aiAttempts?.filter(a=>a.actor===identity.id&&a.role===identity.role&&a.generation===game.generation)??[];
- res.json({requests:attempts.map(a=>({...a,...aiGateway.scheduler.status(identity.id,a.id)[0]}))});
+ res.json({requests:attempts.map(a=>{const live=aiGateway.scheduler.status(identity.id,a.id)[0];return {...a,...live,state:['QUEUED','RUNNING'].includes(a.state)?live?.state??a.state:a.state,code:a.code??live?.code};})});
 });
 app.post('/api/ai/cancel',(req,res)=>{const identity=session(req.headers.cookie);if(!identity)return res.sendStatus(403);try{const input=req.body;if(typeof input?.id!=='string'||input.id.length>100)return res.sendStatus(400);res.json({ok:aiGateway.scheduler.cancel(identity.id,input.id)});}catch{res.sendStatus(400);}});
 let diagnosticPending=false;
