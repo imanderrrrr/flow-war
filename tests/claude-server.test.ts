@@ -11,7 +11,7 @@ import type {Identity} from '../shared/types.js';
 
 test('E6 real HTTP refuses missing credentials, cross-role interpretation, fixture fallback, expired sessions and excess calls', {timeout:20000},async()=>{
  const dir=await mkdtemp(join(tmpdir(),'flow-claude-http-')),listener=createServer();listener.listen(0,'127.0.0.1');await once(listener,'listening');const port=(listener.address() as any).port;await new Promise<void>(r=>listener.close(()=>r()));
- const child=spawn(process.execPath,['--import','tsx','server/index.ts'],{env:{...process.env,NODE_ENV:'production',FLOW_DATA_DIR:dir,FLOW_PORT:String(port),ANTHROPIC_API_KEY:'',ANTHROPIC_MODEL:''},stdio:'ignore'}),base=`http://127.0.0.1:${port}`,sockets:ReturnType<typeof io>[]=[];
+ let child=spawn(process.execPath,['--import','tsx','server/index.ts'],{env:{...process.env,NODE_ENV:'production',FLOW_DATA_DIR:dir,FLOW_PORT:String(port),ANTHROPIC_API_KEY:'',ANTHROPIC_MODEL:''},stdio:'ignore'}),base=`http://127.0.0.1:${port}`,sockets:ReturnType<typeof io>[]=[];
  const delay=(ms:number)=>new Promise(r=>setTimeout(r,ms));
  try{
   let ready=false;for(let i=0;i<100;i++){try{if((await fetch(base+'/api/health')).ok){ready=true;break;}}catch{}await delay(50);}assert(ready);
@@ -34,5 +34,9 @@ test('E6 real HTTP refuses missing credentials, cross-role interpretation, fixtu
   for(let i=0;i<5;i++)assert.equal((await run(backend,'infra.restart_all',{duration:10})).code,'FORBIDDEN');
   assert.equal((await request({id:'expelled',kind:'backend.propose',text:'Compra'})).status,403);
   await fetch(base+'/api/logout',{method:'POST',headers:{Cookie:cookie}});assert.equal((await request({id:'logout',kind:'backend.propose',text:'Compra'})).status,403);
+  const exited=once(child,'exit');child.kill('SIGTERM');await exited;child=spawn(process.execPath,['--import','tsx','server/index.ts'],{env:{...process.env,NODE_ENV:'production',FLOW_DATA_DIR:dir,FLOW_PORT:String(port),ANTHROPIC_API_KEY:'',ANTHROPIC_MODEL:''},stdio:'ignore'});
+  for(let i=0;i<100;i++){try{if((await fetch(base+'/api/health')).ok)break;}catch{}await delay(50);}
+  for(let i=0;i<30;i++)assert.equal((await fetch(base+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:`invalid-${i}`})})).status,401);
+  assert.equal((await fetch(base+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:'invalid-31'})})).status,429);
  }finally{for(const socket of sockets)socket.disconnect();if(child.exitCode===null&&child.signalCode===null){const exited=once(child,'exit');child.kill('SIGTERM');await exited;}await rm(dir,{recursive:true,force:true});}
 });
