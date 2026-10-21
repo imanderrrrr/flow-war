@@ -5,7 +5,7 @@ export type ProtectionRule =
   | { kind: 'origin'; origin: string }
   | { kind: 'rate'; limit: number; windowSeconds: number; groupBy: 'origin' | 'customer' };
 export type BlockProtection = { nodeId: string; rules: ProtectionRule[] };
-export type SecurityDraft = { revision: number; blocks: Record<string, { text: string; rules: ProtectionRule[]; executable: boolean; interpretationId?: string; author: string }>; observations: { nodeId: string; text: string; author: string; at: number }[] };
+export type SecurityDraft = { revision: number; blocks: Record<string, { text: string; rules: ProtectionRule[]; executable: boolean; interpretationId?: string; author: string; structured?: boolean }>; observations: { nodeId: string; text: string; author: string; at: number }[] };
 export type SharedImplementation = {
   featureId: 'purchase-flow'; backendVersion: number; backendAuthor: string; graphDigest: string;
   security?: { revision: number; author: string; at: number; blocks: BlockProtection[]; digest: string };

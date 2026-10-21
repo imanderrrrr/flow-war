@@ -2,8 +2,10 @@ import type { GameState, Identity } from '../shared/types.js';
 import type { AiInput, AiProposal } from '../shared/collaboration.js';
 import { collaboration, editableChange } from './collaboration.js';
 import { employeeFor, stableDigest } from './discipline.js';
-import { AiError, AiGateway, parseAiInput, proposalVariation } from './claude.js';
-import { assertBackendEditable, workflow, workflowView } from './workflow.js';
+import { AiError, AiGateway, parseAiInput } from './claude.js';
+import { workflow, workflowView } from './workflow.js';
+import { groundNumber, mentionsId, normalize, GroundingError } from './grounding.js';
+import type { ProtectionRule } from '../shared/collaboration.js';
 
 const compactLetter=(l:import('../shared/workflow.js').ReturnLetter)=>({id:l.id,changeId:l.changeId,recipient:l.recipient,author:l.author,at:l.at,subject:l.subject.slice(0,160),description:l.description.slice(0,400),steps:l.steps.slice(0,400),observed:l.observed.slice(0,400),expected:l.expected.slice(0,400),evidenceIds:l.evidenceIds.slice(0,8),truncated:[l.subject,l.description,l.steps,l.observed,l.expected].some(t=>t.length>400)});
 export function aiContext(g:GameState,actor:Identity,input:AiInput) {
@@ -15,10 +17,6 @@ export function aiContext(g:GameState,actor:Identity,input:AiInput) {
   const history=thread?.messages.slice(-8).map(m=>({role:m.role,text:m.text.slice(0,1200),refs:m.refs}))??[];
   if(thread&&thread.messages.length>=800)throw new AiError('AI_LIMIT','Este hilo alcanzó su límite. Abre otro hilo.');
   if(!thread&&threads.filter(t=>t.actor===actor.id).length>=8)throw new AiError('AI_LIMIT','Límite de hilos alcanzado.');
-  if(input.kind==='backend.propose'){
-    if(actor.role!=='backend')throw new AiError('FORBIDDEN');assertBackendEditable(c);
-    return {c,graph:c.drafts.backend?.graph??c.backend,revision:c.drafts.backend?.revision??0,context:{history,letters:workflow(c).letters.filter(l=>l.recipient==='backend').slice(-3).map(compactLetter)}};
-  }
   if(input.kind==='qa.interpret'||input.kind==='cto.interpret'){
     if(actor.role!==(input.kind==='qa.interpret'?'qa':'cto'))throw new AiError('FORBIDDEN');
     const ch=input.changeId?g.changes.find(ch=>ch.id===input.changeId&&ch.companyId===c.id):undefined;
@@ -40,11 +38,12 @@ export async function prepareAi(g:GameState,actor:Identity,raw:unknown,gateway:A
   if(JSON.stringify(context.context).length>48000)throw new AiError('CONTEXT_LIMIT','El contexto seleccionado excede el límite. Abre un hilo más específico.');
   const output=await gateway.generate(actor.id,input,structuredClone(context.graph),context.c.id,structuredClone(context.context));
   // Authoritative evidence is rendered by the server. Model prose is never accepted as a result.
+  if(input.kind==='security.compile'&&output.rules?.length&&!rulesGrounded(output.rules,input.text)){output.rules=[];output.executable=false;}
   if(input.kind==='cto.interpret'){
     if(output.intent!=='query'&&output.intent!=='investment'&&!g.changes.some(ch=>ch.id===output.changeId&&ch.companyId===context.c.id))throw new AiError('INVALID_OUTPUT');
     output.reason=input.text;output.objective=input.text;output.justification=input.text;
   }
-  return {id:input.id,actor:actor.id,companyId:context.c.id,generation:g.generation,kind:input.kind,inputDigest:digest,changeId:input.changeId,nodeId:input.nodeId,sourceText:input.kind==='security.compile'?input.text:undefined,requestText:input.text,threadId:input.threadId??`${actor.role}-default`,output:input.kind==='backend.propose'?proposalVariation(output,`${g.seed}:${g.generation}:${context.c.id}:${digest}`):output,provider:gateway.provider.name,model:gateway.provider.model,status:'PENDING',at:g.tick,draftRevision:context.revision};
+  return {id:input.id,actor:actor.id,companyId:context.c.id,generation:g.generation,kind:input.kind,inputDigest:digest,changeId:input.changeId,nodeId:input.nodeId,sourceText:input.kind==='security.compile'?input.text:undefined,requestText:input.text,threadId:input.threadId??`${actor.role}-default`,output,provider:gateway.provider.name,model:gateway.provider.model,status:'PENDING',at:g.tick,draftRevision:context.revision};
 }
 /** Recheck after network I/O: reset, logout, expulsion and edits cannot race a reply. */
 export function commitAi(g:GameState,actor:Identity,raw:unknown,proposal:AiProposal) {
@@ -58,6 +57,12 @@ export function commitAi(g:GameState,actor:Identity,raw:unknown,proposal:AiPropo
   if(!thread.messages.some(m=>m.id===`${proposal.id}-human`))thread.messages.push({id:`${proposal.id}-human`,requestId:proposal.id,role:'user',text:input.text,at:g.tick,refs:input.changeId?[input.changeId]:[]});
   thread.messages.push({id:`${proposal.id}-assistant`,requestId:proposal.id,role:'assistant',text:proposalText(g,actor,proposal),at:g.tick,refs:[proposal.id,...(input.changeId?[input.changeId]:[])]});
   return proposal;
+}
+/** Numeric thresholds and origins in compiled rules must be written in the student's protection text. */
+export function rulesGrounded(rules:ProtectionRule[],text:string){
+  const source=[normalize(text)];
+  try{for(const r of rules){if(r.kind==='rate'){groundNumber('limit',r.limit,source);groundNumber('window',r.windowSeconds,source,'seconds');}if(r.kind==='origin'&&!mentionsId(r.origin,source))return false;}return true;}
+  catch(e){if(e instanceof GroundingError)return false;throw e;}
 }
 export function proposalText(g:GameState,actor:Identity,p:AiProposal){
   const c=g.companies[actor.companyId!],o=p.output;

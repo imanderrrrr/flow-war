@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame, applyCommand, project, validateGraph } from '../server/engine.js';
-import { AiGateway, AnthropicProvider, validateOutput, proposalVariation } from '../server/claude.js';
+import { AiGateway, AnthropicProvider, validateOutput, parseAiInput } from '../server/claude.js';
 import type { Provider } from '../server/claude.js';
 import { prepareAi, commitAi } from '../server/ai-service.js';
 import { assertBundle } from '../server/collaboration.js';
@@ -92,28 +92,25 @@ test('E7 new Backend revision requires a formal QA return and preserves the prev
  assert(command(g,'qa','qa.return',{changeId:old.id,recipient:'backend',subject:'Revisar',description:'Solicito revisar el resultado observado.',steps:'Ejecutar el caso adjunto.',observed:'Resultado registrado.',expected:'Resultado esperado por QA.',severity:'medium',evidenceIds:[g.companies[0].runtime.workflow!.runs[0].id],observationRefs:[]}).ok);
  assert(command(g,'backend','change.submit',{graph:old.graph,revision:g.companies[0].drafts.backend!.revision}).ok);assert.equal(old.status,'QA_REJECTED');assert.equal(g.companies[0].reserved,0);assert.deepEqual(old.graph,frozen);assert.equal(g.changes[0].implementation!.backendVersion,2);assert(!g.changes[0].implementation!.security);
 });
-test('E6 AI Backend proposals need acceptance and still require the same complete pipeline',async()=>{
- const g=start(),production=structuredClone(g.companies[0].backend),input:AiInput={id:'proposal',kind:'backend.propose',text:'Preparar compra con inventario y pago.'};
- const p=await prepareAi(g,actor('backend'),input,new AiGateway(fixture({graph:wireGraph(insertBlock('atomic'))})));commitAi(g,actor('backend'),input,p);
- assert.deepEqual(g.companies[0].backend,production);assert.equal(g.changes.length,0);assert.equal(g.companies[0].drafts.backend,undefined);
- assert(command(g,'backend','ai.accept',{proposalId:p.id}).ok);assert(g.companies[0].drafts.backend);assert.equal(g.companies[0].version,1);
- const draft=g.companies[0].drafts.backend as unknown as {graph:Graph;revision:number};draft.graph.nodes[0].position.y+=20;assert(command(g,'backend','draft.save',{graph:draft.graph,revision:draft.revision}).ok);
- assert(command(g,'backend','change.submit',{graph:draft.graph,revision:2}).ok);assert.equal(g.changes[0].status,'SECURITY_PENDING');
-});
-test('E6 AI proposals can be rejected; accepted Security text still requires compilation and delivery',async()=>{
- const g=pending(),ch=g.changes[0],input:AiInput={id:'security-text',kind:'security.propose',text:'Quiero verificar compras propias.',changeId:ch.id,nodeId:'backend-payment'};
- const gateway=new AiGateway(fixture({text:'Permitir únicamente compras propias.'}));let p=await prepareAi(g,actor('security'),input,gateway);commitAi(g,actor('security'),input,p);assert(command(g,'security','ai.reject',{proposalId:p.id}).ok);assert.deepEqual(g.companies[0].runtime.collaboration!.reviews[ch.id].blocks,{});
- const next={...input,id:'security-text-2'};p=await prepareAi(g,actor('security'),next,gateway);commitAi(g,actor('security'),next,p);assert(command(g,'security','ai.accept',{proposalId:p.id}).ok);
- const saved=g.companies[0].runtime.collaboration!.reviews[ch.id].blocks['backend-payment'];assert.equal(saved.text,'Permitir únicamente compras propias.');assert.deepEqual(saved.rules,[]);assert.equal(ch.status,'SECURITY_PENDING');
+test('E8 Claude never drafts Backend graphs or Security protections, and stored legacy drafts cannot be applied',()=>{
+ for(const kind of ['backend.propose','security.propose'])assert.throws(()=>parseAiInput({id:'x',kind,text:'Arreglá el backend como consideres mejor.',changeId:'CH-001',nodeId:'backend-payment'}));
+ const g=pending(),c=g.companies[0],production=structuredClone(c.backend);
+ c.runtime.collaboration!.proposals.push({id:'legacy',actor:'0-backend',kind:'backend.propose',companyId:0,generation:0,inputDigest:'x',output:{graph:insertBlock('atomic')},provider:'test',model:'legacy',status:'PENDING',at:0,draftRevision:0});
+ const result=command(g,'backend','ai.accept',{proposalId:'legacy'});assert.equal(result.ok,false);assert.deepEqual(c.backend,production);
+ assert.equal(g.actions.employees['0-backend'].violations.length,0);
 });
 test('E6 equivalent manual and assisted instructions execute identically',async()=>{
  const a=pending(),b=pending();await compile(a,'Requerir usuario autenticado.',[{kind:'authenticated'}]);await compile(b,'Únicamente usuarios con sesión iniciada.',[{kind:'authenticated'}]);reviewForQa(a);reviewForQa(b);
  const reports=[a,b].map(g=>{const job=createTestJob(g.companies[0],g.changes[0],{...DEFAULT_TEST,attack:'forged'});while(!advanceTestJob(job)){}return testReport(job,0);});assert.deepEqual(reports[0].testEvidence?.observed,reports[1].testEvidence?.observed);
 });
-test('E6 controlled AI variations are reproducible, editable and produce real economic effects',()=>{
- const base:AiOutput={graph:insertBlock('atomic')},variants=Array.from({length:20},(_,i)=>proposalVariation(base,String(i),50));assert.deepEqual(variants,Array.from({length:20},(_,i)=>proposalVariation(base,String(i),50)));
- const outcomes=new Set(variants.map(v=>{const run=createConcurrencyRun('variation',{backend:v.graph!,security:{nodes:[],edges:[]},executionVersion:1},0);for(let i=0;i<100;i++)advanceConcurrency(run,i/10);return `${run.inventory.oversold}:${run.requests.reduce((sum,r)=>sum+r.result!.capitalDelta,0)}`;}));assert(outcomes.size>1);
- for(const v of variants)assert.doesNotThrow(()=>validateGraph(v.graph,'backend'));
+test('E8 compiled protections cannot invent thresholds or origins absent from the student text',async()=>{
+ const g=pending(),ch=g.changes[0];
+ for(const [text,rules] of [['Limitar compras por origen.',[{kind:'rate',limit:20,windowSeconds:60,groupBy:'origin'}]],['Bloquear el origen sospechoso.',[{kind:'origin',origin:'sim-7'}]]] as const){
+  const input:AiInput={id:crypto.randomUUID(),kind:'security.compile',text,changeId:ch.id,nodeId:'backend-payment'};
+  const p=await prepareAi(g,actor('security'),input,new AiGateway(fixture({rules,executable:true})));assert.deepEqual(p.output.rules,[]);assert.equal(p.output.executable,false);
+ }
+ const input:AiInput={id:'explicit',kind:'security.compile',text:'Limitar a 20 solicitudes cada 60 segundos por origen.',changeId:ch.id,nodeId:'backend-payment'};
+ const p=await prepareAi(g,actor('security'),input,new AiGateway(fixture({rules:[{kind:'rate',limit:20,windowSeconds:60,groupBy:'origin'}],executable:true})));assert.equal(p.output.rules!.length,1);
 });
 test('E6 invalid provider output and prompt injection never create extra authority',async()=>{
  for(const output of [{rules:[{kind:'invulnerable'}],executable:true},{rules:[{kind:'authenticated',command:'room.reset'}],executable:true},{rules:[{kind:'rate',limit:0,windowSeconds:60,groupBy:'origin'}],executable:true},{rules:[{kind:'input'}],executable:false}])assert.throws(()=>validateOutput('security.compile',output));
@@ -132,16 +129,16 @@ test('E6 private texts and executable policies are absent from public, rival and
  assert(JSON.stringify(project(g,actor('security'))).includes(secret));
 });
 test('E6 Anthropic HTTP contract uses structured output and never propagates keys or raw errors',async()=>{
- let body:any,headers:any;const transport:typeof fetch=async(url,init)=>{assert.equal(url,'https://api.anthropic.com/v1/messages');body=JSON.parse(String(init!.body));headers=init!.headers;return new Response(JSON.stringify({stop_reason:'end_turn',content:[{type:'text',text:JSON.stringify({text:'Revisar la operación.'})}]}));};
- const provider=new AnthropicProvider('synthetic-private-key','explicit-model',transport),input:AiInput={id:'http',kind:'security.propose',text:'Preparar texto.',changeId:'CH-001',nodeId:'backend-payment'};
- assert.deepEqual(await provider.generate(input,insertBlock('atomic')),{text:'Revisar la operación.'});assert.equal(headers['x-api-key'],'synthetic-private-key');assert.equal(body.output_config.format.type,'json_schema');assert.equal(body.max_tokens,4096);assert(!JSON.stringify(body).includes('synthetic-private-key'));assert.equal(body.tools,undefined);
+ let body:any,headers:any;const transport:typeof fetch=async(url,init)=>{assert.equal(url,'https://api.anthropic.com/v1/messages');body=JSON.parse(String(init!.body));headers=init!.headers;return new Response(JSON.stringify({stop_reason:'end_turn',content:[{type:'text',text:JSON.stringify({rules:[],executable:false})}]}));};
+ const provider=new AnthropicProvider('synthetic-private-key','explicit-model',transport),input:AiInput={id:'http',kind:'security.compile',text:'Preparar texto.',changeId:'CH-001',nodeId:'backend-payment'};
+ assert.deepEqual(await provider.generate(input,insertBlock('atomic')),{rules:[],executable:false});assert.equal(headers['x-api-key'],'synthetic-private-key');assert.equal(body.output_config.format.type,'json_schema');assert.equal(body.max_tokens,4096);assert(!JSON.stringify(body).includes('synthetic-private-key'));assert.equal(body.tools,undefined);
  let calls=0;const failing=new AnthropicProvider('secret','model',async()=>{calls++;return new Response('private upstream details',{status:429});});await assert.rejects(()=>failing.generate(input,insertBlock('atomic')),e=>!String(e).includes('private upstream'));assert.equal(calls,2);
  const absent=new AnthropicProvider('', 'model',transport);await assert.rejects(()=>absent.generate(input,insertBlock('atomic')),/no está configurado/);
  for(const response of [{stop_reason:'max_tokens',content:[]},{stop_reason:'end_turn',content:[{type:'tool_use'}]}])await assert.rejects(()=>new AnthropicProvider('key','model',async()=>new Response(JSON.stringify(response))).generate(input,insertBlock('atomic')));
 });
 test('E7 gateway bounds calls per user and distributes queued work among companies',async()=>{
- const input:AiInput={id:'quota',kind:'security.propose',text:'Preparar.'},gateway=new AiGateway(fixture({text:'Texto'}));for(let i=0;i<8;i++)await gateway.generate('actor',input,insertBlock('atomic'));await assert.rejects(()=>gateway.generate('actor',input,insertBlock('atomic')),/Límite/);await gateway.generate('other',input,insertBlock('atomic'));
- let release!:()=>void;const gate=new Promise<void>(r=>release=r),slow=new AiGateway({name:'test',model:'slow',async generate(){await gate;return {text:'Texto'};}});const a=slow.generate('a',input,insertBlock('atomic'),0),b=slow.generate('b',input,insertBlock('atomic'),0),c=slow.generate('c',input,insertBlock('atomic'),1);assert.equal(slow.scheduler.status('b')[0].state,'QUEUED');assert.equal(slow.scheduler.status('c')[0].state,'RUNNING');release();await Promise.all([a,b,c]);
+ const input:AiInput={id:'quota',kind:'security.compile',text:'Preparar.',changeId:'CH-001',nodeId:'backend-payment'},gateway=new AiGateway(fixture({rules:[],executable:false}));for(let i=0;i<8;i++)await gateway.generate('actor',input,insertBlock('atomic'));await assert.rejects(()=>gateway.generate('actor',input,insertBlock('atomic')),/Límite/);await gateway.generate('other',input,insertBlock('atomic'));
+ let release!:()=>void;const gate=new Promise<void>(r=>release=r),slow=new AiGateway({name:'test',model:'slow',async generate(){await gate;return {rules:[],executable:false};}});const a=slow.generate('a',input,insertBlock('atomic'),0),b=slow.generate('b',input,insertBlock('atomic'),0),c=slow.generate('c',input,insertBlock('atomic'),1);assert.equal(slow.scheduler.status('b')[0].state,'QUEUED');assert.equal(slow.scheduler.status('c')[0].state,'RUNNING');release();await Promise.all([a,b,c]);
 });
 
 test('E6 compiled policies do not call Claude while 5000 customers advance',async()=>{

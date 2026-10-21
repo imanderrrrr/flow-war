@@ -46,6 +46,12 @@ export function securityCommand(g: GameState, actor: Identity, type: string, p: 
     draft.observations.push({nodeId:String(p.nodeId),text:String(p.text),author:actor.id,at:g.tick});return {ok:true,refs:[ch.id,String(p.nodeId)]};
   }
   if(p.revision!==draft.revision)throw new Error('La revisión cambió. Recarga el borrador.');
+  if(type==='security.configure'){
+    // Structured control editor: the stored text describes exactly the configured rules.
+    const nodeId=String(p.nodeId),compiled=rules(p.rules);
+    draft.blocks[nodeId]={text:describeControls(compiled),rules:compiled,executable:true,author:actor.id,structured:true};draft.revision++;
+    return {ok:true,refs:[ch.id,nodeId]};
+  }
   if(type==='security.save'){
     const text=String(p.text),nodeId=String(p.nodeId);
     let compiled:ProtectionRule[]=[],executable=!text.trim();
@@ -63,6 +69,11 @@ export function securityCommand(g: GameState, actor: Identity, type: string, p: 
   ch.implementation!.bundleDigest=stableDigest([ch.companyId,ch.implementation!.featureId,ch.implementation!.backendVersion,ch.graph,ch.context!.execution,ch.artifactRefs??[],ch.implementation!.security]);
   ch.context!.execution!.bundleDigest=ch.implementation!.bundleDigest;
   ch.status='QA_PENDING';return {ok:true,refs:[ch.id]};
+}
+export function describeControls(list: ProtectionRule[]): string {
+  if(!list.length)return '';
+  const names={authenticated:'Auth',owner:'Role Check',input:'WAF',bot:'Bot Detection'} as const;
+  return list.map(r=>r.kind==='rate'?`Rate Limit ${r.limit} solicitudes / ${r.windowSeconds} s por ${r.groupBy==='origin'?'origen':'cliente'}`:r.kind==='origin'?`IP Block ${r.origin}`:names[r.kind]).join('; ');
 }
 export function assertBundle(ch: Change) {
   if(!ch.implementation)return; // Historical releases retain their original contract.

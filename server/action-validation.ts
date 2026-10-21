@@ -59,6 +59,7 @@ export function validateParameters(type: string, input: unknown) {
     case 'investment.transition':keys(p,['orderId','status','spent','confirmed']);string(p.orderId);oneOf(p.status,['AUTHORIZED','IN_PROGRESS','COMPLETED','CANCELLED']);integer(p.spent,0,0);if(p.confirmed!==true)throw new ActionError('INVALID','Confirma la transición.');break;
     case 'security.save':
       keys(p, ['changeId','nodeId','text','revision','interpretationId']); string(p.changeId); string(p.nodeId); freeText(p.text); integer(p.revision,0,100000); if(p.interpretationId!==undefined)string(p.interpretationId); break;
+    case 'security.configure': keys(p,['changeId','nodeId','revision','rules']); string(p.changeId); string(p.nodeId); integer(p.revision,0,100000); if(!Array.isArray(p.rules)||p.rules.length>12)throw new ActionError('INVALID','Política inválida.'); break;
     case 'security.submit': keys(p,['changeId','revision']); string(p.changeId); integer(p.revision,0,100000); break;
     case 'security.correction': keys(p,['changeId','nodeId','text']); string(p.changeId); string(p.nodeId); freeText(p.text); if(!String(p.text).trim())throw new ActionError('INVALID','Observación vacía.'); break;
     case 'ai.accept': case 'ai.reject': keys(p,['proposalId']); string(p.proposalId); break;
@@ -67,7 +68,7 @@ export function validateParameters(type: string, input: unknown) {
       if (type === 'module.revise') string(p.moduleId);
       if (!Array.isArray(p.dependencies) || p.dependencies.length > 8) throw new ActionError('INVALID', 'Dependencias inválidas.'); p.dependencies.forEach(v => string(v)); break;
     case 'security.prepare': securityConfiguration(p); break;
-    case 'qa.execute': keys(p, ['changeId','scenario']); string(p.changeId); testScenario(p.scenario); break;
+    case 'qa.execute': keys(p, ['changeId','scenario','request','threadId']); string(p.changeId); testScenario(p.scenario); if (p.request !== undefined && !freeText(p.request).trim()) throw new ActionError('INVALID', 'Solicitud vacía.'); if (p.threadId !== undefined) string(p.threadId); break;
     case 'infra.maintenance': keys(p, ['mode']); oneOf(p.mode, ['OPERATING','ORDERS_PAUSED','FULL_MAINTENANCE']); break;
     case 'infra.restart': keys(p, ['serverId','duration']); integer(p.serverId, 1, 8); integer(p.duration, 1, 60); break;
     case 'infra.restart_all': keys(p, ['duration']); integer(p.duration, 1, 60); break;
@@ -81,7 +82,7 @@ export function validateParameters(type: string, input: unknown) {
     case 'qa.approve': case 'qa.reject': case 'cto.authorize': case 'cto.reject': keys(p, []); break;
     case 'cto.budget': keys(p, ['amount']); if (![250,500,1000].includes(integer(p.amount, 250, 1000))) throw new ActionError('INVALID', 'Importe no soportado.'); break;
     case 'cto.prioritize': keys(p, ['incident']); oneOf(p.incident, ['security','concurrency']); break;
-    case 'infra.scale': keys(p, ['delta']); if (![1,-1].includes(integer(p.delta, -1, 1))) throw new ActionError('INVALID', 'Delta inválido.'); break;
+    case 'infra.scale': if ('target' in p) { keys(p, ['target']); integer(p.target, 1, 8); } else { keys(p, ['delta']); if (![1,-1].includes(integer(p.delta, -1, 1))) throw new ActionError('INVALID', 'Delta inválido.'); } break;
     case 'infra.balancer': keys(p, ['enabled']); bool(p.enabled); break;
     case 'deploy.start': keys(p, ['strategy']); oneOf(p.strategy, ['rolling','restart']); break;
     default: throw new ActionError('UNSUPPORTED', 'Acción no implementada.');

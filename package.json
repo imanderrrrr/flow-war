@@ -24,6 +24,7 @@
     "verify:anthropic": "node --env-file-if-exists=.env --import tsx scripts/anthropic-smoke.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.132.0",
     "@fontsource/press-start-2p": "^5.2.5",
     "@fontsource/space-mono": "^5.2.9",
     "@xyflow/react": "^12.9.3",

@@ -142,7 +142,7 @@ let diagnosticPending=false;
 app.post('/api/ai/diagnose',async(req,res)=>{
  res.setHeader('Cache-Control','no-store');if(session(req.headers.cookie)?.role!=='operator')return res.sendStatus(403);
  if(diagnosticPending)return res.status(429).json({ok:false,code:'AI_BUSY'});diagnosticPending=true;
- try{await aiGateway.generate('operator-diagnostic',{id:crypto.randomUUID(),kind:'security.propose',text:'Devuelve un texto breve: diagnóstico de conexión, sin sugerir protecciones.'},game.companies[0].backend,0);res.json({ok:true,status:(aiGateway.provider as AnthropicProvider).status()});}
+ try{await aiGateway.generate('operator-diagnostic',{id:crypto.randomUUID(),kind:'security.compile',text:'Requerir sesión iniciada para procesar pagos.',changeId:'diagnostic',nodeId:'backend-payment'},game.companies[0].backend,0);res.json({ok:true,status:(aiGateway.provider as AnthropicProvider).status()});}
  catch(e){res.status(503).json({ok:false,code:e instanceof AiError?e.code:'PROVIDER_ERROR',status:(aiGateway.provider as AnthropicProvider).status()});}finally{diagnosticPending=false;}
 });
 app.get('/api/health', (_req, res) => res.json({ ok: true, room: 'FW-001' }));

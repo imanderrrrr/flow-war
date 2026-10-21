@@ -20,12 +20,10 @@ function execute(g:GameState,scenario:TestScenario=DEFAULT_TEST){reviewForQa(g);
 function approved(g:GameState){execute(g);const ch=g.changes[0];assert(command(g,'qa','qa.review',{changeId:ch.id,risks:'Acepto continuar con el alcance de estas pruebas.',evidenceIds:workflow(g.companies[0]).runs.map(r=>r.id)}).ok);return ch;}
 const delay=(ms:number)=>new Promise<void>(r=>setTimeout(r,ms));
 
-test('E7 every Backend mutation and stale AI proposal is rejected after submission; a Security observation cannot unlock it',async()=>{
- const g=start(),c=g.companies[0],input:AiInput={id:'pre-lock',kind:'backend.propose',text:'Cambiar compra.'};const graph=c.backend;
- const raw={graph:{nodes:graph.nodes.map(n=>({...n,data:{...n.data,value:1}})),edges:graph.edges}},p=await prepareAi(g,actor('backend'),input,new AiGateway(fixture(raw)));commitAi(g,actor('backend'),input,p);
+test('E7 every Backend mutation is rejected after submission; a Security observation cannot unlock it',async()=>{
+ const g=start(),c=g.companies[0];const graph=c.backend;
  assert(command(g,'backend','change.submit',{graph,revision:0}).ok);const frozen=structuredClone(g.changes[0]);
- for(const [type,payload]of [['draft.save',{graph,revision:1}],['change.submit',{graph,revision:1}],['ai.accept',{proposalId:p.id}],['module.create',{name:'Bypass',configuration:{kind:'inventory',minimum:1},dependencies:[]}],['module.revise',{moduleId:'missing',name:'Bypass',configuration:{kind:'inventory',minimum:1},dependencies:[]}]] as const)assert.equal(command(g,'backend',type,payload).ok,false,type);
- await assert.rejects(()=>prepareAi(g,actor('backend'),{...input,id:'locked'},new AiGateway(fixture(raw))));
+ for(const [type,payload]of [['draft.save',{graph,revision:1}],['change.submit',{graph,revision:1}],['module.create',{name:'Bypass',configuration:{kind:'inventory',minimum:1},dependencies:[]}],['module.revise',{moduleId:'missing',name:'Bypass',configuration:{kind:'inventory',minimum:1},dependencies:[]}]] as const)assert.equal(command(g,'backend',type,payload).ok,false,type);
  assert(command(g,'security','security.correction',{changeId:frozen.id,nodeId:'backend-payment',text:'Observación que QA debe evaluar.'}).ok);assert(workflow(c).backendLock);assert.deepEqual(g.changes[0].graph,frozen.graph);
  assert.equal(command(g,'cto','change.cancel',{changeId:frozen.id,reason:'No',confirmed:true}).ok,false);
  assert.equal(command(g,'security','draft.save',{graph,revision:1}).ok,false);
@@ -131,10 +129,10 @@ test('E7 cancellations, timeout, full queue and per-user contention are observab
 });
 
 test('E7 operator diagnostics distinguish missing config, auth, throttling, timeout, structured failures and real transport success',async()=>{
- const input:AiInput={id:'diag',kind:'security.propose',text:'Texto'};assert.equal(new AnthropicProvider('','').status().state,'MISSING_CREDENTIALS');assert.equal(new AnthropicProvider('x','').status().state,'MISSING_MODEL');assert.equal(new AnthropicProvider('x','m').status().state,'UNVERIFIED');
+ const input:AiInput={id:'diag',kind:'security.compile',text:'Texto',changeId:'CH-001',nodeId:'backend-payment'};assert.equal(new AnthropicProvider('','').status().state,'MISSING_CREDENTIALS');assert.equal(new AnthropicProvider('x','').status().state,'MISSING_MODEL');assert.equal(new AnthropicProvider('x','m').status().state,'UNVERIFIED');
  for(const [status,expected]of [[401,'AUTHENTICATION_ERROR'],[429,'RATE_LIMIT'],[500,'PROVIDER_ERROR']] as const){const p=new AnthropicProvider('secret','m',async()=>new Response('secret upstream',{status,headers:{'retry-after':'60'}}));await assert.rejects(()=>p.generate(input,insertBlock('atomic')),e=>(e as any).code===expected);assert.equal(p.status().state,expected);assert(!JSON.stringify(p.status()).includes('secret'));}
  const bad=new AnthropicProvider('key','m',async()=>new Response('{}'));await assert.rejects(()=>bad.generate(input,insertBlock('atomic')));assert.equal(bad.status().state,'INVALID_OUTPUT');
- let calls=0;const good=new AnthropicProvider('key','m',async(_u,init)=>{calls++;assert.equal((init!.headers as any)['anthropic-workspace-id'],'wrkspc_test');return calls===1?new Response('{}',{status:429,headers:{'retry-after':'.001'}}):new Response(JSON.stringify({stop_reason:'end_turn',content:[{type:'text',text:'{"text":"Preparado"}'}],usage:{input_tokens:10,output_tokens:5}}));},'wrkspc_test');await good.generate(input,insertBlock('atomic'));assert.equal(calls,2);assert.equal(good.status().state,'AVAILABLE');assert.equal(good.status().last?.inputTokens,10);
+ let calls=0;const good=new AnthropicProvider('key','m',async(_u,init)=>{calls++;assert.equal((init!.headers as any)['anthropic-workspace-id'],'wrkspc_test');return calls===1?new Response('{}',{status:429,headers:{'retry-after':'.001'}}):new Response(JSON.stringify({stop_reason:'end_turn',content:[{type:'text',text:'{"rules":[],"executable":false}'}],usage:{input_tokens:10,output_tokens:5}}));},'wrkspc_test');await good.generate(input,insertBlock('atomic'));assert.equal(calls,2);assert.equal(good.status().state,'AVAILABLE');assert.equal(good.status().last?.inputTokens,10);
  const timeout=new AnthropicProvider('key','m',async(_u,init)=>new Promise((_resolve,reject)=>init!.signal!.addEventListener('abort',()=>reject(new Error('Aborted')),{once:true})));const controller=new AbortController();const wait=timeout.generate(input,insertBlock('atomic'),undefined,controller.signal);controller.abort();await assert.rejects(wait);assert.equal(timeout.status().state,'TIMEOUT');
 });
 

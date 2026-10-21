@@ -162,7 +162,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
     const handled=workflowCommand(g,c,identity,command.type,p);if(handled)return handled;
     if(identity.role==='backend' && ['module.create','module.revise','change.submit'].includes(command.type) && g.changes.some(x=>x.companyId===c.id&&x.status==='DEPLOYING'))throw new Error('Espera a que finalice la publicación en curso.');
     if (command.type.startsWith('campaign.') || command.type === 'product.propose') { const result = businessCommand(g, c, identity, command.type, p); event(g, c.id, command.type === 'campaign.activate' ? 'Campaña activada.' : 'Operación comercial registrada.', 'neutral', 'PRODUCTO'); return result; }
-    if (command.type.startsWith('security.') && ['security.save','security.submit','security.correction'].includes(command.type)) return securityCommand(g,identity,command.type,p);
+    if (command.type.startsWith('security.') && ['security.save','security.configure','security.submit','security.correction'].includes(command.type)) return securityCommand(g,identity,command.type,p);
     if(command.type==='ai.accept'||command.type==='ai.confirm'){
       const receipt=c.runtime.collaboration?.proposals.find(r=>r.id===p.proposalId&&r.actor===identity.id&&r.companyId===c.id&&r.generation===g.generation&&r.status==='PENDING');
       if(receipt?.kind==='qa.interpret'){
@@ -179,7 +179,8 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
     }
     if (command.type==='ai.accept'||command.type==='ai.reject') {
       const proposal=c.runtime.collaboration?.proposals.find(r=>r.id===p.proposalId);
-      if(proposal?.kind==='security.propose' && command.type==='ai.accept') { const linked=g.changes.find(x=>x.id===proposal.changeId&&x.companyId===c.id); if(linked?.status!=='SECURITY_PENDING')throw new Error('Revisión no disponible.'); }
+      // Entrega 8: drafts written by Claude (stored by earlier versions) are never applied.
+      if(command.type==='ai.accept'&&(proposal?.kind==='backend.propose'||proposal?.kind==='security.propose'))throw new Error('Claude no prepara diseños ni protecciones. Edita el borrador directamente.');
       return proposalCommand(c,identity,command.type,p);
     }
     if (['module.create','module.revise','security.prepare'].includes(command.type)) {
@@ -215,10 +216,11 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
     }
     if (command.type === 'cto.prioritize') { validateParameters(command.type, p); c.runtime.priority = p.incident as 'security' | 'concurrency'; event(g, c.id, `Prioridad: ${p.incident === 'security' ? 'seguridad' : 'concurrencia'}.`, 'neutral', 'CTO'); return { ok: true }; }
     if (command.type === 'infra.scale') {
-      const delta = Number(p.delta); if (delta !== 1 && delta !== -1) throw new Error('Operación inválida.');
-      if (c.servers + delta < 1 || c.servers + delta > 8) throw new Error('Rango de servidores: 1–8.');
-      if (delta > 0 && c.infraBudget < (c.servers + 1) * 30) throw new Error('Presupuesto operativo insuficiente.');
-      c.servers += delta; syncInfrastructure(c); event(g, c.id, `${delta > 0 ? '+1' : '-1'} SERVER · ${c.servers} en servicio.`, 'neutral', 'DEVOPS'); return { ok: true };
+      const target = 'target' in p ? Number(p.target) : c.servers + Number(p.delta), delta = target - c.servers;
+      if (!Number.isInteger(target) || target < 1 || target > 8) throw new Error('Rango de servidores: 1–8.');
+      if (delta === 0) throw new Error(`Ya hay ${c.servers} servidor${c.servers === 1 ? '' : 'es'} en servicio.`);
+      if (delta > 0 && c.infraBudget < target * 30) throw new Error('Presupuesto operativo insuficiente.');
+      c.servers = target; syncInfrastructure(c); event(g, c.id, `${delta > 0 ? `+${delta}` : delta} SERVER · ${c.servers} en servicio.`, 'neutral', 'DEVOPS'); return { ok: true };
     }
     if (command.type === 'infra.balancer') { c.balancer = Boolean(p.enabled); event(g, c.id, `Balanceador ${c.balancer ? 'activo' : 'desactivado'}.`, 'neutral', 'DEVOPS'); return { ok: true }; }
     if (!ch) throw new Error('Cambio no encontrado.');
@@ -227,7 +229,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
     if (command.type === 'qa.execute') {
       validateParameters(command.type, p);
       if (ch.status !== 'QA_PENDING') throw new Error('QA requiere un cambio pendiente.');
-      startQa(g,c,ch,identity,testScenario(p.scenario));return {ok:true,refs:[ch.id]};
+      startQa(g,c,ch,identity,testScenario(p.scenario),typeof p.request==='string'?p.request:undefined);if(typeof p.threadId==='string')c.runtime.workflow!.runs.at(-1)!.threadId=p.threadId;return {ok:true,refs:[ch.id]};
     }
     if (command.type === 'qa.run') {
       if (ch.status !== 'QA_PENDING' || !SUITES.includes(String(p.suite))) throw new Error('No se puede ejecutar esa suite en este estado.');

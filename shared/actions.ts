@@ -29,13 +29,14 @@ export type ActionParameters = {
   'investment.create': {department:'backend'|'security'; objective:string; justification:string; maximum:number; changeId?:string; confirmed:true};
   'investment.transition': {orderId:string; status:'AUTHORIZED'|'IN_PROGRESS'|'COMPLETED'|'CANCELLED'; spent:number; confirmed:true};
   'security.save': { changeId: string; nodeId: string; text: string; revision: number; interpretationId?: string };
+  'security.configure': { changeId: string; nodeId: string; revision: number; rules: import('./collaboration.js').ProtectionRule[] };
   'security.submit': { changeId: string; revision: number };
   'security.correction': { changeId: string; nodeId: string; text: string };
   'ai.accept': { proposalId: string }; 'ai.reject': { proposalId: string };
   'module.create': { name: string; configuration: ModuleConfiguration; dependencies: string[] };
   'module.revise': { moduleId: string; name: string; configuration: ModuleConfiguration; dependencies: string[] };
   'security.prepare': SecurityConfiguration;
-  'qa.execute': { changeId: string; scenario: TestScenario };
+  'qa.execute': { changeId: string; scenario: TestScenario; request?: string; threadId?: string };
   'infra.maintenance': { mode: 'OPERATING' | 'ORDERS_PAUSED' | 'FULL_MAINTENANCE' };
   'infra.restart': { serverId: number; duration: number };
   'infra.restart_all': { duration: number };
@@ -53,7 +54,7 @@ export type ActionParameters = {
   'qa.approve': Record<string, never>; 'qa.reject': Record<string, never>;
   'cto.authorize': Record<string, never>; 'cto.reject': Record<string, never>;
   'cto.budget': { amount: number }; 'cto.prioritize': { incident: 'security' | 'concurrency' };
-  'infra.scale': { delta: 1 | -1 }; 'infra.balancer': { enabled: boolean };
+  'infra.scale': { delta: 1 | -1 } | { target: number }; 'infra.balancer': { enabled: boolean };
   'deploy.start': { strategy: 'rolling' | 'restart' };
 };
 export type ActionType = keyof ActionParameters;
@@ -69,7 +70,7 @@ export const ACTION_CATALOG = {
   'qa.return': entry(['qa'], 'qa'), 'qa.repeat': entry(['qa'], 'qa'), 'qa.review': entry(['qa'], 'qa'),
   'change.cancel': entry(['qa'], 'qa'), 'cto.decide': entry(['cto'], 'finance'),
   'investment.create': entry(['cto'], 'finance'), 'investment.transition': entry(['cto','backend','security'], 'finance'),
-  'security.save': entry(['security'], 'preparation'), 'security.submit': entry(['security'], 'preparation'),
+  'security.save': entry(['security'], 'preparation'), 'security.configure': entry(['security'], 'preparation'), 'security.submit': entry(['security'], 'preparation'),
   'security.correction': entry(['security'], 'preparation'), 'ai.accept': entry(['backend', 'security','qa'], 'preparation'), 'ai.reject': entry(['backend', 'security','qa','cto'], 'preparation'),
   'module.create': entry(['backend'], 'artifact'), 'module.revise': entry(['backend'], 'artifact'),
   'security.prepare': entry(['security'], 'preparation'), 'qa.execute': entry(['qa'], 'qa'),
