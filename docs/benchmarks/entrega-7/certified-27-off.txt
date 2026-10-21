@@ -1,0 +1,4 @@
+{"label":"certified-27-off","tick":394,"status":"RUNNING","wallSeconds":30.886371208,"updates":2813}
+{"label":"certified-27-off","tick":690,"status":"RUNNING","wallSeconds":45.886889540999995,"updates":4813}
+{"label":"certified-27-off","tick":990,"status":"RUNNING","wallSeconds":60.886801291,"updates":6826}
+{"output":"/Users/anderson/Documents/proyecto aseguramiento/docs/benchmarks/entrega-7/certified-27-off.json","status":"passed","errors":[],"wallSeconds":71.783654583}

@@ -1,0 +1,4 @@
+{"label":"release-27-off","tick":390,"status":"RUNNING","wallSeconds":30.7997085,"updates":2792}
+{"label":"release-27-off","tick":690,"status":"RUNNING","wallSeconds":45.800487999999994,"updates":4817}
+{"label":"release-27-off","tick":982,"status":"RUNNING","wallSeconds":60.80165233300001,"updates":6788}
+{"output":"/Users/anderson/Documents/proyecto aseguramiento/docs/benchmarks/entrega-7/release-27-off.json","status":"passed","errors":[],"wallSeconds":71.992840708}

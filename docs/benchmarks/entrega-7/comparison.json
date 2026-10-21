@@ -1,0 +1,66 @@
+{
+  "status": "passed",
+  "referenceComparison": "historical E6 runs; not a paired contemporaneous experiment",
+  "sourceDigest": "9a0e763c0b3d24c163111c09e2a303236ed8faba7d16381b4d8abf4f3d936bd6",
+  "economicDigest": "27f84255eda7c146796d5116e53ba86e26f511863f7b2c7e61c0854052a1ecad",
+  "rows": [
+    {
+      "connections": 27,
+      "label": "delivery-27-off",
+      "reference": "19c1dcb98e46e1bbbb63b18815c561c9cc630014",
+      "sourceDigest": "9a0e763c0b3d24c163111c09e2a303236ed8faba7d16381b4d8abf4f3d936bd6",
+      "nonChatP95Ms": 1241.1317909999998,
+      "chatP95Ms": 1839.112084000004,
+      "nonChatChangePercent": 21.57261036876892,
+      "chatChangePercent": 13.63448015951989,
+      "eventLoopP99Ms": [
+        112.656383,
+        108.068863
+      ],
+      "broadcastP95Ms": [
+        49.37895900000149,
+        71.12770900000032
+      ],
+      "cpuPercent": [
+        44.61200526418451,
+        56.01592361631424
+      ],
+      "privateDeliveries": 625,
+      "loss": 0,
+      "leaks": 0,
+      "sigkillExact": true,
+      "sourceUnchanged": true,
+      "economicDigest": "27f84255eda7c146796d5116e53ba86e26f511863f7b2c7e61c0854052a1ecad",
+      "economyMatchesE6": true
+    },
+    {
+      "connections": 32,
+      "label": "delivery-32-off",
+      "reference": "19c1dcb98e46e1bbbb63b18815c561c9cc630014",
+      "sourceDigest": "9a0e763c0b3d24c163111c09e2a303236ed8faba7d16381b4d8abf4f3d936bd6",
+      "nonChatP95Ms": 1158.133667,
+      "chatP95Ms": 2265.524708000001,
+      "nonChatChangePercent": 13.510002767667872,
+      "chatChangePercent": 18.947628594477607,
+      "eventLoopP99Ms": [
+        107.937791,
+        185.729023
+      ],
+      "broadcastP95Ms": [
+        56.36975000000166,
+        164.07091600000422
+      ],
+      "cpuPercent": [
+        46.14900068889656,
+        60.58771307385829
+      ],
+      "privateDeliveries": 900,
+      "loss": 0,
+      "leaks": 0,
+      "sigkillExact": true,
+      "sourceUnchanged": true,
+      "economicDigest": "27f84255eda7c146796d5116e53ba86e26f511863f7b2c7e61c0854052a1ecad",
+      "economyMatchesE6": true
+    }
+  ]
+}

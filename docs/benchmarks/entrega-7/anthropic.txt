@@ -1,0 +1,6 @@
+
+> flow-war@0.1.0 verify:anthropic
+> node --env-file-if-exists=.env --import tsx scripts/anthropic-smoke.ts
+
+.env not found. Continuing without it.
+{"at":"2026-10-21T02:56:47.539Z","transport":"real Anthropic HTTPS","status":"not_run","configuration":{"provider":"anthropic","modelConfigured":false,"keyConfigured":false,"workspaceConfigured":false,"state":"MISSING_CREDENTIALS"},"checks":[],"limitations":[],"reason":"Missing ANTHROPIC_API_KEY or ANTHROPIC_MODEL"}

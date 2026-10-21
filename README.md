@@ -104,3 +104,11 @@ npm run build
 npm run bench:collaboration -- --students=25 --duration=1200 --dvr=off --label=mi-aula-27
 npm run bench:collaboration -- --students=30 --duration=1200 --dvr=off --label=mi-aula-32
 ```
+
+
+La Entrega 7 incorpora laboratorio QA conversacional, cartas de devolución con evidencia,
+bloqueo Backend aplicado por el servidor, decisiones y órdenes de inversión del CTO,
+y conversaciones Claude aisladas por empresa y rol. Configuración y límites en
+[docs/18-qa-cto-asistentes-por-empresa.md](docs/18-qa-cto-asistentes-por-empresa.md);
+resultados reproducibles en [docs/benchmarks/entrega-7/README.md](docs/benchmarks/entrega-7/README.md).
+La conexión real se comprueba con `npm run verify:anthropic` después de configurar `.env`.

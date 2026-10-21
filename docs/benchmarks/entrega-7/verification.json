@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "developBase": "c57bfb7a64bf429bfa44dca4b5ead170a197372e",
+  "taskBase": "e79a53e5c18bb3562365180c7e0095494c90a617",
+  "functionalCommit": "19c1dcb98e46e1bbbb63b18815c561c9cc630014",
+  "sourceDigest": "9a0e763c0b3d24c163111c09e2a303236ed8faba7d16381b4d8abf4f3d936bd6",
+  "tests": {
+    "total": 313,
+    "passed": 313,
+    "failed": 0
+  },
+  "build": "passed",
+  "benchmarks": [
+    "delivery-27-off.json",
+    "delivery-32-off.json",
+    "ai-concurrency.json"
+  ],
+  "anthropicReal": "not_run: missing API key and model",
+  "merged": false,
+  "mainModified": false,
+  "suspiciousCredentialPatterns": 0
+}

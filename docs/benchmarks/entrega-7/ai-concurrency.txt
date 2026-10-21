@@ -1,0 +1,5 @@
+
+> flow-war@0.1.0 bench:ai
+> node --import tsx scripts/ai-concurrency-benchmark.ts
+
+{"status":"passed","at":"2026-10-21T02:56:47.257Z","transport":"simulated Anthropic HTTP; no contracted capacity assertion","requests":30,"companies":5,"maxGlobal":5,"maxPerCompany":[1,1,1,1,1],"slowCompany":0,"wallMs":731.1581669999999,"waitMs":{"n":30,"p50":79,"p95":486,"max":606},"durationMs":{"n":30,"p50":21,"p95":122,"max":122},"inputTokens":1200,"outputTokens":240,"orderDigest":"8f21bc0eadd7b1cd44bfcc43a648da248af269ae53afdf2c9a280a484c1e8c0a"}
