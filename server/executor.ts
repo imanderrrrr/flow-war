@@ -8,6 +8,7 @@ import { scenarioForSuite } from './qa.js';
 import { effectiveServers } from './infrastructure.js';
 import { describeControls } from './collaboration.js';
 import { available } from './workflow.js';
+import { activeScope, operations } from './operations.js';
 import { employeeFor } from './discipline.js';
 import { checkQuotes, groundChoice, groundNumber, groundVerbatim, mentionsId, normalize, GroundingError, type Sources } from './grounding.js';
 
@@ -22,7 +23,7 @@ Tu única función es traducir una instrucción explícita del estudiante en lla
 Reglas obligatorias:
 1. No opinás, no recomendás, no evaluás, no diagnosticás, no enseñás y no decidís por el estudiante. No sugerís bloques, controles, pruebas, estrategias, montos, inversiones, aprobaciones ni rechazos.
 2. Ejecutás solo lo que el estudiante ordena de forma concreta. Una mala decisión técnicamente válida se ejecuta igual: no la corregís ni la impedís.
-3. Cada valor que pases a una herramienta debe estar escrito por el estudiante. En "citas" copiá textualmente los fragmentos de su mensaje donde aparece cada valor (números, estrategia, bloque, cambio, control, modo). No inventes, no completes y no deduzcas valores.
+3. Cada valor que pases a una herramienta debe estar escrito por el estudiante. En "citas" copiá textualmente los fragmentos de su mensaje donde aparecen el verbo de la operación y cada valor (números, estrategia, bloque, cambio, control, modo). No inventes, no completes y no deduzcas valores.
 4. Si la orden delega la decisión ("como consideres", "lo que haga falta", "lo mejor", "decidí vos", "los necesarios"), llamá solicitar_dato con motivo DECISION_DELEGADA y los datos que el estudiante debe indicar. No elijas ningún valor.
 5. Si falta un dato indispensable, llamá solicitar_dato con motivo FALTA_DATO. No propongas valores.
 6. Si pide consejo, opinión, evaluación o qué conviene, llamá rechazar_instruccion con motivo CONSEJO. Si además pide datos objetivos o pregunta qué opciones existen, llamá también consultar_datos con el tema que corresponda.
@@ -60,6 +61,13 @@ const commands = (...list: PlannedCommand[]): Plan => ({ kind: 'commands', comma
 const failure = (r: Result) => r.error ?? 'Operación rechazada.';
 const said = (quotes: string[], pattern: RegExp) => quotes.some(q => pattern.test(q));
 
+/** Operation verbs: quoted by the model or, when unambiguous, present in the instruction itself. Values stay quote-grounded. */
+function groundVerb(field: string, q: string[], ctx: ExecutorContext, patterns: RegExp[], opposites: RegExp[] = []) {
+  if (q.some(x => patterns.some(p => p.test(x)))) return;
+  const instruction = normalize(ctx.sources.instruction);
+  if (patterns.some(p => p.test(instruction)) && !opposites.some(p => p.test(instruction))) return;
+  throw new GroundingError(field);
+}
 function nullableNumber(v: unknown): number | null {
   if (v === null || v === undefined) return null;
   if (typeof v !== 'number' || !Number.isFinite(v)) throw new GroundingError('valor');
@@ -242,7 +250,8 @@ function securityTools(): ToolSpec[] {
         const control = String(p.control) as typeof CONTROLS[number]; if (!CONTROLS.includes(control)) return needs(this.name, ['control']);
         groundChoice('control', q, [CONTROL_PATTERNS[control]]);
         const add = p.accion === 'agregar';
-        groundChoice('accion', q, [add ? /\b(agreg\w*|anad\w*|activ\w*|aplic\w*|pon\w*|configur\w*|sum\w*|incorpor\w*|exig\w*|requer\w*|bloque\w*|limit\w*)\b/ : /\b(quit\w*|elimin\w*|sac\w*|remov\w*|desactiv\w*|retir\w*)\b/]);
+        const ADD = /\b(agreg\w*|anad\w*|activ\w*|aplic\w*|pon\w*|configur\w*|sum\w*|incorpor\w*|exig\w*|requer\w*|bloque\w*|limit\w*)\b/, REMOVE = /\b(quit\w*|elimin\w*|sac\w*|remov\w*|desactiv\w*|retir\w*)\b/;
+        groundVerb('accion', q, ctx, [add ? ADD : REMOVE], [add ? REMOVE : ADD]);
         const draft = ctx.c.runtime.collaboration?.reviews[ch.id]; if (!draft) return restriction('Revisión de protección ausente.');
         const current = structuredClone(draft.blocks[node.id]?.rules ?? []), kind = CONTROL_KIND[control];
         let rule: ProtectionRule | undefined;
@@ -316,7 +325,7 @@ function qaTools(): ToolSpec[] {
       } },
     { name: 'qa_aprobar', description: 'Registra la aprobación QA que el estudiante ordenó explícitamente, adjuntando todas las pruebas terminadas del cambio. El motivo es el texto del estudiante.', schema: obj({ cambio: str(), citas: quotes }), fields: { cambio: 'cambio' },
       plan(p, ctx, q) {
-        groundChoice('decision', q, [/\b(aprob\w*|aprueb\w*|apruebo|acept\w*)\b/]);
+        groundVerb('decision', q, ctx, [/\b(aprob\w*|aprueb\w*|apruebo|acept\w*)\b/], [/\b(rechaz\w*|devolv\w*|no aprueb\w*)\b/]);
         const ch = resolveChange(ctx, p.cambio, q, ['QA_PENDING'], this.name); if (isPlan(ch)) return ch;
         const runs = qaRuns(ctx, ch).map(r => r.id);
         if (!runs.length && ch.implementation) return restriction('Se requiere una prueba terminada.');
@@ -348,12 +357,43 @@ function ctoTools(): ToolSpec[] {
     { name: 'cto_decidir_cambio', description: 'Registra la decisión explícita del CTO sobre un cambio aprobado por QA: autorizar su costo, rechazarlo o pedir más evidencia. El motivo es el texto del estudiante.', schema: obj({ cambio: str(), decision: choice(['autorizar', 'rechazar', 'pedir_evidencia']), citas: quotes }), fields: { cambio: 'cambio', decision: 'decisión' },
       plan(p, ctx, q) {
         const decision = p.decision === 'autorizar' ? 'authorize' : p.decision === 'rechazar' ? 'reject' : 'evidence';
-        groundChoice('decision', q, [decision === 'authorize' ? /\b(autoriz\w*|aprob\w*|aprueb\w*|financi\w*)\b/ : decision === 'reject' ? /\b(rechaz\w*|deneg\w*|no autoriz\w*)\b/ : /\b(evidencia|mas pruebas|otra prueba|pedi\w* (a )?qa)\b/]);
+        const DECISIONS = { authorize: /\b(autoriz\w*|aprob\w*|aprueb\w*|financi\w*)\b/, reject: /\b(rechaz\w*|deneg\w*|no autoriz\w*)\b/, evidence: /\b(evidencia|mas pruebas|otra prueba|pedi\w* (a )?qa)\b/ };
+        groundVerb('decision', q, ctx, [DECISIONS[decision]], Object.entries(DECISIONS).filter(([k]) => k !== decision).map(([, v]) => v));
         const ch = resolveChange(ctx, p.cambio, q, ['CTO_PENDING', 'EXPIRED'], this.name); if (isPlan(ch)) return ch;
         return commands({ type: 'cto.decide', payload: { changeId: ch.id, decision, reason: ctx.sources.instruction.slice(0, 4000), confirmed: true }, describe: r => r.ok ? (decision === 'authorize' ? `${ch.id} autorizado. Reservado Q${ch.cost}. Pendiente de DevOps.` : decision === 'reject' ? `${ch.id} rechazado y devuelto a QA.` : `Evidencia solicitada a QA para ${ch.id}.`) : failure(r) });
       } },
+    { name: 'cto_autorizar_infraestructura', description: 'Autoriza presupuesto y alcance de infraestructura para DevOps con el monto, la duración y el máximo de servidores que indicó el CTO. operaciones vacío si el CTO no restringió los tipos de operación.', schema: obj({ monto: int('quetzales'), duracion_segundos: int('segundos simulados'), max_servidores: int(), operaciones: { type: 'array', items: choice(['escalar', 'balanceador']) }, solicitud: str('ID REQ indicado o vacío'), citas: quotes }),
+      fields: { monto: 'monto', duracion_segundos: 'duración', max_servidores: 'máximo de servidores' },
+      plan(p, ctx, q) {
+        groundVerb('decision', q, ctx, [/\b(autoriz\w*|aprob\w*|aprueb\w*|asign\w*|habilit\w*)\b/], [/\b(rechaz\w*|deneg\w*)\b/]);
+        const amount = groundNumber('monto', Number(p.monto), q, 'money'), seconds = groundNumber('duracion_segundos', Number(p.duracion_segundos), q, 'seconds'), max = groundNumber('max_servidores', Number(p.max_servidores), q, 'count');
+        const ops = Array.isArray(p.operaciones) ? p.operaciones.map(String) : [];
+        for (const op of ops) groundChoice('operaciones', q, [op === 'escalar' ? /\b(escal\w*|servidores?|agregar|quitar)\b/ : /\bbalanceador\b/]);
+        const operations = ops.length ? ops.map(o => o === 'escalar' ? 'scale' : 'balancer') : ['scale', 'balancer'];
+        const requestId = typeof p.solicitud === 'string' && p.solicitud.trim() ? operations_(ctx).requests.find(r => r.id.toLowerCase() === String(p.solicitud).trim().toLowerCase())?.id : undefined;
+        if (typeof p.solicitud === 'string' && p.solicitud.trim() && (!requestId || !mentionsId(requestId, q))) return needs(this.name, ['solicitud']);
+        return commands({ type: 'cto.infra_authorize', payload: { amount, durationSeconds: seconds, maxServers: max, operations: [...new Set(operations)], ...(requestId ? { requestId } : {}) }, describe: r => r.ok ? `Infraestructura autorizada: ${money(amount)} · ${seconds} s · máx. ${max} servidores · ${operations.map(o => o === 'scale' ? 'escalar' : 'balanceador').join(' y ')}.` : failure(r) });
+      } },
+    { name: 'cto_rechazar_solicitud', description: 'Rechaza la solicitud de presupuesto de DevOps indicada.', schema: obj({ solicitud: str('ID REQ o vacío'), citas: quotes }), fields: { solicitud: 'solicitud' },
+      plan(p, ctx, q) {
+        groundVerb('decision', q, ctx, [/\b(rechaz\w*|deneg\w*|no autoriz\w*)\b/]);
+        const pending = operations_(ctx).requests.filter(r => r.status === 'REQUESTED'), id = String(p.solicitud ?? '').trim();
+        const request = id ? pending.find(r => r.id.toLowerCase() === id.toLowerCase()) : pending.length === 1 ? pending[0] : undefined;
+        if (!request) return id ? restriction('Solicitud no disponible.') : pending.length ? needs(this.name, ['solicitud'], pending.map(r => r.id)) : restriction('No hay solicitudes pendientes.');
+        if (id && !mentionsId(request.id, q)) return needs(this.name, ['solicitud']);
+        return commands({ type: 'cto.infra_reject', payload: { requestId: request.id }, describe: r => r.ok ? `${request.id} rechazada.` : failure(r) });
+      } },
+    { name: 'cto_autorizar_rollback', description: 'Autoriza un rollback a la versión publicada indicada, con el monto que fijó el CTO.', schema: obj({ version_objetivo: nullable(int('número de versión; null si dijo "la versión anterior"')), monto: int('quetzales'), citas: quotes }), fields: { version_objetivo: 'versión objetivo', monto: 'monto' },
+      plan(p, ctx, q) {
+        groundVerb('decision', q, ctx, [/\b(autoriz\w*|aprob\w*|aprueb\w*)\b/], [/\b(rechaz\w*|deneg\w*)\b/]); groundVerb('accion', q, ctx, [/\b(rollback|revert\w*|volver a la version|restaur\w*)\b/]);
+        const amount = groundNumber('monto', Number(p.monto), q, 'money'), releases = operations_(ctx).releases;
+        let target: number;
+        if (p.version_objetivo === null) { if (!said(q, /\b(version anterior|anterior version)\b/)) return needs(this.name, ['version_objetivo']); const prior = [...releases].reverse().find(r => r.version < ctx.c.version); if (!prior) return restriction('No existe una versión anterior publicada.'); target = prior.version; }
+        else target = said(q, new RegExp(`\\bv\\s?${Number(p.version_objetivo)}\\b|\\bversion ${Number(p.version_objetivo)}\\b`)) ? Number(p.version_objetivo) : (() => { throw new GroundingError('version_objetivo'); })();
+        return commands({ type: 'cto.rollback_authorize', payload: { targetVersion: target, amount }, describe: r => r.ok ? `Rollback a v${target} autorizado. Reservado ${money(amount)}. Vigente ${60} s.` : failure(r) });
+      } },
     { name: 'cto_priorizar', description: 'Cambia la prioridad registrada y visible de incidentes.', schema: obj({ incidente: choice(['seguridad', 'concurrencia']), citas: quotes }), fields: { incidente: 'incidente' },
-      plan(p, _ctx, q) {
+      plan(p, ctx, q) {
         const incident = p.incidente === 'seguridad' ? 'security' : 'concurrency';
         groundChoice('incidente', q, [incident === 'security' ? /\bseguridad\b/ : /\bconcurren\w*/]);
         return commands({ type: 'cto.prioritize', payload: { incident }, describe: r => r.ok ? `Prioridad registrada: ${incident === 'security' ? 'seguridad' : 'concurrencia'}.` : failure(r) });
@@ -373,15 +413,18 @@ function devopsTools(): ToolSpec[] {
         const amount = Number(p.cantidad); if (!Number.isInteger(amount) || amount < 0) return needs(this.name, ['cantidad']);
         groundNumber('cantidad', amount, q, 'count');
         const action = String(p.accion);
-        groundChoice('accion', q, [action === 'agregar' ? /\b(agreg\w*|anad\w*|sum\w*|aument\w*|increment\w*|levant\w*|cre[ae]\w*|mas)\b/ : action === 'quitar' ? /\b(quit\w*|elimin\w*|reduc\w*|sac\w*|baj\w*|remov\w*|retir\w*|menos)\b/ : /\b(dej\w*|establec\w*|fij\w*|escal\w* a|en total|solamente|solo|queden?)\b/]);
+        const ACTIONS: Record<string, RegExp> = { agregar: /\b(agreg\w*|anad\w*|sum\w*|aument\w*|increment\w*|levant\w*|cre[ae]\w*|mas)\b/, quitar: /\b(quit\w*|elimin\w*|reduc\w*|sac\w*|baj\w*|remov\w*|retir\w*|menos)\b/, fijar_total: /\b(dej\w*|establec\w*|fij\w*|escal\w* a|en total|solamente|solo|queden?)\b/ };
+        if (!ACTIONS[action]) return needs(this.name, ['accion']);
+        groundVerb('accion', q, ctx, [ACTIONS[action]], action === 'fijar_total' ? [] : Object.entries(ACTIONS).filter(([k]) => k !== action && k !== 'fijar_total').map(([, v]) => v));
         const before = ctx.c.servers, target = action === 'fijar_total' ? amount : before + (action === 'agregar' ? amount : -amount);
         if (action !== 'fijar_total' && amount === 0) return needs(this.name, ['cantidad']);
         return commands({ type: 'infra.scale', payload: { target }, describe: (r, g) => r.ok ? `${target > before ? `${target - before === 1 ? 'Servidor agregado' : 'Servidores agregados'}` : target < before ? `${before - target === 1 ? 'Servidor retirado' : 'Servidores retirados'}` : 'Sin cambios'} · ${g.companies[ctx.c.id].servers} en servicio.` : failure(r) });
       } },
     { name: 'devops_balanceador', description: 'Activa o desactiva el balanceador de carga según la orden explícita.', schema: obj({ activar: bool(), citas: quotes }), fields: { activar: 'activar o desactivar' },
-      plan(p, _ctx, q) {
+      plan(p, ctx, q) {
         const enabled = p.activar === true;
-        groundChoice('activar', q, [enabled ? /(?<!des)\b(activ\w*|encend\w*|habilit\w*|prend\w*)\b/ : /\b(desactiv\w*|apag\w*|deshabilit\w*|quit\w*|sac\w*|retir\w*|sin balanceador)\b/]);
+        const ON = /(?<!des)\b(activ\w*|encend\w*|habilit\w*|prend\w*)\b/, OFF = /\b(desactiv\w*|apag\w*|deshabilit\w*|quit\w*|sac\w*|retir\w*|sin balanceador)\b/;
+        groundVerb('activar', q, ctx, [enabled ? ON : OFF], [enabled ? OFF : ON]);
         return commands({ type: 'infra.balancer', payload: { enabled }, describe: r => r.ok ? `Balanceador ${enabled ? 'activado' : 'desactivado'}.` : failure(r) });
       } },
     { name: 'devops_desplegar', description: 'Despliega un cambio autorizado con la estrategia que nombró el estudiante (rolling o restart_replace).', schema: obj({ cambio: str('ID del cambio o vacío'), estrategia: choice(['rolling', 'restart_replace']), citas: quotes }), fields: { cambio: 'cambio', estrategia: 'estrategia (ROLLING o RESTART REPLACE)' },
@@ -392,22 +435,49 @@ function devopsTools(): ToolSpec[] {
         const ch = resolveChange(ctx, p.cambio, q, ['AUTHORIZED'], this.name); if (isPlan(ch)) return ch;
         return commands({ type: 'deploy.start', changeId: ch.id, payload: { strategy }, describe: r => r.ok ? `Despliegue de ${ch.id} iniciado con ${strategy === 'rolling' ? 'ROLLING' : 'RESTART REPLACE'}.` : failure(r) });
       } },
+    { name: 'devops_solicitar_presupuesto', description: 'Solicita al CTO presupuesto de infraestructura con monto, duración, máximo de servidores y operaciones que indicó el estudiante.', schema: obj({ monto: int(), duracion_segundos: int(), max_servidores: int(), operaciones: { type: 'array', items: choice(['escalar', 'balanceador']) }, citas: quotes }),
+      fields: { monto: 'monto', duracion_segundos: 'duración', max_servidores: 'máximo de servidores', operaciones: 'operaciones (escalar, balanceador)' },
+      plan(p, ctx, q) {
+        const amount = groundNumber('monto', Number(p.monto), q, 'money'), seconds = groundNumber('duracion_segundos', Number(p.duracion_segundos), q, 'seconds'), max = groundNumber('max_servidores', Number(p.max_servidores), q, 'count');
+        const ops = Array.isArray(p.operaciones) ? p.operaciones.map(String) : []; if (!ops.length) return needs(this.name, ['operaciones']);
+        for (const op of ops) groundChoice('operaciones', q, [op === 'escalar' ? /\b(escal\w*|servidores?|agregar|quitar)\b/ : /\bbalanceador\b/]);
+        const operations = [...new Set(ops.map(o => o === 'escalar' ? 'scale' : 'balancer'))];
+        return commands({ type: 'infra.request_budget', payload: { amount, durationSeconds: seconds, maxServers: max, operations }, describe: r => r.ok ? `Solicitud ${r.refs?.[0] ?? ''} enviada al CTO: ${money(amount)} · ${seconds} s · máx. ${max} servidores.` : failure(r) });
+      } },
+    { name: 'devops_rollback', description: 'Ejecuta el rollback autorizado por el CTO con la estrategia que nombró el estudiante.', schema: obj({ estrategia: choice(['rolling', 'restart_replace']), citas: quotes }), fields: { estrategia: 'la estrategia (ROLLING o RESTART REPLACE)' },
+      plan(p, ctx, q) {
+        groundVerb('accion', q, ctx, [/\b(rollback|revert\w*|volver a la version|restaur\w*)\b/]);
+        const strategy = p.estrategia === 'rolling' ? 'rolling' : p.estrategia === 'restart_replace' ? 'restart' : '';
+        if (!strategy) return needs(this.name, ['estrategia']);
+        groundChoice('estrategia', q, [STRATEGY_PATTERNS[strategy]]);
+        const rollback = operations_(ctx).rollbacks.filter(r => r.status === 'AUTHORIZED').at(-1);
+        if (!rollback) return restriction('No existe una autorización de rollback vigente.');
+        return commands({ type: 'deploy.rollback', payload: { strategy, authorizationId: rollback.id }, describe: r => r.ok ? `Rollback a v${rollback.targetVersion} iniciado con ${strategy === 'rolling' ? 'ROLLING' : 'RESTART REPLACE'}.` : failure(r) });
+      } },
+    { name: 'devops_servidor', description: 'Detiene o inicia el servidor indicado.', schema: obj({ servidor: int(), accion: choice(['detener', 'iniciar']), citas: quotes }), fields: { servidor: 'servidor', accion: 'operación' },
+      plan(p, ctx, q) {
+        const id = groundNumber('servidor', Number(p.servidor), q), stop = p.accion === 'detener';
+        const STOP = /\b(deten\w*|par[ae]\w*|apag\w*|stop)\b/, START = /\b(inici\w*|arranc\w*|encend\w*|levant\w*|prend\w*|start)\b/;
+        groundVerb('accion', q, ctx, [stop ? STOP : START], [stop ? START : STOP]);
+        return commands({ type: stop ? 'infra.server_stop' : 'infra.server_start', payload: { serverId: id }, describe: r => r.ok ? `APP-${id} ${stop ? 'detenido. Sigue aprovisionado y con costo.' : 'en arranque.'}` : failure(r) });
+      } },
     { name: 'devops_reiniciar', description: 'Reinicia un servidor indicado o todos los servidores. La duración la define el motor.', schema: obj({ servidor: nullable(int('número de servidor; null para todos')), citas: quotes }), fields: { servidor: 'servidor' },
       plan(p, ctx, q) {
-        groundChoice('accion', q, [/\breinici\w*|restart\b/]);
+        groundVerb('accion', q, ctx, [/\breinici\w*|restart\b/]);
         if (p.servidor === null) { groundChoice('servidor', q, [/\b(todos|todo|completo|toda la infraestructura)\b/]); return commands({ type: 'infra.restart_all', payload: { duration: RESTART_SECONDS.all }, describe: r => r.ok ? `Reinicio de todos los servidores iniciado · ${RESTART_SECONDS.all} s.` : failure(r) }); }
         const id = groundNumber('servidor', Number(p.servidor), q);
         return commands({ type: 'infra.restart', payload: { serverId: id, duration: RESTART_SECONDS.server }, describe: r => r.ok ? `Reinicio de APP-${id} iniciado · ${RESTART_SECONDS.server} s.` : failure(r) });
       } },
     { name: 'devops_servicio', description: 'Detiene o recupera un servicio (security, web, checkout, inventory, payment).', schema: obj({ servicio: choice(Object.keys(SERVICE_PATTERNS)), accion: choice(['detener', 'recuperar']), citas: quotes }), fields: { servicio: 'servicio', accion: 'operación' },
-      plan(p, _ctx, q) {
+      plan(p, ctx, q) {
         const service = String(p.servicio); if (!SERVICE_PATTERNS[service]) return needs(this.name, ['servicio']);
         groundChoice('servicio', q, [SERVICE_PATTERNS[service]]);
-        const stop = p.accion === 'detener'; groundChoice('accion', q, [stop ? /\b(deten\w*|par[ae]\w*|apag\w*|stop)\b/ : /\b(recuper\w*|reanud\w*|levant\w*|reactiv\w*|inici\w*|arranc\w*)\b/]);
+        const stop = p.accion === 'detener', STOP = /\b(deten\w*|par[ae]\w*|apag\w*|stop)\b/, RECOVER = /\b(recuper\w*|reanud\w*|levant\w*|reactiv\w*|inici\w*|arranc\w*)\b/;
+        groundVerb('accion', q, ctx, [stop ? STOP : RECOVER], [stop ? RECOVER : STOP]);
         return commands({ type: stop ? 'infra.stop' : 'infra.recover', payload: { service }, describe: r => r.ok ? `Servicio ${service} ${stop ? 'detenido' : 'recuperado'}.` : failure(r) });
       } },
     { name: 'devops_mantenimiento', description: 'Cambia el modo de servicio: OPERATING, ORDERS_PAUSED o FULL_MAINTENANCE.', schema: obj({ modo: choice(Object.keys(MAINTENANCE_PATTERNS)), citas: quotes }), fields: { modo: 'modo de servicio' },
-      plan(p, _ctx, q) {
+      plan(p, ctx, q) {
         const mode = String(p.modo); if (!MAINTENANCE_PATTERNS[mode]) return needs(this.name, ['modo']);
         groundChoice('modo', q, [MAINTENANCE_PATTERNS[mode]]);
         return commands({ type: 'infra.maintenance', payload: { mode }, describe: r => r.ok ? `Modo de servicio: ${mode}.` : failure(r) });
@@ -415,11 +485,12 @@ function devopsTools(): ToolSpec[] {
   ];
 }
 
+const operations_ = (ctx: ExecutorContext) => operations(ctx.c);
 // ---------- Objective data, scoped to the session company and role ----------
 const money = (n: number) => `Q${(Math.round(n * 100) / 100).toLocaleString('es-GT')}`;
 export const TOPICS: Record<Role, readonly string[]> = {
   backend: ['borrador', 'bloques', 'devoluciones'], security: ['revision', 'controles'], qa: ['cambios', 'pruebas', 'suites'],
-  cto: ['finanzas', 'cambios', 'decisiones'], devops: ['infraestructura', 'despliegues', 'estrategias'], product: ['embudo'],
+  cto: ['finanzas', 'cambios', 'decisiones', 'solicitudes', 'versiones', 'incidentes'], devops: ['infraestructura', 'presupuesto', 'despliegues', 'estrategias', 'staging', 'rollback'], product: ['embudo'],
 };
 export function information(ctx: ExecutorContext, topic: string): string {
   const { g, c } = ctx, own = g.changes.filter(ch => ch.companyId === c.id);
@@ -437,6 +508,10 @@ export function information(ctx: ExecutorContext, topic: string): string {
     case 'decisiones': return (c.runtime.workflow?.decisions ?? []).slice(-8).map(d => `${d.id} · ${d.changeId} · ${d.kind} · ${d.actor}`).join('\n') || 'Sin decisiones registradas.';
     case 'infraestructura': return `Servidores ${c.servers} (${c.infrastructure.instances.map(i => `APP-${i.id} ${i.status}`).join(', ')}) · accesibles ${effectiveServers(c)} · balanceador ${c.balancer ? 'activo' : 'inactivo'} · presupuesto operativo ${money(c.infraBudget)} · costo ${money(c.servers * 0.5)}/s · modo ${c.serviceMode.mode}.`;
     case 'despliegues': return list(['AUTHORIZED', 'DEPLOYING', 'DEPLOYED', 'DEPLOY_FAILED', 'EXPIRED']);
+    case 'presupuesto': case 'solicitudes': { const scope = activeScope(c, g.tick), state = operations(c); return `${scope ? `Alcance vigente ${scope.id}: ${scope.operations.map(o => o === 'scale' ? 'escalar' : 'balanceador').join(', ') || 'sin operaciones'} · máx. ${scope.maxServers} servidores · vence en ${Math.max(0, Math.ceil(scope.expires - g.tick))} s.` : 'Sin alcance de infraestructura vigente.'} Presupuesto operativo ${money(c.infraBudget)}.\n` + (state.requests.filter(r => r.status === 'REQUESTED').map(r => `${r.id} · ${money(r.amount)} · ${r.durationSeconds} s · máx. ${r.maxServers} · ${r.operations.join(', ')} · pendiente`).join('\n') || 'Sin solicitudes pendientes.'); }
+    case 'versiones': case 'rollback': { const state = operations(c); return `Versión activa v${c.version}. Publicadas: ${state.releases.map(r => `v${r.version} (${r.kind}${r.changeId ? ` ${r.changeId}` : ''}${r.rollbackOf ? ` restaura v${r.rollbackOf}` : ''})`).join(', ')}.\n` + (state.rollbacks.slice(-4).map(r => `${r.id} · v${r.targetVersion} · ${money(r.amount)} · ${r.status}`).join('\n') || 'Sin autorizaciones de rollback.'); }
+    case 'staging': { const ch = own.find(x => x.id === ctx.selection.changeId) ?? own.find(x => x.status === 'AUTHORIZED'); if (!ch) return 'Sin cambio seleccionado ni autorizado.'; const runs = (c.runtime.workflow?.runs ?? []).filter(r => r.changeId === ch.id && r.report); return `${ch.id} · ${STATUS_LABELS[ch.status]} · base v${ch.baseVersion} · Backend v${ch.implementation?.backendVersion ?? '—'} · Seguridad r${ch.implementation?.security?.revision ?? '—'} · costo ${money(ch.cost)}${ch.status === 'AUTHORIZED' ? ` · autorización vence en ${Math.max(0, Math.ceil((ch.expires ?? 0) - g.tick))} s` : ''}.\nArtefacto: ${ch.graph.nodes.map(n => n.data.label).join(' → ')}.\n` + (runs.map(r => `${r.id}: ${r.report!.requests} solicitudes, ${r.report!.completed} completadas, ${r.report!.rejected} rechazadas, ${r.report!.oversold} sobreventas`).join('\n') || 'Sin pruebas QA registradas.'); }
+    case 'incidentes': return g.events.filter(e => (e.companyId === c.id || e.companyId === null) && e.tone === 'bad').slice(0, 8).map(e => `${Math.floor(e.at)} s · ${e.text}`).join('\n') || 'Sin incidentes observados.';
     case 'estrategias': return 'ROLLING: 6 s; cambia servidores uno por uno; capacidad accesible (n−1)/n, o 12% con un servidor.\nRESTART REPLACE: 3 s; capacidad de aplicación cero durante el reemplazo.\nCosto: el autorizado por CTO para el cambio; el gasto operativo continúa a Q0.50/s por servidor.';
     default: return 'Tema no disponible.';
   }
@@ -529,8 +604,8 @@ export function authorizedContext(ctx: ExecutorContext) {
   if (role === 'backend') { const { graph, revision } = backendDraft(c); return { ...base, borrador: { revision, bloqueado: !!c.runtime.workflow?.backendLock, bloques: graph.nodes.map(n => ({ id: n.id, tipo: n.type, etiqueta: n.data.label, valor: n.data.value ?? null })), conexiones: graph.edges.map(e => ({ origen: e.source, destino: e.target })) }, tipos_de_bloque: BLOCKS.backend.map(b => ({ tipo: b.type, etiqueta: b.label })) }; }
   if (role === 'security') return { ...base, revisiones: own.filter(ch => ch.status === 'SECURITY_PENDING').map(ch => ({ id: ch.id, revision: c.runtime.collaboration?.reviews[ch.id]?.revision ?? 0, bloques: ch.graph.nodes.map(n => ({ id: n.id, tipo: n.type, etiqueta: n.data.label, controles: describeRules(c.runtime.collaboration?.reviews[ch.id]?.blocks[n.id]?.rules ?? []) })) })), controles: CONTROLS };
   if (role === 'qa') return { ...base, cambios: changes, pruebas: (c.runtime.workflow?.runs ?? []).filter(r => r.generation === g.generation).slice(-8).map(r => ({ id: r.id, cambio: r.changeId, tipo: r.scenario.suite, terminada: !!r.report })), suites: Object.keys(SUITE_LABELS) };
-  if (role === 'cto') return { ...base, cambios: changes };
-  if (role === 'devops') return { ...base, servidores: c.infrastructure.instances.map(i => ({ id: i.id, estado: i.status })), balanceador: c.balancer, modo_servicio: c.serviceMode.mode, servicios_detenidos: c.infrastructure.stoppedServices, cambios: changes, version_activa: c.version, estrategias: ['rolling', 'restart_replace'] };
+  if (role === 'cto') return { ...base, cambios: changes, solicitudes: operations(c).requests.filter(r => r.status === 'REQUESTED').map(r => ({ id: r.id, monto: r.amount, duracion_segundos: r.durationSeconds, max_servidores: r.maxServers, operaciones: r.operations })), versiones: operations(c).releases.map(r => r.version), version_activa: c.version };
+  if (role === 'devops') { const scope = activeScope(c, g.tick); return { ...base, servidores: c.infrastructure.instances.map(i => ({ id: i.id, estado: i.status })), balanceador: c.balancer, modo_servicio: c.serviceMode.mode, servicios_detenidos: c.infrastructure.stoppedServices, cambios: changes, version_activa: c.version, estrategias: ['rolling', 'restart_replace'], alcance: scope ? { operaciones: scope.operations, max_servidores: scope.maxServers } : null, rollback_autorizado: operations(c).rollbacks.filter(r => r.status === 'AUTHORIZED').map(r => ({ id: r.id, version: r.targetVersion })) }; }
   return base;
 }
 export function contextExtensions() { return CONTEXT_EXTENSIONS; }

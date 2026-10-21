@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { applyCommand, createGame, project } from '../server/engine.js';
 import { commandsFor, executorContext, finalReply, modelContext, outcome, planCalls, toolDefinitions, toolsFor } from '../server/executor.js';
 import { mentions, normalize } from '../server/grounding.js';
-import { command, advanceGame, insertBlock, reviewForQa } from './helpers.js';
+import { command, advanceGame, insertBlock, reviewForQa, authorizeInfra } from './helpers.js';
 import type { GameState, Identity, Role } from '../shared/types.js';
 import type { ExecutorInput, ToolCall } from '../shared/executor.js';
 
@@ -29,7 +29,7 @@ test('E8 grounding reads Spanish quantities, money and durations exactly as writ
 });
 
 test('E8 Test A: an explicit "Agregá un servidor" executes exactly once, also when the request is retried', () => {
-  const g = start(), c = g.companies[0];
+  const g = start(), c = g.companies[0]; authorizeInfra(g, 0, 3);
   const calls = [{ name: 'devops_escalar', input: { accion: 'agregar', cantidad: 1, citas: ['Agregá un servidor'] } }];
   const reply = run(g, 'devops', 'Agregá un servidor', calls);
   assert.equal(reply.state, 'EXECUTED'); assert.equal(c.servers, 2); assert.match(reply.message, /Servidor agregado/);
@@ -66,7 +66,7 @@ test('E8 Test C: an advice request about blocks changes nothing and recommends n
 });
 
 test('E8 Test D: a strategically bad but valid order (disable the balancer) is executed', () => {
-  const g = start(), c = g.companies[0];
+  const g = start(), c = g.companies[0]; authorizeInfra(g);
   assert(command(g, 'devops', 'infra.balancer', { enabled: true }).ok);
   const reply = run(g, 'devops', 'Desactivá el balanceador', [{ name: 'devops_balanceador', input: { activar: false, citas: ['Desactivá el balanceador'] } }]);
   assert.equal(reply.state, 'EXECUTED'); assert.equal(c.balancer, false); assert.equal(reply.message, 'Balanceador desactivado.');

@@ -56,6 +56,12 @@ export type ActionParameters = {
   'cto.budget': { amount: number }; 'cto.prioritize': { incident: 'security' | 'concurrency' };
   'infra.scale': { delta: 1 | -1 } | { target: number }; 'infra.balancer': { enabled: boolean };
   'deploy.start': { strategy: 'rolling' | 'restart' };
+  'infra.request_budget': { amount: number; durationSeconds: number; maxServers: number; operations: import('./operations.js').InfraOperation[] };
+  'cto.infra_authorize': { amount: number; durationSeconds: number; maxServers: number; operations: import('./operations.js').InfraOperation[]; requestId?: string };
+  'cto.infra_reject': { requestId: string };
+  'cto.rollback_authorize': { targetVersion: number; amount: number };
+  'deploy.rollback': { strategy: 'rolling' | 'restart'; authorizationId?: string };
+  'infra.server_stop': { serverId: number }; 'infra.server_start': { serverId: number };
 };
 export type ActionType = keyof ActionParameters;
 export type SimulatedAction = { [K in ActionType]: {
@@ -85,6 +91,9 @@ export const ACTION_CATALOG = {
   'cto.authorize': entry(['cto'], 'finance'), 'cto.reject': entry(['cto'], 'finance'),
   'cto.budget': entry(['cto'], 'finance'), 'cto.prioritize': entry(['cto'], 'operation'),
   'infra.scale': entry(['devops'], 'operation'), 'infra.balancer': entry(['devops'], 'operation'), 'deploy.start': entry(['devops'], 'publication'),
+  'infra.request_budget': entry(['devops'], 'finance'), 'cto.infra_authorize': entry(['cto'], 'finance'), 'cto.infra_reject': entry(['cto'], 'finance'),
+  'cto.rollback_authorize': entry(['cto'], 'finance'), 'deploy.rollback': entry(['devops'], 'publication'),
+  'infra.server_stop': entry(['devops'], 'operation'), 'infra.server_start': entry(['devops'], 'operation'),
   'room.dvr': entry(['operator'], 'administration'),
   'room.start': entry(['operator'], 'administration'), 'room.pause': entry(['operator'], 'administration'),
   'room.reset': entry(['operator'], 'administration'), 'room.speed': entry(['operator'], 'administration'), 'room.finish': entry(['operator'], 'administration'),

@@ -11,7 +11,7 @@ import { createCommandPipeline } from '../server/command-pipeline.js';
 import { bindObservability } from '../server/observability.js';
 import { slackFact } from '../server/flowslack.js';
 import { recoverGame, serializeGame } from '../server/persistence.js';
-import { command, advanceGame, reviewForQa } from './helpers.js';
+import { command, advanceGame, reviewForQa, authorizeInfra } from './helpers.js';
 import type { Command, GameState, Identity, Result, Role } from '../shared/types.js';
 import type { ExecutorInput, ToolCall } from '../shared/executor.js';
 
@@ -19,7 +19,7 @@ const actor = (role: Role, companyId = 0): Identity => ({ id: `${companyId}-${ro
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 const toolMessage = (calls: ToolCall[], model = 'm') => ({ id: 'msg', type: 'message', role: 'assistant', model, stop_reason: 'tool_use', content: [{ type: 'thinking', thinking: '', signature: 'sig' }, ...calls.map((c, i) => ({ type: 'tool_use', id: `toolu_${i}`, name: c.name, input: c.input }))], usage: { input_tokens: 900, output_tokens: 60, cache_read_input_tokens: 700, cache_creation_input_tokens: 0 } });
 function harness() {
-  let game = createGame(); game.status = 'RUNNING';
+  let game = createGame(); game.status = 'RUNNING'; for (let c = 0; c < 5; c++) authorizeInfra(game, c, 3);
   const db = new DatabaseSync(':memory:'); db.exec('CREATE TABLE commands (identity TEXT NOT NULL, id TEXT NOT NULL, digest TEXT NOT NULL, result TEXT NOT NULL, generation INTEGER, PRIMARY KEY(identity,id))');
   const write = createGameWriter(db); write(game);
   const pipeline = createCommandPipeline({ db, hash: s => createHash('sha256').update(s).digest('hex'), game: () => game, broadcast: () => {}, committed: () => {}, groupCommit: true, maxBatch: 64, restore: s => { game = s; bindObservability(game, f => slackFact(game, f)); }, write: (s, rows) => write(s, rows) });

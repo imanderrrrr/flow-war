@@ -85,6 +85,14 @@ export function validateParameters(type: string, input: unknown) {
     case 'infra.scale': if ('target' in p) { keys(p, ['target']); integer(p.target, 1, 8); } else { keys(p, ['delta']); if (![1,-1].includes(integer(p.delta, -1, 1))) throw new ActionError('INVALID', 'Delta inválido.'); } break;
     case 'infra.balancer': keys(p, ['enabled']); bool(p.enabled); break;
     case 'deploy.start': keys(p, ['strategy']); oneOf(p.strategy, ['rolling','restart']); break;
+    case 'infra.request_budget': case 'cto.infra_authorize':
+      keys(p, ['amount','durationSeconds','maxServers','operations', ...(type === 'cto.infra_authorize' ? ['requestId'] : [])]); integer(p.amount, type === 'cto.infra_authorize' ? 0 : 1, 10000); integer(p.durationSeconds, 10, 1500); integer(p.maxServers, 1, 8);
+      if (!Array.isArray(p.operations) || !p.operations.length || p.operations.length > 2 || p.operations.some(o => !['scale','balancer'].includes(o as string))) throw new ActionError('INVALID', 'Operaciones: scale y/o balancer.');
+      if (p.requestId !== undefined) string(p.requestId); break;
+    case 'cto.infra_reject': keys(p, ['requestId']); string(p.requestId); break;
+    case 'cto.rollback_authorize': keys(p, ['targetVersion','amount']); integer(p.targetVersion, 1, 1000); integer(p.amount, 1, 10000); break;
+    case 'deploy.rollback': keys(p, ['strategy','authorizationId']); oneOf(p.strategy, ['rolling','restart']); if (p.authorizationId !== undefined) string(p.authorizationId); break;
+    case 'infra.server_stop': case 'infra.server_start': keys(p, ['serverId']); integer(p.serverId, 1, 8); break;
     default: throw new ActionError('UNSUPPORTED', 'Acción no implementada.');
   }
 }

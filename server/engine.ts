@@ -15,6 +15,8 @@ import { createTestJob, advanceTestJob, testReport, scenarioForSuite } from './q
 import { testScenario } from './action-validation.js';
 import { initialRuntime, executionFor, releaseFor, prepareArtifact } from './artifacts.js';
 import { initialInfrastructure, syncInfrastructure, advanceInfrastructure, restart, setService } from './infrastructure.js';
+import { initialOperationsState, operationsCommand, assertScope, activeDeployment, advanceOperations, reconcileRollbacks, closeOperations, recordRelease, rollbackInProgress, infraView } from './operations.js';
+import { RESTART_SECONDS } from './executor.js';
 import { parseAction, validateParameters } from './action-validation.js';
 import { allowedAction } from '../shared/actions.js';
 import { advanceMarket, assertMarket, bindMarket, createMarket, evacuateEliminated, flushMigrations } from './market.js';
@@ -42,6 +44,7 @@ export function createGame(duration = 1500, seed = 7357, generation = 0, dvrEnab
     backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
   }));
   const game: GameState = { dvrEnabled, actions: initialActionState(), schema: 6, observability: initialObservability(), slack: { sequence: 0, messages: [], receipts: {}, buckets: {}, groups: {}, automaticCount: 0, sampledCount: 0 }, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
+  for (const company of companies) company.runtime.infra = initialOperationsState(company, duration);
   bindMarket(game); bindObservability(game, f=>slackFact(game,f)); assertMarket(game); checkpoint(game, serializeGame, true); return game;
 }
 export function event(g: GameState, companyId: number | null, text: string, tone: 'good' | 'bad' | 'neutral' = 'neutral', category = 'SISTEMA') {
@@ -100,6 +103,8 @@ export function reportFor(g: GameState, change: Change, suite: string): Report {
   return testReport(job, g.tick);
 }
 function releaseReservation(c: Company, change: Change) { c.reserved = Math.max(0, c.reserved - change.reserved); change.reserved = 0; }
+/** A new production version invalidates pending work built on the previous base (conservative MVP rule). */
+function staleOthers(g: GameState, c: Company, keep?: Change) { for (const other of g.changes) if (other.companyId === c.id && other.id !== keep?.id && ['QA_PENDING', 'QA_RUNNING', 'CTO_PENDING', 'AUTHORIZED', 'EXPIRED'].includes(other.status)) { other.status = 'STALE'; releaseReservation(c, other); } }
 export function applyCommand(g: GameState, identity: Identity | null, command: Command, context: { receivedAt?: number } = {}): Result {
   if (command.type === 'agent.fixture') return runLocalAgent(g, identity, command.payload, effective => applyCommand(g, identity, effective));
   const receivedAt = context.receivedAt ?? Date.now();
@@ -160,6 +165,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
     validateParameters(command.type, p);
     if(identity.role==='backend'&&['draft.save','change.submit','module.create','module.revise','ai.accept'].includes(command.type))assertBackendEditable(c);
     const handled=workflowCommand(g,c,identity,command.type,p);if(handled)return handled;
+    const operated=operationsCommand(g,c,identity,command.type,p,event);if(operated)return operated;
     if(identity.role==='backend' && ['module.create','module.revise','change.submit'].includes(command.type) && g.changes.some(x=>x.companyId===c.id&&x.status==='DEPLOYING'))throw new Error('Espera a que finalice la publicación en curso.');
     if (command.type.startsWith('campaign.') || command.type === 'product.propose') { const result = businessCommand(g, c, identity, command.type, p); event(g, c.id, command.type === 'campaign.activate' ? 'Campaña activada.' : 'Operación comercial registrada.', 'neutral', 'PRODUCTO'); return result; }
     if (command.type.startsWith('security.') && ['security.save','security.configure','security.submit','security.correction'].includes(command.type)) return securityCommand(g,identity,command.type,p);
@@ -187,6 +193,12 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       const change = prepareArtifact(g, c, identity, command.type, p); if(change.domain==='backend')beginSecurityReview(g,c,change); else bindLegacySecurity(g,c,change); event(g, c.id, `${change.id} preparado. Pendiente de pruebas QA.`, 'neutral', 'PIPELINE'); return { ok: true, refs: [change.id, ...(change.artifactRefs?.map(ref => `${ref.id}@${ref.version}`) ?? [])] };
     }
     if (command.type === 'infra.maintenance') { setMaintenance(g,c,p.mode as import('../shared/observability.js').ServiceMode,identity.id); return {ok:true}; }
+    if (command.type === 'infra.server_stop' || command.type === 'infra.server_start') {
+      const instance = syncInfrastructure(c).instances.find(i => i.id === Number(p.serverId)); if (!instance) throw new Error('Servidor no encontrado.');
+      if (command.type === 'infra.server_stop') { if (instance.status !== 'UP') throw new Error(`APP-${instance.id} no está en línea.`); instance.status = 'STOPPED'; delete instance.readyAt; }
+      else { if (instance.status !== 'STOPPED') throw new Error(`APP-${instance.id} no está detenido.`); instance.status = 'RESTARTING'; instance.readyAt = g.tick + RESTART_SECONDS.server; }
+      event(g, c.id, command.type === 'infra.server_stop' ? `APP-${instance.id} detenido. Sigue aprovisionado.` : `APP-${instance.id} en arranque · ${RESTART_SECONDS.server} s.`, 'neutral', 'DEVOPS'); return { ok: true, refs: [`APP-${instance.id}`] };
+    }
     if (['infra.restart','infra.restart_all','infra.stop','infra.recover'].includes(command.type)) {
       validateParameters(command.type, p);
       if (command.type.startsWith('infra.restart')) restart(c, g.tick, Number(p.duration), command.type === 'infra.restart' ? Number(p.serverId) : undefined);
@@ -210,19 +222,22 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       return { ok: true };
     }
     if (command.type === 'cto.budget') {
+      // Legacy quick budget: funds operation for the rest of the game with the full infrastructure scope.
       const amount = Number(p.amount);
       if (![250, 500, 1000].includes(amount) || c.capital - c.reserved - c.infraBudget < amount) throw new Error('Saldo disponible insuficiente.');
-      c.infraBudget += amount; event(g, c.id, `Q${amount} de operación autorizados.`, 'neutral', 'CTO'); return { ok: true };
+      operationsCommand(g, c, identity, 'cto.infra_authorize', { amount, durationSeconds: Math.max(10, Math.min(1500, Math.ceil(g.duration - g.tick))), maxServers: 8, operations: ['scale', 'balancer'] }, () => {});
+      event(g, c.id, `Q${amount} de operación autorizados.`, 'neutral', 'CTO'); return { ok: true };
     }
     if (command.type === 'cto.prioritize') { validateParameters(command.type, p); c.runtime.priority = p.incident as 'security' | 'concurrency'; event(g, c.id, `Prioridad: ${p.incident === 'security' ? 'seguridad' : 'concurrencia'}.`, 'neutral', 'CTO'); return { ok: true }; }
     if (command.type === 'infra.scale') {
       const target = 'target' in p ? Number(p.target) : c.servers + Number(p.delta), delta = target - c.servers;
       if (!Number.isInteger(target) || target < 1 || target > 8) throw new Error('Rango de servidores: 1–8.');
       if (delta === 0) throw new Error(`Ya hay ${c.servers} servidor${c.servers === 1 ? '' : 'es'} en servicio.`);
+      assertScope(c, g.tick, 'scale', target);
       if (delta > 0 && c.infraBudget < target * 30) throw new Error('Presupuesto operativo insuficiente.');
       c.servers = target; syncInfrastructure(c); event(g, c.id, `${delta > 0 ? `+${delta}` : delta} SERVER · ${c.servers} en servicio.`, 'neutral', 'DEVOPS'); return { ok: true };
     }
-    if (command.type === 'infra.balancer') { c.balancer = Boolean(p.enabled); event(g, c.id, `Balanceador ${c.balancer ? 'activo' : 'desactivado'}.`, 'neutral', 'DEVOPS'); return { ok: true }; }
+    if (command.type === 'infra.balancer') { assertScope(c, g.tick, 'balancer'); c.balancer = Boolean(p.enabled); event(g, c.id, `Balanceador ${c.balancer ? 'activo' : 'desactivado'}.`, 'neutral', 'DEVOPS'); return { ok: true }; }
     if (!ch) throw new Error('Cambio no encontrado.');
     if (ch.baseVersion !== c.version && !['DEPLOYED', 'QA_REJECTED', 'CTO_REJECTED'].includes(ch.status)) throw new Error('La versión base cambió.');
     if(ch.implementation && !['qa.reject','cto.reject'].includes(command.type))assertBundle(ch);
@@ -259,7 +274,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
     } else if (command.type === 'deploy.start') {
       if(c.capital-c.infraBudget<c.reserved)throw new Error('Saldo reservado insuficiente. Solicita evaluación del CTO.');
       if (ch.status !== 'AUTHORIZED' || g.tick > (ch.expires ?? 0)) throw new Error('No existe autorización vigente.');
-      if (g.changes.some(x => x.companyId === c.id && x.status === 'DEPLOYING')) throw new Error('Ya existe un despliegue activo.');
+      if (g.changes.some(x => x.companyId === c.id && x.status === 'DEPLOYING') || rollbackInProgress(c)) throw new Error('Ya existe un despliegue activo.');
       if (!['rolling', 'restart'].includes(String(p.strategy))) throw new Error('Estrategia no disponible.');
       ch.status = 'DEPLOYING'; ch.strategy = String(p.strategy); ch.due = g.tick + (p.strategy === 'rolling' ? 6 : 3);
       event(g, c.id, `${ch.id} · DEPLOY INICIADO`, 'neutral', 'DEVOPS');
@@ -292,10 +307,10 @@ function jobs(g: GameState) {
     if (ch.status === 'DEPLOYING' && g.tick >= (ch.due ?? Infinity)) {
       if(c.capital<ch.cost||c.capital-c.infraBudget<c.reserved){ch.status='DEPLOY_FAILED';releaseReservation(c,ch);event(g,c.id,`${ch.id} · publicación cancelada por saldo insuficiente.`, 'neutral','CTO');continue;}
       assertBundle(ch);
-      if(ch.implementation){c.backend=structuredClone(ch.context!.backend);c.security=structuredClone(ch.context!.security);}else c[ch.domain] = structuredClone(ch.graph); c.version++; c.runtime.releases[c.version] = structuredClone(ch.context?.execution ?? releaseFor(c)); c.deployments++; c.capital -= ch.cost;settleInvestment(c,ch); releaseReservation(c, ch); ch.status = 'DEPLOYED';
+      if(ch.implementation){c.backend=structuredClone(ch.context!.backend);c.security=structuredClone(ch.context!.security);}else c[ch.domain] = structuredClone(ch.graph); c.version++; c.runtime.releases[c.version] = structuredClone(ch.context?.execution ?? releaseFor(c)); c.deployments++; c.capital -= ch.cost;settleInvestment(c,ch); releaseReservation(c, ch); ch.status = 'DEPLOYED'; ch.releasedVersion = c.version; recordRelease(g, c, ch.id, 'deploy');
       auditCompletion(g, c.id, 'deploy.completed', [ch.id, ...(ch.artifactRefs?.map(ref=>`${ref.id}@${ref.version}`) ?? [])], [`production.version:${c.version}`, `capital.delta:${-ch.cost}`]);
       event(g, c.id, `${ch.id} EN PRODUCCIÓN · v${c.version}`, 'good', 'DEPLOY');
-      for (const other of g.changes) if (other.companyId === c.id && other.id !== ch.id && ['QA_PENDING', 'QA_RUNNING', 'CTO_PENDING', 'AUTHORIZED', 'EXPIRED'].includes(other.status)) { other.status = 'STALE'; releaseReservation(c, other); }
+      staleOthers(g, c, ch);
     }
   }
 }
@@ -316,7 +331,8 @@ export function step(g: GameState, dt = .1) {
     const recovered = c.infrastructure.instances.filter(instance=>instance.status==='RESTARTING'&&g.tick>=instance.readyAt!).map(instance=>`APP-${instance.id}`);
     advanceInfrastructure(c, g.tick); advanceCampaigns(c, g.tick);expireInvestments(c,g.tick,false,g.changes.filter(ch=>ch.companyId===c.id&&['AUTHORIZED','DEPLOYING'].includes(ch.status)).map(ch=>ch.id));
     if (recovered.length) auditCompletion(g, c.id, 'infra.recovered', recovered, ['availability.restored']);
-    const deploying = g.changes.find(ch => ch.companyId === c.id && ch.status === 'DEPLOYING');
+    advanceOperations(g, c, event, (company, keep) => staleOthers(g, company, keep));
+    const deploying = activeDeployment(g, c);
     const rates = serviceRates(c, deploying);
     const capacity = rates.web;
     generateTraffic(c, g.tick, dt, g.duration);
@@ -342,6 +358,7 @@ export function step(g: GameState, dt = .1) {
     c.reputation = clamp(c.reputation + dt * (.04 * health - .15 * errorFraction - .30 * fraud - .1 * observed.unavailable - .06 * concurrencyRisk), 0, 100);
     const operation = Math.min(c.infraBudget, c.servers * .5 * dt); c.infraBudget -= operation; c.capital -= operation;
     for (const ch of g.changes) if (ch.companyId === c.id && ch.status === 'AUTHORIZED' && c.capital < c.reserved + c.infraBudget) { releaseReservation(c, ch); ch.status = 'EXPIRED'; }
+    reconcileRollbacks(c);
     if (c.capital < c.reserved + c.infraBudget) c.infraBudget = Math.max(0, c.capital - c.reserved);
     c.particles = c.particles.filter(p => g.tick - p.born < p.duration).slice(-90);
     c.deadTicks = capacity === 0 ? c.deadTicks + dt : 0;
@@ -364,7 +381,7 @@ export function step(g: GameState, dt = .1) {
 }
 function finishRequests(g: GameState, reason: 'ROOM_FINISHED' | 'ROOM_INTERRUPTED' = 'ROOM_FINISHED') {
   for (const company of g.companies) {
-    expireInvestments(company,g.tick,true);
+    expireInvestments(company,g.tick,true); closeOperations(company);
     for(const ch of g.changes)if(ch.companyId===company.id&&ch.reserved){releaseReservation(company,ch);if(ch.status==='AUTHORIZED')ch.status='EXPIRED';}
     cancelTraffic(company, g.tick, reason);
     if (company.concurrency.run) { cancelConcurrency(company.concurrency.run, g.tick, reason); settleConcurrency(company); }
@@ -385,7 +402,7 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
     privateC.drafts = ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {};
   }
   return {
-    operations: identity ? { qaLive:ownCompany&&identity.role==='qa'?qaProgress(g,ownCompany):undefined, ...(ownCompany ? { workflow:workflowView(ownCompany), conversations:ownCompany.runtime.conversations?.filter(t=>t.actor===identity!.id&&t.role===identity!.role&&t.generation===g.generation).map(t=>({...t,messages:t.messages.slice(-20)})), collaboration: collaborationView(ownCompany,identity!) } : {}), modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
+    operations: identity ? { infra:ownCompany&&['devops','cto'].includes(identity.role)?infraView(ownCompany,g.tick):undefined, qaLive:ownCompany&&identity.role==='qa'?qaProgress(g,ownCompany):undefined, ...(ownCompany ? { workflow:workflowView(ownCompany), conversations:ownCompany.runtime.conversations?.filter(t=>t.actor===identity!.id&&t.role===identity!.role&&t.generation===g.generation).map(t=>({...t,messages:t.messages.slice(-20)})), collaboration: collaborationView(ownCompany,identity!) } : {}), modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
     dvrEnabled: g.dvrEnabled, generation: g.generation,
     slack: ownCompany ? structuredClone(g.slack.messages.filter(m=>m.companyId===ownCompany.id)) : undefined,
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,

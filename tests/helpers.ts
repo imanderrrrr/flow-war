@@ -38,3 +38,8 @@ export function reviewForQa(game:GameState,changeId=game.changes[0].id){
  const ch=game.changes.find(c=>c.id===changeId)!;
  if(ch.status==='SECURITY_PENDING')assert.equal(command(game,'security','security.submit',{changeId,revision:game.companies[ch.companyId].runtime.collaboration!.reviews[changeId].revision},undefined,ch.companyId).ok,true);
 }
+
+/** CTO scope for DevOps without moving money: scaling and balancer up to the given servers. */
+export function authorizeInfra(game: GameState, companyId = 0, maxServers = 8, seconds = 600) {
+  assert.equal(command(game, 'cto', 'cto.infra_authorize', { amount: 0, durationSeconds: seconds, maxServers, operations: ['scale', 'balancer'] }, undefined, companyId).ok, true);
+}

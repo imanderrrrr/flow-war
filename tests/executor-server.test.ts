@@ -16,6 +16,7 @@ import type { Identity } from '../shared/types.js';
  */
 const SCRIPT: Record<string, { name: string; input: Record<string, unknown> }[]> = {
   'Agregá un servidor': [{ name: 'devops_escalar', input: { accion: 'agregar', cantidad: 1, citas: ['Agregá un servidor'] } }],
+  'Autorizá Q600 para infraestructura, con duración de cinco minutos simulados y máximo tres servidores': [{ name: 'cto_autorizar_infraestructura', input: { monto: 600, duracion_segundos: 300, max_servidores: 3, operaciones: [], solicitud: '', citas: ['Autorizá Q600', 'cinco minutos', 'máximo tres servidores'] } }],
   'Agregá los servidores que considerés necesarios': [{ name: 'devops_escalar', input: { accion: 'agregar', cantidad: 3, citas: ['los servidores que considerés necesarios'] } }],
   'Autorizá el cambio CH-001': [{ name: 'cto_decidir_cambio', input: { cambio: 'CH-001', decision: 'autorizar', citas: ['Autorizá el cambio CH-001'] } }],
   'Mostrame la revisión de VERTEX': [{ name: 'consultar_datos', input: { tema: 'revision' } }],
@@ -48,6 +49,8 @@ test('E8 real server executes Claude tool calls through sessions, the durable pi
     const execute = async (cookie: string, body: Record<string, unknown>) => { const r = await fetch(base + '/api/ai/execute', { method: 'POST', headers: { Cookie: cookie, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); return { status: r.status, data: await r.json() as any }; };
     const snapshot = async (cookie: string) => (await fetch(base + '/api/snapshot', { headers: { Cookie: cookie } })).json() as Promise<any>;
 
+    const ctos = await Promise.all([0, 1, 2, 3, 4].map(c => login('cto', c)));
+    for (const [c, cookie] of ctos.entries()) { const r = await execute(cookie, { id: `scope-${c}`, text: 'Autorizá Q600 para infraestructura, con duración de cinco minutos simulados y máximo tres servidores' }); assert.equal(r.data.reply.state, 'EXECUTED', r.data.reply?.message); assert.match(r.data.reply.message, /Q600 · 300 s · máx. 3 servidores/); }
     const devops = await Promise.all([0, 1, 2, 3, 4].map(c => login('devops', c)));
     const results = await Promise.all(devops.map((cookie, c) => execute(cookie, { id: `scale-${c}`, text: 'Agregá un servidor' })));
     for (const r of results) { assert.equal(r.status, 200); assert.equal(r.data.reply.state, 'EXECUTED'); assert.match(r.data.reply.message, /Servidor agregado/); }
