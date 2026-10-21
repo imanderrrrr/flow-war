@@ -162,3 +162,10 @@ test('E7 lengthy team documents are compacted by deterministic fields before pro
  const context=aiContext(g,actor('cto'),{id:'bounded',kind:'cto.interpret',text:'Consultar órdenes.'}).context;assert(JSON.stringify(context).length<20000);assert.equal(state.investments[0].objective.length,long.length);
  const input:AiInput={id:'bounded-query',kind:'cto.interpret',text:'Consultar órdenes.'};await prepareAi(g,actor('cto'),input,new AiGateway({name:'test',model:'bounded',async generate(_i,_graph,ctx){assert(JSON.stringify(ctx).length<48000);return {intent:'query',changeId:'',department:'security',maximum:0,objective:'',justification:'',reason:''};}}));
 });
+
+test('E7 explicit unauthenticated, foreign-owner, input and automated scenarios are attacks even without a categorical label',()=>{
+ for(const suite of ['unit','load'] as const)for(const patch of [{authenticated:false},{ownsPurchase:false},{invalidInput:true},{automated:true}])for(const protectedFlow of [false,true]){
+  const g=start();command(g,'security','security.prepare',{auth:protectedFlow,authorization:protectedFlow,waf:protectedFlow,botThreshold:protectedFlow?100:0,blockedOrigins:[],rate:null});const ch=g.changes[0],job=createTestJob(g.companies[0],ch,{...DEFAULT_TEST,suite,...patch});while(!advanceTestJob(job)){}const r=testReport(job,0);
+  assert.equal(r.securityOutcomes!.attempts,1);assert.equal(r.securityOutcomes!.blocked,Number(protectedFlow));assert.equal(r.securityOutcomes!.successful,Number(!protectedFlow));assert.equal(r.securityOutcomes!.legitimateRejected,0);assert.equal(r.testEvidence!.passed,protectedFlow);assert.equal(r.completed,Number(!protectedFlow));
+ }
+});

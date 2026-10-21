@@ -18,9 +18,9 @@ export function admitSecurity(c: Company, release: ExecutionRelease, kind: 'vali
     if(!protection)return true;
   }
   if (!protection) return evaluateSecurity(c.security, kind, ordinal, { now, origin, customerId, type, buckets: c.runtime.rateBuckets, release: c.version });
-  if ((protection.auth && kind === 'forged') || (protection.authorization && kind === 'forged' && !vulnerableRole) || (protection.waf && kind === 'injection')) return false;
+  if ((protection.auth && (explicit?!explicit.authenticated:kind==='forged')) || (protection.authorization && (explicit?!explicit.ownsPurchase:kind==='forged') && !vulnerableRole) || (protection.waf && (explicit?explicit.maliciousInput:kind==='injection'))) return false;
   if (protection.blockedOrigins.includes(origin)) return false;
-  if (kind === 'bot' && ordinal % 100 < protection.botThreshold) return false;
+  if ((explicit?explicit.automated:kind==='bot') && ordinal % 100 < protection.botThreshold) return false;
   const rate = protection.rate;
   if (rate && (rate.scope === 'all' || type === 'purchase')) {
     const group = rate.groupBy === 'origin' ? origin : customerId ?? origin;
