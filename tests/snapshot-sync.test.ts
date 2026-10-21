@@ -49,6 +49,7 @@ test('shared packed public companies preserve independent private snapshots for 
 test('shared compaction is lazy and never reused across different broadcasts',()=>{
  const messages:any[]=[],socket={data:{},conn:{transport:{writable:true}},timeout:()=>({emit:(_event:string,packet:StatePacket,ack:Function)=>{messages.push({packet,ack});}})} as unknown as Socket;
  const sync=new SnapshotSync(socket),g=createGame(1200,8);
+ applyCommand(g,{id:'operator',role:'operator',companyId:null},{id:'begin-lazy',type:'room.start'});
  const identity={id:'0-backend',role:'backend' as const,companyId:0};
  let packs=0;
  const shared=project(g,null);
