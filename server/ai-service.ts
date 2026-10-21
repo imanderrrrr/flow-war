@@ -5,6 +5,7 @@ import { employeeFor, stableDigest } from './discipline.js';
 import { AiError, AiGateway, parseAiInput, proposalVariation } from './claude.js';
 import { assertBackendEditable, workflow, workflowView } from './workflow.js';
 
+const compactLetter=(l:import('../shared/workflow.js').ReturnLetter)=>({id:l.id,changeId:l.changeId,recipient:l.recipient,author:l.author,at:l.at,subject:l.subject.slice(0,160),description:l.description.slice(0,400),steps:l.steps.slice(0,400),observed:l.observed.slice(0,400),expected:l.expected.slice(0,400),evidenceIds:l.evidenceIds.slice(0,8),truncated:[l.subject,l.description,l.steps,l.observed,l.expected].some(t=>t.length>400)});
 export function aiContext(g:GameState,actor:Identity,input:AiInput) {
   const employee=employeeFor(g,actor);
   if(actor.companyId===null||employee?.status!=='ACTIVE'||employee.role!==actor.role||employee.companyId!==actor.companyId||g.status!=='RUNNING')throw new AiError('FORBIDDEN','Operación no autorizada.');
@@ -16,19 +17,19 @@ export function aiContext(g:GameState,actor:Identity,input:AiInput) {
   if(!thread&&threads.filter(t=>t.actor===actor.id).length>=8)throw new AiError('AI_LIMIT','Límite de hilos alcanzado.');
   if(input.kind==='backend.propose'){
     if(actor.role!=='backend')throw new AiError('FORBIDDEN');assertBackendEditable(c);
-    return {c,graph:c.drafts.backend?.graph??c.backend,revision:c.drafts.backend?.revision??0,context:{history,letters:workflow(c).letters.filter(l=>l.recipient==='backend').slice(-3)}};
+    return {c,graph:c.drafts.backend?.graph??c.backend,revision:c.drafts.backend?.revision??0,context:{history,letters:workflow(c).letters.filter(l=>l.recipient==='backend').slice(-3).map(compactLetter)}};
   }
   if(input.kind==='qa.interpret'||input.kind==='cto.interpret'){
     if(actor.role!==(input.kind==='qa.interpret'?'qa':'cto'))throw new AiError('FORBIDDEN');
     const ch=input.changeId?g.changes.find(ch=>ch.id===input.changeId&&ch.companyId===c.id):undefined;
     if(input.changeId&&!ch)throw new AiError('FORBIDDEN');
     if(input.kind==='qa.interpret'&&ch?.status!=='QA_PENDING')throw new AiError('STALE','Selecciona una implementación pendiente de QA.');
-    const w=workflowView(c),runs=workflow(c).runs.filter(r=>!ch||r.changeId===ch.id).slice(-6).map(({report,...r})=>({...r,result:report?{requests:report.requests,completed:report.completed,rejected:report.rejected,oversold:report.oversold,latency:report.latency,security:report.securityOutcomes,observed:report.testEvidence?.observed}:undefined}));
-    return {c,graph:ch?.graph??c.backend,revision:ch?.implementation?.security?.revision??c.version,context:{companyId:c.id,generation:g.generation,role:actor.role,history,capital:c.capital,available:w.available,reserved:c.reserved,operatingBudget:c.infraBudget,infrastructure:c.infrastructure,metrics:{requests:c.requests,successes:c.successes,errors:c.errors,latency:c.latency},changes:g.changes.filter(ch=>ch.companyId===c.id).slice(0,12).map(ch=>({id:ch.id,status:ch.status,cost:ch.cost,backendVersion:ch.implementation?.backendVersion,securityRevision:ch.implementation?.security?.revision})),runs,letters:w.letters.slice(-3),decisions:w.decisions.slice(-6),investments:w.investments.slice(-8)}};
+    const w=workflowView(c),runs=workflow(c).runs.filter(r=>!ch||r.changeId===ch.id).slice(-6).map(({report,...r})=>({...r,request:r.request.slice(0,400),result:report?{requests:report.requests,completed:report.completed,rejected:report.rejected,oversold:report.oversold,latency:report.latency,security:report.securityOutcomes,observed:report.testEvidence?.observed}:undefined}));
+    return {c,graph:ch?.graph??c.backend,revision:ch?.implementation?.security?.revision??c.version,context:{companyId:c.id,generation:g.generation,role:actor.role,history,capital:c.capital,available:w.available,reserved:c.reserved,operatingBudget:c.infraBudget,infrastructure:c.infrastructure,metrics:{requests:c.requests,successes:c.successes,errors:c.errors,latency:c.latency},changes:g.changes.filter(ch=>ch.companyId===c.id).slice(0,12).map(ch=>({id:ch.id,status:ch.status,cost:ch.cost,backendVersion:ch.implementation?.backendVersion,securityRevision:ch.implementation?.security?.revision})),runs,letters:w.letters.slice(-3).map(compactLetter),decisions:w.decisions.slice(-6).map(d=>({...d,reason:d.reason.slice(0,400),evidenceIds:d.evidenceIds.slice(0,12),failedIds:d.failedIds.slice(0,12)})),investments:w.investments.slice(-8).map(o=>({...o,objective:o.objective.slice(0,400),justification:o.justification.slice(0,400)}))}};
   }
   if(actor.role!=='security')throw new AiError('FORBIDDEN','Operación no autorizada.');
   const {ch,draft}=editableChange(g,actor,input.changeId!,input.nodeId);
-  return {c,graph:ch.graph,revision:draft.revision,context:{history,letters:workflow(c).letters.filter(l=>l.recipient==='security').slice(-3)}};
+  return {c,graph:ch.graph,revision:draft.revision,context:{history,letters:workflow(c).letters.filter(l=>l.recipient==='security').slice(-3).map(compactLetter)}};
 }
 function digestFor(g:GameState,actor:Identity,input:AiInput,ctx:ReturnType<typeof aiContext>){return stableDigest({input,generation:g.generation,actor,revision:ctx.revision,graph:ctx.graph,change:input.changeId?g.changes.find(ch=>ch.id===input.changeId)?.implementation?.bundleDigest:undefined});}
 export async function prepareAi(g:GameState,actor:Identity,raw:unknown,gateway:AiGateway):Promise<AiProposal> {
@@ -36,6 +37,7 @@ export async function prepareAi(g:GameState,actor:Identity,raw:unknown,gateway:A
   const prior=state.proposals.find(p=>p.id===input.id&&p.actor===actor.id);
   if(prior){if(prior.inputDigest!==digest)throw new AiError('ID_CONFLICT','ID de solicitud ya utilizado.');return structuredClone(prior);}
   if(state.proposals.length>=240)throw new AiError('AI_LIMIT','Límite de propuestas de la partida alcanzado.');
+  if(JSON.stringify(context.context).length>48000)throw new AiError('CONTEXT_LIMIT','El contexto seleccionado excede el límite. Abre un hilo más específico.');
   const output=await gateway.generate(actor.id,input,structuredClone(context.graph),context.c.id,structuredClone(context.context));
   // Authoritative evidence is rendered by the server. Model prose is never accepted as a result.
   if(input.kind==='cto.interpret'){

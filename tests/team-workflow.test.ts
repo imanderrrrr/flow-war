@@ -155,3 +155,10 @@ test('E7 valid structured CTO intent with a missing budget cannot create even an
  const g=start(),input:AiInput={id:'missing-budget',kind:'cto.interpret',text:'Quiero invertir en Seguridad.'};const p=await prepareAi(g,actor('cto'),input,new AiGateway(fixture({intent:'investment',changeId:'',department:'security',maximum:0,objective:'',justification:'',reason:''})));commitAi(g,actor('cto'),input,p);
  assert.equal(command(g,'cto','ai.confirm',{proposalId:p.id,confirmed:true}).ok,false);assert.equal(workflow(g.companies[0]).investments.length,0);assert.equal(g.companies[0].reserved,0);
 });
+
+test('E7 lengthy team documents are compacted by deterministic fields before provider I/O, originals stay intact',async()=>{
+ const g=candidate();reviewForQa(g);const c=g.companies[0],state=workflow(c),long='Solicitud extensa del estudiante. '.repeat(120).slice(0,3900);
+ for(let i=0;i<8;i++)state.investments.push({id:`I${i}`,companyId:0,cto:'0-cto',department:'security',objective:long,justification:long,maximum:500,reserved:0,spent:0,status:'REQUESTED',at:0,expires:300});
+ const context=aiContext(g,actor('cto'),{id:'bounded',kind:'cto.interpret',text:'Consultar órdenes.'}).context;assert(JSON.stringify(context).length<20000);assert.equal(state.investments[0].objective.length,long.length);
+ const input:AiInput={id:'bounded-query',kind:'cto.interpret',text:'Consultar órdenes.'};await prepareAi(g,actor('cto'),input,new AiGateway({name:'test',model:'bounded',async generate(_i,_graph,ctx){assert(JSON.stringify(ctx).length<48000);return {intent:'query',changeId:'',department:'security',maximum:0,objective:'',justification:'',reason:''};}}));
+});
