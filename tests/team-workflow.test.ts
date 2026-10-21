@@ -169,3 +169,9 @@ test('E7 explicit unauthenticated, foreign-owner, input and automated scenarios 
   assert.equal(r.securityOutcomes!.attempts,1);assert.equal(r.securityOutcomes!.blocked,Number(protectedFlow));assert.equal(r.securityOutcomes!.successful,Number(!protectedFlow));assert.equal(r.securityOutcomes!.legitimateRejected,0);assert.equal(r.testEvidence!.passed,protectedFlow);assert.equal(r.completed,Number(!protectedFlow));
  }
 });
+
+test('E7 competing and public snapshots cannot read operational budgets or financial commitments',()=>{
+ const g=start();g.companies[0].infraBudget=4321;g.companies[0].reserved=567;
+ for(const view of [project(g,null),project(g,actor('cto',1)),project(g,actor('qa',1))]){assert.equal(view.companies[0].infraBudget,undefined);assert.equal(view.companies[0].reserved,undefined);}
+ const own=project(g,actor('cto'));assert.equal(own.privateCompany!.infraBudget,4321);assert.equal(own.privateCompany!.reserved,567);const teacher=project(g,{id:'operator',role:'operator',companyId:null});assert.equal(teacher.companies[0].infraBudget,4321);assert.equal(teacher.companies[0].reserved,567);
+});
