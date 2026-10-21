@@ -245,7 +245,8 @@ let iterations = 0;
 const timer = setInterval(() => {
   try {
     for (let i = 0; i < game.speed; i++) step(game);
-    if (++iterations % 2 === 0) broadcast();
+    // Deferred to the check phase: commands that arrive meanwhile are answered before the broadcast.
+    if (++iterations % 2 === 0) scheduleBroadcast();
     if (iterations % 10 === 0) persist();
   } catch (e) { game.status = 'PAUSED'; console.error('Simulación pausada por un error operativo:', e); }
 }, 100);
