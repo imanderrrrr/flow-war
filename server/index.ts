@@ -3,6 +3,7 @@ import { AiGateway, AiError, AnthropicProvider, parseAiInput } from './claude.js
 import { prepareAi, commitAi, visibleProposal, proposalText, beginAiAttempt, finishAiAttempt } from './ai-service.js';
 import { slackFact } from './flowslack.js';
 import { SnapshotSync } from './snapshot-sync.js';
+import { compactCompanies } from '../shared/snapshot-codec.js';
 import { acquireStorageLease } from './storage-lease.js';
 import { decodeReceipt } from './receipt-storage.js';
 import { visibleRequest } from './projections.js';
@@ -19,7 +20,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { Server } from 'socket.io';
-import { ROLES, type Identity, type GameState, type Command } from '../shared/types.js';
+import { ROLES, type Identity, type GameState, type Command, type Snapshot } from '../shared/types.js';
 import { applyCommand, createGame, project, step } from './engine.js';
 import { recoverGame } from './persistence.js';
 import { trafficReceipt } from './traffic.js';
@@ -223,6 +224,7 @@ function broadcast() {
   if (pendingBroadcast) { clearImmediate(pendingBroadcast); pendingBroadcast = undefined; }
   const projections = new Map<string, ReturnType<typeof project>>();
   let publicProjection: ReturnType<typeof project> | undefined;
+  let sharedPacked: Snapshot['companies'] | undefined;
   for (const socket of io.sockets.sockets.values()) {
     const identity = session(socket.request.headers.cookie);
     if (socket.data.authenticated && !identity) { socket.data.authenticated=false; socket.emit('state:clear'); synchronizers.get(socket.id)?.resync(); }
@@ -232,6 +234,9 @@ function broadcast() {
     let value = projections.get(key); if (!value) { if (identity?.role === 'operator') value = project(game,identity);
       else { publicProjection ??= project(game,null); value = identity ? project(game,identity,publicProjection) : publicProjection; }
       projections.set(key,value); } return value;
+  },Date.now(),identity?.role==='operator'?undefined:()=>{
+    publicProjection ??= project(game,null);
+    return sharedPacked ??= compactCompanies(publicProjection.companies);
   });
   }
 }
