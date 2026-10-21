@@ -1,4 +1,5 @@
 import ClaudeStatus from './ClaudeStatus';
+import ClaudeExecutor from './ClaudeExecutor';
 import TeamConsole, { ReturnInbox, InvestmentInbox } from './TeamConsole';
 import Dvr from './Dvr';
 import Maintenance from './Maintenance';
@@ -91,7 +92,10 @@ function ChangeList({ changes, selected, onSelect }: { changes: Change[]; select
   return <div className="change-list">{changes.length ? changes.map(ch=><button key={ch.id} className={`change-item ${selected===ch.id?'selected':''}`} onClick={()=>onSelect(ch.id)}><span className="eyebrow">{ch.id} <b>v{ch.baseVersion}.0</b></span><strong>{ch.name}</strong><span className={`change-status ${ch.status==='DEPLOYED'?'good-text':''}`}>{STATUS_LABELS[ch.status]}</span><small>{money(ch.cost)} <span>{time(ch.created)}</span></small></button>) : <div className="empty-state"><Icon name="chip" size={30}/><strong>0 CAMBIOS</strong><span>Bandeja de la empresa</span></div>}</div>;
 }
 function Workspace() {
-  const { snapshot: s, connected } = useGame(); const [selected,setSelected] = useState(''),[suite,setSuite]=useState(''),[strategy,setStrategy]=useState('rolling');
+  const { snapshot: s, connected } = useGame(); const [selected,setSelected] = useState(''),[suite,setSuite]=useState(''),[strategy,setStrategy]=useState('');
+  const selectedChange = s?.changes.find(ch=>ch.id===selected)?.id ?? s?.changes[0]?.id, sessionRole = s?.identity?.role;
+  // The selected change travels with Claude orders so "este cambio" refers to what the student is looking at.
+  useEffect(()=>{ if(sessionRole&&sessionRole!=='backend'&&sessionRole!=='security') useGame.getState().setSelection({changeId:selectedChange}); },[selectedChange,sessionRole]);
   if(!s?.identity || !s.privateCompany) return <Login/>;
   const role = s.identity.role, c = s.privateCompany, publicC=s.companies[c.id];
   if(role === 'operator') return <Operator/>;
@@ -112,11 +116,12 @@ function Workspace() {
         <GraphViewer key={change.id} graph={change.graph}/><Reports change={change}/>
         {role==='qa' && !change.implementation && <div className="decision-actions"><button className="secondary-button danger" disabled={!active||change.status!=='QA_PENDING'} onClick={()=>void act('qa.reject')}>RECHAZAR</button><button className="primary-button small" disabled={!active||change.status!=='QA_PENDING'||!change.reports.some(r=>!r.obsolete)} onClick={()=>void act('qa.approve')}>APROBAR QA <Icon name="arrow" size={13}/></button></div>}
         {role==='cto' && !change.implementation && <div className="decision-actions"><button className="secondary-button danger" disabled={!active||change.status!=='CTO_PENDING'} onClick={()=>void act('cto.reject')}>RECHAZAR</button><button className="primary-button small" disabled={!active||change.status!=='CTO_PENDING'} onClick={()=>void act('cto.authorize')}>AUTORIZAR {money(change.cost)}<Icon name="arrow" size={13}/></button></div>}
-        {role==='devops' && <div className="deploy-actions"><label>ESTRATEGIA<select value={strategy} onChange={e=>setStrategy(e.target.value)}><option value="rolling">Rolling · 6 s</option><option value="restart">Restart Replace · 3 s</option></select></label><span className="muted">{change.status==='AUTHORIZED'?`AUTORIZACIÓN: ${Math.ceil(Math.max(0,(change.expires??0)-s.tick))} s`:STATUS_LABELS[change.status]}</span><button className="primary-button small" disabled={!active||change.status!=='AUTHORIZED'} onClick={()=>void act('deploy.start',{strategy})}><Icon name="play" size={14}/>{change.status==='DEPLOYING'?'DESPLEGANDO…':'DEPLOY'}</button></div>}
+        {role==='devops' && <div className="deploy-actions"><label>ESTRATEGIA<select value={strategy} onChange={e=>setStrategy(e.target.value)}><option value="" disabled>Elegir estrategia</option><option value="rolling">Rolling · 6 s</option><option value="restart">Restart Replace · 3 s</option></select></label><span className="muted">{change.status==='AUTHORIZED'?`AUTORIZACIÓN: ${Math.ceil(Math.max(0,(change.expires??0)-s.tick))} s`:STATUS_LABELS[change.status]}</span><button className="primary-button small" disabled={!active||change.status!=='AUTHORIZED'||!strategy} onClick={()=>void act('deploy.start',{strategy})}><Icon name="play" size={14}/>{change.status==='DEPLOYING'?'DESPLEGANDO…':'DEPLOY'}</button></div>}
       </> : <div className="empty-state detail-empty"><Icon name={role==='qa'?'flask':role==='cto'?'crown':'server'} size={42}/><strong>0 CAMBIOS PENDIENTES</strong></div>}</section><section className="panel"><div className="panel-title">EVENTOS DE {c.name}</div><EventRows companyId={c.id}/></section>
     </div></div>}
     {(role==='backend'||role==='security')&&<><ReturnInbox/><InvestmentInbox active={active}/></>}
     {role==='devops'&&<Maintenance active={active}/>}
+    <ClaudeExecutor active={active}/>
     <FlowSlack key={s.generation}/><a className="secondary-button" href="/dvr">{s.dvrEnabled?"REVISAR HISTORIAL DE MI EMPRESA":"CONSULTAR PARTIDAS GRABADAS DE MI EMPRESA"}</a>
     <OperationsPanel active={active} changeId={change?.id}/>
   </main>;

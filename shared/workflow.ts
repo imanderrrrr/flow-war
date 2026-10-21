@@ -6,7 +6,9 @@ export type Decision = { id:string; changeId:string; actor:string; at:number; ki
 export type Investment = { id:string; companyId:number; cto:string; department:'backend'|'security'; objective:string; justification:string; maximum:number; reserved:number; spent:number; status:'REQUESTED'|'AUTHORIZED'|'IN_PROGRESS'|'COMPLETED'|'CANCELLED'; at:number; expires:number; changeId?:string; completedBy?:string };
 export type WorkflowState = { backendLock?:{featureId:'purchase-flow';changeId:string;at:number}; letters:ReturnLetter[]; runs:QaRun[]; decisions:Decision[]; investments:Investment[] };
 export type WorkflowView = Omit<WorkflowState,'runs'> & { runs:Omit<QaRun,'report'>[]; available:number };
-export type ConversationMessage = { id:string; requestId:string; role:'user'|'assistant'; text:string; at:number; refs:string[] };
+export type ConversationMessage = { id:string; requestId:string; role:'user'|'assistant'; text:string; at:number; refs:string[]; state?:string };
 export type Conversation = { id:string; actor:string; role:string; generation:number; companyId:number; messages:ConversationMessage[] };
 
-export type AiAttempt={id:string;actor:string;role:string;generation:number;threadId:string;digest:string;state:string;at:number;finishedAt?:number;code?:string};
+export type AiAttempt={id:string;actor:string;role:string;generation:number;threadId:string;digest:string;state:string;at:number;finishedAt?:number;code?:string;kind?:'executor';reply?:{state:string;message:string;refs:string[]}};
+/** Real provider consumption recorded with the game transaction; never converted into game money. */
+export type AiUsage={requests:number;inputTokens:number;outputTokens:number;cacheReadTokens:number;cacheWriteTokens:number};

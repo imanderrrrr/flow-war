@@ -1,6 +1,8 @@
 import { auditCompletion } from './discipline.js';
 import { AiGateway, AiError, AnthropicProvider, parseAiInput } from './claude.js';
 import { prepareAi, commitAi, visibleProposal, proposalText, beginAiAttempt, finishAiAttempt } from './ai-service.js';
+import { parseExecutorInput, beginExecution, interpret as interpretInstruction, executeCalls, finishExecution, replyFor } from './executor-service.js';
+import type { ExecutorInput } from '../shared/executor.js';
 import { slackFact } from './flowslack.js';
 import { SnapshotSync } from './snapshot-sync.js';
 import { compactCompanies } from '../shared/snapshot-codec.js';
@@ -131,9 +133,46 @@ app.post('/api/ai', async (req,res) => {
     res.status(code==='FORBIDDEN'?403:code==='AI_RATE_LIMIT'||code==='AI_BUSY'?429:503).json({ok:false,code,error:e instanceof AiError?e.message:'No se pudo preparar la propuesta.'});}
   finally{aiPending.delete(key);}
 });
+/** Restores the pre-mutation image when a journal write cannot be confirmed. */
+function journal(mutate:()=>void){flushCommands();const before=structuredClone(game);copyHistoryBuffer(game,before);try{mutate();persist();scheduleBroadcast();return true;}catch{game=before;bindObservability(game,f=>slackFact(game,f));return false;}}
+/** Every executed operation enters the same durable pipeline as the UI: validation, idempotency, COMMIT, ACK. */
+function submitCommand(identity:Identity,command:Command){return new Promise<import('../shared/types.js').Result>(resolve=>commands.receive(identity,command,result=>resolve(result as import('../shared/types.js').Result)));}
+const STATUS_CODES:Record<string,number>={FORBIDDEN:403,AI_RATE_LIMIT:429,AI_BUSY:429,AI_QUEUE_FULL:429,AI_BUDGET:429,ID_CONFLICT:409,INVALID:400,ROOM_PAUSED:409,AI_LIMIT:409,CONTEXT_LIMIT:413,PRODUCT_DISABLED:403};
+app.post('/api/ai/execute',async(req,res)=>{
+  res.setHeader('Cache-Control','no-store');
+  const identity=session(req.headers.cookie);
+  if(!identity||identity.role==='operator'||identity.companyId===null)return res.status(403).json({ok:false,code:'FORBIDDEN',error:'Sesión no autorizada.'});
+  const key=identity.id,now=Date.now();let budget=aiAttempts.get(key);
+  if(!budget||now-budget.at>=60000){budget={at:now,count:0};aiAttempts.set(key,budget);}
+  if(++budget.count>8)return res.status(429).json({ok:false,code:'AI_RATE_LIMIT',error:'Límite de solicitudes de Claude alcanzado.'});
+  if(aiPending.has(key))return res.status(429).json({ok:false,code:'AI_BUSY',error:'Hay una solicitud en curso.'});
+  aiPending.add(key);flushCommands();const generation=game.generation;let input:ExecutorInput|undefined,begun=false;
+  const provider=aiGateway.provider.name,model=aiGateway.provider.model;
+  try{
+    input=parseExecutorInput(req.body);const parsed=input;
+    let replay=false,error:unknown;
+    if(!journal(()=>{try{replay=beginExecution(game,identity,parsed).replay;}catch(e){error=e;throw e;}}))throw error instanceof Error?error:new AiError('AI_INVALID');
+    begun=!replay;
+    if(replay){const prior=game.companies[identity.companyId].runtime.aiAttempts?.find(a=>a.actor===identity.id&&a.id===parsed.id&&a.generation===game.generation);
+      if(prior?.reply)return res.json({ok:true,reply:{id:parsed.id,...prior.reply,operations:[],provider,model}});
+      if(prior&&['QUEUED','RUNNING'].includes(prior.state))return res.status(409).json({ok:false,code:'AI_IN_PROGRESS',error:'La solicitud con ese ID sigue en curso.'});}
+    const {result,snapshot}=await interpretInstruction(aiGateway,game,identity,parsed);
+    flushCommands();const current=session(req.headers.cookie);
+    if(!current||current.id!==identity.id||game.generation!==generation)throw new AiError('FORBIDDEN','La sesión o la partida cambió.');
+    const executed=await executeCalls(()=>({g:game,actor:current}),parsed,result.calls,snapshot,command=>submitCommand(session(req.headers.cookie,true)??current,command));
+    const reply=replyFor(parsed,executed,provider,result.model);
+    journal(()=>{finishExecution(game,current,parsed,reply,'COMPLETED',undefined,result);auditCompletion(game,current.companyId!,'ai.executed',reply.refs,[`provider:${provider}`,`state:${reply.state}`,`tools:${result.calls.map(c=>c.name).join(',')||'none'}`]);});
+    res.json({ok:true,reply});
+  }catch(e){const code=e instanceof AiError?e.code:e instanceof Error&&e.message==='FORBIDDEN'?'FORBIDDEN':'AI_INVALID';
+    const message=e instanceof AiError?e.message:code==='FORBIDDEN'?'Operación no autorizada.':'No se pudo procesar la instrucción.';
+    flushCommands();
+    if(input&&begun&&game.generation===generation){const parsed=input;journal(()=>{finishExecution(game,identity,parsed,{state:'TECHNICAL_ERROR',message:`${message} No se ejecutó nada.`,refs:[]},['CANCELLED','TIMEOUT'].includes(code)?code:'FAILED',code);auditCompletion(game,identity.companyId!,'ai.failed',[],[code]);});}
+    res.status(STATUS_CODES[code]??503).json({ok:false,code,error:message});}
+  finally{aiPending.delete(key);}
+});
 app.get('/api/ai/status',(req,res)=>{
  res.setHeader('Cache-Control','no-store');const identity=session(req.headers.cookie);if(!identity)return res.sendStatus(403);
- if(identity.role==='operator')return res.json({provider:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.status():{state:'TEST_PROVIDER'},usage:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.metrics():[],scheduler:aiGateway.scheduler.metrics()});
+ if(identity.role==='operator')return res.json({provider:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.status():{state:'TEST_PROVIDER'},usage:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.metrics():[],scheduler:aiGateway.scheduler.metrics(),consumption:{companies:game.companies.map(c=>({companyId:c.id,...(c.runtime.aiUsage??{requests:0,inputTokens:0,outputTokens:0,cacheReadTokens:0,cacheWriteTokens:0})})),gameTokenLimit:aiGateway.gameTokenLimit,companyTokenLimit:aiGateway.companyTokenLimit}});
  const attempts=game.companies[identity.companyId!].runtime.aiAttempts?.filter(a=>a.actor===identity.id&&a.role===identity.role&&a.generation===game.generation)??[];
  res.json({requests:attempts.map(a=>{const live=aiGateway.scheduler.status(identity.id,a.id)[0];return {...a,...live,state:['QUEUED','RUNNING'].includes(a.state)?live?.state??a.state:a.state,code:a.code??live?.code};})});
 });
@@ -142,7 +181,7 @@ let diagnosticPending=false;
 app.post('/api/ai/diagnose',async(req,res)=>{
  res.setHeader('Cache-Control','no-store');if(session(req.headers.cookie)?.role!=='operator')return res.sendStatus(403);
  if(diagnosticPending)return res.status(429).json({ok:false,code:'AI_BUSY'});diagnosticPending=true;
- try{await aiGateway.generate('operator-diagnostic',{id:crypto.randomUUID(),kind:'security.compile',text:'Requerir sesión iniciada para procesar pagos.',changeId:'diagnostic',nodeId:'backend-payment'},game.companies[0].backend,0);res.json({ok:true,status:(aiGateway.provider as AnthropicProvider).status()});}
+ try{const result=await aiGateway.interpret('operator-diagnostic',0,{id:crypto.randomUUID(),system:'Diagnóstico de conexión de FLOW WAR. Llamá la herramienta confirmar_conexion. No escribas texto.',tools:[{name:'confirmar_conexion',description:'Confirma que la conexión funciona.',input_schema:{type:'object',properties:{ok:{type:'boolean'}},required:['ok'],additionalProperties:false},strict:true}],content:'Confirmá la conexión.'},{usedByGame:0,usedByCompany:0});res.json({ok:result.calls.some(c=>c.name==='confirmar_conexion'),toolCalling:result.calls.length>0,status:(aiGateway.provider as AnthropicProvider).status()});}
  catch(e){res.status(503).json({ok:false,code:e instanceof AiError?e.code:'PROVIDER_ERROR',status:(aiGateway.provider as AnthropicProvider).status()});}finally{diagnosticPending=false;}
 });
 app.get('/api/health', (_req, res) => res.json({ ok: true, room: 'FW-001' }));

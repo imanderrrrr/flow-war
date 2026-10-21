@@ -83,7 +83,7 @@ export function assertBundle(ch: Change) {
 export function collaborationView(c: Company, actor: Identity): CollaborationView|undefined {
   if(!['backend','security','qa','cto','operator'].includes(actor.role))return;
   const state=c.runtime.collaboration;if(!state)return;
-  return {reviews:Object.fromEntries(Object.entries(state.reviews).map(([id,r])=>[id,{revision:r.revision,blocks:actor.role==='security'?Object.fromEntries(Object.entries(r.blocks).map(([id,b])=>[id,{text:b.text,executable:b.executable,author:b.author}])):{},observations:structuredClone(r.observations)}])),proposals:state.proposals.filter(p=>p.actor===actor.id).map(({output,inputDigest,sourceText,...p})=>p)};
+  return {reviews:Object.fromEntries(Object.entries(state.reviews).map(([id,r])=>[id,{revision:r.revision,blocks:actor.role==='security'?Object.fromEntries(Object.entries(r.blocks).map(([id,b])=>[id,{text:b.text,executable:b.executable,author:b.author,rules:structuredClone(b.rules),structured:!!b.structured}])):{},observations:structuredClone(r.observations)}])),proposals:state.proposals.filter(p=>p.actor===actor.id).map(({output,inputDigest,sourceText,...p})=>p)};
 }
 export function proposalCommand(c: Company, actor: Identity, type: string, p: Record<string,unknown>): Result {
   const proposal=collaboration(c).proposals.find(r=>r.id===p.proposalId&&r.actor===actor.id&&r.kind!=='security.compile');

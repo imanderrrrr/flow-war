@@ -3,8 +3,9 @@ type Task={status:RequestStatus;run:(signal:AbortSignal)=>Promise<unknown>;resol
 export class ScheduleError extends Error{constructor(public code:string){super(code);}}
 const cap=(name:string,fallback:number,max:number)=>{const n=Number(process.env[name]??fallback);return Number.isInteger(n)&&n>=1&&n<=max?n:fallback;};
 export class AiScheduler{
-  private queues:Task[][]=Array.from({length:5},()=>[]);private active=0;private companies=new Set<number>();private tasks=new Map<string,Task>();private cursor=0;
-  constructor(public capacity=cap('FLOW_AI_CONCURRENCY',5,20),private queueLimit=cap('FLOW_AI_QUEUE_LIMIT',30,120),private timeout=cap('FLOW_AI_TIMEOUT_MS',30000,120000)){}
+  private queues:Task[][]=Array.from({length:5},()=>[]);private active=0;private companies=new Map<number,number>();private tasks=new Map<string,Task>();private cursor=0;
+  /** perCompany bounds the calls one company can hold, so a burst from one team never takes every slot. */
+  constructor(public capacity=cap('FLOW_AI_CONCURRENCY',5,20),private queueLimit=cap('FLOW_AI_QUEUE_LIMIT',30,120),private timeout=cap('FLOW_AI_TIMEOUT_MS',30000,120000),public perCompany=cap('FLOW_AI_COMPANY_CONCURRENCY',2,10)){}
   schedule<T>(id:string,actor:string,companyId:number,run:(signal:AbortSignal)=>Promise<T>):Promise<T>{
     if(!Number.isInteger(companyId)||companyId<0||companyId>4)throw new ScheduleError('FORBIDDEN');
     if([...this.tasks.values()].some(t=>t.status.actor===actor&&['QUEUED','RUNNING'].includes(t.status.state)))throw new ScheduleError('AI_BUSY');
@@ -16,7 +17,7 @@ export class AiScheduler{
       this.tasks.set(key,task);this.queues[companyId].push(task);task.timer=setTimeout(()=>this.stop(task,'TIMEOUT'),this.timeout);this.pump();});
   }
   status(actor:string,id?:string){return [...this.tasks.values()].filter(t=>t.status.actor===actor&&(!id||t.status.id===id)).map(t=>({...t.status}));}
-  metrics(){return {capacity:this.capacity,active:this.active,queues:this.queues.map(q=>q.length),recent:[...this.tasks.values()].map(t=>({...t.status}))};}
+  metrics(){return {capacity:this.capacity,perCompany:this.perCompany,active:this.active,queues:this.queues.map(q=>q.length),recent:[...this.tasks.values()].map(t=>({...t.status}))};}
   cancel(actor:string,id:string){const task=this.tasks.get(`${actor}:${id}`);if(!task)return false;this.stop(task,'CANCELLED');return true;}
   private stop(t:Task,state:'CANCELLED'|'TIMEOUT'){
     if(!['QUEUED','RUNNING'].includes(t.status.state))return;
@@ -26,10 +27,10 @@ export class AiScheduler{
   }
   private pump(){
     while(this.active<this.capacity){let task:Task|undefined;
-      for(let i=0;i<5;i++){const company=(this.cursor+i)%5;if(!this.companies.has(company)&&this.queues[company].length){task=this.queues[company].shift();this.cursor=(company+1)%5;break;}}
-      if(!task)return;const t=task;this.active++;this.companies.add(t.status.companyId);t.status.state='RUNNING';t.status.startedAt=Date.now();t.status.waitMs=t.status.startedAt-t.status.queuedAt;
+      for(let i=0;i<5;i++){const company=(this.cursor+i)%5;if((this.companies.get(company)??0)<this.perCompany&&this.queues[company].length){task=this.queues[company].shift();this.cursor=(company+1)%5;break;}}
+      if(!task)return;const t=task;this.active++;this.companies.set(t.status.companyId,(this.companies.get(t.status.companyId)??0)+1);t.status.state='RUNNING';t.status.startedAt=Date.now();t.status.waitMs=t.status.startedAt-t.status.queuedAt;
       // A cancelled provider retains its concurrency slot until it settles. An uncooperative transport cannot cause unlimited calls.
-      void Promise.resolve().then(()=>t.run(t.controller.signal)).then(value=>{if(t.status.state==='RUNNING'){t.status.state='COMPLETED';t.resolve(value);}},err=>{if(t.status.state==='RUNNING'){t.status.state='FAILED';t.status.code=String(err?.code??'PROVIDER_ERROR');t.reject(err);}}).finally(()=>{clearTimeout(t.timer);t.status.finishedAt??=Date.now();t.status.durationMs=t.status.finishedAt-t.status.startedAt!;this.active--;this.companies.delete(t.status.companyId);this.pump();});
+      void Promise.resolve().then(()=>t.run(t.controller.signal)).then(value=>{if(t.status.state==='RUNNING'){t.status.state='COMPLETED';t.resolve(value);}},err=>{if(t.status.state==='RUNNING'){t.status.state='FAILED';t.status.code=String(err?.code??'PROVIDER_ERROR');t.reject(err);}}).finally(()=>{clearTimeout(t.timer);t.status.finishedAt??=Date.now();t.status.durationMs=t.status.finishedAt-t.status.startedAt!;this.active--;const held=(this.companies.get(t.status.companyId)??1)-1;if(held>0)this.companies.set(t.status.companyId,held);else this.companies.delete(t.status.companyId);this.pump();});
     }
   }
 }

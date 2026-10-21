@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createGame, applyCommand, project, validateGraph } from '../server/engine.js';
 import { AiGateway, AnthropicProvider, validateOutput, parseAiInput } from '../server/claude.js';
 import type { Provider } from '../server/claude.js';
+import { AiScheduler } from '../server/ai-scheduler.js';
 import { prepareAi, commitAi } from '../server/ai-service.js';
 import { assertBundle } from '../server/collaboration.js';
 import { evaluateProtection, admitSecurity } from '../server/security.js';
@@ -129,16 +130,18 @@ test('E6 private texts and executable policies are absent from public, rival and
  assert(JSON.stringify(project(g,actor('security'))).includes(secret));
 });
 test('E6 Anthropic HTTP contract uses structured output and never propagates keys or raw errors',async()=>{
- let body:any,headers:any;const transport:typeof fetch=async(url,init)=>{assert.equal(url,'https://api.anthropic.com/v1/messages');body=JSON.parse(String(init!.body));headers=init!.headers;return new Response(JSON.stringify({stop_reason:'end_turn',content:[{type:'text',text:JSON.stringify({rules:[],executable:false})}]}));};
+ const json=(body:unknown,status=200,headers:Record<string,string>={})=>new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json',...headers}});
+ const message=(content:unknown[],stop_reason='end_turn')=>({id:'msg',type:'message',role:'assistant',model:'explicit-model',stop_reason,content,usage:{input_tokens:12,output_tokens:4}});
+ let body:any,headers:Headers|undefined,url='';const transport:typeof fetch=async(u,init)=>{url=String(u);body=JSON.parse(String(init!.body));headers=new Headers(init!.headers);return json(message([{type:'text',text:JSON.stringify({rules:[],executable:false})}]));};
  const provider=new AnthropicProvider('synthetic-private-key','explicit-model',transport),input:AiInput={id:'http',kind:'security.compile',text:'Preparar texto.',changeId:'CH-001',nodeId:'backend-payment'};
- assert.deepEqual(await provider.generate(input,insertBlock('atomic')),{rules:[],executable:false});assert.equal(headers['x-api-key'],'synthetic-private-key');assert.equal(body.output_config.format.type,'json_schema');assert.equal(body.max_tokens,4096);assert(!JSON.stringify(body).includes('synthetic-private-key'));assert.equal(body.tools,undefined);
- let calls=0;const failing=new AnthropicProvider('secret','model',async()=>{calls++;return new Response('private upstream details',{status:429});});await assert.rejects(()=>failing.generate(input,insertBlock('atomic')),e=>!String(e).includes('private upstream'));assert.equal(calls,2);
+ assert.deepEqual(await provider.generate(input,insertBlock('atomic')),{rules:[],executable:false});assert.equal(url,'https://api.anthropic.com/v1/messages');assert.equal(headers!.get('x-api-key'),'synthetic-private-key');assert.equal(body.output_config.format.type,'json_schema');assert.equal(body.output_config.effort,'low');assert.equal(body.max_tokens,4096);assert(!JSON.stringify(body).includes('synthetic-private-key'));assert.equal(body.tools,undefined);assert.equal(body.thinking,undefined);
+ let calls=0;const failing=new AnthropicProvider('secret','model',async()=>{calls++;return new Response('private upstream details',{status:429});});await assert.rejects(()=>failing.generate(input,insertBlock('atomic')),e=>!String(e).includes('private upstream')&&!(e as Error).message.includes('private'));assert.equal(calls,2);
  const absent=new AnthropicProvider('', 'model',transport);await assert.rejects(()=>absent.generate(input,insertBlock('atomic')),/no está configurado/);
- for(const response of [{stop_reason:'max_tokens',content:[]},{stop_reason:'end_turn',content:[{type:'tool_use'}]}])await assert.rejects(()=>new AnthropicProvider('key','model',async()=>new Response(JSON.stringify(response))).generate(input,insertBlock('atomic')));
+ for(const response of [message([],'max_tokens'),message([{type:'tool_use',id:'t',name:'x',input:{}}],'tool_use'),message([],'refusal')])await assert.rejects(()=>new AnthropicProvider('key','model',async()=>json(response)).generate(input,insertBlock('atomic')));
 });
 test('E7 gateway bounds calls per user and distributes queued work among companies',async()=>{
  const input:AiInput={id:'quota',kind:'security.compile',text:'Preparar.',changeId:'CH-001',nodeId:'backend-payment'},gateway=new AiGateway(fixture({rules:[],executable:false}));for(let i=0;i<8;i++)await gateway.generate('actor',input,insertBlock('atomic'));await assert.rejects(()=>gateway.generate('actor',input,insertBlock('atomic')),/Límite/);await gateway.generate('other',input,insertBlock('atomic'));
- let release!:()=>void;const gate=new Promise<void>(r=>release=r),slow=new AiGateway({name:'test',model:'slow',async generate(){await gate;return {rules:[],executable:false};}});const a=slow.generate('a',input,insertBlock('atomic'),0),b=slow.generate('b',input,insertBlock('atomic'),0),c=slow.generate('c',input,insertBlock('atomic'),1);assert.equal(slow.scheduler.status('b')[0].state,'QUEUED');assert.equal(slow.scheduler.status('c')[0].state,'RUNNING');release();await Promise.all([a,b,c]);
+ let release!:()=>void;const gate=new Promise<void>(r=>release=r),slow=new AiGateway({name:'test',model:'slow',async generate(){await gate;return {rules:[],executable:false};}},Date.now,new AiScheduler(5,30,30000,1));const a=slow.generate('a',input,insertBlock('atomic'),0),b=slow.generate('b',input,insertBlock('atomic'),0),c=slow.generate('c',input,insertBlock('atomic'),1);assert.equal(slow.scheduler.status('b')[0].state,'QUEUED');assert.equal(slow.scheduler.status('c')[0].state,'RUNNING');release();await Promise.all([a,b,c]);
 });
 
 test('E6 compiled policies do not call Claude while 5000 customers advance',async()=>{
