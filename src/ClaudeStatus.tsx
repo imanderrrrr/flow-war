@@ -1,0 +1,9 @@
+import { useEffect, useState } from 'react';
+export default function ClaudeStatus(){
+ const [status,setStatus]=useState<any>(),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ async function refresh(){try{const r=await fetch('/api/ai/status');if(!r.ok)throw new Error('Diagnóstico no disponible.');setStatus(await r.json());}catch(e){setError((e as Error).message);}}
+ useEffect(()=>{void refresh();},[]);
+ async function diagnose(){setBusy(true);setError('');try{const r=await fetch('/api/ai/diagnose',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'}),d=await r.json();if(!r.ok)setError(d.code??'No se pudo completar la prueba.');await refresh();}catch(e){setError((e as Error).message);}finally{setBusy(false);}}
+ const p=status?.provider;
+ return <section className="panel claude-status"><div className="panel-title">ANTHROPIC · DIAGNÓSTICO DEL OPERADOR</div><div style={{padding:18}}><p role="status">{p?.state??'CONSULTANDO…'}</p><p>Credencial: {p?.keyConfigured?'configurada':'pendiente'} · modelo: {p?.modelConfigured?'configurado':'pendiente'} · workspace: {p?.workspaceConfigured?'seleccionado':'predeterminado'}</p><p>Capacidad local {status?.scheduler?.capacity??'—'} · llamadas activas {status?.scheduler?.active??0} · colas {(status?.scheduler?.queues??[]).join(' / ')}</p>{p?.last&&<p>Última respuesta: {p.last.latencyMs} ms · entrada {p.last.inputTokens??'—'} tokens · salida {p.last.outputTokens??'—'} tokens</p>}<div className="button-row"><button className="secondary-button" disabled={busy} onClick={()=>void refresh()}>ACTUALIZAR ESTADO</button><button className="primary-button small" disabled={busy||!p?.keyConfigured||!p?.modelConfigured} onClick={()=>void diagnose()}>{busy?'VERIFICANDO…':'PROBAR CONEXIÓN REAL'}</button></div>{error&&<p role="alert">{error}</p>}</div></section>;
+}

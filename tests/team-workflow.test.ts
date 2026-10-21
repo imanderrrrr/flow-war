@@ -144,3 +144,14 @@ test('E7 interrupted requests retain the human text through restart and cannot a
  for(const bad of [{scenario:{...DEFAULT_TEST,requests:5000},missing:[]},{scenario:DEFAULT_TEST,missing:[],results:{revenue:9999}},{scenario:null,missing:['atomic']}])assert.throws(()=>validateOutput('qa.interpret',bad));
  const query:AiInput={id:'autonomy',kind:'cto.interpret',text:'Autorizá el cambio',changeId:g.changes[0].id},out={intent:'authorize',changeId:g.changes[0].id,department:'backend',maximum:0,objective:'',justification:'',reason:'Autorizá'};const p=await prepareAi(g,actor('cto'),query,new AiGateway(fixture(out)));commitAi(g,actor('cto'),query,p);assert.equal(g.changes[0].status,'QA_PENDING');assert.equal(command(g,'cto','ai.accept',{proposalId:p.id}).ok,false);assert.equal(g.companies[0].reserved,0);
 });
+
+
+test('E7 live QA projection exposes bounded real progress only to its authorized investigator',()=>{
+ const g=candidate();reviewForQa(g);const ch=g.changes[0];command(g,'qa','qa.execute',{changeId:ch.id,scenario:{...DEFAULT_TEST,requests:100,concurrency:100,stock:1}});advanceGame(g,.1);
+ const live=project(g,actor('qa')).operations!.qaLive!;assert.equal(live.total,100);assert(live.requests.length<=12);assert.equal(live.elapsed,1);assert.equal(live.finished,0);assert.equal(project(g,actor('qa',1)).operations?.qaLive,undefined);assert.equal(project(g,actor('cto')).operations?.qaLive,undefined);assert(!JSON.stringify(live).includes('defect'));
+});
+
+test('E7 valid structured CTO intent with a missing budget cannot create even an unreserved investment order',async()=>{
+ const g=start(),input:AiInput={id:'missing-budget',kind:'cto.interpret',text:'Quiero invertir en Seguridad.'};const p=await prepareAi(g,actor('cto'),input,new AiGateway(fixture({intent:'investment',changeId:'',department:'security',maximum:0,objective:'',justification:'',reason:''})));commitAi(g,actor('cto'),input,p);
+ assert.equal(command(g,'cto','ai.confirm',{proposalId:p.id,confirmed:true}).ok,false);assert.equal(workflow(g.companies[0]).investments.length,0);assert.equal(g.companies[0].reserved,0);
+});
