@@ -1,5 +1,5 @@
 import test from 'node:test';
-import {compactSnapshot,expandSnapshot} from '../shared/snapshot-codec.js';
+import {compactSnapshot,compactCompanies,expandSnapshot} from '../shared/snapshot-codec.js';
 import assert from 'node:assert/strict';
 import {difference,applyPatch,receiveState,identityKey,type Json,type StatePacket,type ClientState} from '../shared/sync.js';
 import {createGame,project,step,applyCommand,event} from '../server/engine.js';
@@ -24,3 +24,43 @@ test('sync reconstructed clients equal authorized projections through live engin
 test('compact wire codec preserves exact React projections and particle IDs for every role',()=>{const g=createGame(1200,8);applyCommand(g,{id:'operator',role:'operator',companyId:null},{id:'go',type:'room.start'});for(let i=0;i<35;i++)step(g);for(const identity of [null,{id:'operator',role:'operator',companyId:null},...['backend','security','qa','cto','devops','product'].map(role=>({id:`0-${role}`,role,companyId:0}))] as any[]){const full=wire(project(g,identity)),packed=wire(compactSnapshot(full));assert.deepEqual(wire(expandSnapshot(packed)),full);}});
 
 test('public synchronization retains race and collapse alerts but never foreign administrative details',()=>{const g=createGame();event(g,1,'public-race','neutral','CONCURRENCIA');event(g,1,'private-budget','neutral','CTO');event(g,1,'private-pipeline','neutral','PIPELINE');for(const identity of [null,{id:'0-backend',role:'backend' as const,companyId:0}]){const s=project(g,identity);assert(s.events.some(e=>e.text==='public-race'));assert(!JSON.stringify(s.events).includes('private-'));}assert(project(g,{id:'operator',role:'operator',companyId:null}).events.some(e=>e.text==='private-budget'));});
+
+test('shared packed public companies preserve independent private snapshots for all five companies',()=>{
+ const g=createGame(1200,8);
+ applyCommand(g,{id:'operator',role:'operator',companyId:null},{id:'begin-packed',type:'room.start'});
+ for(let i=0;i<12;i++)step(g);
+ const publicProjection=project(g,null);
+ const shared=compactCompanies(publicProjection.companies);
+ for(let companyId=0;companyId<5;companyId++)for(const role of ['backend','security','qa','cto','devops'] as const){
+  const identity={id:`${companyId}-${role}`,role,companyId};
+  const view=project(g,identity,publicProjection);
+  const previous=wire(compactSnapshot(view));
+  const optimized=wire(compactSnapshot(view,shared));
+  assert.deepEqual(optimized,previous,`${companyId}/${role}`);
+  assert.deepEqual(wire(expandSnapshot(optimized)),wire(view),`${companyId}/${role} expansion`);
+  assert.equal(optimized.privateCompany?.id,companyId);
+ }
+ const first=wire(compactSnapshot(project(g,{id:'0-backend',role:'backend',companyId:0},publicProjection),shared));
+ first.companies[0].name='MUTATED';
+ assert.notEqual(shared[0].name,'MUTATED','shared public representation must stay detached from socket payloads');
+ assert.notEqual(publicProjection.companies[0].name,'MUTATED');
+});
+
+test('shared compaction is lazy and never reused across different broadcasts',()=>{
+ const messages:any[]=[],socket={data:{},conn:{transport:{writable:true}},timeout:()=>({emit:(_event:string,packet:StatePacket,ack:Function)=>{messages.push({packet,ack});}})} as unknown as Socket;
+ const sync=new SnapshotSync(socket),g=createGame(1200,8);
+ const identity={id:'0-backend',role:'backend' as const,companyId:0};
+ let packs=0;
+ const shared=project(g,null);
+ const pack=()=>{packs++;return compactCompanies(shared.companies);};
+ sync.send(()=>project(g,identity,shared),0,pack);
+ assert.equal(packs,1);
+ sync.send(()=>project(g,identity,shared),1,pack);
+ assert.equal(packs,1,'coalesced sockets do not compact again');
+ messages[0].ack(null,{stream:messages[0].packet.stream,seq:messages[0].packet.seq});
+ step(g);
+ const fresh=project(g,null);
+ sync.send(()=>project(g,identity,fresh),100,()=>{packs++;return compactCompanies(fresh.companies);});
+ assert.equal(packs,2,'new broadcast must build new compact data');
+ assert.deepEqual(wire(expandSnapshot(messages[1].packet.snapshot??applyPatch(messages[0].packet.snapshot,messages[1].packet.patch))),wire(project(g,identity,fresh)));
+});
