@@ -18,6 +18,10 @@ Tres cosas que esto debe lograr:
    de abandono que sube.
 3. El ciclo se cierra solo: el equipo investiga, Seguridad configura el control que falta y el daño para.
 
+El principio que ordena todo lo demás: **un hueco abierto no destruye de golpe, destruye de a poco y cada vez más
+rápido**, porque el daño es proporcional al tráfico y el tráfico crece durante toda la partida. Encontrarlo cuesta
+poco; ignorarlo es lo que mata.
+
 Lo que **no** cambia: todo sigue siendo texto y contadores del motor, nadie escribe ni ejecuta código, y ninguna
 mecánica nueva se inventa si el motor ya modela algo equivalente.
 
@@ -34,6 +38,7 @@ mecánica nueva se inventa si el motor ya modela algo equivalente.
 | Qué define el castigo | **El control que falta es la llave; el módulo es lo que esa llave abre** |
 | Saturación | Castigo de **Rate Limit**, no de Auth |
 | Servicio golpeado | **El del módulo auditado**: Request IN → entrada, Read/Write Stock → inventario, Payment → pagos |
+| Modelo de daño | **Crónico y creciente** mientras el hallazgo siga abierto, proporcional a la cantidad de solicitudes no contenidas; la prueba sostenida es el golpe agudo encima |
 
 ## 3. El hallazgo
 
@@ -46,14 +51,16 @@ Al confirmarse:
 - Entra una alerta en `#alertas-sistema` de FlowSlack, sin el nombre del auditor.
 - Seguridad y el CTO ven el hallazgo en su espacio: módulo, control que falta, accesos registrados y si sigue abierto.
 - Habilita la **prueba sostenida** sobre ese hallazgo.
+- **Empieza a sangrar**: desde ese momento y hasta que se cierre, el hueco tiene consecuencias continuas (sección 6).
 
 Se cierra cuando ese control deja de figurar como pendiente en ese módulo, es decir cuando Seguridad lo configura y el
 cambio llega a producción. Al cerrarse: la carga sostenida para, el inventario se recupera y FlowSlack lo informa. Si
 más adelante el control vuelve a quedar pendiente en una versión nueva, es un hallazgo nuevo y vuelve a cobrarse la multa.
 
-## 4. La prueba sostenida
+## 4. La prueba sostenida (el golpe agudo)
 
-Solo sobre un hallazgo abierto. Ventana de **60 s de tiempo de juego**, con espera propia. Se corta antes si el
+Encima del sangrado continuo de la sección 6, el auditor puede provocar un golpe concentrado. Solo sobre un hallazgo
+abierto. Ventana de **60 s de tiempo de juego**, con espera propia. Se corta antes si el
 hallazgo se cierra, si la empresa sale de la partida o si termina la partida.
 
 Dos topes garantizan el "no letal" **por construcción**, no por calibración:
@@ -82,19 +89,40 @@ Todos comparten las consecuencias universales de la sección 6. Lo que cambia es
 El inventario en cero y la suspensión del reabastecimiento se revierten al cerrarse la ventana; el motor vuelve a
 reabastecer a su ritmo normal y las ventas se recuperan solas en unos segundos.
 
-## 6. Consecuencias universales
+## 6. Destrucción gradual: el daño crónico
 
-Pase lo que pase y se audite el módulo que se audite, **siempre**:
+Esta es la parte central del diseño. Un hallazgo abierto **no es un evento, es una fuga**. Mientras el control siga
+pendiente, el tráfico anómalo que el motor ya genera por su cuenta atraviesa ese hueco sin que nada lo contenga, y
+**cada solicitud no contenida le cuesta algo a la empresa**.
 
-- **Los clientes se quejan.** El daño hace fallar compras de clientes reales, y el motor ya convierte cada fallo en
-  una queja en `soporte-clientes` y en una mala experiencia del cliente.
-- **La reputación baja y la presión de abandono sube.** Ya está en el motor: el fraude observado y los fallos mueven
-  ambos indicadores, y los dos se muestran en pantalla.
-- **La empresa pierde dinero**: la multa de Q250, más las ventas que no ocurrieron o no se cobraron.
-- **Los clientes se van.** Las malas experiencias ya disparan la migración a otras empresas.
+Como ese tráfico crece durante toda la partida, el daño crece solo. No hay que programar ninguna escalada: la
+escalada **es** la curva de tráfico.
 
-Para los dos casos donde el cliente no falla por sí solo (Payment y Response OUT) se emite la queja explícitamente,
-porque ahí el daño es de cobro y de confirmación, no de disponibilidad.
+| Momento | Solicitudes no contenidas | Lo que siente la empresa |
+| --- | --- | --- |
+| Recién encontrado (min 6) | ~2.5/s | Pierde unos pocos quetzales, cae alguna queja suelta, la reputación baja de a poco |
+| Media partida (min 12) | ~5/s | La pérdida se nota en el capital, las quejas se vuelven seguidas, la reputación cae el doble de rápido |
+| Minuto 20 | ~12/s | Sangrado fuerte, quejas constantes, los clientes empiezan a irse a la competencia |
+| Final (min 25) | ~20/s | Éxodo de clientes y caída libre: ignorar el hallazgo toda la partida debe dejar a la empresa en crisis |
+
+Por cada solicitud no contenida atribuida a un hallazgo abierto:
+
+- **Dinero**: una pérdida pequeña y fija por solicitud, de modo que el monto por segundo lo determine el volumen.
+- **Reputación**: un decremento pequeño y fijo, por la **cantidad absoluta** de solicitudes no contenidas y no por su
+  proporción. Esto es deliberado: si dependiera de la proporción, al principio —cuando hay poco tráfico legítimo— la
+  reputación se desplomaría enseguida, justo lo contrario de lo que queremos.
+- **Quejas**: alimentan el flujo de quejas de clientes, con el agrupamiento que FlowSlack ya hace.
+- **Clientes**: las malas experiencias acumuladas disparan la migración que el motor ya modela.
+
+Los valores exactos por solicitud se fijan **midiendo**, no suponiendo, contra dos criterios:
+
+1. Arreglar el hallazgo en los primeros minutos cuesta poco más que la multa de Q250.
+2. Ignorarlo hasta el final deja a la empresa en crisis, perdiendo clientes de forma visible.
+
+Pase lo que pase y se audite el módulo que se audite, **siempre** hay quejas de clientes, la reputación baja, la
+presión de abandono sube y la empresa pierde dinero. Para los dos casos donde el cliente no falla por sí solo
+(Payment y Response OUT) la queja se emite explícitamente, porque ahí el daño es de cobro y de confirmación, no de
+disponibilidad.
 
 ## 7. Quejas y notificación
 
@@ -163,6 +191,10 @@ que anotarlo en la documentación.
   cerrarse la ventana.
 - **Consecuencias universales**: en los cinco casos hay quejas de clientes, baja la reputación, sube la presión y cae
   el dinero.
+- **Escalada**: con el mismo hallazgo abierto, el daño por minuto del final de la partida es claramente mayor que el
+  del principio, y arreglarlo temprano cuesta poco más que la multa.
+- **Calibración**: una corrida completa ignorando un hallazgo deja a la empresa en crisis; otra arreglándolo a los
+  dos minutos la deja operando con normalidad.
 - **Curva**: la demanda y el tráfico anómalo siguen los valores nuevos en los minutos de referencia.
 - **Servidor real**: un auditor confirma un hallazgo, sostiene la carga, Seguridad configura el control por el
   pipeline y el daño para.
@@ -173,16 +205,19 @@ que anotarlo en la documentación.
 
 1. Curva de tráfico (independiente y pequeño; ajustar las pruebas que dependan del volumen viejo).
 2. Hallazgo, multa y cierre al configurar el control.
-3. Prueba sostenida con los topes, golpeando el servicio del módulo auditado.
-4. Daño por módulo, los cinco casos.
-5. Quejas humanas y notificación en pantalla.
-6. Documentación (doc 23) y actualización del PR.
+3. Daño crónico creciente mientras el hallazgo esté abierto, con la calibración medida.
+4. Prueba sostenida con los topes, golpeando el servicio del módulo auditado.
+5. Daño por módulo, los cinco casos.
+6. Quejas humanas y notificación en pantalla.
+7. Documentación (doc 23) y actualización del PR.
 
 ## 12. Riesgos
 
 - **Línea base económica**: la curva nueva invalida la comparación directa con benchmarks anteriores.
-- **Calibración**: "molesta pero el negocio sigue" depende de que los topes estén bien elegidos; hay que medirlo con
-  una corrida real, no asumirlo.
+- **Calibración**: tanto el "molesta pero el negocio sigue" del golpe agudo como la pendiente del sangrado crónico
+  dependen de números que hay que **medir con corridas reales**, no suponer. Es el riesgo principal del diseño.
+- **Doble castigo**: el sangrado crónico y la prueba sostenida se suman; hay que verificar que juntos no vuelvan letal
+  algo que por separado no lo es.
 - **Volumen de quejas**: si caen demasiadas notificaciones a la vez, el equipo deja de leerlas. FlowSlack ya agrupa
   quejas equivalentes; la notificación debe respetar ese agrupamiento.
 - **Varios auditores sobre una misma empresa**: el tope de dos pruebas simultáneas por empresa ya existe, pero con
