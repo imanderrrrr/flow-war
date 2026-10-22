@@ -3,8 +3,10 @@ on:
   push:
     branches:
       - codex/entrega-7-performance-pass-1
+      - codex/flow-war-integracion-entrega-8
   pull_request:
     branches:
+      - develop
       - codex/entrega-7-qa-cto-team-ai
       - codex/entrega-7-performance-pass-1
 

@@ -7,6 +7,8 @@ import { Icon } from './icons';
 import { GraphViewer } from './GraphEditor';
 
 const STRATEGIES = { rolling: { label: 'ROLLING', detail: '6 s · cambia servidores uno por uno · capacidad accesible (n−1)/n; con un servidor, 12%' }, restart: { label: 'RESTART REPLACE', detail: '3 s · capacidad de aplicación cero durante el reemplazo' } } as const;
+/** Operating costs are fractions of a quetzal per second; rounding them would misstate the expense. */
+const rate = (n: number) => `Q${n.toFixed(2)}/s`;
 const SERVICE_LABELS: Record<string, string> = { security: 'SEGURIDAD', web: 'TIENDA WEB', checkout: 'CHECKOUT', inventory: 'INVENTARIO', payment: 'PAGOS' };
 
 /** Factual state per server, derived from the engine: instance status, balancer reachability and real capacity. */
@@ -41,7 +43,7 @@ export default function DevOpsConsole({ active, change, changes, onSelect }: { a
         <div className="servers">{c.infrastructure.instances.map(instance => { const st = serverState(instance, c.balancer, web, s.tick, reachable); const share = st.available && reachable ? 1 / reachable : 0;
           return <div className={`server-node ${st.tone}`} key={instance.id} aria-label={`Servidor ${instance.id}: ${st.label}`}><Icon name="server" size={30}/><b>APP-{String(instance.id).padStart(2, '0')}</b><span className={`server-state ${st.tone}`}>{st.label}</span>
             <small>CAPACIDAD {st.available ? `${(web * share).toFixed(1)} web/s · ${((queues.checkout?.rate ?? 0) * share).toFixed(1)} checkout/s` : '0 sol/s'}</small>
-            <small>UTILIZACIÓN {st.available ? `${Math.round(c.utilization * 100)}%` : '—'}</small><small>COSTO {money(0.5)}/s</small>
+            <small>UTILIZACIÓN {st.available ? `${Math.round(c.utilization * 100)}%` : '—'}</small><small>COSTO {rate(0.5)}</small>
             <div className="button-row">{instance.status === 'UP' && <button className="text-button" disabled={!active} onClick={() => void act('infra.restart', { serverId: instance.id, duration: 10 })}>REINICIAR</button>}
               {instance.status === 'UP' && <button className="text-button" disabled={!active} onClick={() => void act('infra.server_stop', { serverId: instance.id })}>DETENER</button>}
               {instance.status === 'STOPPED' && <button className="text-button" disabled={!active} onClick={() => void act('infra.server_start', { serverId: instance.id })}>INICIAR</button>}</div></div>; })}</div>
@@ -54,7 +56,7 @@ export default function DevOpsConsole({ active, change, changes, onSelect }: { a
           <button className="primary-button small" disabled={!active || !!scaleBlocked || c.servers >= (scope?.maxServers ?? 1)} onClick={() => void act('infra.scale', { delta: 1 })}>+1 SERVER</button>
           <button className="secondary-button" disabled={!active || !!balancerBlocked} onClick={() => void act('infra.balancer', { enabled: !c.balancer })}>{c.balancer ? 'DESACTIVAR' : 'ACTIVAR'} BALANCEADOR</button>
         </div>
-        <span className="muted">{scaleBlocked || (c.servers >= (scope?.maxServers ?? 1) ? `MÁXIMO AUTORIZADO ${scope?.maxServers ?? 1}` : '')} {balancerBlocked && `· ${balancerBlocked}`} · {c.servers} APROVISIONADOS · {reachable} ACCESIBLES · COSTO {money(infra?.costPerSecond ?? c.servers * .5)}/s · PRESUPUESTO OPERATIVO {money(c.infraBudget)}{c.infraBudget <= 0 ? ' · PRESUPUESTO AGOTADO' : ''}</span>
+        <span className="muted">{scaleBlocked || (c.servers >= (scope?.maxServers ?? 1) ? `MÁXIMO AUTORIZADO ${scope?.maxServers ?? 1}` : '')} {balancerBlocked && `· ${balancerBlocked}`} · {c.servers} APROVISIONADOS · {reachable} ACCESIBLES · COSTO {rate(infra?.costPerSecond ?? c.servers * .5)} · PRESUPUESTO OPERATIVO {money(c.infraBudget)}{c.infraBudget <= 0 ? ' · PRESUPUESTO AGOTADO' : ''}</span>
       </div>
     </section>
 

@@ -119,3 +119,26 @@ en una sola transacción SQLite (group commit; `FLOW_GROUP_COMMIT=0` vuelve a la
 binario de socket.io, con bytes idénticos. Diseño, garantías y riesgos en
 [docs/19-group-commit-y-codificador.md](docs/19-group-commit-y-codificador.md); benchmark pareado en
 [docs/benchmarks/entrega-7-group-commit/README.md](docs/benchmarks/entrega-7-group-commit/README.md).
+
+## Entrega 8
+
+Claude deja de ser un asistente que propone: es un **ejecutor de órdenes explícitas**. Cada rol tiene herramientas
+exclusivas; cada valor debe estar escrito por el estudiante y el servidor lo verifica antes de ejecutar por el mismo
+pipeline que la interfaz. Claude no recomienda, no evalúa y no decide; ante una decisión delegada pide el dato. Las
+respuestas las compone el servidor con resultados del motor.
+
+DevOps/SRE opera dentro del alcance que autoriza el CTO (monto, duración, operaciones, máximo de servidores),
+con infraestructura visual real, staging, despliegue Rolling/Restart Replace y rollback autorizado.
+Producto/UX es un sexto departamento opcional, habilitado por el docente para las cinco empresas, con embudo
+observado, catálogo neutral y el pipeline Producto → QA → CTO → DevOps.
+
+- [Auditoría y matriz de brechas](docs/20-entrega-8-auditoria-y-brechas.md)
+- [Arquitectura, configuración, departamentos, pruebas y límites](docs/21-entrega-8-ejecutor-claude-y-departamentos.md)
+- [Evidencia medida](docs/benchmarks/entrega-8/README.md)
+
+```sh
+npm test
+npm run build
+npm run bench:executor -- --speed=20 --model-ms=800 --rounds=4
+npm run verify:anthropic   # requiere ANTHROPIC_API_KEY en .env
+```
