@@ -238,3 +238,42 @@ test('an auditor command never reaches another company (no cross-company observa
   assert(entries.length >= 2); assert(entries.every(a => a.companyId === 0), JSON.stringify(entries.map(a => a.companyId)));
   assert(entries.every(a => a.type === 'audit.probe' || a.type === 'audit.rejected'));
 });
+
+/** Advances in small steps until the first finding opens; returns the capital right before it was charged. */
+function advanceUntilFinding(g: GameState, limit = 500): number {
+  let before = g.companies[0].capital;
+  for (let i = 0; i < limit; i++) { before = g.companies[g.auditors?.probes[0]?.companyId ?? 0].capital; advanceGame(g, 0.1); if (g.auditors?.findings.length) return before; }
+  throw new Error('no se abrió ningún hallazgo');
+}
+
+test('un hallazgo se abre una vez, cobra Q250 y se cierra al configurar el control', () => {
+  const g = running(), c = g.companies[0];
+  assert(probe(g, auditor(), { companyId: 0, nodeId: 'backend-write', check: 'waf' }).ok);
+  const before = advanceUntilFinding(g);
+  const finding = g.auditors!.findings[0];
+  assert.equal(finding.check, 'waf'); assert.equal(finding.nodeId, 'backend-write'); assert.equal(finding.fine, 250);
+  assert.equal(Math.round(before - c.capital), 250, 'la multa se cobró al abrirse');
+  assert.equal(finding.closedAt, undefined);
+  // Una segunda prueba sobre el mismo hueco no abre otro hallazgo ni cobra de nuevo.
+  advanceGame(g, 100);
+  assert(probe(g, auditor(), { companyId: 0, nodeId: 'backend-write', check: 'waf' }).ok);
+  advanceGame(g, 40);
+  assert.equal(g.auditors!.findings.length, 1);
+  // Seguridad configura el control: el hallazgo se cierra.
+  deployWithControls(g, 'backend-write', [{ kind: 'input' }]);
+  advanceGame(g, 1);
+  assert(g.auditors!.findings[0].closedAt !== undefined, 'se cerró al desaparecer el control pendiente');
+});
+
+test('el hallazgo llega a Seguridad y al CTO de su empresa, y a nadie más', () => {
+  const g = running();
+  assert(probe(g, auditor(), { companyId: 0, nodeId: 'backend-write', check: 'waf' }).ok);
+  advanceUntilFinding(g);
+  for (const role of ['security', 'cto'] as const) {
+    const view = project(g, { id: `0-${role}`, role, companyId: 0 }).operations!.findings;
+    assert.equal(view?.length, 1, role); assert.equal(view![0].module, 'Write Stock');
+    assert(!JSON.stringify(view).includes('auditor'), 'nunca la identidad del auditor');
+  }
+  assert.equal(project(g, { id: '0-backend', role: 'backend', companyId: 0 }).operations!.findings, undefined);
+  assert.equal(project(g, { id: '1-security', role: 'security', companyId: 1 }).operations!.findings?.length ?? 0, 0);
+});

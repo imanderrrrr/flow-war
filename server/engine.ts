@@ -27,7 +27,7 @@ import { advanceConcurrency, cancelConcurrency, concurrencyParticles, concurrenc
 import { initialConcurrency, productionContext, settleConcurrency, stepConcurrency } from './scenarios.js';
 import { route, evaluateSecurity } from './graphs.js';
 import { lobbyView, resetTeams } from './lobby.js';
-import { auditCommand, advanceProbes, auditorView, closeProbes } from './auditor.js';
+import { auditCommand, advanceProbes, auditorView, closeProbes, closeSettledFindings, findingsFor } from './auditor.js';
 export { route, evaluateSecurity } from './graphs.js';
 import { BLOCKS, SUITES, type Company, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
 
@@ -359,7 +359,7 @@ export function step(g: GameState, dt = .1) {
     const rates = serviceRates(c, deploying);
     const capacity = rates.web;
     generateTraffic(c, g.tick, dt, g.duration);
-    advanceProbes(g, c, event);
+    advanceProbes(g, c, event); closeSettledFindings(g, c, event);
     if (second) restockTraffic(c);
     const breachesBefore = c.breaches;
     advanceTraffic(c, g.tick, rates);
@@ -428,7 +428,7 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
   return {
     ...(identity?.role === 'auditor' ? { auditor: auditorView(g, identity) } : {}),
     // Auditors get the module/control view only: no company operations, people or audit trail.
-    operations: identity && identity.role !== 'auditor' ? { product:ownCompany&&['product','operator'].includes(identity.role)?productView(g,ownCompany,g.tick):undefined, infra:ownCompany&&['devops','cto'].includes(identity.role)?infraView(ownCompany,g.tick):undefined, qaLive:ownCompany&&identity.role==='qa'?qaProgress(g,ownCompany):undefined, ...(ownCompany ? { workflow:workflowView(ownCompany), conversations:ownCompany.runtime.conversations?.filter(t=>t.actor===identity!.id&&t.role===identity!.role&&t.generation===g.generation).map(t=>({...t,messages:t.messages.slice(-20)})), collaboration: collaborationView(ownCompany,identity!) } : {}), modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
+    operations: identity && identity.role !== 'auditor' ? { ...(ownCompany && ['security','cto'].includes(identity.role) ? { findings: findingsFor(g, ownCompany.id) } : {}), product:ownCompany&&['product','operator'].includes(identity.role)?productView(g,ownCompany,g.tick):undefined, infra:ownCompany&&['devops','cto'].includes(identity.role)?infraView(ownCompany,g.tick):undefined, qaLive:ownCompany&&identity.role==='qa'?qaProgress(g,ownCompany):undefined, ...(ownCompany ? { workflow:workflowView(ownCompany), conversations:ownCompany.runtime.conversations?.filter(t=>t.actor===identity!.id&&t.role===identity!.role&&t.generation===g.generation).map(t=>({...t,messages:t.messages.slice(-20)})), collaboration: collaborationView(ownCompany,identity!) } : {}), modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
     dvrEnabled: g.dvrEnabled, ...(productEnabled(g) ? { productEnabled: true } : {}), generation: g.generation,
     ...(lobby ? { lobby } : {}),
     slack: ownCompany ? structuredClone(g.slack.messages.filter(m=>m.companyId===ownCompany.id)) : undefined,

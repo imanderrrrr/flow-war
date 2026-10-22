@@ -1,12 +1,13 @@
 import type { Command, Company, GameState, GraphNode, Identity, Result, TrafficRequest } from '../shared/types.js';
 import type { ExecutionRelease } from '../shared/simulation.js';
 import type { ProtectionRule } from '../shared/collaboration.js';
-import { AUDIT_PROBE, CATEGORY_LABELS, CONTROL_CHECKS, CONTROL_CHECK_INFO, RULE_LABELS, type AuditCompany, type AuditProbe, type AuditProbeView, type AuditorState, type AuditorView, type ControlCheck, type PendingControl, type ProbeStop } from '../shared/auditor.js';
+import { AUDIT_LEAK, AUDIT_PROBE, CATEGORY_LABELS, CONTROL_CHECKS, CONTROL_CHECK_INFO, RULE_LABELS, type AuditCompany, type AuditFinding, type AuditProbe, type AuditProbeView, type AuditorState, type AuditorView, type ControlCheck, type PendingControl, type ProbeStop } from '../shared/auditor.js';
 import { route } from './graphs.js';
 import { releaseFor } from './artifacts.js';
 import { hasDefect } from './defects.js';
 import { admitTraffic } from './traffic.js';
 import { validateParameters } from './action-validation.js';
+import { addSlackMessage } from './flowslack.js';
 import type { SecurityVerdict } from './security.js';
 
 type Emit = (g: GameState, companyId: number | null, text: string, tone: 'good' | 'bad' | 'neutral', category: string) => void;
@@ -15,7 +16,15 @@ const round = (n: number) => Math.round(n * 1000) / 1000;
 /** One request per second of game time: the size of QA's Seguridad suite (30) over the 30 s of the probe. */
 const SPACING = AUDIT_PROBE.durationSeconds / AUDIT_PROBE.requests;
 
-export function auditorState(g: GameState): AuditorState { return g.auditors ??= { sequence: 0, probes: [] }; }
+export function auditorState(g: GameState): AuditorState {
+  const s = g.auditors ??= { sequence: 0, probes: [], findings: [] };
+  if (!s.findings) s.findings = [];   // games saved before findings existed
+  return s;
+}
+/** Open findings of a company, for its own Security and CTO panel. Never carries the auditor's identity. */
+export function findingsFor(g: GameState, companyId: number): AuditFinding[] {
+  return (g.auditors?.findings ?? []).filter(f => f.companyId === companyId);
+}
 
 /** The production release, read without storing anything (projections must not write the game). */
 function production(c: Company): ExecutionRelease | undefined {
@@ -191,10 +200,44 @@ export function advanceProbes(g: GameState, c: Company, emit: Emit) {
     // Finished once sending is done, the window closed and every request that entered has settled.
     if (probe.sent >= AUDIT_PROBE.requests && g.tick + 1e-9 >= probe.endsAt && probe.settled >= probe.notContained) {
       probe.finished = true;
+      openFinding(g, probe, emit);
       emit(g, probe.companyId, `Tráfico inusual finalizado · ${probe.contained} contenidas, ${probe.notContained} no contenidas.`, probe.notContained ? 'bad' : 'good', 'SECURITY');
     }
   }
 }
+/**
+ * A probe that proved nothing contains the traffic leaves a finding: a one-time fine and, from here on, a leak.
+ * Re-proving the same hole does not open a second finding and does not charge the fine again.
+ */
+export function openFinding(g: GameState, probe: AuditProbe, emit: Emit): AuditFinding | undefined {
+  if (!probe.notContained) return undefined;
+  const state = auditorState(g), c = g.companies[probe.companyId];
+  const open = state.findings.find(f => f.closedAt === undefined && f.companyId === probe.companyId && f.nodeId === probe.nodeId && f.check === probe.check);
+  if (open) return open;
+  const control = CONTROL_CHECK_INFO[probe.check].control;
+  const finding: AuditFinding = { id: `AF-${state.findings.length + 1}`, companyId: probe.companyId, nodeId: probe.nodeId, module: probe.module,
+    check: probe.check, category: probe.category, openedAt: g.tick, fine: AUDIT_LEAK.fine, uncontained: 0, lost: 0 };
+  state.findings.push(finding);
+  c.capital = Math.max(0, c.capital - finding.fine);
+  emit(g, c.id, `Hallazgo de auditoría externa en ${finding.module}: falta ${control}. Multa de Q${finding.fine}.`, 'bad', 'SECURITY');
+  addSlackMessage(g, { companyId: c.id, channel: 'alertas-sistema', source: 'system', author: 'Sistema', cause: 0, dedup: `finding:${finding.id}`,
+    text: `[CRITICAL] Auditoría externa: ${CONTROL_CHECK_INFO[probe.check].pending} Control pendiente: ${control} en ${finding.module}.`, refs: [finding.id] });
+  return finding;
+}
+/** A finding closes by itself when its control stops being pending in production: Seguridad configured it. */
+export function closeSettledFindings(g: GameState, c: Company, emit: Emit) {
+  for (const f of g.auditors?.findings ?? []) {
+    if (f.closedAt !== undefined || f.companyId !== c.id) continue;
+    const node = route(c.backend).find(n => n.id === f.nodeId);
+    if (node && pendingControls(c, node).some(x => x.check === f.check)) continue;
+    f.closedAt = g.tick;
+    const control = CONTROL_CHECK_INFO[f.check].control;
+    emit(g, c.id, `Hallazgo de auditoría corregido en ${f.module}: ${control} configurado.`, 'good', 'SECURITY');
+    addSlackMessage(g, { companyId: c.id, channel: 'alertas-sistema', source: 'system', author: 'Sistema', cause: 0, dedup: `finding-closed:${f.id}`,
+      text: `[SISTEMA] El control ${control} de ${f.module} quedó configurado. El hallazgo de auditoría se cerró.`, refs: [f.id] });
+  }
+}
+
 /** Probes of a company that left the game, or of a finished game, stop where they are. */
 export function closeProbes(g: GameState, companyId?: number) {
   for (const probe of g.auditors?.probes ?? []) if (!probe.finished && (companyId === undefined || probe.companyId === companyId)) probe.finished = true;

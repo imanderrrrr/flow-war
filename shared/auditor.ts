@@ -7,6 +7,13 @@ import type { ProtectionRule } from './collaboration.js';
  */
 export const AUDIT_PROBE = { durationSeconds: 30, cooldownSeconds: 60, requests: 30, perCompany: 2 } as const;
 
+/**
+ * A confirmed hole is a leak, not an event: finding it costs a one-time fine, and leaving it open keeps costing
+ * while the anomalous traffic the engine already generates walks through it. The damage grows on its own because
+ * that traffic grows during the game.
+ */
+export const AUDIT_LEAK = { fine: 250, costPerRequest: 1, reputationPerRequest: 0.02 } as const;
+
 export const RULE_LABELS: Record<ProtectionRule['kind'], string> = { authenticated: 'Auth', owner: 'Role Check', input: 'WAF', bot: 'Bot Detection', origin: 'IP Block', rate: 'Rate Limit' };
 
 /** Anomalous request categories already modeled by the engine (server/security.ts admitSecurity). */
@@ -39,7 +46,15 @@ export type AuditProbe = {
   breached: number; served: number; rejectedLater: number; abandoned: number; settled: number;
   stop?: ProbeStop; reach?: 'security' | 'web' | 'checkout' | 'write';
 };
-export type AuditorState = { sequence: number; probes: AuditProbe[] };
+/**
+ * A control the auditor proved is not containing anything, on one module of one company. `uncontained` and `lost`
+ * accumulate while it stays open; `closedAt` is set when the control stops being pending in production.
+ */
+export type AuditFinding = {
+  id: string; companyId: number; nodeId: string; module: string; check: ControlCheck; category: AnomalyCategory;
+  openedAt: number; closedAt?: number; fine: number; uncontained: number; lost: number;
+};
+export type AuditorState = { sequence: number; probes: AuditProbe[]; findings: AuditFinding[] };
 
 export type PendingControl = { check: ControlCheck; control: string; text: string; category: AnomalyCategory };
 export type AuditModule = { nodeId: string; label: string; module: boolean; pending: PendingControl[] };
