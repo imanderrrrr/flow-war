@@ -10,6 +10,8 @@ export function Icon({ name, size = 18, className = '' }: { name: string; size?:
     shield: <><path d="M3 3l6-2 6 2v8l-6 6-6-6z"/><path d="M6 8l2 2 4-4"/></>,
     server: <><path d="M3 2h12v6H3zm0 8h12v6H3z"/><path d="M5 5h1m-1 8h1m4-8h3m-3 8h3"/></>,
     code: <path d="M6 4 1 9l5 5m6-10 5 5-5 5M10 2 8 16"/>,
+    claude: <path d="M9 1v16M1 9h16M3.3 3.3l11.4 11.4m0-11.4L3.3 14.7"/>,
+    mic: <><path d="M7 2h4v8H7z"/><path d="M4 8a5 5 0 0 0 10 0M9 13v3m-3 0h6"/></>,
     flask: <path d="M6 2h6M7 2v5L2 15v1h14v-1l-5-8V2M5 11h8"/>,
     crown: <path d="m2 4 4 4 3-6 3 6 4-4-2 10H4zM4 16h10"/>,
     pulse: <path d="M1 9h4l2-6 4 12 2-6h4"/>,

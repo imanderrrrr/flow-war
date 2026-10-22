@@ -148,6 +148,8 @@ npm run verify:anthropic   # requiere ANTHROPIC_API_KEY en .env
 
 Los estudiantes entran desde el celular a `/unirse` con el PIN que muestra el docente en `/sala`, eligen nombre e
 icono y aparecen en pantalla. **FORMAR EQUIPOS** (con 25 jugadores, o 30 con Producto/UX) sortea al azar la empresa
-y el rol de cada uno con una tragamonedas animada; los que sobran quedan en reserva. **EMPEZAR JUEGO** inicia la
-partida y cada celular pasa a su espacio de trabajo. Detalle, reglas y límites en
+y el rol de cada uno con una tragamonedas animada; los que sobran quedan en reserva. Entre el sorteo y **EMPEZAR
+JUEGO**, el docente puede ajustar los equipos hablándole o escribiéndole a Claude desde el botón de la pantalla de
+sala ("cambiá a Víctor de VERTEX a EMBER"). **EMPEZAR JUEGO** inicia la partida y cada celular pasa a su espacio de
+trabajo. Detalle, reglas y límites en
 [docs/22-sala-pin-y-sorteo-de-equipos.md](docs/22-sala-pin-y-sorteo-de-equipos.md).

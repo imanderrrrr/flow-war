@@ -31,6 +31,34 @@ enlace a la pantalla de sala. Las credenciales por rol de `.local/access.json` s
 - Los iconos excluyen emojis de doble sentido (melocotón, cerezas, banano, fuego, hongo, entre otros); el servidor
   rechaza cualquier icono fuera de la lista aunque se envíe a mano.
 
+## Ajustar equipos con Claude (solo el docente)
+
+Después de **FORMAR EQUIPOS** y antes de **EMPEZAR JUEGO**, la pantalla de sala muestra abajo a la derecha el botón
+de Claude, solo en la sesión del docente. El docente dicta la orden con el micrófono (el navegador la transcribe con
+la Web Speech API; Claude nunca recibe audio) o la escribe. Ejemplos: "cambiá a Víctor de VERTEX a EMBER",
+"intercambiá a Ana con Luis". Una frase dictada se envía sola al terminar.
+
+| Orden | Resultado |
+| --- | --- |
+| Mover a un jugador a una empresa | Un integrante al azar de esa empresa ocupa el lugar anterior del jugador (empresa y rol). Cada empresa conserva un jugador por rol. |
+| Mover a un jugador de la reserva | Entra con el rol del integrante desplazado, que pasa a la reserva. |
+| Intercambiar a dos jugadores | Intercambian empresa y rol (o rol, si son de la misma empresa). |
+
+- **Claude no opina ni cuestiona**: solo traduce la orden a `mover_jugador` o `intercambiar` (herramientas estrictas,
+  Haiku 5.5). Solo pregunta cuando falta un dato o un nombre no existe o es ambiguo ("Hay 2 jugadores que coinciden con
+  'Hugo': Hugo Paz, Víctor Hugo. ¿A cuál te referís?").
+- **El servidor verifica y ejecuta**: cada nombre y empresa debe estar en las palabras del docente; los nombres se
+  resuelven contra la sala en el servidor (sin tildes ni mayúsculas, el nombre exacto gana). Con dos empresas en la
+  orden, el destino es la que va después de "a"; si el origen dicho no coincide, responde el hecho ("Víctor está en
+  EMBER, no en NOVA") y no mueve a nadie. La respuesta la compone el servidor; el texto del modelo no se muestra.
+- **Privacidad**: al proveedor solo viajan la orden y los nombres de las cinco empresas, no la lista de jugadores.
+- **Durable y revalidado**: antes de llamar a Claude se comprueba la ventana (sin gasto si no corresponde); al volver
+  se revalida que la sala y el sorteo no cambiaron y la orden completa se aplica en una sola escritura en SQLite (todo
+  o nada, máximo cuatro movimientos). Los celulares obtienen su asiento del sorteo, así que pasan solos a la nueva
+  empresa y rol.
+- Límite de 12 órdenes por minuto; una cola propia en el planificador de Claude, separada de las cinco empresas, y
+  consumo de tokens guardado con la sala y visible en el estado de Claude del docente.
+
 ## Seguridad y persistencia
 
 - El PIN solo lo ve el docente; la vista pública de la sala muestra nombres, iconos y equipos mientras se espera.
@@ -52,6 +80,12 @@ enlace a la pantalla de sala. Las credenciales por rol de `.local/access.json` s
   servidor y RESTABLECER.
 - Navegador: celular (375 px) y proyector; sorteo completo con animación, revelación en el celular y paso
   automático al espacio de trabajo al empezar.
+- `tests/room-assistant.test.ts`: ventana de ajuste, intercambio de asientos, reserva, un jugador por rol, economía
+  intacta, nombres y empresas presentes en la orden, nombres ambiguos o desconocidos, origen equivocado, órdenes
+  negadas, consejo, contrato estricto y datos enviados al proveedor.
+- `tests/room-assistant-server.test.ts`: servidor real con una API de Messages local; solo el docente, celulares que
+  cambian de asiento, reserva, persistencia tras reinicio, consumo registrado y bloqueo al empezar el juego sin
+  llamar al proveedor.
 
 ## Límites
 

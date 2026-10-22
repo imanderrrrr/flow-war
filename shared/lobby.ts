@@ -13,7 +13,8 @@ export const REVEAL = { introMs: 1500, companyMs: 7000, firstStopMs: 1800, stopG
 
 export type LobbyParticipant = { id: string; name: string; icon: string; joinedAt: number; companyId?: number; role?: Role };
 export type LobbyFormation = { at: number; roles: Role[]; order: string[] };
-export type LobbyState = { id: string; pin: string; createdAt: number; seq: number; participants: LobbyParticipant[]; formation?: LobbyFormation };
+/** `aiUsage`: tokens of the teacher's room assistant, kept with the room like company consumption. */
+export type LobbyState = { id: string; pin: string; createdAt: number; seq: number; participants: LobbyParticipant[]; formation?: LobbyFormation; aiUsage?: import('./workflow.js').AiUsage };
 export type LobbyMember = { id: string; name: string; icon: string };
 export type LobbyView = {
   pin?: string; teamSize: number; required: number; participants: LobbyMember[];

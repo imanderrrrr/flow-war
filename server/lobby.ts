@@ -86,6 +86,55 @@ export function resetTeams(g: GameState): void {
   for (const p of g.lobby.participants) { delete p.companyId; delete p.role; }
 }
 
+/** Teams can be adjusted only after the draw and before the game starts. */
+function drawn(g: GameState): LobbyState & { formation: NonNullable<LobbyState['formation']> } {
+  if (!g.lobby?.formation) throw new LobbyError('NO_TEAMS', 'Primero hay que formar los equipos.');
+  if (g.status !== 'LOBBY') throw new LobbyError('GAME_STARTED', 'El juego ya empezó; los equipos quedaron fijos.');
+  return g.lobby as LobbyState & { formation: NonNullable<LobbyState['formation']> };
+}
+function seat(p: LobbyParticipant, companyId: number | undefined, role: Role | undefined) {
+  if (companyId === undefined || !role) { delete p.companyId; delete p.role; } else { p.companyId = companyId; p.role = role; }
+}
+/** Exchanges the company and role of two players; a reserve player takes the other's seat and the other goes to the reserve. */
+function exchange(lobby: LobbyState & { formation: NonNullable<LobbyState['formation']> }, a: LobbyParticipant, b: LobbyParticipant) {
+  const first = { companyId: a.companyId, role: a.role };
+  seat(a, b.companyId, b.role); seat(b, first.companyId, first.role);
+  // The board lists seated players in draw order; the newcomer takes the place of whoever left the team.
+  const order = lobby.formation.order, ia = order.indexOf(a.id), ib = order.indexOf(b.id);
+  if (ia >= 0 && ib < 0) order[ia] = b.id; else if (ib >= 0 && ia < 0) order[ib] = a.id;
+}
+const participant = (lobby: LobbyState, id: unknown) => {
+  const p = lobby.participants.find(x => x.id === id);
+  if (!p) throw new LobbyError('NOT_FOUND', 'Ese jugador ya no está en la sala.', 404);
+  return p;
+};
+export type SeatChange = { player: LobbyParticipant; from: { companyId?: number; role?: Role }; to: { companyId?: number; role?: Role } };
+const change = (p: LobbyParticipant, from: { companyId?: number; role?: Role }): SeatChange => ({ player: p, from, to: { companyId: p.companyId, role: p.role } });
+const seatOf = (p: LobbyParticipant) => ({ companyId: p.companyId, role: p.role });
+
+/**
+ * Moves a player to a company. A random member of that company takes the player's old seat (company and role, or
+ * the reserve), so every company keeps exactly one player per role.
+ */
+export function movePlayer(g: GameState, playerId: unknown, companyId: unknown, random: Random = secure): SeatChange[] {
+  const lobby = drawn(g), p = participant(lobby, playerId);
+  if (typeof companyId !== 'number' || !Number.isInteger(companyId) || companyId < 0 || companyId >= LOBBY_COMPANIES) throw new LobbyError('BAD_COMPANY', 'Empresa no válida.', 400);
+  if (p.companyId === companyId) throw new LobbyError('SAME_COMPANY', `${p.name} ya está en ${g.companies[companyId].name}.`);
+  const members = lobby.participants.filter(m => m.companyId === companyId), other = members[random(members.length)];
+  const before = [seatOf(p), seatOf(other)];
+  exchange(lobby, p, other);
+  return [change(p, before[0]), change(other, before[1])];
+}
+/** Exchanges the seats of two players (company and role). */
+export function swapPlayers(g: GameState, firstId: unknown, secondId: unknown): SeatChange[] {
+  const lobby = drawn(g), a = participant(lobby, firstId), b = participant(lobby, secondId);
+  if (a.id === b.id) throw new LobbyError('SAME_PLAYER', 'Indicá dos jugadores distintos.', 400);
+  if (a.companyId === undefined && b.companyId === undefined) throw new LobbyError('BOTH_RESERVE', `${a.name} y ${b.name} están los dos en la reserva.`);
+  const before = [seatOf(a), seatOf(b)];
+  exchange(lobby, a, b);
+  return [change(a, before[0]), change(b, before[1])];
+}
+
 export function participantOf(g: GameState, ref: ParticipantRef): LobbyParticipant | undefined {
   return g.lobby?.id === ref.lobby ? g.lobby.participants.find(p => p.id === ref.participant) : undefined;
 }

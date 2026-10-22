@@ -30,6 +30,8 @@ import { recoverGame } from './persistence.js';
 import { trafficReceipt } from './traffic.js';
 import { LobbyError, checkPin, ensureLobby, formTeams, isParticipantRef, joinLobby, participantIdentity, participantOf, removeParticipant, type ParticipantRef } from './lobby.js';
 import { networkInterfaces } from 'node:os';
+import { ROOM_SLOT } from './ai-scheduler.js';
+import { applyRoomPlan, describeChanges, parseRoomInput, planRoomCalls, roomRequest } from './room-assistant.js';
 
 const directory = resolve(process.env.FLOW_DATA_DIR ?? '.local');
 mkdirSync(directory, { recursive: true, mode: 0o700 });
@@ -243,7 +245,7 @@ app.post('/api/ai/execute',async(req,res)=>{
 });
 app.get('/api/ai/status',(req,res)=>{
  res.setHeader('Cache-Control','no-store');const identity=session(req.headers.cookie);if(!identity)return res.sendStatus(403);
- if(identity.role==='operator')return res.json({provider:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.status():{state:'TEST_PROVIDER'},usage:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.metrics():[],scheduler:aiGateway.scheduler.metrics(),consumption:{companies:game.companies.map(c=>({companyId:c.id,...(c.runtime.aiUsage??{requests:0,inputTokens:0,outputTokens:0,cacheReadTokens:0,cacheWriteTokens:0})})),gameTokenLimit:aiGateway.gameTokenLimit,companyTokenLimit:aiGateway.companyTokenLimit}});
+ if(identity.role==='operator')return res.json({provider:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.status():{state:'TEST_PROVIDER'},usage:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.metrics():[],scheduler:aiGateway.scheduler.metrics(),consumption:{companies:game.companies.map(c=>({companyId:c.id,...(c.runtime.aiUsage??{requests:0,inputTokens:0,outputTokens:0,cacheReadTokens:0,cacheWriteTokens:0})})),room:game.lobby?.aiUsage??{requests:0,inputTokens:0,outputTokens:0,cacheReadTokens:0,cacheWriteTokens:0},gameTokenLimit:aiGateway.gameTokenLimit,companyTokenLimit:aiGateway.companyTokenLimit}});
  const attempts=game.companies[identity.companyId!].runtime.aiAttempts?.filter(a=>a.actor===identity.id&&a.role===identity.role&&a.generation===game.generation)??[];
  res.json({requests:attempts.map(a=>{const live=aiGateway.scheduler.status(identity.id,a.id)[0];return {...a,...live,state:['QUEUED','RUNNING'].includes(a.state)?live?.state??a.state:a.state,code:a.code??live?.code};})});
 });
@@ -254,6 +256,45 @@ app.post('/api/ai/diagnose',async(req,res)=>{
  if(diagnosticPending)return res.status(429).json({ok:false,code:'AI_BUSY'});diagnosticPending=true;
  try{const result=await aiGateway.interpret('operator-diagnostic',0,{id:crypto.randomUUID(),system:'Diagnóstico de conexión de FLOW WAR. Llamá la herramienta confirmar_conexion. No escribas texto.',tools:[{name:'confirmar_conexion',description:'Confirma que la conexión funciona.',input_schema:{type:'object',properties:{ok:{type:'boolean'}},required:['ok'],additionalProperties:false},strict:true}],content:'Confirmá la conexión.'},{usedByGame:0,usedByCompany:0});res.json({ok:result.calls.some(c=>c.name==='confirmar_conexion'),toolCalling:result.calls.length>0,status:(aiGateway.provider as AnthropicProvider).status()});}
  catch(e){res.status(503).json({ok:false,code:e instanceof AiError?e.code:'PROVIDER_ERROR',status:(aiGateway.provider as AnthropicProvider).status()});}finally{diagnosticPending=false;}
+});
+/**
+ * Claude on the room screen (teacher only): the browser transcribes speech, Claude maps the order to a move or a
+ * swap, and the server resolves the names, revalidates the room and applies the change in one durable write.
+ */
+app.post('/api/lobby/assistant', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store'); if (!operatorOnly(req, res)) return;
+  const key = 'operator-room', now = Date.now(); let budget = aiAttempts.get(key);
+  if (!budget || now - budget.at >= 60000) { budget = { at: now, count: 0 }; aiAttempts.set(key, budget); }
+  if (++budget.count > 12) return res.status(429).json({ ok: false, code: 'AI_RATE_LIMIT', error: 'Límite de órdenes a Claude alcanzado. Esperá un minuto.' });
+  if (aiPending.has(key)) return res.status(429).json({ ok: false, code: 'AI_BUSY', error: 'Claude todavía está procesando la orden anterior.' });
+  aiPending.add(key); flushCommands();
+  const provider = aiGateway.provider.name;
+  try {
+    const input = parseRoomInput(req.body);
+    const lobby = game.lobby;
+    // Checked before any network call: no tokens are spent outside the adjustment window.
+    if (!lobby?.formation) return res.status(409).json({ ok: false, code: 'NO_TEAMS', error: 'Primero hay que formar los equipos.' });
+    if (game.status !== 'LOBBY') return res.status(409).json({ ok: false, code: 'GAME_STARTED', error: 'El juego ya empezó; los equipos quedaron fijos.' });
+    const before = { generation: game.generation, lobby: lobby.id, at: lobby.formation.at };
+    const used = (u?: { inputTokens: number; outputTokens: number }) => (u?.inputTokens ?? 0) + (u?.outputTokens ?? 0);
+    const result = await aiGateway.interpret(key, ROOM_SLOT, roomRequest(game, input), { usedByGame: game.companies.reduce((sum, c) => sum + used(c.runtime.aiUsage), used(lobby.aiUsage)), usedByCompany: used(lobby.aiUsage) });
+    flushCommands();
+    if (session(req.headers.cookie)?.role !== 'operator') throw new AiError('FORBIDDEN', 'La sesión cambió.');
+    const record = () => { const room = game.lobby; if (!room) return; const u = room.aiUsage ??= { requests: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }; u.requests++; u.inputTokens += result.usage.inputTokens; u.outputTokens += result.usage.outputTokens; u.cacheReadTokens += result.usage.cacheReadTokens; u.cacheWriteTokens += result.usage.cacheWriteTokens; };
+    const current = game.lobby;
+    let state: string, message: string;
+    if (game.generation !== before.generation || current?.id !== before.lobby || current.formation?.at !== before.at || game.status !== 'LOBBY') { state = 'REJECTED'; message = 'La sala cambió mientras Claude respondía. No se movió a nadie.'; journal(record); }
+    else {
+      const plan = planRoomCalls(game, input.text, result.calls);
+      if (plan.state !== 'EXECUTE') { state = plan.state; message = plan.message; journal(record); }
+      else try { let changes: ReturnType<typeof applyRoomPlan> = []; lobbyChange(() => { changes = applyRoomPlan(game, plan.operations); record(); }); state = 'EXECUTED'; message = describeChanges(game, changes); }
+      catch (e) { if (!(e instanceof LobbyError)) throw e; state = 'REJECTED'; message = `${e.message} No se movió a nadie.`; journal(record); }
+    }
+    res.json({ ok: true, reply: { id: input.id, state, message, provider, model: result.model } });
+  } catch (e) {
+    const code = e instanceof AiError ? e.code : 'AI_INVALID';
+    res.status(STATUS_CODES[code] ?? 503).json({ ok: false, code, error: e instanceof AiError ? e.message : 'No se pudo procesar la orden.' });
+  } finally { aiPending.delete(key); }
 });
 app.get('/api/health', (_req, res) => res.json({ ok: true, room: 'FW-001' }));
 app.get('/api/snapshot', (req, res) => { res.setHeader('Cache-Control', 'no-store'); res.json(project(game, session(req.headers.cookie))); });

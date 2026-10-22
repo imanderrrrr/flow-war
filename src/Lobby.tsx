@@ -126,7 +126,55 @@ export function RoomScreen() {
     {!lobby.formation ? <Gathering lobby={lobby} joinUrls={info?.joinUrls.length ? info.joinUrls : [`${location.origin}/unirse`]} busy={busy} onForm={() => void act('/api/lobby/form')} onRemove={id => void act('/api/lobby/remove', { id })}/>
       : elapsed < revealEnd() ? <SlotShow lobby={lobby} elapsed={elapsed} companies={s.companies} onSkip={() => setReplay(now - revealEnd())}/>
       : <TeamsBoard lobby={lobby} companies={s.companies} waiting={s.status === 'LOBBY'} onReplay={() => setReplay(now)}/>}
+    <RoomAssistant available={!!lobby.formation && s.status === 'LOBBY'}/>
   </main>;
+}
+
+type SpeechEvent = { resultIndex: number; results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> };
+type Recognizer = { lang: string; interimResults: boolean; continuous: boolean; onresult: ((e: SpeechEvent) => void) | null; onend: (() => void) | null; onerror: ((e: { error: string }) => void) | null; start(): void; stop(): void; abort(): void };
+/** The browser transcribes; Claude never receives audio. Chrome and Safari expose the prefixed constructor. */
+const speechRecognizer = () => { const w = window as unknown as { SpeechRecognition?: new () => Recognizer; webkitSpeechRecognition?: new () => Recognizer }; return w.SpeechRecognition ?? w.webkitSpeechRecognition; };
+type Reply = { id: string; order: string; state: string; message: string };
+
+/** Teacher-only Claude on the projector: moves or swaps players after the draw and before the game starts. */
+function RoomAssistant({ available }: { available: boolean }) {
+  const [open, setOpen] = useState(false), [text, setText] = useState(''), [busy, setBusy] = useState(false), [listening, setListening] = useState(false), [replies, setReplies] = useState<Reply[]>([]);
+  const recognizer = useRef<Recognizer | undefined>(undefined), Speech = useMemo(speechRecognizer, []);
+  useEffect(() => () => recognizer.current?.abort(), []);
+  useEffect(() => { if (!available) recognizer.current?.abort(); }, [available]);
+  async function submit(order: string) {
+    const value = order.trim(); if (!value) return;
+    const id = crypto.randomUUID(); setBusy(true);
+    try { const { reply } = await post('/api/lobby/assistant', { id, text: value }); setReplies(r => [{ id, order: value, state: reply.state, message: reply.message }, ...r].slice(0, 4)); setText(''); }
+    catch (e) { setReplies(r => [{ id, order: value, state: 'ERROR', message: (e as Error).message }, ...r].slice(0, 4)); }
+    finally { setBusy(false); }
+  }
+  function listen() {
+    if (!Speech) return;
+    if (recognizer.current) { recognizer.current.stop(); return; }
+    const r = new Speech(); let said = '';
+    r.lang = 'es-419'; r.interimResults = true; r.continuous = false;
+    r.onresult = e => { let interim = ''; for (let i = e.resultIndex; i < e.results.length; i++) { const t = e.results[i][0].transcript; if (e.results[i].isFinal) said += t; else interim += t; } setText(`${said}${interim}`.trim()); };
+    r.onerror = e => { if (!['aborted', 'no-speech'].includes(e.error)) useGame.getState().notify(e.error === 'not-allowed' ? 'El navegador no tiene permiso para usar el micrófono.' : 'No se pudo usar el dictado por voz.', true); };
+    // A finished phrase is sent right away, so the teacher can speak without touching the keyboard.
+    r.onend = () => { recognizer.current = undefined; setListening(false); if (said.trim()) void submit(said); };
+    recognizer.current = r; setListening(true); setText('');
+    try { r.start(); } catch { recognizer.current = undefined; setListening(false); }
+  }
+  return <div className={`room-assistant ${open ? 'open' : ''}`}>
+    {open && <section className="room-assistant-panel" aria-label="Claude en la sala">
+      <div className="room-assistant-head"><span><Icon name="claude" size={14}/> CLAUDE · AJUSTE DE EQUIPOS</span><button className="icon-button" aria-label="Cerrar" onClick={() => setOpen(false)}><Icon name="close" size={14}/></button></div>
+      <p className="muted">{available ? <>Decí o escribí la orden, por ejemplo: <q>cambiá a Víctor de VERTEX a EMBER</q> o <q>intercambiá a Ana con Luis</q>.</> : 'Disponible después de FORMAR EQUIPOS y antes de EMPEZAR JUEGO.'}</p>
+      <form onSubmit={e => { e.preventDefault(); if (!busy) void submit(text); }}>
+        <input value={text} onChange={e => setText(e.target.value)} maxLength={500} disabled={!available || busy || listening} aria-label="Orden para Claude" placeholder={listening ? 'Escuchando…' : 'Escribí la orden'}/>
+        {Speech && <button type="button" className={`icon-button room-mic ${listening ? 'listening' : ''}`} aria-pressed={listening} aria-label={listening ? 'Detener dictado' : 'Dictar la orden'} title={listening ? 'Detener dictado' : 'Dictar la orden'} disabled={!available || busy} onClick={listen}><Icon name="mic" size={16}/></button>}
+        <button className="primary-button small" type="submit" disabled={!available || busy || listening || !text.trim()}>{busy ? 'PROCESANDO…' : 'ENVIAR'}</button>
+      </form>
+      {!Speech && <small className="muted">Este navegador no ofrece dictado por voz; escribí la orden.</small>}
+      <ul className="room-assistant-replies" aria-live="polite">{replies.map(r => <li key={r.id} className={r.state === 'EXECUTED' ? 'good' : ['ERROR', 'REJECTED', 'DECLINED'].includes(r.state) ? 'bad' : 'warn'}><q>{r.order}</q><span>{r.message}</span></li>)}</ul>
+    </section>}
+    <button className="room-assistant-toggle" aria-expanded={open} aria-label="Claude: ajustar equipos" title="Claude: ajustar equipos" onClick={() => setOpen(v => !v)}><Icon name="claude" size={26}/></button>
+  </div>;
 }
 
 function Gathering({ lobby, joinUrls, busy, onForm, onRemove }: { lobby: LobbyView; joinUrls: string[]; busy: boolean; onForm: () => void; onRemove: (id: string) => void }) {
