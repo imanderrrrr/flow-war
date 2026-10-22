@@ -29,12 +29,22 @@ import { route, evaluateSecurity } from './graphs.js';
 import { lobbyView, resetTeams } from './lobby.js';
 import { auditCommand, advanceProbes, auditorView, chargeLeaks, closeProbes, closeSettledFindings, findingsFor, sustainedEffects, suspendsRestock } from './auditor.js';
 export { route, evaluateSecurity } from './graphs.js';
-import { BLOCKS, SUITES, type Company, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
+import { PLAN_PIECES, PLAN_SLOTS, isPlanPiece, type PlanPiece } from '../shared/plan.js';
+import { BLOCKS, SUITES, type Company, type Domain, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
 
 const NAMES = ['NOVA', 'VERTEX', 'BYTE', 'EMBER', 'ORBIT'];
 const COLORS = ['#f5d45c', '#68dca2', '#69adff', '#f27e79', '#b69af7'];
 export const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
-export function initialGraph(domain: 'backend' | 'security' | 'product'): Graph {
+/** Pieces on their solares, chained in the order given. Ids are stable so a draft can name them. */
+function planGraph(types: PlanPiece[]): Graph {
+  return { nodes: types.map(type => ({ id: `plan-${type}`, type, position: { ...PLAN_SLOTS[type] }, data: { label: PLAN_PIECES[type].label } })),
+    edges: types.slice(1).map((type, i) => ({ id: `plan-e${i}`, source: `plan-${types[i]}`, target: `plan-${type}` })) };
+}
+/** The chain server/traffic.ts used to walk by hand: what a migrated game and an assembled room start on. */
+export function completePlan(): Graph { return planGraph(['entry', 'security', 'web', 'checkout', 'inventory', 'payment', 'exit']); }
+export function initialGraph(domain: Domain): Graph {
+  // Only the entrance and a road to the storefront: the team builds the rest.
+  if (domain === 'plan') return planGraph(['entry', 'web']);
   const types = domain === 'backend' ? ['entry', 'read', 'write', 'payment', 'exit'] : ['entry', 'exit'];
   const labels: Record<string, string> = { entry: 'Request IN', read: 'Read Stock', write: 'Write Stock', payment: 'Payment', exit: 'Response OUT' };
   return { nodes: types.map((type, i) => ({ id: `${domain}-${type}`, type, position: { x: i * 190, y: 160 }, data: { label: labels[type] } })), edges: types.slice(1).map((type, i) => ({ id: `${domain}-e${i}`, source: `${domain}-${types[i]}`, target: `${domain}-${type}` })) };
@@ -44,7 +54,7 @@ export function createGame(duration = 1500, seed = 7357, generation = 0, dvrEnab
     crisis: { active: false, episode: 0, lastReputation: 80 }, serviceMode: { mode: 'OPERATING', since: 0 }, runtime: initialRuntime(), infrastructure: initialInfrastructure(), id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
     servers: 1, balancer: false, infraBudget: duration * .5, reserved: 0, version: 1, deployments: 0, active: 0, requests: 0, successes: 0, errors: 0, breaches: 0, oversold: 0, duplicates: 0,
     lostRevenue: 0, revenue: 0, latency: 0, utilization: 0, queue: 0, migratedIn: 0, migratedOut: 0, eliminated: false, crisisTicks: 0, deadTicks: 0, bankruptTicks: 0, concurrencyUntil: 0,
-    backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
+    backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), plan: initialGraph('plan'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
   }));
   const game: GameState = { dvrEnabled, actions: initialActionState(), schema: 6, observability: initialObservability(), slack: { sequence: 0, messages: [], receipts: {}, buckets: {}, groups: {}, automaticCount: 0, sampledCount: 0 }, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
   for (const company of companies) company.runtime.infra = initialOperationsState(company, duration);
@@ -55,23 +65,32 @@ export function event(g: GameState, companyId: number | null, text: string, tone
   g.events.unshift({ id: ++g.eventSeq, at: g.tick, companyId, text, tone, category });
   g.events.length = Math.min(g.events.length, 60);
 }
-export function validateGraph(input: unknown, domain: 'backend' | 'security' | 'product', complete = true): Graph {
+export function validateGraph(input: unknown, domain: Domain, complete = true): Graph {
   if (!input || typeof input !== 'object') throw new Error('Grafo inválido.');
   const graph = structuredClone(input) as Graph;
   if (!Array.isArray(graph.nodes) || !Array.isArray(graph.edges) || graph.nodes.length > 25 || graph.edges.length > 30) throw new Error('Máximo 25 piezas y 30 conexiones.');
-  const catalog = domain === 'product' ? [] : BLOCKS[domain];
-  const allowed = new Set(['entry', 'exit', ...(domain === 'backend' ? ['read', 'write', 'payment', 'module'] : []), ...catalog.map(b => b.type)]);
-  const ids = new Set<string>();
+  const catalog = domain === 'product' || domain === 'plan' ? [] : BLOCKS[domain];
+  const allowed = new Set(domain === 'plan' ? Object.keys(PLAN_PIECES) : ['entry', 'exit', ...(domain === 'backend' ? ['read', 'write', 'payment', 'module'] : []), ...catalog.map(b => b.type)]);
+  const ids = new Set<string>(), solares = new Set<string>();
   for (const n of graph.nodes) {
     if (typeof n.id !== 'string' || !n.id.trim() || n.id.length > 100 || ids.has(n.id) || !allowed.has(n.type) || !n.position || !Number.isFinite(n.position.x) || !Number.isFinite(n.position.y)) throw new Error('Nodo inválido.');
     ids.add(n.id);
+    if (domain === 'plan' && isPlanPiece(n.type)) {
+      // One piece per solar. The server bay is the only one that stacks.
+      if (n.type !== 'server') {
+        if (solares.has(n.type)) throw new Error(`El solar de ${PLAN_PIECES[n.type].label.toLowerCase()} ya está ocupado.`);
+        solares.add(n.type);
+      }
+      n.data = { label: PLAN_PIECES[n.type].label };
+      continue;
+    }
     const block = catalog.find(b => b.type === n.type);
     if (n.type === 'atomic' && (!Number.isInteger(Number(n.data?.value ?? block!.value)) || Number(n.data?.value ?? block!.value) < 1 || Number(n.data?.value ?? block!.value) > 120)) throw new Error('Atomic Update requiere una cantidad entera entre 1 y 120.');
     const config = blockConfiguration(n);
     const moduleRef = n.data?.module;
     n.data = { ...(n.data?.config && config ? { config } : {}), ...(n.type === 'module' ? { module: moduleRef } : {}), label: block?.label ?? ({ entry: 'Request IN', exit: 'Response OUT', read: 'Read Stock', write: 'Write Stock', payment: 'Payment' }[n.type] ?? n.type), ...(block ? { value: clamp(Number(n.data?.value ?? block.value) || block.value, 1, n.type === 'lock' ? 5000 : 120) } : {}) };
   }
-  for (const type of ['entry', 'exit', ...(domain === 'backend' ? ['read', 'write', 'payment'] : [])]) if (graph.nodes.filter(n => n.type === type).length !== 1) throw new Error(`El grafo requiere un módulo ${type}.`);
+  if (domain !== 'plan') for (const type of ['entry', 'exit', ...(domain === 'backend' ? ['read', 'write', 'payment'] : [])]) if (graph.nodes.filter(n => n.type === type).length !== 1) throw new Error(`El grafo requiere un módulo ${type}.`);
   const out = new Set<string>(), edgeIds = new Set<string>();
   for (const e of graph.edges) {
     if (!ids.has(e.source) || !ids.has(e.target) || out.has(e.source) || typeof e.id !== 'string' || edgeIds.has(e.id)) throw new Error('Puertos o conexiones incompatibles.');
@@ -83,8 +102,9 @@ export function validateGraph(input: unknown, domain: 'backend' | 'security' | '
     while (id) { if (seen.has(id)) throw new Error('Ciclo no soportado.'); seen.add(id); id = graph.edges.find(e => e.source === id)?.target; }
   }
   const path = route(graph);
-  if (complete && path.length !== graph.nodes.length) throw new Error('Todos los bloques deben estar conectados en la ruta ejecutable.');
-  if (complete && path.at(-1)?.type !== 'exit') throw new Error('No existe una ruta de entrada a salida.');
+  // A half-built plan is valid on purpose: server/requests.ts reports what it cannot serve, in Spanish.
+  if (complete && domain !== 'plan' && path.length !== graph.nodes.length) throw new Error('Todos los bloques deben estar conectados en la ruta ejecutable.');
+  if (complete && domain !== 'plan' && path.at(-1)?.type !== 'exit') throw new Error('No existe una ruta de entrada a salida.');
   if (complete && domain === 'backend' && !['read', 'write', 'payment'].every(t => path.some(n => n.type === t))) throw new Error('La ruta debe atravesar inventario y pagos.');
   return graph;
 }

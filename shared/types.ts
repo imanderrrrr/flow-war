@@ -6,7 +6,8 @@ export const ROLES = ['backend', 'security', 'qa', 'cto', 'devops', 'product'] a
 export type Role = typeof ROLES[number];
 /** `auditor`: a reserve player after the draw. Not a company role: no employee record, no company, no private data. */
 export type Identity = { id: string; role: Role | 'operator' | 'auditor'; companyId: number | null };
-export type Domain = 'backend' | 'security' | 'product';
+/** `plan`: the service plan each team builds (shared/plan.ts). Public on purpose — the projector draws it. */
+export type Domain = 'backend' | 'security' | 'product' | 'plan';
 export type ChangeStatus = 'SECURITY_PENDING' | 'QA_PENDING' | 'QA_RUNNING' | 'QA_REJECTED' | 'CTO_PENDING' | 'CTO_REJECTED' | 'AUTHORIZED' | 'DEPLOYING' | 'DEPLOYED' | 'DEPLOY_FAILED' | 'EXPIRED' | 'STALE';
 export type GraphNode = { id: string; type: string; position: { x: number; y: number }; data: { label: string; value?: number; module?: ModuleRef; config?: BlockConfiguration } };
 export type GraphEdge = { id: string; source: string; target: string };
@@ -105,7 +106,7 @@ export type Company = {
   active: number; requests: number; successes: number; errors: number; breaches: number; oversold: number; duplicates: number;
   lostRevenue: number; revenue: number; latency: number; utilization: number; queue: number; migratedIn: number; migratedOut: number;
   eliminated: boolean; eliminatedAt?: number; crisisTicks: number; deadTicks: number; bankruptTicks: number; concurrencyUntil: number;
-  backend: Graph; security: Graph; product: Graph; particles: FlowParticle[];
+  backend: Graph; security: Graph; product: Graph; plan: Graph; particles: FlowParticle[];
   drafts: Partial<Record<Domain, { graph: Graph; revision: number }>>;
   migrationRemainder: number; arrivalRemainder: number; processedRemainder: number; history: number[]; stock: number;
   concurrency: ConcurrencyState;
