@@ -14,10 +14,11 @@ Línea base en `59ba951`: 327/327.
 
 ## Anthropic real (Test I)
 
-[`anthropic.json`](anthropic.json): `not_run`. Este entorno no tiene `ANTHROPIC_API_KEY`; no se contactó a
-ningún proveedor ni se simuló un resultado real. Con credenciales, `npm run verify:anthropic` reemplaza ese
-archivo con los casos A–H, los ejemplos obligatorios, latencias, tokens y la comprobación de que la clave no
-aparece en ninguna salida.
+[`anthropic.json`](anthropic.json): `failed` por **saldo de créditos insuficiente** en la cuenta de Anthropic.
+El 2026-10-22 se configuró una clave real (`npm run setup:anthropic`) y `npm run verify:anthropic` llegó a la API
+real: la clave fue aceptada (sin error de autenticación) y las 19 solicitudes fueron rechazadas con
+`INSUFFICIENT_CREDITS`, sin tokens consumidos ni salida del modelo. El informe no contiene la clave.
+La comprensión del modelo real sigue **sin verificar**: al recargar créditos, repetir `npm run verify:anthropic`.
 
 ## Ejecutor en aula (servidor real, endpoint Messages local)
 

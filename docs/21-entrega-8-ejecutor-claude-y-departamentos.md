@@ -210,7 +210,7 @@ principal; los proyectos DVR anteriores se leen sin cambios. Resultados en
 | F resultado QA | `tests/executor.test.ts` (Test F), `tests/executor-service.test.ts` |
 | G aislamiento | `tests/executor.test.ts` (Test G), servidor real |
 | H concurrencia | `tests/executor-service.test.ts` (Test H), `npm run bench:executor`, `npm run bench:ai` |
-| I Anthropic real | `npm run verify:anthropic` — **pendiente: este entorno no tiene credenciales** |
+| I Anthropic real | `npm run verify:anthropic` — **pendiente**: la clave real es aceptada, pero la cuenta no tiene créditos (`INSUFFICIENT_CREDITS`) |
 
 Además: una regresión por cada hallazgo de la revisión independiente (`tests/executor-review.test.ts`),
 adversariales (inyección, citas inventadas, valores ausentes, verbos contradictorios, más de cuatro

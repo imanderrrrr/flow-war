@@ -50,6 +50,8 @@ function errorCode(e: unknown, signal: AbortSignal): string {
   if (signal.aborted || e instanceof Anthropic.APIUserAbortError || e instanceof Anthropic.APIConnectionTimeoutError) return 'TIMEOUT';
   if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError) return 'AUTHENTICATION_ERROR';
   if (e instanceof Anthropic.RateLimitError) return 'RATE_LIMIT';
+  // Billing is reported as a 400; the code is kept, the remote message is not forwarded.
+  if (e instanceof Anthropic.BadRequestError && /credit balance/i.test(String((e.error as { error?: { message?: string } } | undefined)?.error?.message ?? ''))) return 'INSUFFICIENT_CREDITS';
   if (e instanceof Anthropic.BadRequestError || e instanceof Anthropic.NotFoundError || e instanceof Anthropic.UnprocessableEntityError) return 'PROVIDER_REJECTED';
   return 'PROVIDER_ERROR';
 }
