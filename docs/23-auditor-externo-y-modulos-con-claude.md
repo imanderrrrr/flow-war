@@ -104,6 +104,57 @@ pendientes por módulo nunca se confunde con la contención real, que es de toda
   `audit.rejected`) y sin texto del cliente, y solo cuando se ejecutan: ninguna otra empresa las ve en su historial.
 - Endpoints de empleados (`/api/ai/execute`, `/api/ai`, `/api/flowslack`, DVR) responden 403 al auditor.
 
+### Consecuencias: el hallazgo y el sangrado
+
+Una prueba cuyo tráfico **no fue contenido** deja un **hallazgo** registrado sobre (empresa, módulo, control).
+Confirmarlo cuesta una **multa única de Q250**; volver a probar el mismo hueco no abre otro hallazgo ni cobra de
+nuevo. Seguridad y el CTO lo ven en su espacio con el módulo, el control que falta y los accesos registrados, y
+entra una alerta en `#alertas-sistema`, siempre sin el nombre del auditor.
+
+Mientras el hallazgo siga abierto **es una fuga**: cada solicitud anómala de esa categoría que los controles no
+contienen le cuesta a la empresa Q1 y 0,02 puntos de reputación. Como ese tráfico crece durante toda la partida,
+el daño crece solo: al principio son unos Q54 y un punto de reputación por minuto; al final, unos Q360 y siete
+puntos. No hay escalada programada — **la escalada es la curva de tráfico**.
+
+El hallazgo **se cierra solo** cuando ese control deja de estar pendiente, o sea cuando Seguridad lo configura y el
+cambio llega a producción. Ahí para el sangrado. Lo que mata no es el auditor: es no arreglar el hueco.
+
+Medición en `docs/benchmarks/auditoria/README.md`: corregirlo a los dos minutos cuesta Q378 y deja a la empresa
+igual que si nunca la hubieran auditado; ignorarlo hasta el final la deja con reputación cero y 27 % menos clientes
+que una empresa sin auditar.
+
+### La prueba sostenida
+
+Sobre un hallazgo abierto, el auditor puede sostener el tráfico durante **60 s**, con una espera de 120 s. Dos topes
+la mantienen **no letal por construcción**: la tasa nunca pasa de un tercio de la capacidad web de esa empresa —así
+que escalar servidores sirve de verdad— y no se admite ninguna solicitud si la cola del servicio objetivo ya va por
+encima de dos tercios, de modo que los clientes legítimos siempre tienen lugar.
+
+El tráfico entra por el servicio del módulo auditado, así que el embudo que aparece en el mapa delata dónde está el
+hueco. Y lo que el auditor puede hacer adentro depende del módulo:
+
+| Módulo auditado | Qué hace durante la ventana |
+| --- | --- |
+| **Request IN** | Solo volumen sobre la cola de entrada: sube la latencia y aparecen rechazos |
+| **Read Stock** | Suspende el reabastecimiento: el inventario escasea |
+| **Write Stock** | **Deja el inventario en cero**: las ventas se frenan hasta que la ventana cierra |
+| **Payment** | Las compras legítimas se completan pero no se cobran: el ingreso se pierde |
+| **Response OUT** | El cliente recibe un fallo aunque ya se le cobró |
+
+Todo se revierte solo al cerrarse la ventana, por tiempo, por cierre del hallazgo o porque la empresa salió de la
+partida.
+
+### Cómo se entera la empresa
+
+Por donde se enteraría de verdad: **clientes molestos**. Las quejas de `soporte-clientes` están redactadas como las
+escribiría una persona, incluida la señal de que antes funcionaba —«hace un rato me dejaba comprar y ahora dice que
+no hay», «antes era instantáneo, ahora se tarda un montón», «me deja a medias y se cae, llevo tres intentos»— y
+caen además como **notificaciones estilo mensaje de texto** sobre el espacio de trabajo, apiladas y pasajeras. Se
+pueden silenciar sin perder nada: el canal conserva todas.
+
+Ese es el ciclo: caen quejas → el equipo pregunta qué pasa → Seguridad corre sus pruebas y encuentra el control que
+falta → le pide a Claude que lo configure → el hallazgo se cierra.
+
 ## 2. Módulos de Backend redactados con Claude
 
 ### Recorrido
@@ -159,7 +210,26 @@ comando da el mismo módulo, y un diseño idéntico da los mismos pendientes en 
   socket, privacidad, endpoints de empleados en 403, Backend diseña por `/api/ai/execute`, QA conserva el prompt
   estricto, reinicio del servidor a mitad de una prueba y espera al terminar.
 - Navegador (puerto 4180, API de Messages local): tablero con AUDITORES EXTERNOS, celular del auditor, prueba en
-  vivo con contadores y espera, y diseño de módulo desde el panel de Claude de Backend.
+  vivo con contadores y espera, diseño de módulo desde el panel de Claude de Backend, y las quejas de clientes
+  cayendo como notificaciones sobre el espacio de trabajo.
+- `npm run bench:audit`: tres partidas completas que miden el costo de un hallazgo corregido temprano frente a uno
+  ignorado, contra una referencia sin auditar. Evidencia en `docs/benchmarks/auditoria/README.md`.
+
+## Curva de tráfico
+
+El tráfico sube más despacio que antes, para que un equipo tenga tiempo de organizarse antes de la saturación:
+
+| Qué | Antes | Ahora |
+| --- | --- | --- |
+| Demanda de clientes | `5 + 295·(t/T)^1.25` | `5 + 295·(t/T)^2.5` |
+| Tráfico anómalo del motor | Desde el 12 % de la partida, `2 + 18·(t/T)` | Desde el **25 %**, `2 + 18·(t/T)^2.5` |
+
+Con un servidor, una empresa aguanta hasta el minuto **12.8** en vez de 6.5, y el final sigue siendo igual de
+exigente (60 solicitudes/s). El ruido de fondo baja de 9.2/s a 3.8/s en el minuto 10, con lo que el trabajo del
+auditor se distingue en vez de perderse.
+
+**Esto cambia la línea base económica de la partida**: los benchmarks de entregas anteriores dejan de comparar
+directamente con los de ahora.
 
 ## Límites
 
@@ -172,3 +242,7 @@ comando da el mismo módulo, y un diseño idéntico da los mismos pendientes en 
   identidad falsificada.
 - Revisar con `module.revise` un módulo redactado conserva su diseño y vuelve a sortear defectos con la regla
   general de los módulos (`defects-1`).
+- El sangrado de un hallazgo depende del tráfico anómalo que el motor genera solo, que arranca al 25 % de la
+  partida: un hallazgo confirmado antes de ese momento no empieza a sangrar hasta entonces.
+- La prueba sostenida y el sangrado se suman. Por separado ninguno es letal de golpe, pero un equipo que ignore
+  varios hallazgos a la vez puede quedar en crisis bastante antes del final.

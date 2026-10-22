@@ -158,6 +158,8 @@ trabajo. Detalle, reglas y límites en
 
 Los auditores externos eligen una empresa, revisan sus módulos en producción y lanzan pruebas de control: 30 s de
 tráfico anómalo simulado de la categoría del control pendiente, con 60 s de espera entre pruebas; el motor decide qué
-se contiene. Backend puede describir un módulo en palabras y Claude redacta un diseño textual breve (sin código); el
+se contiene. Si algo no se contiene queda un **hallazgo**: multa de Q250 y, mientras siga abierto, una fuga que crece
+con el tráfico hasta dejar a la empresa en crisis. El equipo se entera por las quejas de sus clientes, que caen como
+notificaciones sobre su pantalla, y la cierra configurando el control que falta. Backend puede describir un módulo en palabras y Claude redacta un diseño textual breve (sin código); el
 servidor deja a propósito controles pendientes que Seguridad y QA pueden encontrar antes de producción.
 [docs/23-auditor-externo-y-modulos-con-claude.md](docs/23-auditor-externo-y-modulos-con-claude.md).
