@@ -141,6 +141,23 @@ devuelve la protección, para que nadie desarme su plano a propósito.
 La regla se enuncia en una línea para la clase: *mientras no hay clientes comprando no hay nada que romper; desde la
 primera venta, todo cambio pasa por el ciclo.*
 
+**Cambios del plano después de la primera venta.** `plan.publish` sigue cerrado (`PIPELINE_REQUIRED`); el camino es
+`plan.submit`, que pueden usar Backend, Seguridad y DevOps con su borrador y su revisión, bajo las mismas reglas de
+propiedad de piezas (`assertPlanOwnership`). El cambio nace en `QA_PENDING` con dominio `plan` y reusa el ciclo de
+siempre:
+
+- **QA** lo prueba en staging sobre el plano propuesto. El perímetro solo filtra donde el plano lo pone en el camino,
+  igual que en producción: un solar de seguridad sin camino que pase por él no detiene nada.
+- **El CTO** autoriza su costo, que es exactamente `planPublicationCost` (Q100 más las piezas nuevas), el mismo número
+  que muestra el editor.
+- **DevOps** lo despliega con la estrategia que elija; al terminar, ese plano pasa a producción con una versión nueva.
+  La versión publicada de módulos y protecciones viaja congelada con el cambio, como en `plan.publish`.
+
+Si otra publicación cambia producción antes, el cambio de plano queda `STALE` y se envía de nuevo sobre el plano
+vigente. Mientras hay un despliegue en curso no se envía otro, y el mismo plano no puede estar dos veces en el ciclo.
+Cada rol conserva su borrador; si producción cambió debajo de él, el editor conserva las piezas y caminos propios y
+toma el resto de producción, para que nadie deshaga sin querer lo que publicó otro rol.
+
 ## 6. El auditor externo
 
 No audita nada nuevo. La regla es: **una empresa se vuelve auditable cuando acepta compras**, es decir, cuando cierra

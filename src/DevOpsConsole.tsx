@@ -6,6 +6,7 @@ import { send, money, useGame } from './store';
 import { Icon } from './icons';
 import { GraphViewer } from './GraphEditor';
 import { PLAN_PIECES } from '../shared/plan';
+import { strategyFor, type Strategy, type StrategyChoice } from './consoleState';
 
 const STRATEGIES = { rolling: { label: 'ROLLING', detail: '6 s · cambia servidores uno por uno · capacidad accesible (n−1)/n; con un servidor, 12%' }, restart: { label: 'RESTART REPLACE', detail: '3 s · capacidad de aplicación cero durante el reemplazo' } } as const;
 /** Operating costs are fractions of a quetzal per second; rounding them would misstate the expense. */
@@ -23,13 +24,16 @@ function serverState(instance: { id: number; status: string; readyAt?: number },
 
 export default function DevOpsConsole({ active, change, changes, onSelect }: { active: boolean; change?: Change; changes: Change[]; onSelect: (id: string) => void }) {
   const s = useGame(v => v.snapshot)!, c = s.privateCompany!, infra = s.operations?.infra, w = s.operations?.workflow;
-  const [strategy, setStrategy] = useState<'' | 'rolling' | 'restart'>(''), [rollbackStrategy, setRollbackStrategy] = useState<'' | 'rolling' | 'restart'>('');
+  // Keyed by the change (and by the rollback authorization): the console stays mounted while changes
+  // come and go, so a strategy picked for one deploy must never show up preselected on the next.
+  const [deployChoice, setDeployChoice] = useState<StrategyChoice>(null), [rollbackChoice, setRollbackChoice] = useState<StrategyChoice>(null);
   const [amount, setAmount] = useState(''), [seconds, setSeconds] = useState(''), [maxServers, setMaxServers] = useState(''), [ops, setOps] = useState<InfraOperation[]>([]);
   const act = (type: string, payload: Record<string, unknown>, changeId?: string) => send(type, { companyId: c.id, ...(changeId ? { changeId } : {}), payload });
   const queues = Object.fromEntries(c.traffic.queues.map(q => [q.id, q])), web = queues.web?.rate ?? 0;
   const reachable = c.infrastructure.instances.filter(i => i.status === 'UP' && (c.balancer || i.id === 1)).length;
   const scope = infra?.scope, deploying = s.changes.find(ch => ch.status === 'DEPLOYING'), rollingBack = infra?.rollbacks.find(r => r.status === 'IN_PROGRESS');
   const rollback = infra?.rollbacks.filter(r => r.status === 'AUTHORIZED').at(-1);
+  const strategy = change?.status === 'AUTHORIZED' ? strategyFor(deployChoice, change.id) : '', rollbackStrategy = strategyFor(rollbackChoice, rollback?.id);
   const scaleBlocked = !scope ? 'SIN AUTORIZACIÓN' : !scope.operations.includes('scale') ? 'ESCALAR NO AUTORIZADO' : '';
   const balancerBlocked = !scope ? 'SIN AUTORIZACIÓN' : !scope.operations.includes('balancer') ? 'BALANCEADOR NO AUTORIZADO' : '';
   const runs = w?.runs.filter(r => r.changeId === change?.id) ?? [], decision = w?.decisions.filter(d => d.changeId === change?.id).at(-1);
@@ -80,7 +84,7 @@ export default function DevOpsConsole({ active, change, changes, onSelect }: { a
       <div className="panel-title"><span>STAGING · ARTEFACTO PROBADO</span><select aria-label="Cambio en staging" value={change?.id ?? ''} onChange={e => onSelect(e.target.value)}>{!changes.length && <option value="">Sin cambios</option>}{changes.map(ch => <option key={ch.id} value={ch.id}>{ch.id} · {STATUS_LABELS[ch.status]}</option>)}</select></div>
       {change ? <div className="staging-body">
         <dl className="staging-facts">{[['CAMBIO', `${change.id} · ${change.domain}`], ['REVISIÓN', `Backend v${change.implementation?.backendVersion ?? '—'} · Seguridad r${change.implementation?.security?.revision ?? '—'}`], ['VERSIÓN BASE', `v${change.baseVersion}.0 (producción v${c.version}.0)`], ['ESTADO', STATUS_LABELS[change.status]], ['AUTORIZACIÓN CTO', change.status === 'AUTHORIZED' ? `vigente ${Math.max(0, Math.ceil((change.expires ?? 0) - s.tick))} s · reservado ${money(change.reserved)}` : decision ? `${decision.kind} · ${decision.actor}` : 'sin decisión'], ['COSTO DE PUBLICACIÓN', money(change.cost)]].map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
-        <GraphViewer key={change.id} graph={change.graph}/>
+        <GraphViewer key={change.id} graph={change.graph} plan={change.domain === 'plan'}/>
         <div className="staging-evidence"><span className="eyebrow">EVIDENCIA QA</span>{runs.length ? runs.map(r => { const report = change.reports.find(x => x.testEvidence?.runId === r.id); return <p key={r.id}><b>{r.id}</b> {r.scenario.suite} · {report ? `${report.requests} solicitudes · ${report.completed} completadas · ${report.rejected} rechazadas · ${report.oversold} sobreventas · ${report.duplicates} cobros duplicados · ${report.latency} ms` : 'en curso'}</p>; }) : change.reports.length ? change.reports.map((r, i) => <p key={i}><b>{r.suite}</b> {r.requests} solicitudes · {r.completed} completadas · {r.oversold} sobreventas</p>) : <p className="muted">Sin pruebas registradas.</p>}</div>
         <p className="muted">Staging ejecuta copias aisladas del motor; no genera dinero, clientes ni ventas de la empresa.</p>
       </div> : <div className="empty-state"><Icon name="server" size={34}/><strong>0 CAMBIOS</strong></div>}
@@ -89,14 +93,14 @@ export default function DevOpsConsole({ active, change, changes, onSelect }: { a
     <section className="panel deploy-panel">
       <div className="panel-title"><span>DESPLIEGUE</span><span>{deploying ? `${deploying.id} · DESPLEGANDO` : rollingBack ? `ROLLBACK A v${rollingBack.targetVersion} EN CURSO` : `VERSIÓN ACTIVA v${c.version}.0`}</span></div>
       <div className="deploy-actions">
-        <label>ESTRATEGIA<select value={strategy} onChange={e => setStrategy(e.target.value as typeof strategy)}><option value="" disabled>Elegir estrategia</option>{(Object.keys(STRATEGIES) as (keyof typeof STRATEGIES)[]).map(k => <option key={k} value={k}>{STRATEGIES[k].label}</option>)}</select></label>
+        <label>ESTRATEGIA<select value={strategy} disabled={change?.status !== 'AUTHORIZED'} onChange={e => change && setDeployChoice({ changeId: change.id, strategy: e.target.value as Strategy })}><option value="" disabled>Elegir estrategia</option>{(Object.keys(STRATEGIES) as (keyof typeof STRATEGIES)[]).map(k => <option key={k} value={k}>{STRATEGIES[k].label}</option>)}</select></label>
         <span className="muted">{strategy ? STRATEGIES[strategy].detail : 'Sin estrategia elegida.'}</span>
-        <button className="primary-button small" disabled={!active || change?.status !== 'AUTHORIZED' || !strategy} onClick={() => change && void act('deploy.start', { strategy }, change.id)}><Icon name="play" size={14}/>{change?.status === 'DEPLOYING' ? 'DESPLEGANDO…' : `DEPLOY ${change?.id ?? ''}`}</button>
+        <button className="primary-button small" disabled={!active || change?.status !== 'AUTHORIZED' || !strategy} onClick={() => change && void act('deploy.start', { strategy }, change.id).then(ok => { if (ok) setDeployChoice(null); })}><Icon name="play" size={14}/>{change?.status === 'DEPLOYING' ? 'DESPLEGANDO…' : `DEPLOY ${change?.id ?? ''}`}</button>
       </div>
       <div className="deploy-actions rollback-actions">
         <span><b>ROLLBACK</b> {rollback ? `${rollback.id} · a v${rollback.targetVersion} · ${money(rollback.amount)} · vence en ${Math.max(0, Math.ceil(rollback.expires - s.tick))} s` : 'SIN AUTORIZACIÓN DE ROLLBACK'}</span>
-        <label>ESTRATEGIA<select value={rollbackStrategy} onChange={e => setRollbackStrategy(e.target.value as typeof rollbackStrategy)} disabled={!rollback}><option value="" disabled>Elegir estrategia</option>{(Object.keys(STRATEGIES) as (keyof typeof STRATEGIES)[]).map(k => <option key={k} value={k}>{STRATEGIES[k].label}</option>)}</select></label>
-        <button className="secondary-button" disabled={!active || !rollback || !rollbackStrategy} onClick={() => rollback && void act('deploy.rollback', { strategy: rollbackStrategy, authorizationId: rollback.id })}>EJECUTAR ROLLBACK</button>
+        <label>ESTRATEGIA<select value={rollbackStrategy} onChange={e => rollback && setRollbackChoice({ changeId: rollback.id, strategy: e.target.value as Strategy })} disabled={!rollback}><option value="" disabled>Elegir estrategia</option>{(Object.keys(STRATEGIES) as (keyof typeof STRATEGIES)[]).map(k => <option key={k} value={k}>{STRATEGIES[k].label}</option>)}</select></label>
+        <button className="secondary-button" disabled={!active || !rollback || !rollbackStrategy} onClick={() => rollback && void act('deploy.rollback', { strategy: rollbackStrategy, authorizationId: rollback.id }).then(ok => { if (ok) setRollbackChoice(null); })}>EJECUTAR ROLLBACK</button>
       </div>
       <ol className="release-history">{infra?.releases.slice().reverse().map(r => <li key={`${r.version}-${r.at}`}><b>v{r.version}.0</b> {r.kind === 'initial' ? 'inicial' : r.kind === 'deploy' ? `deploy ${r.changeId}` : `rollback a v${r.rollbackOf}`} · {Math.floor(r.at)} s</li>)}</ol>
     </section>
