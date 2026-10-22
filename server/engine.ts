@@ -27,7 +27,7 @@ import { advanceConcurrency, cancelConcurrency, concurrencyParticles, concurrenc
 import { initialConcurrency, productionContext, settleConcurrency, stepConcurrency } from './scenarios.js';
 import { route, evaluateSecurity } from './graphs.js';
 import { lobbyView, resetTeams } from './lobby.js';
-import { auditCommand, advanceProbes, auditorView, chargeLeaks, closeProbes, closeSettledFindings, findingsFor } from './auditor.js';
+import { auditCommand, advanceProbes, auditorView, chargeLeaks, closeProbes, closeSettledFindings, findingsFor, sustainedEffects, suspendsRestock } from './auditor.js';
 export { route, evaluateSecurity } from './graphs.js';
 import { BLOCKS, SUITES, type Company, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
 
@@ -360,7 +360,9 @@ export function step(g: GameState, dt = .1) {
     const capacity = rates.web;
     generateTraffic(c, g.tick, dt, g.duration);
     advanceProbes(g, c, event); closeSettledFindings(g, c, event);
-    if (second) restockTraffic(c);
+    // The settlement in traffic.ts reads these off the company, which is all it can see.
+    const audited = sustainedEffects(g, c); if (audited.size) c.runtime.auditEffects = [...audited]; else delete c.runtime.auditEffects;
+    if (second && !suspendsRestock(g, c)) restockTraffic(c);
     const breachesBefore = c.breaches;
     advanceTraffic(c, g.tick, rates); chargeLeaks(g, c);
     if (c.breaches > breachesBefore && second && previousSecond % 12 === 0) event(g, c.id, `${c.breaches - breachesBefore} accesos indebidos · SECURITY BREACH`, 'bad', 'SECURITY');

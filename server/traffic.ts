@@ -168,6 +168,13 @@ export function settleTraffic(company: Company, now: number) {
       totals[key[result.status]]++; totals.committed += request.committed; totals.oversold += request.oversold;
       totals.revenue += result.revenue; totals.lostRevenue += result.lostRevenue; totals.capitalDelta += result.capitalDelta;
     }
+    const audited = company.runtime.auditEffects;
+    if (audited && request.trafficClass === 'legitimate') {
+      // An exposed payment module lets a purchase complete without the company ever collecting it.
+      if (audited.includes('uncharged') && result.revenue > 0) { result.lostRevenue += result.revenue; result.capitalDelta -= result.revenue; result.revenue = 0; }
+      // An exposed response module returns a failure to a customer who was already charged.
+      if (audited.includes('confirmation') && result.status === 'COMPLETED') { result.status = 'FAILED'; result.reason = 'DEADLINE'; request.status = 'FAILED'; }
+    }
     company.successes += Number(result.status === 'COMPLETED'); company.errors += Number(result.status !== 'COMPLETED');
     company.revenue += result.revenue; company.lostRevenue += result.lostRevenue; company.capital += result.capitalDelta;
     company.oversold += request.oversold; company.breaches += Number(request.breach);

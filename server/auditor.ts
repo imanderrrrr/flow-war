@@ -171,9 +171,38 @@ function sustainCommand(g: GameState, command: Command, p: Record<string, unknow
   if (finding.sustainedAt !== undefined && g.tick < finding.sustainedAt + AUDIT_SUSTAIN.cooldownSeconds)
     return { ok: false, code: 'COOLDOWN', error: `Podés sostener esta prueba otra vez en ${Math.ceil(finding.sustainedAt + AUDIT_SUSTAIN.cooldownSeconds - g.tick)} s.` };
   finding.sustain = { startedAt: g.tick, endsAt: round(g.tick + AUDIT_SUSTAIN.durationSeconds), sent: 0 };
+  // An exposed inventory write lets the figure be wiped: the system believes there is nothing left to sell.
+  if (sustainEffect(c, finding) === 'zero') { c.traffic.inventory.stock = 0; c.traffic.inventory.version++; c.stock = 0; }
   emit(g, c.id, `Tráfico inusual sostenido sobre ${finding.module} · ${CATEGORY_LABELS[finding.category]} · ${AUDIT_SUSTAIN.durationSeconds} s.`, 'bad', 'SECURITY');
   return { ok: true, refs: [finding.id] };
 }
+/**
+ * What a sustained window does inside the company, decided by the module the auditor is standing on: the control
+ * is the key, the module is what that key opens.
+ */
+export type SustainEffect = 'entry' | 'hoard' | 'zero' | 'uncharged' | 'confirmation';
+export function sustainEffect(c: Company, finding: AuditFinding): SustainEffect {
+  switch (route(c.backend).find(n => n.id === finding.nodeId)?.type) {
+    case 'read': return 'hoard';
+    case 'write': case 'atomic': case 'validation': case 'lock': return 'zero';
+    case 'payment': return 'uncharged';
+    case 'exit': return 'confirmation';
+    default: return 'entry';
+  }
+}
+/** Open windows of this company, with the effect each one applies. */
+export function activeSustains(g: GameState, c: Company): { finding: AuditFinding; effect: SustainEffect }[] {
+  return (g.auditors?.findings ?? []).filter(f => f.sustain && f.companyId === c.id).map(f => ({ finding: f, effect: sustainEffect(c, f) }));
+}
+/** Hoarding and inventory wipes hold the restock back; everything returns on its own when the window closes. */
+export function suspendsRestock(g: GameState, c: Company): boolean {
+  return activeSustains(g, c).some(s => s.effect === 'hoard' || s.effect === 'zero');
+}
+/** During a `uncharged` window a completed legitimate purchase earns nothing; during `confirmation` it reads as failed. */
+export function sustainedEffects(g: GameState, c: Company): Set<SustainEffect> {
+  return new Set(activeSustains(g, c).map(s => s.effect));
+}
+
 /** Service the audited module belongs to, so the queue that backs up is the one the module lives in. */
 export function targetService(node: GraphNode | undefined): typeof SERVICE_IDS[number] {
   const type = node?.type;

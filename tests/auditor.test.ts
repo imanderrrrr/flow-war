@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame, applyCommand, project } from '../server/engine.js';
 import { ensureLobby, formTeams, joinLobby, participantIdentity } from '../server/lobby.js';
-import { pendingControls, auditCompanies } from '../server/auditor.js';
+import { pendingControls, auditCompanies, targetService } from '../server/auditor.js';
 import { recoverGame, serializeGame } from '../server/persistence.js';
 import { route } from '../server/graphs.js';
 import { serviceRates } from '../server/traffic.js';
@@ -355,4 +355,44 @@ test('la ventana se corta si la empresa sale de la partida', () => {
   c.serviceMode = { mode: 'FULL_MAINTENANCE', since: -1000 }; advanceGame(g, 0.1);
   assert.equal(c.eliminated, true);
   assert.equal(finding.sustain, undefined, 'la ventana quedó cerrada');
+});
+
+test('auditar Write Stock deja el inventario en cero durante la ventana y se recupera al cerrarse', () => {
+  const g = running(), c = g.companies[0];
+  const finding = openFindingOn(g, 0, 'backend-write', 'waf');
+  assert(sustain(g, auditor(), { findingId: finding.id }).ok);
+  advanceGame(g, 5);
+  assert.equal(c.traffic.inventory.stock, 0, 'ventas frenadas');
+  advanceGame(g, 70);
+  assert.equal(finding.sustain, undefined);
+  assert(c.traffic.inventory.stock > 0, 'el reabastecimiento lo recupera');
+});
+
+test('el reabastecimiento vuelve aunque la ventana termine por el cierre del hallazgo', () => {
+  const g = running(), c = g.companies[0];
+  const finding = openFindingOn(g, 0, 'backend-read', 'waf');
+  assert(sustain(g, auditor(), { findingId: finding.id }).ok);
+  advanceGame(g, 5);
+  deployWithControls(g, 'backend-read', [{ kind: 'input' }]);
+  advanceGame(g, 2);
+  assert(finding.closedAt !== undefined); assert.equal(finding.sustain, undefined);
+  const stock = c.traffic.inventory.stock; advanceGame(g, 5);
+  assert(c.traffic.inventory.stock >= stock, 'el motor volvió a reabastecer');
+});
+
+test('auditar Payment deja compras legítimas sin cobrar', () => {
+  const g = running(), c = g.companies[0];
+  advanceGame(g, 60);
+  const finding = openFindingOn(g, 0, 'backend-payment', 'auth');
+  const revenue = c.revenue, lost = c.lostRevenue;
+  assert(sustain(g, auditor(), { findingId: finding.id }).ok);
+  advanceGame(g, 45);
+  assert.equal(c.revenue, revenue, 'no factura durante la ventana');
+  assert(c.lostRevenue > lost, 'el monto se registra como ingreso perdido');
+});
+
+test('cada módulo golpea el servicio al que pertenece', () => {
+  assert.equal(targetService({ id: 'a', type: 'entry', position: { x: 0, y: 0 }, data: { label: '' } }), 'security');
+  assert.equal(targetService({ id: 'a', type: 'write', position: { x: 0, y: 0 }, data: { label: '' } }), 'inventory');
+  assert.equal(targetService({ id: 'a', type: 'payment', position: { x: 0, y: 0 }, data: { label: '' } }), 'payment');
 });
