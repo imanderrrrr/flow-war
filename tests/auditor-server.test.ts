@@ -9,6 +9,9 @@ import { createServer as createHttpServer } from 'node:http';
 import { createServer } from 'node:net';
 import { io } from '../shared/live-client.js';
 import { LOBBY_ICONS } from '../shared/lobby.js';
+import { finishTutorial } from './tutorial-helpers.js';
+// These tests measure the engine at full pressure; the calm start has its own (tests/pacing.test.ts).
+process.env.FLOW_CALM_START = '0';
 
 async function freePort() { const l = createServer(); l.listen(0, '127.0.0.1'); await once(l, 'listening'); const port = (l.address() as { port: number }).port; await new Promise<void>(r => l.close(() => r())); return port; }
 
@@ -62,6 +65,9 @@ test('auditors over HTTP and sockets; Backend drafts a module with Claude; probe
     let view = await get('/api/snapshot', auditor.cookie);
     assert.equal(view.auditor.companies.length, 5); assert.equal(view.privateCompany, undefined); assert.equal(view.operations, undefined); assert.equal(view.slack, undefined); assert.deepEqual(view.changes, []);
     assert((await get('/api/snapshot', member.cookie)).auditor === undefined);
+    // The reserve owes the auditor tutorial first (docs/25); afterwards the real room answers.
+    assert.equal((await send(auditor.cookie, 'audit.probe', { companyId: 1, nodeId: 'backend-write', check: 'waf' })).code, 'TUTORIAL_PENDING');
+    await finishTutorial(base, auditor.cookie);
     assert.equal((await send(auditor.cookie, 'audit.probe', { companyId: 1, nodeId: 'backend-write', check: 'waf' })).code, 'ROOM_PAUSED');
 
     assert.equal((await send(operator, 'room.assembled', { enabled: true })).ok, true);

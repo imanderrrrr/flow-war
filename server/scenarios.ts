@@ -59,10 +59,11 @@ export function settleConcurrency(company: Company) {
   return newOversold;
 }
 
-export function stepConcurrency(company: Company, at: number, available: boolean) {
+/** `bursts` is false during the calm start (shared/pacing.ts): no LAST-UNIT run starts until it ends. */
+export function stepConcurrency(company: Company, at: number, available: boolean, bursts = true) {
   const state = company.concurrency;
   let started = false;
-  if (at >= state.nextAt) {
+  if (bursts && at >= state.nextAt) {
     started = startConcurrency(company, at);
     state.nextAt += (Math.floor((at - state.nextAt) / 45) + 1) * 45;
   }

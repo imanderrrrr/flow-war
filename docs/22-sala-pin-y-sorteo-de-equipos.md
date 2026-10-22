@@ -11,7 +11,7 @@ pantalla de la sala. El docente forma los equipos con un sorteo animado y despu�
 | 2 | Ve a cada jugador aparecer con su icono; puede quitar a alguien antes del sorteo. | Escribe su nombre, elige uno de 30 iconos y espera. Puede salir de la sala. |
 | 3 | **FORMAR EQUIPOS**: se habilita con 25 jugadores (30 si Producto/UX está activo). | Ve "Sorteando equipos…". |
 | 4 | Tragamonedas por empresa, en orden: los rodillos giran con los iconos de los jugadores aún sin equipo, se detienen uno por uno, aparecen los nombres con su rol y "¡USTEDES SON …!". | Cuando su empresa aparece en el proyector, ve "SOS DE NOVA · QA" y a sus compañeros. |
-| 5 | Tablero con las cinco empresas, sus integrantes y los auditores externos. **EMPEZAR JUEGO**. | Pasa a su espacio de trabajo con ese rol (o como Auditor externo). |
+| 5 | Tablero con las cinco empresas, sus integrantes, los auditores externos y el progreso del tutorial de cada uno. **EMPEZAR JUEGO** se habilita cuando todos los conectados terminaron ([doc 25](25-tutoriales-y-arranque-tranquilo.md)). | **HACER EL TUTORIAL** de su rol en su espacio de trabajo; al empezar el juego, pasa a la empresa real con ese rol (o como Auditor externo). |
 
 El panel de control (`/control`) muestra el PIN, la cantidad de jugadores y si los equipos ya se formaron, con un
 enlace a la pantalla de sala. Las credenciales por rol de `.local/access.json` siguen funcionando igual.

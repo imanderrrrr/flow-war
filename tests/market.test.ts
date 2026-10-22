@@ -8,6 +8,8 @@ import { recoverGame, serializeGame } from '../server/persistence.js';
 import { createGameWriter } from '../server/storage.js';
 import { advanceGame, assembledGame, command, insertBlock, reviewForQa } from './helpers.js';
 import type { GameState, MarketCustomer } from '../shared/types.js';
+// These tests measure the engine at full pressure; the calm start has its own (tests/pacing.test.ts).
+process.env.FLOW_CALM_START = '0';
 
 const customerOf = (game: GameState, companyId = 0) => game.market.customers[game.market.members[companyId][0]];
 const transfer = (game: GameState, customer: MarketCustomer, to: number | null) => { if (customer.lastMigrationTick !== undefined) game.tick = Math.max(game.tick, customer.lastMigrationTick + game.market.config.cooldownSeconds); assert.equal(requestMigration(game, customer.id, to, 'TEST'), true); flushMigrations(game); assertMarket(game); };

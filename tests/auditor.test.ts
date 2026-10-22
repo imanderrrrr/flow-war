@@ -12,6 +12,8 @@ import { LOBBY_ICONS } from '../shared/lobby.js';
 import type { GameState, GraphNode, Identity } from '../shared/types.js';
 import type { ModuleVersion } from '../shared/simulation.js';
 import { advanceGame, assembledGame, command, insertBlock, reviewForQa } from './helpers.js';
+// These tests measure the engine at full pressure; the calm start has its own (tests/pacing.test.ts).
+process.env.FLOW_CALM_START = '0';
 
 const auditor = (n = 1): Identity => ({ id: `auditor-P${n}`, role: 'auditor', companyId: null });
 let sequence = 0;

@@ -1,6 +1,6 @@
 import { useState, type CSSProperties } from 'react';
 import { CATEGORY_LABELS, CONTROL_CHECK_INFO, type AuditModule, type AuditorView } from '../shared/auditor';
-import { useGame, send, number } from './store';
+import { useGame, send, number, time } from './store';
 import { Icon, Mascot } from './icons';
 
 type Probe = AuditorView['probes'][number];
@@ -31,6 +31,8 @@ export default function AuditorConsole() {
   const module: AuditModule | undefined = company.modules.find(m => m.nodeId === nodeId);
   const current = view.probes[0], active = current && !current.finished ? current : undefined;
   const wait = Math.max(0, Math.ceil(view.nextAt - s.tick)), running = s.status === 'RUNNING' && connected;
+  // During the calm start the wait is the phase itself, not a cooldown (shared/pacing.ts).
+  const calm = view.opensAt !== undefined && s.tick < view.opensAt;
   const ready = running && !active && wait === 0 && !busy;
   async function launch(check: string) {
     if (!module) return;
@@ -56,7 +58,7 @@ export default function AuditorConsole() {
           <Narrative probe={active}/>
         </div>
       </> : <>
-        <div className="panel-title"><span>{wait > 0 ? 'ESPERA ENTRE PRUEBAS' : 'LISTO PARA AUDITAR'}</span><span>{wait > 0 ? `${wait} s` : <Icon name="play" size={12}/>}</span></div>
+        <div className="panel-title"><span>{calm ? 'FASE TRANQUILA · LAS PRUEBAS SE HABILITAN EN' : wait > 0 ? 'ESPERA ENTRE PRUEBAS' : 'LISTO PARA AUDITAR'}</span><span>{calm ? time(wait) : wait > 0 ? `${wait} s` : <Icon name="play" size={12}/>}</span></div>
         <div className="auditor-status-body">{current ? <><p className="muted">Última prueba: <b>{nameOf(current.companyId)}</b> · {current.module}</p><Counters probe={current}/><Narrative probe={current}/></> : <p className="muted">Todavía no lanzaste pruebas de control.</p>}</div>
       </>}
     </section>
@@ -75,7 +77,7 @@ export default function AuditorConsole() {
       {company.modules.length ? <ol className="auditor-modules">{company.modules.map(m => <li key={m.nodeId}>
         <button aria-pressed={m.nodeId === nodeId} onClick={() => setNodeId(m.nodeId)}>
           <span>{m.module && <small className="tag">MÓDULO</small>}{m.label}</span><b className={m.pending.length ? 'bad' : 'good'}>{m.pending.length ? `${m.pending.length} pendientes` : 'sin pendientes'}</b>
-        </button></li>)}</ol> : <p className="muted auditor-empty">Esta empresa está fuera de la partida.</p>}
+        </button></li>)}</ol> : <p className="muted auditor-empty">{company.assembling ? 'Esta empresa está en montaje: todavía no acepta compras.' : 'Esta empresa está fuera de la partida.'}</p>}
     </section>
 
     <section className="panel">
@@ -84,7 +86,7 @@ export default function AuditorConsole() {
         : !module.pending.length ? <p className="muted auditor-empty">Sin controles pendientes en este módulo.</p>
         : <ul className="auditor-pending">{module.pending.map(p => <li key={p.check}>
           <div><p>{p.text}</p><small>Control: <b>{p.control}</b> · Tráfico: {CATEGORY_LABELS[p.category]}</small></div>
-          <button className="primary-button small" disabled={!ready} onClick={() => void launch(p.check)}><Icon name="play" size={12}/>{busy ? 'ENVIANDO…' : active ? 'PRUEBA EN CURSO' : wait > 0 ? `EN ESPERA · ${wait} s` : 'LANZAR PRUEBA'}</button>
+          <button className="primary-button small" disabled={!ready} onClick={() => void launch(p.check)}><Icon name="play" size={12}/>{busy ? 'ENVIANDO…' : active ? 'PRUEBA EN CURSO' : calm ? 'FASE TRANQUILA' : wait > 0 ? `EN ESPERA · ${wait} s` : 'LANZAR PRUEBA'}</button>
         </li>)}</ul>}
     </section>
 
