@@ -26,6 +26,7 @@ import { initialTraffic, issueInitialTraffic, generateTraffic, serviceRates, adv
 import { advanceConcurrency, cancelConcurrency, concurrencyParticles, concurrencyReport, createConcurrencyRun, isRunFinished, runConcurrencyFixture } from './requests.js';
 import { initialConcurrency, productionContext, settleConcurrency, stepConcurrency } from './scenarios.js';
 import { route, evaluateSecurity } from './graphs.js';
+import { lobbyView, resetTeams } from './lobby.js';
 export { route, evaluateSecurity } from './graphs.js';
 import { BLOCKS, SUITES, type Company, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
 
@@ -134,6 +135,8 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
     if (command.type === 'room.product') {
       if (g.status !== 'LOBBY') return { ok: false, code: 'PRODUCT_MODE_LOCKED', error: 'Habilita Producto/UX antes de iniciar la partida.' };
       if (typeof command.payload?.enabled !== 'boolean') return { ok: false, error: 'Valor inválido.' };
+      // The draw seated one player per role; a different role set needs a reset and a new draw.
+      if (g.lobby?.formation) return { ok: false, code: 'PRODUCT_MODE_LOCKED', error: 'Los equipos ya se formaron. Restablecé la sala para cambiar Producto/UX.' };
       // One switch for the room: the department is enabled or disabled for the five companies alike.
       g.productEnabled = command.payload.enabled; return { ok: true };
     }
@@ -152,6 +155,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       clearBuffer(g); delete g.closure;
       const product = g.productEnabled;
       Object.assign(g, createGame(Number(command.payload?.duration) === 1200 ? 1200 : 1500, 7357, g.generation + 1, g.dvrEnabled)); g.productEnabled = product;
+      resetTeams(g);
       buffer(g).closed.push(...earlier, closed);
       bindObservability(g, f => slackFact(g, f));
       checkpoint(g, serializeGame, true);
@@ -406,7 +410,7 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
   bindMarket(g);
   const internal = identity?.role === 'operator';
   const particles = (c: Company) => [...trafficParticles(c, g.tick), ...concurrencyParticles(c.concurrency.run, c.color, g.tick, c)].map(p => internal || p.kind !== 'attack' ? p : { ...p, kind: p.finishedAt !== undefined && p.status !== 'COMPLETED' ? 'error' as const : 'success' as const });
-  const ownCompany = identity?.companyId != null ? g.companies[identity.companyId] : undefined;
+  const ownCompany = identity?.companyId != null ? g.companies[identity.companyId] : undefined, lobby = lobbyView(g, identity);
   const { runtime: _runtime, breaches: _breaches, ...ownVisible } = ownCompany ?? {} as Company;
   const privateC = ownCompany ? structuredClone({ ...ownVisible, particles: common?.companies[ownCompany.id].particles ?? particles(ownCompany), traffic: trafficView(ownCompany.traffic, internal) }) : undefined;
   if (privateC) {
@@ -418,6 +422,7 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
   return {
     operations: identity ? { product:ownCompany&&['product','operator'].includes(identity.role)?productView(g,ownCompany,g.tick):undefined, infra:ownCompany&&['devops','cto'].includes(identity.role)?infraView(ownCompany,g.tick):undefined, qaLive:ownCompany&&identity.role==='qa'?qaProgress(g,ownCompany):undefined, ...(ownCompany ? { workflow:workflowView(ownCompany), conversations:ownCompany.runtime.conversations?.filter(t=>t.actor===identity!.id&&t.role===identity!.role&&t.generation===g.generation).map(t=>({...t,messages:t.messages.slice(-20)})), collaboration: collaborationView(ownCompany,identity!) } : {}), modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
     dvrEnabled: g.dvrEnabled, ...(productEnabled(g) ? { productEnabled: true } : {}), generation: g.generation,
+    ...(lobby ? { lobby } : {}),
     slack: ownCompany ? structuredClone(g.slack.messages.filter(m=>m.companyId===ownCompany.id)) : undefined,
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
     companies: common?.companies ?? g.companies.map(c => {

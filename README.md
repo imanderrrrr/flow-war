@@ -142,3 +142,11 @@ npm run build
 npm run bench:executor -- --speed=20 --model-ms=800 --rounds=4
 npm run verify:anthropic   # requiere ANTHROPIC_API_KEY en .env
 ```
+
+## Sala con PIN y sorteo de equipos
+
+Los estudiantes entran desde el celular a `/unirse` con el PIN que muestra el docente en `/sala`, eligen nombre e
+icono y aparecen en pantalla. **FORMAR EQUIPOS** (con 25 jugadores, o 30 con Producto/UX) sortea al azar la empresa
+y el rol de cada uno con una tragamonedas animada; los que sobran quedan en reserva. **EMPEZAR JUEGO** inicia la
+partida y cada celular pasa a su espacio de trabajo. Detalle, reglas y límites en
+[docs/22-sala-pin-y-sorteo-de-equipos.md](docs/22-sala-pin-y-sorteo-de-equipos.md).

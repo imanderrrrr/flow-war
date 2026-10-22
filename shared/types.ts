@@ -1,5 +1,6 @@
 import type { CrisisState, ObservabilityState, ServiceMode, SlackState, SlackMessage } from './observability.js';
 import type { BlockConfiguration } from './blocks.js';
+import type { LobbyState, LobbyView } from './lobby.js';
 import type { ActionState, TestEvidence, DefectCode, OperationRuntime, CompanyRuntime, ExecutionRelease, ModuleRef, OperationsView, TestJob } from './simulation.js';
 export const ROLES = ['backend', 'security', 'qa', 'cto', 'devops', 'product'] as const;
 export type Role = typeof ROLES[number];
@@ -106,8 +107,8 @@ export type Company = {
 export type PrivateCompany = Omit<Company, 'drafts' | 'traffic' | 'runtime' | 'breaches'> & { breaches?:number; drafts: Company['drafts']; traffic: TrafficView };
 export type PublicCompany = Omit<Company, 'infraBudget' | 'reserved' | 'breaches' | 'runtime' | 'drafts' | 'backend' | 'security' | 'product' | 'migrationRemainder' | 'arrivalRemainder' | 'processedRemainder' | 'crisisTicks' | 'deadTicks' | 'bankruptTicks' | 'concurrencyUntil' | 'concurrency' | 'traffic'> & { infraBudget?:number; reserved?:number; breaches?:number; modules: string[]; pipelineCounts: number[]; concurrency: ConcurrencyView; traffic: TrafficView };
 export type HistoricalClosure = { generation: number; tick: number; previousStatus: string; reason: 'TEACHER_RESET' | 'LEGACY_UNCLOSED'; actor: Identity | null; receivedAt: number | null };
-export type GameState = { productEnabled?: boolean; dvrEnabled: boolean; closure?: HistoricalClosure; actions: ActionState; schema: 6; observability: ObservabilityState; slack: SlackState; market: MarketState; generation: number; tick: number; duration: number; status: 'LOBBY' | 'RUNNING' | 'PAUSED' | 'FINISHED' | 'ABORTED'; seed: number; eventSeq: number; companies: Company[]; changes: Change[]; events: GameEvent[]; migrations: Migration[]; unserved: number; speed: number };
-export type Snapshot = { productEnabled?: boolean; dvrEnabled?: boolean; generation: number; slack?: SlackMessage[]; operations?: OperationsView; tick: number; duration: number; status: GameState['status']; companies: PublicCompany[]; events: GameEvent[]; migrations: Migration[]; unserved: number; identity: Identity | null; privateCompany?: PrivateCompany; changes: Change[]; speed: number };
+export type GameState = { lobby?: LobbyState; productEnabled?: boolean; dvrEnabled: boolean; closure?: HistoricalClosure; actions: ActionState; schema: 6; observability: ObservabilityState; slack: SlackState; market: MarketState; generation: number; tick: number; duration: number; status: 'LOBBY' | 'RUNNING' | 'PAUSED' | 'FINISHED' | 'ABORTED'; seed: number; eventSeq: number; companies: Company[]; changes: Change[]; events: GameEvent[]; migrations: Migration[]; unserved: number; speed: number };
+export type Snapshot = { lobby?: LobbyView; productEnabled?: boolean; dvrEnabled?: boolean; generation: number; slack?: SlackMessage[]; operations?: OperationsView; tick: number; duration: number; status: GameState['status']; companies: PublicCompany[]; events: GameEvent[]; migrations: Migration[]; unserved: number; identity: Identity | null; privateCompany?: PrivateCompany; changes: Change[]; speed: number };
 export type Command = { id: string; type: string; companyId?: number; changeId?: string; payload?: Record<string, unknown> };
 export type Result = { refs?: string[]; ok: boolean; error?: string; code?: string };
 
