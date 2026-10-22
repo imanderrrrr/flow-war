@@ -89,8 +89,10 @@ export function operationsCommand(g: GameState, c: Company, actor: Identity, typ
     if (target === c.version) throw new Error('Esa versión ya está en producción.');
     const record = state.releases.filter(r => r.version === target).at(-1);
     if (!record || (!c.runtime.releases[target] && record.kind !== 'initial')) throw new Error('Versión no disponible para rollback.');
-    if (available(c) < amount) throw new Error('Saldo disponible insuficiente.');
-    for (const r of state.rollbacks) if (r.status === 'AUTHORIZED') { c.reserved = Math.max(0, c.reserved - r.reserved); r.reserved = 0; r.status = 'CANCELLED'; }
+    // A new rollback authorization replaces the previous one; its reservation is freed before checking funds.
+    const previous = state.rollbacks.filter(r => r.status === 'AUTHORIZED'), freed = previous.reduce((sum, r) => sum + r.reserved, 0);
+    if (available(c) + freed < amount) throw new Error('Saldo disponible insuficiente.');
+    for (const r of previous) { c.reserved = Math.max(0, c.reserved - r.reserved); r.reserved = 0; r.status = 'CANCELLED'; }
     const rollback: RollbackAuthorization = { id: `C${c.id}-RB${state.rollbacks.length + 1}`, companyId: c.id, targetVersion: target, amount, reserved: amount, spent: 0, authorizedBy: actor.id, at: g.tick, expires: g.tick + AUTHORIZATION_SECONDS, status: 'AUTHORIZED' };
     c.reserved += amount; state.rollbacks.push(rollback);
     event(g, c.id, `CTO autoriza rollback a v${target} · reservado ${money(amount)}.`, 'neutral', 'CTO');

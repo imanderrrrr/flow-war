@@ -6,7 +6,7 @@ import type { ToolCall } from '../shared/executor.js';
 import { object, keys, freeText, oneOf, string } from './action-validation.js';
 import { rules } from './collaboration.js';
 
-export class AiError extends Error { constructor(public code: string, message = 'No se pudo completar la solicitud a Claude. Intenta nuevamente.') { super(message); } }
+export class AiError extends Error { usage?: Usage; constructor(public code: string, message = 'No se pudo completar la solicitud a Claude. Intenta nuevamente.') { super(message); } }
 export type ToolDefinition = { name: string; description: string; input_schema: Record<string, unknown>; strict: boolean };
 export type InterpretRequest = { id: string; system: string; tools: ToolDefinition[]; content: string };
 export type Usage = { inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number };
@@ -117,7 +117,8 @@ export class AnthropicProvider implements Provider {
   private success(requestId: string, start: number, attempt: number, usage: Usage, fallback: boolean) {
     this.record(requestId, { state: 'AVAILABLE', at: Date.now(), latencyMs: Date.now() - start, inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, cacheReadTokens: usage.cacheReadTokens, retries: attempt, fallback });
   }
-  private fail(requestId: string, start: number, attempt: number, code: string): never { this.record(requestId, { state: code, at: Date.now(), latencyMs: Date.now() - start, retries: attempt }); throw new AiError(code); }
+  /** Refused or unusable answers still consumed tokens; the usage travels with the error to the budget. */
+  private fail(requestId: string, start: number, attempt: number, code: string, usage?: Usage): never { this.record(requestId, { state: code, at: Date.now(), latencyMs: Date.now() - start, retries: attempt, inputTokens: usage?.inputTokens, outputTokens: usage?.outputTokens }); const error = new AiError(code); error.usage = usage; throw error; }
   async generate(input: AiInput, graph: Graph, context?: unknown, signal?: AbortSignal): Promise<unknown> {
     const { message, start, attempt, fallback } = await this.send(input.id, { system: SYSTEM, messages: [{ role: 'user', content: JSON.stringify({ kind: input.kind, request: input.text, nodeId: input.nodeId, graph, authorizedContext: context }) }], output_config: { effort: this.effort, format: { type: 'json_schema', schema: outputSchema(input.kind) } } }, signal);
     const text = message.content.filter(b => b.type === 'text');
@@ -131,8 +132,8 @@ export class AnthropicProvider implements Provider {
       system: [{ type: 'text', text: request.system, cache_control: { type: 'ephemeral' } }], tools: request.tools, tool_choice: { type: 'auto' },
       messages: [{ role: 'user', content: request.content }], output_config: { effort: this.effort },
     }, signal);
-    if (message.stop_reason === 'refusal') this.fail(request.id, start, attempt, 'REFUSED');
-    if (!['end_turn', 'tool_use'].includes(message.stop_reason)) this.fail(request.id, start, attempt, 'INVALID_OUTPUT');
+    if (message.stop_reason === 'refusal') this.fail(request.id, start, attempt, 'REFUSED', usageOf(message.usage));
+    if (!['end_turn', 'tool_use'].includes(message.stop_reason)) this.fail(request.id, start, attempt, 'INVALID_OUTPUT', usageOf(message.usage));
     const calls = message.content.filter(b => b.type === 'tool_use').map(b => ({ name: String(b.name), input: b.input && typeof b.input === 'object' ? b.input as Record<string, unknown> : {} }));
     const usage = usageOf(message.usage); this.success(request.id, start, attempt, usage, fallback);
     return { calls, usage, model: message.model ?? this.model, stopReason: message.stop_reason, fallback };

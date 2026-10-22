@@ -260,7 +260,8 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
     }
     if (command.type === 'qa.run') {
       if (ch.status !== 'QA_PENDING' || !SUITES.includes(String(p.suite))) throw new Error('No se puede ejecutar esa suite en este estado.');
-      if (ch.context?.execution?.modules.length || ch.context?.execution?.security || ch.context?.execution?.blockPolicies?.some(b=>b.rules.length) || !['Concurrencia','Carga'].includes(String(p.suite))) {
+      // Product changes always run the staging job, where their frozen promotion is applied.
+      if (ch.product || ch.context?.execution?.modules.length || ch.context?.execution?.security || ch.context?.execution?.blockPolicies?.some(b=>b.rules.length) || !['Concurrencia','Carga'].includes(String(p.suite))) {
         ch.testJob = createTestJob(c, ch, scenarioForSuite(String(p.suite))); ch.status = 'QA_RUNNING'; ch.runningSuite = String(p.suite); return { ok: true };
       }
       ch.status = 'QA_RUNNING'; ch.runningSuite = String(p.suite); ch.due = g.tick + 4;

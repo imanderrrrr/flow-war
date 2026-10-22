@@ -9,7 +9,7 @@ import { EXECUTOR_SYSTEM, commandsFor, executorContext, finalReply, modelContext
 
 export function parseExecutorInput(raw: unknown): ExecutorInput {
   const p = object(raw); keys(p, ['id', 'text', 'threadId', 'selection']);
-  string(p.id); const text = freeText(p.text);
+  string(p.id, 80); const text = freeText(p.text);
   if (!text.trim() || text.length > 2000) throw new AiError('INVALID', 'Escribe una instrucción de hasta 2000 caracteres.');
   if (p.threadId !== undefined) string(p.threadId, 60);
   let selection: ExecutorInput['selection'];
@@ -51,16 +51,17 @@ export function beginExecution(g: GameState, actor: Identity, input: ExecutorInp
   thread.messages.push({ id: `${input.id}-human`, requestId: input.id, role: 'user', text: input.text, at: g.tick, refs: input.selection?.changeId ? [input.selection.changeId] : [] });
   return { attempt, replay: false };
 }
-export type Snapshot = { generation: number; version: number; servers: number; changes: Record<string, string> };
+export type Snapshot = { generation: number; version: number; servers: number; changes: Record<string, string>; rollbacks: Record<string, string> };
 /** Pre-call state of the resources an operation can target. */
 export function snapshotFor(g: GameState, actor: Identity): Snapshot {
   const c = g.companies[actor.companyId!];
-  return { generation: g.generation, version: c.version, servers: c.servers, changes: Object.fromEntries(g.changes.filter(ch => ch.companyId === c.id).map(ch => [ch.id, `${ch.status}:${ch.implementation?.bundleDigest ?? ''}:${ch.reports.length}`])) };
+  return { generation: g.generation, version: c.version, servers: c.servers, changes: Object.fromEntries(g.changes.filter(ch => ch.companyId === c.id).map(ch => [ch.id, `${ch.status}:${ch.implementation?.bundleDigest ?? ''}:${ch.reports.length}`])), rollbacks: Object.fromEntries((c.runtime.infra?.rollbacks ?? []).map(r => [r.id, `${r.status}:${r.targetVersion}`])) };
 }
 /** A late reply never operates on a revision or game that changed while Claude was answering. */
 export function staleTargets(before: Snapshot, after: Snapshot, commands: { type: string; changeId?: string; payload: Record<string, unknown> }[]) {
   if (before.generation !== after.generation || before.version !== after.version) return true;
-  return commands.some(c => { const id = c.changeId ?? (typeof c.payload.changeId === 'string' ? c.payload.changeId : undefined); return (id !== undefined && before.changes[id] !== after.changes[id]) || (c.type === 'infra.scale' && before.servers !== after.servers); });
+  return commands.some(c => { const id = c.changeId ?? (typeof c.payload.changeId === 'string' ? c.payload.changeId : undefined), rollback = typeof c.payload.authorizationId === 'string' ? c.payload.authorizationId : undefined;
+    return (id !== undefined && before.changes[id] !== after.changes[id]) || (c.type === 'infra.scale' && before.servers !== after.servers) || (rollback !== undefined && (before.rollbacks[rollback] === undefined || before.rollbacks[rollback] !== after.rollbacks[rollback])); });
 }
 export function buildRequest(g: GameState, actor: Identity, input: ExecutorInput) {
   const threadId = input.threadId ?? `${actor.role}-default`, ctx = executorContext(g, actor, input, previousInstructions(g, actor, threadId, input.id));
@@ -68,6 +69,7 @@ export function buildRequest(g: GameState, actor: Identity, input: ExecutorInput
   if (content.length > 48000) throw new AiError('CONTEXT_LIMIT', 'El contexto seleccionado excede el límite.');
   return { request: { id: input.id, system: EXECUTOR_SYSTEM, tools: toolDefinitions(actor.role as Role), content }, snapshot: snapshotFor(g, actor) };
 }
+const dedupe = (calls: ToolCall[]) => [...new Map(calls.map(c => [`${c.name}:${JSON.stringify(c.input ?? {})}`, c])).values()];
 /** Applies one engine command through the durable pipeline (ACK after COMMIT). */
 export type Submit = (command: Command) => Promise<Result>;
 const asAction = (command: Command, companyId: number, correlationId: string): Command => ({ id: command.id, type: 'action.execute', payload: { action: { version: 1, id: command.id, companyId, type: command.type, parameters: command.payload ?? {}, source: 'agent', correlationId, ...(command.changeId ? { changeId: command.changeId } : {}) } } });
@@ -82,15 +84,20 @@ export async function executeCalls(current: () => { g: GameState; actor: Identit
   if (staleTargets(before, snapshotFor(first.g, first.actor), dry.commands)) return { state: 'REJECTED' as const, message: 'La revisión o la partida cambió durante la solicitud. No se ejecutó nada.', outcomes: [] as OperationOutcome[] };
   const outcomes: OperationOutcome[] = [], information: string[] = [];
   let index = 0;
-  for (const call of calls) {
-    const ctx = context(), plan = planCalls([call], ctx);
+  for (const call of dedupe(calls)) {
+    // Session, employment and game are rechecked before every operation; a change stops the rest.
+    let ctx: ExecutorContext;
+    try { ctx = context(); } catch { outcomes.push({ tool: call.name, ok: false, message: 'La sesión, el empleo o la partida cambió. Se detuvieron las operaciones restantes.', refs: [] }); break; }
+    if (ctx.g.generation !== before.generation) { outcomes.push({ tool: call.name, ok: false, message: 'La partida cambió. Se detuvieron las operaciones restantes.', refs: [] }); break; }
+    const plan = planCalls([call], ctx);
     information.push(...plan.information);
     if (plan.state === 'INFORMATION') continue;
     if (plan.state !== 'EXECUTED') { outcomes.push({ tool: call.name, ok: false, message: plan.message, refs: [] }); break; }
     let failed = false;
     for (const { planned, command } of commandsFor(plan, ctx)) {
       const id = `${input.id}:op${++index}`.slice(0, 100), result = await submit(asAction({ ...command, id }, ctx.c.id, input.id));
-      const { g } = current(); outcomes.push(outcome(call.name, planned, result, g));
+      let g = ctx.g; try { g = current().g; } catch { /* the reply still describes the committed result */ }
+      outcomes.push(outcome(call.name, planned, result, g));
       if (!result.ok) { failed = true; break; }
     }
     if (failed) break;

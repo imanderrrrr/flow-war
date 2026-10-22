@@ -12,7 +12,7 @@ import { activeScope, operations } from './operations.js';
 import { productState, productView } from './product.js';
 import { PRODUCT_CATALOG, PROMOTION_PARAMETERS } from '../shared/product.js';
 import { employeeFor } from './discipline.js';
-import { checkQuotes, groundChoice, groundNumber, groundVerbatim, mentionsId, normalize, GroundingError, type Sources } from './grounding.js';
+import { checkQuotes, groundChoice, groundNumber, groundIntent, labeledText, firstPosition, mentionsId, normalize, GroundingError, type Sources } from './grounding.js';
 
 /**
  * Operational executor. Claude only selects one of the tools below and copies the student's values.
@@ -63,13 +63,19 @@ const commands = (...list: PlannedCommand[]): Plan => ({ kind: 'commands', comma
 const failure = (r: Result) => r.error ?? 'Operación rechazada.';
 const said = (quotes: string[], pattern: RegExp) => quotes.some(q => pattern.test(q));
 
-/** Operation verbs: quoted by the model or, when unambiguous, present in the instruction itself. Values stay quote-grounded. */
-function groundVerb(field: string, q: string[], ctx: ExecutorContext, patterns: RegExp[], opposites: RegExp[] = []) {
-  if (q.some(x => patterns.some(p => p.test(x)))) return;
-  const instruction = normalize(ctx.sources.instruction);
-  if (patterns.some(p => p.test(instruction)) && !opposites.some(p => p.test(instruction))) return;
-  throw new GroundingError(field);
+/** The operation must be ordered in the current instruction (not negated, no opposing order). Values stay quote-grounded. */
+function groundVerb(field: string, _q: string[], ctx: ExecutorContext, patterns: RegExp[], opposites: RegExp[] = []) {
+  groundIntent(field, ctx.sources.instruction, patterns, opposites);
 }
+/** Field words a number must sit next to, so a value stated for one field cannot fill another. */
+const NEAR = {
+  servers: /^(servidor|servidores|app|instancia|instancias)$/, requests: /^(solicitud|solicitudes|compra|compras|comprador|compradores|cliente|clientes|usuario|usuarios|pedido|pedidos|persona|personas|request|requests|intento|intentos)$/,
+  stock: /^(stock|unidad|unidades|inventario|existencia|existencias|producto|productos)$/, concurrency: /^(concurrencia|concurrentes|simultaneas|simultaneos|paralelo|paralelas|vez)$/,
+  retries: /^(reintento|reintentos|retry|retries|timeouts?|fallos?)$/, coupons: /^(cupon|cupones)$/, limit: /^(solicitud|solicitudes|peticion|peticiones|request|requests|limite|maximo|compras|intentos)$/,
+  factor: /^(multiplicador|veces|demanda|llegadas|x)$/, budget: /^(presupuesto|monto|q|quetzales)$/,
+  parameter: /^(ttl|capacidad|intento|intentos|reintento|reintentos|espera|minimo|cantidad|unidad|unidades|cola|tamano|lock|bloqueo|cache|retry|queue|validacion|stock|adquisicion|maximo|elementos|entradas)$/,
+};
+const QUESTION_REQUEST = /\b(podes|podrias|puedes|podria|puede|quiero que|necesito que|por favor|haceme el favor)\b/;
 function nullableNumber(v: unknown): number | null {
   if (v === null || v === undefined) return null;
   if (typeof v !== 'number' || !Number.isFinite(v)) throw new GroundingError('valor');
@@ -109,21 +115,28 @@ const BLOCK_PATTERNS: Record<string, RegExp> = {
 const BACKEND_TYPES = BLOCKS.backend.map(b => b.type);
 const label = (n: GraphNode) => `${n.data.label} (${n.id})`;
 function backendDraft(c: Company) { return { graph: structuredClone(c.drafts.backend?.graph ?? c.backend), revision: c.drafts.backend?.revision ?? 0 }; }
+const POINTING = /\b(este|ese|esta|esa|aquel|aquella) (bloque|nodo|pieza|modulo)\b|\b(el|la) (bloque|nodo|pieza|modulo) seleccionad[oa]\b/;
+/** The student named the block (ID or type) or pointed at the block selected on their own editor. */
 function resolveBlock(ctx: ExecutorContext, graph: Graph, ref: unknown, quotes: string[], tool: string, field: string): GraphNode | Plan {
-  const value = typeof ref === 'string' ? ref.trim() : '';
-  const byId = graph.nodes.find(n => n.id === value);
-  const instruction = normalize(ctx.sources.instruction);
+  const value = typeof ref === 'string' ? ref.trim() : '', instruction = normalize(ctx.sources.instruction);
   const selected = ctx.selection.nodeId ? graph.nodes.find(n => n.id === ctx.selection.nodeId) : undefined;
-  if (byId) {
-    const grounded = mentionsId(byId.id, quotes) || BLOCK_PATTERNS[byId.type]?.test(quotes.join(' ')) || BLOCK_PATTERNS[byId.type]?.test(instruction) && quotes.length > 0 || (selected?.id === byId.id && /\b(este|ese|esta|esa|seleccionad[oa])\b/.test(instruction));
-    return grounded ? byId : needs(tool, [field]);
-  }
-  if (selected && /\b(este|ese|esta|esa|seleccionad[oa])\b/.test(normalize(value || instruction))) return selected;
+  const byId = graph.nodes.find(n => n.id === value);
   const types = Object.entries(BLOCK_PATTERNS).filter(([, p]) => p.test(normalize(value))).map(([t]) => t);
-  const matches = graph.nodes.filter(n => types.includes(n.type));
-  if (matches.length === 1) return matches[0];
-  if (!matches.length) return restriction('Bloque no encontrado en el borrador.');
-  return needs(tool, [field], matches.map(label));
+  const candidates = byId ? [byId] : types.length ? graph.nodes.filter(n => types.includes(n.type)) : selected && POINTING.test(normalize(value)) ? [selected] : [];
+  if (!candidates.length) return restriction('Bloque no encontrado en el borrador.');
+  if (candidates.length > 1) return needs(tool, [field], candidates.map(label));
+  const node = candidates[0];
+  const byName = mentionsId(node.id, [...quotes, instruction]), byPointer = selected?.id === node.id && POINTING.test(instruction);
+  const byType = BLOCK_PATTERNS[node.type]?.test(instruction) && graph.nodes.filter(n => n.type === node.type).length === 1;
+  return byName || byPointer || byType ? node : needs(tool, [field]);
+}
+/** Word position where the student referred to a block, to keep the sense of "X antes de Y" or "conectá X con Y". */
+function blockPosition(ctx: ExecutorContext, node: GraphNode) {
+  const text = ctx.sources.instruction, idTokens = normalize(text).split(' ').map(w => w.replace(/[.,:]+$/, ''));
+  const byId = idTokens.indexOf(normalize(node.id));
+  if (byId >= 0) return byId;
+  if (ctx.selection.nodeId === node.id) { const pointer = firstPosition(text, /(este|ese|esta|esa) (bloque|nodo|pieza|modulo)/); if (pointer >= 0) return pointer; }
+  return BLOCK_PATTERNS[node.type] ? firstPosition(text, BLOCK_PATTERNS[node.type]) : -1;
 }
 function saveDraft(c: Company, graph: Graph, revision: number, describe: (r: Result) => string): PlannedCommand {
   return { type: 'draft.save', payload: { graph, revision }, describe: r => r.ok ? describe(r) : failure(r) };
@@ -149,6 +162,7 @@ function backendTools(): ToolSpec[] {
     { name: 'backend_agregar_bloque', description: 'Agrega al borrador Backend un bloque del tipo que el estudiante nombró explícitamente. Queda sin conexiones.', schema: obj({ tipo: choice(BACKEND_TYPES), citas: quotes }), fields: { tipo: 'tipo de bloque' },
       plan(p, ctx, q) {
         const locked = editable(ctx); if (locked) return locked;
+        groundVerb('accion', q, ctx, [/\b(agreg\w*|anad\w*|sum\w*|pon\w*|coloc\w*|insert\w*|incorpor\w*|cre[ae]\w*|mete\w*)\b/], [/\b(quit\w*|elimin\w*|sac\w*|borr\w*|remov\w*|retir\w*)\b/]);
         const type = String(p.tipo); if (!BACKEND_TYPES.includes(type)) return needs(this.name, ['tipo']);
         groundChoice('tipo', q, [BLOCK_PATTERNS[type]]);
         const { graph, revision } = backendDraft(ctx.c), block = BLOCKS.backend.find(b => b.type === type)!;
@@ -160,6 +174,7 @@ function backendTools(): ToolSpec[] {
     { name: 'backend_quitar_bloque', description: 'Elimina del borrador el bloque indicado y sus conexiones. No reconecta otros bloques.', schema: obj({ bloque: str('ID o nombre del bloque'), citas: quotes }), fields: { bloque: 'bloque' },
       plan(p, ctx, q) {
         const locked = editable(ctx); if (locked) return locked;
+        groundVerb('accion', q, ctx, [/\b(quit\w*|elimin\w*|sac\w*|borr\w*|remov\w*|retir\w*)\b/], [/\b(agreg\w*|anad\w*|sum\w*|coloc\w*|insert\w*)\b/]);
         const { graph, revision } = backendDraft(ctx.c), node = resolveBlock(ctx, graph, p.bloque, q, this.name, 'bloque'); if (isPlan(node)) return node;
         const removed = graph.edges.filter(e => e.source === node.id || e.target === node.id).length;
         graph.nodes = graph.nodes.filter(n => n.id !== node.id); graph.edges = graph.edges.filter(e => e.source !== node.id && e.target !== node.id);
@@ -171,6 +186,8 @@ function backendTools(): ToolSpec[] {
         const { graph, revision } = backendDraft(ctx.c);
         const from = resolveBlock(ctx, graph, p.origen, q, this.name, 'origen'); if (isPlan(from)) return from;
         const to = resolveBlock(ctx, graph, p.destino, q, this.name, 'destino'); if (isPlan(to)) return to;
+        groundVerb('accion', q, ctx, [/\b(conect\w*|enlaz\w*|une|uni|unir|vincul\w*)\b/], [/\b(desconect\w*|separ\w*|desenlaz\w*)\b/]);
+        const order = [blockPosition(ctx, from), blockPosition(ctx, to)]; if (order[0] >= 0 && order[1] >= 0 && order[0] > order[1]) return needs(this.name, ['origen', 'destino']);
         const existing = graph.edges.find(e => e.source === from.id);
         if (existing) return restriction(`${label(from)} ya tiene una salida hacia ${existing.target}. Indicá si querés desconectarla.`);
         graph.edges.push({ id: `edge-${from.id}-${to.id}`, source: from.id, target: to.id });
@@ -183,6 +200,9 @@ function backendTools(): ToolSpec[] {
         const node = resolveBlock(ctx, graph, p.bloque, q, this.name, 'bloque'); if (isPlan(node)) return node;
         const target = resolveBlock(ctx, graph, p.antes_de, q, this.name, 'antes_de'); if (isPlan(target)) return target;
         if (node.id === target.id) return restriction('El bloque no puede ubicarse antes de sí mismo.');
+        groundVerb('accion', q, ctx, [/\b(conect\w*|ubic\w*|pon\w*|coloc\w*|insert\w*|mov\w*|pas\w*|mete\w*)\b/]);
+        const antes = firstPosition(ctx.sources.instruction, /antes/), at = [blockPosition(ctx, node), blockPosition(ctx, target)];
+        if (antes < 0 || at[1] <= antes || (at[0] >= 0 && at[0] > antes)) return needs(this.name, ['bloque', 'antes_de']);
         const incoming = graph.edges.find(e => e.target === node.id), outgoing = graph.edges.find(e => e.source === node.id);
         graph.edges = graph.edges.filter(e => e !== incoming && e !== outgoing);
         if (incoming && outgoing) graph.edges.push({ id: `edge-${incoming.source}-${outgoing.target}`, source: incoming.source, target: outgoing.target });
@@ -198,6 +218,7 @@ function backendTools(): ToolSpec[] {
         const { graph, revision } = backendDraft(ctx.c);
         const from = resolveBlock(ctx, graph, p.origen, q, this.name, 'origen'); if (isPlan(from)) return from;
         const to = resolveBlock(ctx, graph, p.destino, q, this.name, 'destino'); if (isPlan(to)) return to;
+        groundVerb('accion', q, ctx, [/\b(desconect\w*|separ\w*|desenlaz\w*|cort\w*)\b/, /\b(quit\w*|elimin\w*|retir\w*|borr\w*) la conexion\b/]);
         const edge = graph.edges.find(e => e.source === from.id && e.target === to.id); if (!edge) return restriction('No existe esa conexión en el borrador.');
         graph.edges = graph.edges.filter(e => e !== edge);
         return commands(saveDraft(ctx.c, graph, revision, () => `Conexión retirada: ${from.data.label} → ${to.data.label}.`));
@@ -207,14 +228,16 @@ function backendTools(): ToolSpec[] {
         const locked = editable(ctx); if (locked) return locked;
         const { graph, revision } = backendDraft(ctx.c);
         const node = resolveBlock(ctx, graph, p.bloque, q, this.name, 'bloque'); if (isPlan(node)) return node;
-        const spec = PARAMETERS[String(p.parametro)]?.find(s => s.block === node.type);
+        groundVerb('accion', q, ctx, [/\b(pon\w*|fij\w*|configur\w*|cambi\w*|establec\w*|ajust\w*|sub\w*|baj\w*|dej\w*|us[ae]\w*|asign\w*|aument\w*|reduc\w*|activ\w*|desactiv\w*)\b/]);
+        if (!Object.hasOwn(PARAMETERS, String(p.parametro))) return needs(this.name, ['parametro']);
+        const spec = PARAMETERS[String(p.parametro)].find(s => s.block === node.type);
         if (!spec) return restriction(`${node.data.label} no tiene el parámetro ${String(p.parametro)}.`);
         let value: number | boolean | string;
         if (spec.kind === 'boolean') { const o = p.valor_opcion; if (o !== 'si' && o !== 'no') return needs(this.name, ['valor_opcion']); groundChoice('valor_opcion', q, [o === 'si' ? YES : NO]); value = o === 'si'; }
         else if (spec.kind === 'resource') { const o = p.valor_opcion; if (o !== 'stock' && o !== 'pago') return needs(this.name, ['valor_opcion']); groundChoice('valor_opcion', q, [o === 'stock' ? /\b(stock|inventario)\b/ : /\b(pagos?|payment)\b/]); value = o === 'stock' ? 'stock' : 'payment'; }
         else {
           const n = nullableNumber(p.valor_numero); if (n === null || !Number.isInteger(n)) return needs(this.name, ['valor_numero']);
-          groundNumber('valor_numero', n, q, spec.kind === 'seconds' ? 'seconds' : spec.kind === 'millis' ? 'millis' : 'plain');
+          groundNumber('valor_numero', n, q, spec.kind === 'seconds' ? 'seconds' : spec.kind === 'millis' ? 'millis' : 'plain', NEAR.parameter);
           if (n < spec.min! || n > spec.max!) return restriction(`Rango permitido: ${spec.min}–${spec.max}.`);
           value = n;
         }
@@ -224,10 +247,10 @@ function backendTools(): ToolSpec[] {
         return commands(saveDraft(ctx.c, graph, revision, () => `${node.data.label}: ${String(p.parametro)} = ${String(value)}.`));
       } },
     { name: 'backend_guardar', description: 'Guarda una nueva revisión del borrador Backend actual sin modificarlo.', schema: obj({ citas: quotes }),
-      plan(_p, ctx) { const locked = editable(ctx); if (locked) return locked; const { graph, revision } = backendDraft(ctx.c); return commands(saveDraft(ctx.c, graph, revision, () => `Borrador guardado · r${revision + 1}.`)); } },
+      plan(_p, ctx, q) { const locked = editable(ctx); if (locked) return locked; groundVerb('accion', q, ctx, [/\b(guard\w*|salv\w*)\b/]); const { graph, revision } = backendDraft(ctx.c); return commands(saveDraft(ctx.c, graph, revision, () => `Borrador guardado · r${revision + 1}.`)); } },
     { name: 'backend_entregar', description: 'Entrega el borrador Backend actual al pipeline (Backend → Seguridad → QA). Solo cuando el estudiante lo ordena.', schema: obj({ citas: quotes }),
       plan(_p, ctx) {
-        const locked = editable(ctx); if (locked) return locked; const { graph, revision } = backendDraft(ctx.c);
+        const locked = editable(ctx); if (locked) return locked; groundVerb('accion', [], ctx, [/\b(entreg\w*|envi\w*|mand\w*)\b/]); const { graph, revision } = backendDraft(ctx.c);
         return commands({ type: 'change.submit', payload: { graph, revision }, describe: r => r.ok ? `Revisión ${r.refs?.[0] ?? ''} enviada a Seguridad. Continúa hacia QA.` : failure(r) });
       } },
   ];
@@ -252,7 +275,7 @@ function securityTools(): ToolSpec[] {
         const control = String(p.control) as typeof CONTROLS[number]; if (!CONTROLS.includes(control)) return needs(this.name, ['control']);
         groundChoice('control', q, [CONTROL_PATTERNS[control]]);
         const add = p.accion === 'agregar';
-        const ADD = /\b(agreg\w*|anad\w*|activ\w*|aplic\w*|pon\w*|configur\w*|sum\w*|incorpor\w*|exig\w*|requer\w*|bloque\w*|limit\w*)\b/, REMOVE = /\b(quit\w*|elimin\w*|sac\w*|remov\w*|desactiv\w*|retir\w*)\b/;
+        const ADD = /\b(agreg\w*|anad\w*|activ\w*|aplic\w*|pon\w*|configur\w*|sum\w*|incorpor\w*|exig\w*|requer\w*|bloquea|bloquear|bloquee|bloqueen|limit\w*)\b/, REMOVE = /\b(quit\w*|elimin\w*|sac\w*|remov\w*|desactiv\w*|retir\w*)\b/;
         groundVerb('accion', q, ctx, [add ? ADD : REMOVE], [add ? REMOVE : ADD]);
         const draft = ctx.c.runtime.collaboration?.reviews[ch.id]; if (!draft) return restriction('Revisión de protección ausente.');
         const current = structuredClone(draft.blocks[node.id]?.rules ?? []), kind = CONTROL_KIND[control];
@@ -263,7 +286,7 @@ function securityTools(): ToolSpec[] {
             const limit = nullableNumber(p.limite), window = nullableNumber(p.ventana_segundos), group = p.agrupar_por;
             const missing = [...(limit === null ? ['limite'] : []), ...(window === null ? ['ventana_segundos'] : []), ...(group !== 'origen' && group !== 'cliente' ? ['agrupar_por'] : [])];
             if (missing.length) return needs(this.name, missing);
-            groundNumber('limite', limit!, q); groundNumber('ventana_segundos', window!, q, 'seconds'); groundChoice('agrupar_por', q, [group === 'origen' ? /\b(origen|ip|origenes)\b/ : /\b(cliente|clientes|usuario|usuarios)\b/]);
+            groundNumber('limite', limit!, q, 'plain', NEAR.limit); groundNumber('ventana_segundos', window!, q, 'seconds'); groundChoice('agrupar_por', q, [group === 'origen' ? /\b(origen|ip|origenes)\b/ : /\b(cliente|clientes|usuario|usuarios)\b/]);
             rule = { kind, limit: limit!, windowSeconds: window!, groupBy: group === 'origen' ? 'origin' : 'customer' };
           } else rule = { kind } as ProtectionRule;
         }
@@ -275,6 +298,7 @@ function securityTools(): ToolSpec[] {
     { name: 'seguridad_entregar', description: 'Entrega a QA la revisión de Seguridad guardada del cambio indicado.', schema: obj({ cambio: str('ID del cambio o vacío'), citas: quotes }), fields: { cambio: 'cambio' },
       plan(p, ctx, q) {
         const ch = resolveChange(ctx, p.cambio, q, pending, this.name); if (isPlan(ch)) return ch;
+        groundVerb('accion', q, ctx, [/\b(entreg\w*|envi\w*|mand\w*)\b/]);
         const draft = ctx.c.runtime.collaboration?.reviews[ch.id]; if (!draft) return restriction('Revisión de protección ausente.');
         return commands({ type: 'security.submit', payload: { changeId: ch.id, revision: draft.revision }, describe: r => r.ok ? `Revisión ${ch.id} enviada a QA.` : failure(r) });
       } },
@@ -282,7 +306,8 @@ function securityTools(): ToolSpec[] {
       plan(p, ctx, q) {
         const ch = resolveChange(ctx, p.cambio, q, pending, this.name); if (isPlan(ch)) return ch;
         const node = resolveBlock(ctx, ch.graph, p.bloque, q, this.name, 'bloque'); if (isPlan(node)) return node;
-        const body = groundVerbatim('texto', p.texto, ctx.sources);
+        groundVerb('accion', q, ctx, [/\b(envi\w*|mand\w*|observ\w*|avis\w*|coment\w*|escrib\w*|deci\w*|solicit\w*|ped\w*)\b/]);
+        const body = labeledText('texto', ctx.sources.instruction, ['observacion', 'texto', 'mensaje', '__quoted__'], p.texto);
         return commands({ type: 'security.correction', payload: { changeId: ch.id, nodeId: node.id, text: body }, describe: r => r.ok ? `Observación enviada a Backend sobre ${node.data.label}.` : failure(r) });
       } },
   ];
@@ -292,28 +317,34 @@ function securityTools(): ToolSpec[] {
 export const SUITE_LABELS = { concurrencia: 'Concurrencia', regresion: 'Regresión', carga: 'Carga', seguridad: 'Seguridad', integracion: 'Integración', unitarias: 'Unitarias' } as const;
 const SUITE_PATTERNS: Record<keyof typeof SUITE_LABELS, RegExp> = { concurrencia: /\bconcurren\w*/, regresion: /\bregresi\w*/, carga: /\b(carga|load|estres)\b/, seguridad: /\b(seguridad|security)\b/, integracion: /\bintegraci\w*/, unitarias: /\b(unitari\w*|unit)\b/ };
 const SEVERITY = { baja: 'low', media: 'medium', alta: 'high', critica: 'critical' } as const;
+const QA_RUN = /\b(ejecut\w*|corre|corra|correr|corran|lanz\w*|proba|probar|prueben|pruebe|realiz\w*|inici\w*|hace|hacer|haga|hagan|testea\w*)\b/;
+const TIPO_PATTERNS = { unit: /\b(unitari\w*|unit)\b/, integration: /\bintegraci\w*/, concurrency: /\b(concurren\w*|al mismo tiempo|simultane\w*|a la vez|en paralelo)\b/, load: /\b(carga|load|estres)\b/, security: /\b(seguridad|security|ataque\w*)\b/, regression: /\bregresi\w*/ } as const;
+const LETTER_LABELS = { asunto: ['asunto'], descripcion: ['descripcion', 'descripcion del problema', 'problema'], pasos: ['pasos', 'pasos para reproducir', 'reproduccion'], observado: ['observado', 'resultado observado'], esperado: ['esperado', 'resultado esperado'] } as const;
 function qaRuns(ctx: ExecutorContext, ch: Change) { return (ctx.c.runtime.workflow?.runs ?? []).filter(r => r.changeId === ch.id && r.report && r.bundleDigest === (ch.implementation?.bundleDigest ?? r.bundleDigest)); }
 function qaTools(): ToolSpec[] {
   const start = (ctx: ExecutorContext, ch: Change, scenario: TestScenario, label: string): Plan => commands({ type: 'qa.execute', changeId: ch.id, payload: { changeId: ch.id, scenario, request: ctx.sources.instruction.slice(0, 4000), threadId: ctx.threadId }, describe: r => r.ok ? `Prueba ${label} iniciada sobre ${ch.id} en staging aislado. El motor publicará el reporte al terminar.` : failure(r) });
   return [
     { name: 'qa_ejecutar_suite', description: 'Ejecuta sobre el cambio indicado la suite que nombró el estudiante.', schema: obj({ cambio: str('ID del cambio o vacío'), suite: choice(Object.keys(SUITE_LABELS)), citas: quotes }), fields: { cambio: 'cambio', suite: 'suite' },
       plan(p, ctx, q) {
-        const suite = String(p.suite) as keyof typeof SUITE_LABELS; if (!(suite in SUITE_LABELS)) return needs(this.name, ['suite']);
+        groundVerb('accion', q, ctx, [QA_RUN]);
+        const suite = String(p.suite) as keyof typeof SUITE_LABELS; if (!Object.hasOwn(SUITE_LABELS, suite)) return needs(this.name, ['suite']);
         groundChoice('suite', q, [SUITE_PATTERNS[suite]]);
         const ch = resolveChange(ctx, p.cambio, q, ['QA_PENDING'], this.name); if (isPlan(ch)) return ch;
         return start(ctx, ch, scenarioForSuite(SUITE_LABELS[suite]), SUITE_LABELS[suite]);
       } },
     { name: 'qa_ejecutar_escenario', description: 'Ejecuta un escenario de prueba con las cantidades explícitas del estudiante. Los interruptores no mencionados quedan en su valor neutro del laboratorio.', schema: obj({ cambio: str(), tipo: choice(['unit', 'integration', 'concurrency', 'load', 'security', 'regression']), solicitudes: int(), stock: int(), concurrencia: int(), simultaneas: bool('true si el estudiante pidió que todas ocurran al mismo tiempo'), reintentos: nullable(int()), ataque: nullable(choice(['forged', 'injection', 'bot'])), cupones: nullable(int()), mismo_pago: nullable(bool()), citas: quotes }),
-      fields: { cambio: 'cambio', solicitudes: 'cantidad de solicitudes', stock: 'stock inicial', concurrencia: 'concurrencia', reintentos: 'reintentos', cupones: 'cupones' },
+      fields: { cambio: 'cambio', tipo: 'tipo de prueba', solicitudes: 'cantidad de solicitudes', stock: 'stock inicial', concurrencia: 'concurrencia', reintentos: 'reintentos', cupones: 'cupones' },
       plan(p, ctx, q) {
+        groundVerb('accion', q, ctx, [QA_RUN]);
+        const tipo = String(p.tipo) as keyof typeof TIPO_PATTERNS; if (!Object.hasOwn(TIPO_PATTERNS, tipo) || !TIPO_PATTERNS[tipo].test(normalize(ctx.sources.instruction))) return needs(this.name, ['tipo']);
         const ch = resolveChange(ctx, p.cambio, q, ['QA_PENDING'], this.name); if (isPlan(ch)) return ch;
-        const requests = groundNumber('solicitudes', Number(p.solicitudes), q, 'count');
-        const stock = Number(p.stock) === 1 && said(q, /\b(ultima unidad|unica unidad|una sola unidad|un solo producto)\b/) ? 1 : groundNumber('stock', Number(p.stock), q, 'count');
+        const requests = groundNumber('solicitudes', Number(p.solicitudes), q, 'count', NEAR.requests);
+        const stock = Number(p.stock) === 1 && said(q, /\b(ultima unidad|unica unidad|una sola unidad|un solo producto)\b/) ? 1 : groundNumber('stock', Number(p.stock), q, 'count', NEAR.stock);
         let concurrency = Number(p.concurrencia);
-        if (p.simultaneas === true && concurrency === requests) groundChoice('concurrencia', q, [/\b(al mismo tiempo|simultane\w*|a la vez|en paralelo|concurrentes?)\b/]); else groundNumber('concurrencia', concurrency, q);
-        const scenario: TestScenario = { ...DEFAULT_TEST, suite: String(p.tipo) as TestScenario['suite'], requests, stock, concurrency };
-        if (p.reintentos !== null) scenario.retries = groundNumber('reintentos', Number(p.reintentos), q);
-        if (p.cupones !== null) scenario.coupons = groundNumber('cupones', Number(p.cupones), q);
+        if (p.simultaneas === true && concurrency === requests) groundChoice('concurrencia', q, [/\b(al mismo tiempo|simultane\w*|a la vez|en paralelo|concurrentes?)\b/]); else groundNumber('concurrencia', concurrency, q, 'count', NEAR.concurrency);
+        const scenario: TestScenario = { ...DEFAULT_TEST, suite: tipo, requests, stock, concurrency };
+        if (p.reintentos !== null) scenario.retries = groundNumber('reintentos', Number(p.reintentos), q, 'count', NEAR.retries);
+        if (p.cupones !== null) scenario.coupons = groundNumber('cupones', Number(p.cupones), q, 'count', NEAR.coupons);
         if (p.ataque !== null) { groundChoice('ataque', q, [p.ataque === 'forged' ? /\b(falsificad\w*|forged|suplant\w*)\b/ : p.ataque === 'injection' ? /\b(inyecci\w*|injection)\b/ : /\b(bots?|automatizad\w*)\b/]); scenario.attack = p.ataque as TestScenario['attack']; }
         if (p.mismo_pago === true) { groundChoice('mismo_pago', q, [/\b(mismo pago|misma intencion|duplicad\w*|mismo cobro)\b/]); scenario.duplicateIntent = true; }
         if (!Number.isInteger(requests) || requests < 1 || requests > 500 || stock < 0 || stock > 2000 || concurrency < 1 || concurrency > requests) return restriction('Escenario fuera de los límites del laboratorio (1–500 solicitudes, stock 0–2000, concurrencia 1–solicitudes).');
@@ -321,6 +352,7 @@ function qaTools(): ToolSpec[] {
       } },
     { name: 'qa_repetir_prueba', description: 'Repite una prueba anterior con la misma versión y semilla.', schema: obj({ prueba: str('ID de la prueba, por ejemplo C0-QA3'), citas: quotes }), fields: { prueba: 'prueba' },
       plan(p, ctx, q) {
+        groundVerb('accion', q, ctx, [/\b(repet\w*|repit\w*|reejecut\w*|volv\w* a (ejecutar|correr|probar))\b/]);
         const run = (ctx.c.runtime.workflow?.runs ?? []).find(r => r.id.toLowerCase() === String(p.prueba).toLowerCase() && r.generation === ctx.g.generation);
         if (!run) return restriction('Prueba no encontrada.'); if (!mentionsId(run.id, q)) return needs(this.name, ['prueba']);
         return commands({ type: 'qa.repeat', payload: { runId: run.id }, describe: r => r.ok ? `Repetición de ${run.id} iniciada.` : failure(r) });
@@ -337,15 +369,15 @@ function qaTools(): ToolSpec[] {
     { name: 'qa_devolver', description: 'Envía la carta formal de devolución con los textos exactos que escribió el estudiante para cada campo. No redactes contenido.', schema: obj({ cambio: str(), destinatario: choice(['backend', 'seguridad', 'producto']), gravedad: choice(Object.keys(SEVERITY)), asunto: str(), descripcion: str(), pasos: str(), observado: str(), esperado: str(), pruebas: { type: 'array', items: { type: 'string' } }, citas: quotes }),
       fields: { cambio: 'cambio', destinatario: 'destinatario', gravedad: 'gravedad', asunto: 'asunto', descripcion: 'descripción', pasos: 'pasos para reproducir', observado: 'resultado observado', esperado: 'resultado esperado' },
       plan(p, ctx, q) {
+        groundVerb('accion', q, ctx, [/\b(devolv\w*|devuelv\w*|rechaz\w*|envi\w*|mand\w*|emit\w*)\b/], [/\b(aprob\w*|aprueb\w*)\b/]);
         const ch = resolveChange(ctx, p.cambio, q, ['QA_PENDING', 'CTO_PENDING', 'EXPIRED'], this.name); if (isPlan(ch)) return ch;
         const recipient = p.destinatario === 'seguridad' ? 'security' : p.destinatario === 'producto' ? 'product' : 'backend';
         groundChoice('destinatario', q, [recipient === 'security' ? /\bseguridad\b/ : recipient === 'product' ? /\bproducto\b/ : /\bbackend\b/]);
         const severity = SEVERITY[String(p.gravedad) as keyof typeof SEVERITY]; if (!severity) return needs(this.name, ['gravedad']);
         groundChoice('gravedad', q, [new RegExp(`\\b${String(p.gravedad)}\\b`)]);
         const fields = ['asunto', 'descripcion', 'pasos', 'observado', 'esperado'] as const;
-        const missing = fields.filter(f => typeof p[f] !== 'string' || !(p[f] as string).trim());
-        if (missing.length) return needs(this.name, [...missing]);
-        const letter = Object.fromEntries(fields.map(f => [f, groundVerbatim(f, p[f], ctx.sources)]));
+        // Each field is a section the student labeled; the server forwards their original words.
+        const letter = Object.fromEntries(fields.map(f => [f, labeledText(f, ctx.sources.instruction, LETTER_LABELS[f], p[f])]));
         const runs = Array.isArray(p.pruebas) ? p.pruebas.map(String) : [];
         for (const id of runs) if (!mentionsId(id, q)) throw new GroundingError('pruebas');
         return commands({ type: 'qa.return', payload: { changeId: ch.id, recipient, subject: letter.asunto, description: letter.descripcion, steps: letter.pasos, observed: letter.observado, expected: letter.esperado, severity, evidenceIds: runs, observationRefs: [] }, describe: r => r.ok ? `Carta ${r.refs?.[0] ?? ''} enviada a ${recipient === 'security' ? 'Seguridad' : recipient === 'product' ? 'Producto' : 'Backend'} sobre ${ch.id}.` : failure(r) });
@@ -358,6 +390,7 @@ function ctoTools(): ToolSpec[] {
   return [
     { name: 'cto_decidir_cambio', description: 'Registra la decisión explícita del CTO sobre un cambio aprobado por QA: autorizar su costo, rechazarlo o pedir más evidencia. El motivo es el texto del estudiante.', schema: obj({ cambio: str(), decision: choice(['autorizar', 'rechazar', 'pedir_evidencia']), citas: quotes }), fields: { cambio: 'cambio', decision: 'decisión' },
       plan(p, ctx, q) {
+        if (!['autorizar', 'rechazar', 'pedir_evidencia'].includes(String(p.decision))) return needs(this.name, ['decision']);
         const decision = p.decision === 'autorizar' ? 'authorize' : p.decision === 'rechazar' ? 'reject' : 'evidence';
         const DECISIONS = { authorize: /\b(autoriz\w*|aprob\w*|aprueb\w*|financi\w*)\b/, reject: /\b(rechaz\w*|deneg\w*|no autoriz\w*)\b/, evidence: /\b(evidencia|mas pruebas|otra prueba|pedi\w* (a )?qa)\b/ };
         groundVerb('decision', q, ctx, [DECISIONS[decision]], Object.entries(DECISIONS).filter(([k]) => k !== decision).map(([, v]) => v));
@@ -368,12 +401,13 @@ function ctoTools(): ToolSpec[] {
       fields: { monto: 'monto', duracion_segundos: 'duración', max_servidores: 'máximo de servidores' },
       plan(p, ctx, q) {
         groundVerb('decision', q, ctx, [/\b(autoriz\w*|aprob\w*|aprueb\w*|asign\w*|habilit\w*)\b/], [/\b(rechaz\w*|deneg\w*)\b/]);
-        const amount = groundNumber('monto', Number(p.monto), q, 'money'), seconds = groundNumber('duracion_segundos', Number(p.duracion_segundos), q, 'seconds'), max = groundNumber('max_servidores', Number(p.max_servidores), q, 'count');
-        const ops = Array.isArray(p.operaciones) ? p.operaciones.map(String) : [];
+        const amount = groundNumber('monto', Number(p.monto), q, 'money'), seconds = groundNumber('duracion_segundos', Number(p.duracion_segundos), q, 'seconds'), max = groundNumber('max_servidores', Number(p.max_servidores), q, 'count', NEAR.servers);
+        const ops = Array.isArray(p.operaciones) ? p.operaciones.map(String).filter(o => o === 'escalar' || o === 'balanceador') : [];
         for (const op of ops) groundChoice('operaciones', q, [op === 'escalar' ? /\b(escal\w*|servidores?|agregar|quitar)\b/ : /\bbalanceador\b/]);
-        const operations = ops.length ? ops.map(o => o === 'escalar' ? 'scale' : 'balancer') : ['scale', 'balancer'];
-        const requestId = typeof p.solicitud === 'string' && p.solicitud.trim() ? operations_(ctx).requests.find(r => r.id.toLowerCase() === String(p.solicitud).trim().toLowerCase())?.id : undefined;
-        if (typeof p.solicitud === 'string' && p.solicitud.trim() && (!requestId || !mentionsId(requestId, q))) return needs(this.name, ['solicitud']);
+        const request = typeof p.solicitud === 'string' && p.solicitud.trim() ? operations_(ctx).requests.find(r => r.id.toLowerCase() === String(p.solicitud).trim().toLowerCase()) : undefined, requestId = request?.id;
+        if (typeof p.solicitud === 'string' && p.solicitud.trim() && (!requestId || !mentionsId(requestId, [...q, normalize(ctx.sources.instruction)]))) return needs(this.name, ['solicitud']);
+        // Without explicit types: the request's own operations, or scaling (the stated server maximum) plus the balancer only if named.
+        const operations = ops.length ? ops.map(o => o === 'escalar' ? 'scale' : 'balancer') : request ? [...request.operations] : ['scale', ...(/\bbalanceador\b/.test(normalize(ctx.sources.instruction)) ? ['balancer'] : [])];
         return commands({ type: 'cto.infra_authorize', payload: { amount, durationSeconds: seconds, maxServers: max, operations: [...new Set(operations)], ...(requestId ? { requestId } : {}) }, describe: r => r.ok ? `Infraestructura autorizada: ${money(amount)} · ${seconds} s · máx. ${max} servidores · ${operations.map(o => o === 'scale' ? 'escalar' : 'balanceador').join(' y ')}.` : failure(r) });
       } },
     { name: 'cto_rechazar_solicitud', description: 'Rechaza la solicitud de presupuesto de DevOps indicada.', schema: obj({ solicitud: str('ID REQ o vacío'), citas: quotes }), fields: { solicitud: 'solicitud' },
@@ -389,6 +423,7 @@ function ctoTools(): ToolSpec[] {
       plan(p, ctx, q) {
         groundVerb('decision', q, ctx, [/\b(autoriz\w*|aprob\w*|aprueb\w*)\b/], [/\b(rechaz\w*|deneg\w*)\b/]); groundVerb('accion', q, ctx, [/\b(rollback|revert\w*|volver a la version|restaur\w*)\b/]);
         const amount = groundNumber('monto', Number(p.monto), q, 'money'), releases = operations_(ctx).releases;
+        void releases;
         let target: number;
         if (p.version_objetivo === null) { if (!said(q, /\b(version anterior|anterior version)\b/)) return needs(this.name, ['version_objetivo']); const prior = [...releases].reverse().find(r => r.version < ctx.c.version); if (!prior) return restriction('No existe una versión anterior publicada.'); target = prior.version; }
         else target = said(q, new RegExp(`\\bv\\s?${Number(p.version_objetivo)}\\b|\\bversion ${Number(p.version_objetivo)}\\b`)) ? Number(p.version_objetivo) : (() => { throw new GroundingError('version_objetivo'); })();
@@ -396,6 +431,7 @@ function ctoTools(): ToolSpec[] {
       } },
     { name: 'cto_priorizar', description: 'Cambia la prioridad registrada y visible de incidentes.', schema: obj({ incidente: choice(['seguridad', 'concurrencia']), citas: quotes }), fields: { incidente: 'incidente' },
       plan(p, ctx, q) {
+        groundVerb('accion', q, ctx, [/\b(prioriz\w*|prioridad|pon\w*|establec\w*|cambi\w*|marc\w*)\b/]);
         const incident = p.incidente === 'seguridad' ? 'security' : 'concurrency';
         groundChoice('incidente', q, [incident === 'security' ? /\bseguridad\b/ : /\bconcurren\w*/]);
         return commands({ type: 'cto.prioritize', payload: { incident }, describe: r => r.ok ? `Prioridad registrada: ${incident === 'security' ? 'seguridad' : 'concurrencia'}.` : failure(r) });
@@ -413,7 +449,7 @@ function devopsTools(): ToolSpec[] {
     { name: 'devops_escalar', description: 'Agrega, quita o fija la cantidad de servidores que indicó explícitamente el estudiante.', schema: obj({ accion: choice(['agregar', 'quitar', 'fijar_total']), cantidad: int(), citas: quotes }), fields: { cantidad: 'cantidad de servidores', accion: 'operación (agregar, quitar o fijar total)' },
       plan(p, ctx, q) {
         const amount = Number(p.cantidad); if (!Number.isInteger(amount) || amount < 0) return needs(this.name, ['cantidad']);
-        groundNumber('cantidad', amount, q, 'count');
+        groundNumber('cantidad', amount, q, 'count', NEAR.servers);
         const action = String(p.accion);
         const ACTIONS: Record<string, RegExp> = { agregar: /\b(agreg\w*|anad\w*|sum\w*|aument\w*|increment\w*|levant\w*|cre[ae]\w*|mas)\b/, quitar: /\b(quit\w*|elimin\w*|reduc\w*|sac\w*|baj\w*|remov\w*|retir\w*|menos)\b/, fijar_total: /\b(dej\w*|establec\w*|fij\w*|escal\w* a|en total|solamente|solo|queden?)\b/ };
         if (!ACTIONS[action]) return needs(this.name, ['accion']);
@@ -431,6 +467,7 @@ function devopsTools(): ToolSpec[] {
       } },
     { name: 'devops_desplegar', description: 'Despliega un cambio autorizado con la estrategia que nombró el estudiante (rolling o restart_replace).', schema: obj({ cambio: str('ID del cambio o vacío'), estrategia: choice(['rolling', 'restart_replace']), citas: quotes }), fields: { cambio: 'cambio', estrategia: 'estrategia (ROLLING o RESTART REPLACE)' },
       plan(p, ctx, q) {
+        groundVerb('accion', q, ctx, [/\b(despleg\w*|desplieg\w*|deploy\w*|public\w*|lanz\w*)\b/, /\b(sub\w*|pas\w*) a produccion\b/]);
         const strategy = p.estrategia === 'rolling' ? 'rolling' : p.estrategia === 'restart_replace' ? 'restart' : '';
         if (!strategy) return needs(this.name, ['estrategia']);
         groundChoice('estrategia', q, [STRATEGY_PATTERNS[strategy]]);
@@ -440,8 +477,9 @@ function devopsTools(): ToolSpec[] {
     { name: 'devops_solicitar_presupuesto', description: 'Solicita al CTO presupuesto de infraestructura con monto, duración, máximo de servidores y operaciones que indicó el estudiante.', schema: obj({ monto: int(), duracion_segundos: int(), max_servidores: int(), operaciones: { type: 'array', items: choice(['escalar', 'balanceador']) }, citas: quotes }),
       fields: { monto: 'monto', duracion_segundos: 'duración', max_servidores: 'máximo de servidores', operaciones: 'operaciones (escalar, balanceador)' },
       plan(p, ctx, q) {
-        const amount = groundNumber('monto', Number(p.monto), q, 'money'), seconds = groundNumber('duracion_segundos', Number(p.duracion_segundos), q, 'seconds'), max = groundNumber('max_servidores', Number(p.max_servidores), q, 'count');
-        const ops = Array.isArray(p.operaciones) ? p.operaciones.map(String) : []; if (!ops.length) return needs(this.name, ['operaciones']);
+        groundVerb('accion', q, ctx, [/\b(solicit\w*|ped\w*|pid\w*|requer\w*)\b/]);
+        const amount = groundNumber('monto', Number(p.monto), q, 'money'), seconds = groundNumber('duracion_segundos', Number(p.duracion_segundos), q, 'seconds'), max = groundNumber('max_servidores', Number(p.max_servidores), q, 'count', NEAR.servers);
+        const ops = Array.isArray(p.operaciones) ? p.operaciones.map(String).filter(o => o === 'escalar' || o === 'balanceador') : []; if (!ops.length) return needs(this.name, ['operaciones']);
         for (const op of ops) groundChoice('operaciones', q, [op === 'escalar' ? /\b(escal\w*|servidores?|agregar|quitar)\b/ : /\bbalanceador\b/]);
         const operations = [...new Set(ops.map(o => o === 'escalar' ? 'scale' : 'balancer'))];
         return commands({ type: 'infra.request_budget', payload: { amount, durationSeconds: seconds, maxServers: max, operations }, describe: r => r.ok ? `Solicitud ${r.refs?.[0] ?? ''} enviada al CTO: ${money(amount)} · ${seconds} s · máx. ${max} servidores.` : failure(r) });
@@ -458,7 +496,7 @@ function devopsTools(): ToolSpec[] {
       } },
     { name: 'devops_servidor', description: 'Detiene o inicia el servidor indicado.', schema: obj({ servidor: int(), accion: choice(['detener', 'iniciar']), citas: quotes }), fields: { servidor: 'servidor', accion: 'operación' },
       plan(p, ctx, q) {
-        const id = groundNumber('servidor', Number(p.servidor), q), stop = p.accion === 'detener';
+        const id = groundNumber('servidor', Number(p.servidor), q, 'count', NEAR.servers), stop = p.accion === 'detener';
         const STOP = /\b(deten\w*|par[ae]\w*|apag\w*|stop)\b/, START = /\b(inici\w*|arranc\w*|encend\w*|levant\w*|prend\w*|start)\b/;
         groundVerb('accion', q, ctx, [stop ? STOP : START], [stop ? START : STOP]);
         return commands({ type: stop ? 'infra.server_stop' : 'infra.server_start', payload: { serverId: id }, describe: r => r.ok ? `APP-${id} ${stop ? 'detenido. Sigue aprovisionado y con costo.' : 'en arranque.'}` : failure(r) });
@@ -467,12 +505,12 @@ function devopsTools(): ToolSpec[] {
       plan(p, ctx, q) {
         groundVerb('accion', q, ctx, [/\breinici\w*|restart\b/]);
         if (p.servidor === null) { groundChoice('servidor', q, [/\b(todos|todo|completo|toda la infraestructura)\b/]); return commands({ type: 'infra.restart_all', payload: { duration: RESTART_SECONDS.all }, describe: r => r.ok ? `Reinicio de todos los servidores iniciado · ${RESTART_SECONDS.all} s.` : failure(r) }); }
-        const id = groundNumber('servidor', Number(p.servidor), q);
+        const id = groundNumber('servidor', Number(p.servidor), q, 'count', NEAR.servers);
         return commands({ type: 'infra.restart', payload: { serverId: id, duration: RESTART_SECONDS.server }, describe: r => r.ok ? `Reinicio de APP-${id} iniciado · ${RESTART_SECONDS.server} s.` : failure(r) });
       } },
     { name: 'devops_servicio', description: 'Detiene o recupera un servicio (security, web, checkout, inventory, payment).', schema: obj({ servicio: choice(Object.keys(SERVICE_PATTERNS)), accion: choice(['detener', 'recuperar']), citas: quotes }), fields: { servicio: 'servicio', accion: 'operación' },
       plan(p, ctx, q) {
-        const service = String(p.servicio); if (!SERVICE_PATTERNS[service]) return needs(this.name, ['servicio']);
+        const service = String(p.servicio); if (!Object.hasOwn(SERVICE_PATTERNS, service)) return needs(this.name, ['servicio']);
         groundChoice('servicio', q, [SERVICE_PATTERNS[service]]);
         const stop = p.accion === 'detener', STOP = /\b(deten\w*|par[ae]\w*|apag\w*|stop)\b/, RECOVER = /\b(recuper\w*|reanud\w*|levant\w*|reactiv\w*|inici\w*|arranc\w*)\b/;
         groundVerb('accion', q, ctx, [stop ? STOP : RECOVER], [stop ? RECOVER : STOP]);
@@ -480,7 +518,8 @@ function devopsTools(): ToolSpec[] {
       } },
     { name: 'devops_mantenimiento', description: 'Cambia el modo de servicio: OPERATING, ORDERS_PAUSED o FULL_MAINTENANCE.', schema: obj({ modo: choice(Object.keys(MAINTENANCE_PATTERNS)), citas: quotes }), fields: { modo: 'modo de servicio' },
       plan(p, ctx, q) {
-        const mode = String(p.modo); if (!MAINTENANCE_PATTERNS[mode]) return needs(this.name, ['modo']);
+        groundVerb('accion', q, ctx, [/\b(pon\w*|activ\w*|pas\w*|cambi\w*|entr\w*|sal\w*|reanud\w*|termin\w*|paus\w*|suspend\w*|volv\w*|reabr\w*|normaliz\w*|inici\w*)\b/]);
+        const mode = String(p.modo); if (!Object.hasOwn(MAINTENANCE_PATTERNS, mode)) return needs(this.name, ['modo']);
         groundChoice('modo', q, [MAINTENANCE_PATTERNS[mode]]);
         return commands({ type: 'infra.maintenance', payload: { mode }, describe: r => r.ok ? `Modo de servicio: ${mode}.` : failure(r) });
       } },
@@ -494,17 +533,19 @@ function productTools(): ToolSpec[] {
     { name: 'producto_crear_borrador', description: 'Crea un borrador de promoción del catálogo con los parámetros explícitos del estudiante. Si falta uno, pedilo con solicitar_dato.', schema: obj({ item: choice(PRODUCT_CATALOG.map(i => i.id)), descuento_pct: nullable(int()), duracion_segundos: nullable(int()), multiplicador_demanda: nullable(num()), presupuesto: nullable(int()), citas: quotes }),
       fields: { item: 'opción del catálogo', descuento_pct: 'descuento (%)', duracion_segundos: 'duración', multiplicador_demanda: 'multiplicador de llegadas', presupuesto: 'presupuesto' },
       plan(p, _ctx, q) {
+        groundVerb('accion', q, _ctx, [/\b(cre[ae]\w*|arm\w*|prepar\w*|gener\w*|guard\w*|agreg\w*|registr\w*|hace|hacer|haga|carg\w*)\b/]);
         const item = PRODUCT_CATALOG.find(i => i.id === p.item); if (!item) return needs(this.name, ['item']);
         if (!mentionsId(item.id, q) && !mentionsId(item.id, [normalize(_ctx.sources.instruction)])) return needs(this.name, ['item']);
         const missing = (['descuento_pct', 'duracion_segundos', 'multiplicador_demanda', 'presupuesto'] as const).filter(k => p[k] === null || p[k] === undefined);
         if (missing.length) return needs(this.name, [...missing]);
-        const percent = groundNumber('descuento_pct', Number(p.descuento_pct), q), duration = groundNumber('duracion_segundos', Number(p.duracion_segundos), q, 'seconds'), multiplier = groundNumber('multiplicador_demanda', Number(p.multiplicador_demanda), q), budget = groundNumber('presupuesto', Number(p.presupuesto), q, 'money');
+        const percent = groundNumber('descuento_pct', Number(p.descuento_pct), q, 'percent'), duration = groundNumber('duracion_segundos', Number(p.duracion_segundos), q, 'seconds'), multiplier = groundNumber('multiplicador_demanda', Number(p.multiplicador_demanda), q, 'factor', NEAR.factor), budget = groundNumber('presupuesto', Number(p.presupuesto), q, 'money');
         const P = PROMOTION_PARAMETERS;
         if (percent < P.percent.min || percent > P.percent.max || duration < P.duration.min || duration > P.duration.max || multiplier < P.demandMultiplier.min || multiplier > P.demandMultiplier.max || budget < P.budget.min || budget > P.budget.max || !Number.isInteger(percent) || !Number.isInteger(duration) || !Number.isInteger(budget)) return restriction('Parámetros fuera de los rangos del catálogo.');
         return commands({ type: 'product.draft', payload: { catalogId: item.id, percent, duration, demandMultiplier: multiplier, budget }, describe: r => r.ok ? `Borrador ${r.refs?.[0] ?? ''} creado: ${item.id} · ${percent}% · ${duration} s · ×${multiplier} · ${money(budget)}.` : failure(r) });
       } },
     { name: 'producto_enviar_a_qa', description: 'Envía a QA el borrador de Producto indicado. Congela su configuración.', schema: obj({ borrador: str('ID PRD-NNN o vacío'), citas: quotes }), fields: { borrador: 'borrador' },
       plan(p, ctx, q) {
+        groundVerb('accion', q, ctx, [/\b(envi\w*|mand\w*|entreg\w*|pas\w*)\b/]);
         const drafts = productState(ctx.c).drafts.filter(d => d.status === 'DRAFT'), id = String(p.borrador ?? '').trim();
         const draft = id ? drafts.find(d => d.id.toLowerCase() === id.toLowerCase()) : ctx.selection.draftId ? drafts.find(d => d.id === ctx.selection.draftId) : drafts.length === 1 ? drafts[0] : undefined;
         if (!draft) return id ? restriction('Borrador no disponible.') : drafts.length ? needs(this.name, ['borrador'], drafts.map(d => d.id)) : restriction('No hay borradores pendientes.');
@@ -552,7 +593,12 @@ function commonTools(role: Role, operations: string[]): ToolSpec[] {
     { name: 'consultar_datos', description: 'Muestra datos objetivos registrados de la empresa y el rol de la sesión. No evalúa.', schema: obj({ tema: choice(TOPICS[role]) }),
       plan(p, ctx) { const topic = String(p.tema); return TOPICS[role].includes(topic) ? { kind: 'information', text: information(ctx, topic) } : { kind: 'decline', reason: 'NO_DISPONIBLE' }; } },
     { name: 'solicitar_dato', description: 'Pide al estudiante un dato indispensable que no indicó o cuya elección delegó. Nunca sugiere valores.', schema: obj({ operacion: choice(operations), faltantes: { type: 'array', items: { type: 'string' } }, motivo: choice(['FALTA_DATO', 'DECISION_DELEGADA']) }),
-      plan(p) { return { kind: 'needs', tool: String(p.operacion), missing: Array.isArray(p.faltantes) ? p.faltantes.map(String).slice(0, 6) : [], delegated: p.motivo === 'DECISION_DELEGADA' }; } },
+      plan(p) {
+        // Only field names of a real tool of this role reach the reply; any other text from the model is dropped.
+        const target = ROLE_TOOLS[role]?.().find(t => t.name === p.operacion), known = Object.keys(target?.fields ?? {});
+        const missing = Array.isArray(p.faltantes) ? [...new Set(p.faltantes.map(String).filter(f => known.includes(f)))].slice(0, 6) : [];
+        return { kind: 'needs', tool: target?.name ?? 'operacion', missing, delegated: p.motivo === 'DECISION_DELEGADA' };
+      } },
     { name: 'rechazar_instruccion', description: 'No ejecuta nada: la instrucción pide consejo, delega la decisión, pertenece a otro rol, no pertenece al juego o no existe herramienta.', schema: obj({ motivo: choice(['CONSEJO', 'DECISION_DELEGADA', 'FUERA_DE_ROL', 'FUERA_DEL_JUEGO', 'NO_DISPONIBLE']) }),
       plan(p) { return { kind: 'decline', reason: (['CONSEJO', 'DECISION_DELEGADA', 'FUERA_DE_ROL', 'FUERA_DEL_JUEGO', 'NO_DISPONIBLE'].includes(String(p.motivo)) ? p.motivo : 'NO_DISPONIBLE') as DeclineReason }; } },
   ];
@@ -569,8 +615,8 @@ export function toolDefinitions(role: Role) {
 }
 
 // ---------- planning and replies ----------
-const FIELD_LABELS: Record<string, string> = { cambio: 'el cambio', estrategia: 'la estrategia (ROLLING o RESTART REPLACE)', cantidad: 'la cantidad de servidores', citas: 'los valores de la operación', valor: 'el valor', decision: 'la decisión', accion: 'la operación' };
-function fieldLabel(tool: ToolSpec | undefined, field: string) { return tool?.fields?.[field] ?? FIELD_LABELS[field] ?? field.replace(/_/g, ' '); }
+const FIELD_LABELS: Record<string, string> = { tipo: 'el tipo de prueba', parametro: 'el parámetro', cambio: 'el cambio', estrategia: 'la estrategia (ROLLING o RESTART REPLACE)', cantidad: 'la cantidad de servidores', citas: 'los valores de la operación', valor: 'el valor', decision: 'la decisión', accion: 'la operación' };
+function fieldLabel(tool: ToolSpec | undefined, field: string) { return tool?.fields?.[field] ?? FIELD_LABELS[field] ?? 'un dato indispensable'; }
 export const DECLINE_MESSAGES: Record<DeclineReason, (role: Role) => string> = {
   CONSEJO: role => `No doy recomendaciones ni evaluaciones. Puedo mostrar los datos registrados; la elección corresponde a ${ROLE_LABELS[role]}.`,
   DECISION_DELEGADA: () => 'No puedo elegir una solución por vos. Indicá qué modificación querés realizar.',
@@ -584,17 +630,24 @@ export type ExecutionPlan = { state: ExecutorState; message: string; commands: P
 export function planCalls(calls: ToolCall[], ctx: ExecutorContext): ExecutionPlan {
   const role = ctx.actor.role as Role, tools = toolsFor(role);
   if (!calls.length) return { state: 'NO_OPERATION', message: 'No identifiqué una operación concreta. Indicá qué operación querés ejecutar.', commands: [], information: [], tools: [] };
-  if (calls.length > 4) return { state: 'REJECTED', message: 'Indicá como máximo cuatro operaciones por instrucción.', commands: [], information: [], tools: [] };
+  // Identical repeated calls collapse into one: a duplicated call can never execute an order twice.
+  const unique = [...new Map(calls.map(c => [`${c.name}:${JSON.stringify(c.input ?? {})}`, c])).values()];
+  if (unique.length > 4) return { state: 'REJECTED', message: 'Indicá como máximo cuatro operaciones por instrucción.', commands: [], information: [], tools: [] };
+  const instruction = normalize(ctx.sources.instruction), question = /[¿?]/.test(ctx.sources.instruction) && !QUESTION_REQUEST.test(instruction);
   const plans: { tool?: ToolSpec; name: string; plan: Plan }[] = [];
-  for (const call of calls) {
+  for (const call of unique) {
     const tool = tools.find(t => t.name === call.name);
     // A tool outside the role's catalog is never executed and is not an infraction.
     if (!tool) { plans.push({ name: call.name, plan: { kind: 'decline', reason: 'FUERA_DE_ROL' } }); continue; }
     try {
       const input = call.input && typeof call.input === 'object' && !Array.isArray(call.input) ? call.input : {};
+      // Arguments outside the strict schema mean a malformed call: the whole order is refused.
+      if (Object.keys(input).some(k => !Object.hasOwn(tool.schema.properties, k))) { plans.push({ tool, name: tool.name, plan: restriction('La interpretación no respetó el contrato de la herramienta.') }); continue; }
       const quoteList = 'citas' in input ? checkQuotes(input.citas, ctx.sources) : [];
-      if ('citas' in tool.schema.properties && !quoteList.length && !['backend_guardar', 'backend_entregar'].includes(tool.name)) throw new GroundingError('citas');
-      const plan = tool.plan.call(tool, input, ctx, quoteList);
+      if ('citas' in tool.schema.properties && !quoteList.length && !['backend_guardar', 'backend_entregar', 'seguridad_entregar', 'producto_enviar_a_qa'].includes(tool.name)) throw new GroundingError('citas');
+      let plan = tool.plan.call(tool, input, ctx, quoteList);
+      // A question is not an order: it can show data but never change state.
+      if (plan.kind === 'commands' && question) plan = restriction('La instrucción es una pregunta. Si querés ejecutar una operación, escribila como orden.');
       if (plan.kind === 'commands') for (const command of plan.commands) command.tool = tool.name;
       plans.push({ tool, name: tool.name, plan });
     } catch (e) {

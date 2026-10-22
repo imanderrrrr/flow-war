@@ -146,7 +146,7 @@ app.post('/api/ai/execute',async(req,res)=>{
   if(!budget||now-budget.at>=60000){budget={at:now,count:0};aiAttempts.set(key,budget);}
   if(++budget.count>8)return res.status(429).json({ok:false,code:'AI_RATE_LIMIT',error:'Límite de solicitudes de Claude alcanzado.'});
   if(aiPending.has(key))return res.status(429).json({ok:false,code:'AI_BUSY',error:'Hay una solicitud en curso.'});
-  aiPending.add(key);flushCommands();const generation=game.generation;let input:ExecutorInput|undefined,begun=false;
+  aiPending.add(key);flushCommands();const generation=game.generation;let input:ExecutorInput|undefined,begun=false,interpreted:import('./claude.js').InterpretResult|undefined;
   const provider=aiGateway.provider.name,model=aiGateway.provider.model;
   try{
     input=parseExecutorInput(req.body);const parsed=input;
@@ -156,17 +156,19 @@ app.post('/api/ai/execute',async(req,res)=>{
     if(replay){const prior=game.companies[identity.companyId].runtime.aiAttempts?.find(a=>a.actor===identity.id&&a.id===parsed.id&&a.generation===game.generation);
       if(prior?.reply)return res.json({ok:true,reply:{id:parsed.id,...prior.reply,operations:[],provider,model}});
       if(prior&&['QUEUED','RUNNING'].includes(prior.state))return res.status(409).json({ok:false,code:'AI_IN_PROGRESS',error:'La solicitud con ese ID sigue en curso.'});}
-    const {result,snapshot}=await interpretInstruction(aiGateway,game,identity,parsed);
+    const {result,snapshot}=await interpretInstruction(aiGateway,game,identity,parsed);interpreted=result;
     flushCommands();const current=session(req.headers.cookie);
     if(!current||current.id!==identity.id||game.generation!==generation)throw new AiError('FORBIDDEN','La sesión o la partida cambió.');
-    const executed=await executeCalls(()=>({g:game,actor:current}),parsed,result.calls,snapshot,command=>submitCommand(session(req.headers.cookie,true)??current,command));
+    // Each operation is submitted only while the same session is still valid; logout or expiry stops the rest.
+    const executed=await executeCalls(()=>{const live=session(req.headers.cookie);if(!live||live.id!==identity.id||game.generation!==generation)throw new Error('FORBIDDEN');return {g:game,actor:live};},parsed,result.calls,snapshot,async command=>{const live=session(req.headers.cookie);if(!live||live.id!==identity.id||game.generation!==generation)return {ok:false,code:'FORBIDDEN',error:'La sesión o la partida cambió.'};return submitCommand(live,command);});
     const reply=replyFor(parsed,executed,provider,result.model);
-    journal(()=>{finishExecution(game,current,parsed,reply,'COMPLETED',undefined,result);auditCompletion(game,current.companyId!,'ai.executed',reply.refs,[`provider:${provider}`,`state:${reply.state}`,`tools:${result.calls.map(c=>c.name).join(',')||'none'}`]);});
+    const record=()=>{finishExecution(game,current,parsed,reply,'COMPLETED',undefined,result);auditCompletion(game,current.companyId!,'ai.executed',reply.refs,[`provider:${provider}`,`state:${reply.state}`,`tools:${result.calls.map(c=>c.name).join(',')||'none'}`]);};
+    if(!journal(record)&&!journal(record))console.error('No se pudo registrar el resultado de una orden de Claude.');
     res.json({ok:true,reply});
   }catch(e){const code=e instanceof AiError?e.code:e instanceof Error&&e.message==='FORBIDDEN'?'FORBIDDEN':'AI_INVALID';
     const message=e instanceof AiError?e.message:code==='FORBIDDEN'?'Operación no autorizada.':'No se pudo procesar la instrucción.';
     flushCommands();
-    if(input&&begun&&game.generation===generation){const parsed=input;journal(()=>{finishExecution(game,identity,parsed,{state:'TECHNICAL_ERROR',message:`${message} No se ejecutó nada.`,refs:[]},['CANCELLED','TIMEOUT'].includes(code)?code:'FAILED',code);auditCompletion(game,identity.companyId!,'ai.failed',[],[code]);});}
+    if(input&&begun&&game.generation===generation){const parsed=input;const usage=interpreted??(e instanceof AiError&&e.usage?{calls:[],usage:e.usage,model:aiGateway.provider.model,stopReason:code,fallback:false}:undefined);journal(()=>{finishExecution(game,identity,parsed,{state:'TECHNICAL_ERROR',message:`${message} No se ejecutó nada.`,refs:[]},['CANCELLED','TIMEOUT'].includes(code)?code:'FAILED',code,usage);auditCompletion(game,identity.companyId!,'ai.failed',[],[code]);});}
     res.status(STATUS_CODES[code]??503).json({ok:false,code,error:message});}
   finally{aiPending.delete(key);}
 });

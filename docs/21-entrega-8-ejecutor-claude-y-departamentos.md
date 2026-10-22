@@ -13,7 +13,7 @@
 | 3 | `aade411` | SDK oficial con *tool calling*, endpoint `/api/ai/execute`, consumo y concurrencia, consola por rol. |
 | 4 | `924e25f` | DevOps/SRE: alcance del CTO, solicitudes, escalado, servidores, staging, despliegue, rollback; consola CTO. |
 | 5 | `543aa23` | Producto/UX opcional con catálogo neutral y pipeline completo. |
-| 6 | este commit | Pruebas adversariales, verificación real (Test I), benchmarks y documentación. |
+| 6 | `7fd999c` + correcciones de revisión | Pruebas adversariales, verificación real (Test I), benchmarks, documentación y endurecimiento tras revisión independiente. |
 
 ## 1. Claude no opina: tres capas
 
@@ -31,6 +31,24 @@ el modelo obedezca.
    el valor aparezca en ella (cifras o números escritos en español, montos, minutos/segundos/milisegundos,
    estrategias, bloques, controles, IDs). Si no, la operación no se ejecuta y se pide el dato. Las instrucciones
    previas del mismo hilo solo cuentan cuando la orden se refiere a ellas ("los parámetros que te indiqué").
+
+Reglas del servidor, endurecidas tras una revisión independiente del diff:
+
+- **Citas por palabras completas**: "13" nunca contiene "3", "veinticinco" nunca contiene "cinco", "CH-12" nunca contiene "CH-1".
+- **Valor ligado a su campo y unidad**: cada número debe estar junto a la palabra que nombra su campo (servidores,
+  solicitudes, stock, presupuesto, multiplicador…) y con la unidad que el campo exige (Q para montos, s/min para
+  duraciones, % para descuentos). "un"/"otro" valen 1 solo junto a su sustantivo.
+- **Verbo ordenado**: toda herramienta que cambia estado exige su verbo en la instrucción actual, no negado
+  ("no apruebes") y sin un verbo opuesto también ordenado. Una pregunta ("¿Cuánto tarda rolling?") nunca cambia
+  estado, salvo una petición explícita ("¿Podés desplegar…?").
+- **Bloques y orden**: el bloque se resuelve por lo que escribió el estudiante (ID, tipo único o "este bloque"
+  con selección); "X antes de Y" y "conectá X con Y" no pueden invertirse.
+- **Textos reenviados**: cartas de QA y observaciones de Seguridad solo usan secciones que el estudiante marcó
+  ("Asunto: …", "Observación: …" o entre comillas) y se reenvía su texto original, no el del modelo.
+- **Contrato**: argumentos fuera del esquema, llamadas duplicadas idénticas y más de cuatro operaciones se rechazan
+  o colapsan; los nombres de campos de `solicitar_dato` se filtran contra el catálogo del rol.
+- Sin indicación de tipos de operación, el CTO autoriza los de la solicitud referida, o escalar (implícito en el
+  máximo de servidores) y el balanceador solo si lo nombró.
 
 El texto del modelo nunca llega al estudiante. Todas las respuestas las compone el servidor a partir del
 resultado del motor:
@@ -90,6 +108,8 @@ escribió el estudiante; ahora descarta reglas cuyos umbrales u orígenes no est
   `Retry-After` ≤ 5 s.
 - Cancelación por logout, reinicio o fin de sala; una llamada cancelada retiene su cupo hasta que el transporte termina.
 - Consumo real (`input/output/cache tokens`) por empresa, persistido con la partida y visible para el docente.
+  El prefijo estable (prompt y herramientas del rol) mide entre ~1 300 y ~2 400 tokens según el rol y se cachea;
+  cada orden agrega el contexto autorizado del rol y la instrucción.
 - `POST /api/ai/diagnose` (docente) verifica que el modelo devuelve una llamada de herramienta.
 
 ## 4. Herramientas por rol
@@ -192,7 +212,8 @@ principal; los proyectos DVR anteriores se leen sin cambios. Resultados en
 | H concurrencia | `tests/executor-service.test.ts` (Test H), `npm run bench:executor`, `npm run bench:ai` |
 | I Anthropic real | `npm run verify:anthropic` — **pendiente: este entorno no tiene credenciales** |
 
-Además: adversariales (inyección, citas inventadas, valores ausentes, verbos contradictorios, más de cuatro
+Además: una regresión por cada hallazgo de la revisión independiente (`tests/executor-review.test.ts`),
+adversariales (inyección, citas inventadas, valores ausentes, verbos contradictorios, más de cuatro
 llamadas), disciplina, FlowSlack, equivalencia exacta entre órdenes por Claude y por panel, DevOps (alcance,
 reembolsos, servidores, rollback, vencimientos, privacidad) y Producto (interruptor, staging, devolución,
 consecuencias económicas, embudo, órdenes por Claude).
