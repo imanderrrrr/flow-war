@@ -5,6 +5,7 @@ import type { InfraOperation } from '../shared/operations';
 import { send, money, useGame } from './store';
 import { Icon } from './icons';
 import { GraphViewer } from './GraphEditor';
+import { PLAN_PIECES } from '../shared/plan';
 
 const STRATEGIES = { rolling: { label: 'ROLLING', detail: '6 s · cambia servidores uno por uno · capacidad accesible (n−1)/n; con un servidor, 12%' }, restart: { label: 'RESTART REPLACE', detail: '3 s · capacidad de aplicación cero durante el reemplazo' } } as const;
 /** Operating costs are fractions of a quetzal per second; rounding them would misstate the expense. */
@@ -40,9 +41,11 @@ export default function DevOpsConsole({ active, change, changes, onSelect }: { a
         <div className="infra-connector"/>
         <div className={`balancer-node ${c.balancer ? 'enabled' : ''}`}><Icon name="arena" size={26}/><strong>BALANCEADOR</strong><span>{c.balancer ? 'ACTIVO · REPARTE CARGA' : 'INACTIVO · SOLO APP-01'}</span></div>
         <div className="infra-connector"/>
+        <div className="plan-piece-heading"><strong>{PLAN_PIECES.server.label.toUpperCase()}</strong><span>{PLAN_PIECES.server.text}</span></div>
         <div className="servers">{c.infrastructure.instances.map(instance => { const st = serverState(instance, c.balancer, web, s.tick, reachable); const share = st.available && reachable ? 1 / reachable : 0;
           return <div className={`server-node ${st.tone}`} key={instance.id} aria-label={`Servidor ${instance.id}: ${st.label}`}><Icon name="server" size={30}/><b>APP-{String(instance.id).padStart(2, '0')}</b><span className={`server-state ${st.tone}`}>{st.label}</span>
             <small>CAPACIDAD {st.available ? `${(web * share).toFixed(1)} web/s · ${((queues.checkout?.rate ?? 0) * share).toFixed(1)} checkout/s` : '0 sol/s'}</small>
+            <small>HOSPEDA tienda web y checkout</small>
             <small>UTILIZACIÓN {st.available ? `${Math.round(c.utilization * 100)}%` : '—'}</small><small>COSTO {rate(0.5)}</small>
             <div className="button-row">{instance.status === 'UP' && <button className="text-button" disabled={!active} onClick={() => void act('infra.restart', { serverId: instance.id, duration: 10 })}>REINICIAR</button>}
               {instance.status === 'UP' && <button className="text-button" disabled={!active} onClick={() => void act('infra.server_stop', { serverId: instance.id })}>DETENER</button>}

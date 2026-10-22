@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant, Controls, Handle, Position, addEdge, applyNodeChanges, applyEdgeChanges, useReactFlow, type Connection, type Node, type Edge, type NodeProps, type NodeChange, type EdgeChange } from '@xyflow/react';
 import { BLOCKS, type Graph, type PrivateCompany, type Role } from '../shared/types';
-import { PLAN_PIECES, PLAN_PIECE_TYPES, planPublicationCost, type PlanPiece } from '../shared/plan';
+import { PLAN_PIECES, PLAN_PIECE_TYPES, PLAN_SLOTS, planPublicationCost, type PlanPiece } from '../shared/plan';
 import { addPiece, boardSlots, connect, removePiece } from './planBoard';
 import type { BlockConfiguration } from '../shared/blocks';
 import { send, money, useGame } from './store';
@@ -36,12 +36,22 @@ function PlanGhostNode({ data }: NodeProps) {
   if(!mine)return <div className="plan-node ghost theirs">{body}</div>;
   return <button type="button" className="plan-node ghost mine nodrag nopan" onClick={()=>(data.onPlace as ()=>void)?.()}>{body}</button>;
 }
-export const planNodeTypes={...Object.fromEntries(PLAN_PIECE_TYPES.map(t=>[t,PlanPieceNode])),ghost:PlanGhostNode};
+/** The server bay is never drawn from the graph: capacity lives in company.servers, which DevOps
+ * scales from its own console. The bay shows that truth so the board matches the company. */
+function PlanServerNode({ data }: NodeProps) {
+  const count=Number(data.count);
+  return <div className={`plan-node servers ${data.mine?'mine':'theirs'}`}>
+    <div className="node-type"><Icon name="server" size={13}/>{data.mine?'TUS MÁQUINAS':'INFRAESTRUCTURA'}</div>
+    <strong>{PLAN_PIECES.server.label} ×{count}</strong><span>{PLAN_PIECES.server.text}</span>
+  </div>;
+}
+export const planNodeTypes={...Object.fromEntries(PLAN_PIECE_TYPES.map(t=>[t,PlanPieceNode])),ghost:PlanGhostNode,servers:PlanServerNode};
 
 /** The service plan: fixed solares, roads the team draws, and each role moving only its own pieces. */
 function PlanEditor({ company:c, role, active }: { company: PrivateCompany; role: Role; active: boolean }) {
   const draft=c.drafts.plan;
   const [plan,setPlan]=useState<Graph>(structuredClone(draft?.graph??c.plan));
+  const servers=c.servers;
   const [selected,setSelected]=useState<string|null>(null),[dirty,setDirty]=useState(false),[busy,setBusy]=useState(false);
   const [openPiece,setOpenPiece]=useState<'inventory'|'payment'|null>(null);
   // The block editor keeps honouring the workflow's backend lock, as it did when App.tsx opened it.
@@ -59,10 +69,11 @@ function PlanEditor({ company:c, role, active }: { company: PrivateCompany; role
   const buildNodes=useCallback((current:Graph):Node[]=>{
     const slots=boardSlots(current,role),mineByType=new Map(slots.map(s=>[s.piece as string,s.mine]));
     return [
-      ...current.nodes.map(n=>({...n,draggable:false,selectable:Boolean(mineByType.get(n.type))&&active,deletable:false,data:{...n.data,mine:mineByType.get(n.type)}})) as Node[],
-      ...slots.filter(s=>!s.placed).map(s=>({id:`ghost-${s.piece}`,type:'ghost',position:s.position,draggable:false,selectable:false,connectable:false,data:{piece:s.piece,reason:s.reason,mine:s.mine&&active,onPlace:()=>place(s.piece)}})) as Node[],
+      ...current.nodes.filter(n=>n.type!=='server').map(n=>({...n,draggable:false,selectable:Boolean(mineByType.get(n.type))&&active,deletable:false,data:{...n.data,mine:mineByType.get(n.type)}})) as Node[],
+      ...slots.filter(s=>!s.placed&&s.piece!=='server').map(s=>({id:`ghost-${s.piece}`,type:'ghost',position:s.position,draggable:false,selectable:false,connectable:false,data:{piece:s.piece,reason:s.reason,mine:s.mine&&active,onPlace:()=>place(s.piece)}})) as Node[],
+      {id:'plan-server-bay',type:'servers',position:PLAN_SLOTS.server,draggable:false,selectable:false,connectable:false,data:{count:servers,mine:role==='devops'}} as Node,
     ];
-  },[role,active]);
+  },[role,active,servers]);
   const [nodes,setNodes]=useState<Node[]>(()=>buildNodes(plan));
   useEffect(()=>{setNodes(previous=>buildNodes(plan).map(n=>({...n,measured:previous.find(p=>p.id===n.id)?.measured})));},[plan,buildNodes]);
   const onNodesChange=useCallback((changes:NodeChange[])=>setNodes(ns=>applyNodeChanges(changes,ns)),[]);
@@ -76,7 +87,7 @@ function PlanEditor({ company:c, role, active }: { company: PrivateCompany; role
   }
   const node=plan.nodes.find(n=>n.id===selected);
   const piece=node&&PLAN_PIECES[node.type as PlanPiece]?node.type as PlanPiece:undefined;
-  const palette=PLAN_PIECE_TYPES.filter(t=>PLAN_PIECES[t].owner===role&&!plan.nodes.some(n=>n.type===t&&t!=='server'));
+  const palette=PLAN_PIECE_TYPES.filter(t=>t!=='server'&&PLAN_PIECES[t].owner===role&&!plan.nodes.some(n=>n.type===t));
   const cost=planPublicationCost(c.plan,plan);
   return <section className="node-editor panel plan-editor" style={{'--team':c.color} as CSSProperties}>
     <div className="editor-topbar"><span><Icon name="arena" size={17}/> PLANO DE SERVICIOS</span><span className="eyebrow">{c.assembly.active?'EN MONTAJE · publicás directo':'YA ACEPTA COMPRAS · el plano se cambia por el ciclo'} <i/> BORRADOR <b>r{revision.current}</b> <i/> BASE v{c.version}.0</span></div>

@@ -251,3 +251,7 @@ html[data-calm="true"] .slot-banner.shown,html[data-calm="true"] .slot-intro-ico
 .plan-inner-editor { border-top: 2px solid #28374b; margin-top: 12px; padding-top: 10px; }
 .plan-inner-editor .node-editor { border: none; padding: 0; }
 button.plan-node { text-align: left; font-family: inherit; cursor: pointer; }
+.plan-node.servers { border-style: double; }
+.plan-piece-heading { display: grid; gap: 3px; margin-bottom: 8px; }
+.plan-piece-heading strong { font-size: 11px; letter-spacing: .08em; }
+.plan-piece-heading span { font-size: 10px; color: #8e9aaf; line-height: 1.35; }
