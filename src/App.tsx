@@ -1,5 +1,6 @@
 import ClaudeStatus from './ClaudeStatus';
 import AuditorConsole from './AuditorConsole';
+import CustomerNotices from './CustomerNotices';
 import ClaudeExecutor from './ClaudeExecutor';
 import DevOpsConsole from './DevOpsConsole';
 import CtoConsole from './CtoConsole';
@@ -127,6 +128,7 @@ function Workspace() {
     {(role==='backend'||role==='security')&&<><ReturnInbox/><InvestmentInbox active={active}/></>}
     {role==='devops'&&<Maintenance active={active}/>}
     <ClaudeExecutor active={active}/>
+    <CustomerNotices/>
     <FlowSlack key={s.generation}/><a className="secondary-button" href="/dvr">{s.dvrEnabled?"REVISAR HISTORIAL DE MI EMPRESA":"CONSULTAR PARTIDAS GRABADAS DE MI EMPRESA"}</a>
     <OperationsPanel active={active} changeId={change?.id}/>
   </main>;

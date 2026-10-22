@@ -210,3 +210,14 @@ html[data-calm="true"] .slot-banner.shown,html[data-calm="true"] .slot-intro-ico
 .auditor-narrative li{border-left:3px solid #3b475a;padding:8px 11px;background:#0b1322;font-size:12px;line-height:1.6;color:#c8d2e0}
 .auditor-narrative li:first-child{border-color:var(--yellow)}
 .auditor-narrative li:last-child{border-color:#68dca2;color:#fff}
+/* Customer complaints as text-message notices */
+.customer-notices{position:fixed;right:18px;bottom:18px;z-index:60;display:flex;flex-direction:column;gap:9px;width:min(330px,calc(100vw - 32px));pointer-events:none}
+.customer-notices .notices-silence{align-self:flex-end;pointer-events:auto;background:#0b1322;border:1px solid #2b3647;padding:5px 9px}
+.customer-notice{pointer-events:auto;background:#17202f;border:1px solid #3b475a;border-left:3px solid #f27e79;box-shadow:5px 5px #070c15;padding:11px 13px;display:flex;flex-direction:column;gap:6px;animation:notice-in .25s steps(3)}
+.customer-notice header{display:flex;align-items:center;gap:8px;font-size:9px;letter-spacing:.6px;color:#8d99aa}
+.customer-notice header b{color:#dce1e9;font-weight:400;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.customer-notice .notice-avatar{width:22px;height:22px;display:grid;place-items:center;background:#f27e79;color:#17202f;font-size:9px;font-weight:700}
+.customer-notice p{margin:0;font-size:13px;line-height:1.5;color:#fff}
+.notices-muted{position:fixed;right:18px;bottom:18px;z-index:60;display:inline-flex;align-items:center;gap:7px;background:#0f1724;border:1px solid #2b3647;color:#8d99aa;font-size:8px;letter-spacing:.8px;padding:8px 11px}
+@keyframes notice-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media(max-width:560px){.customer-notices{right:12px;left:12px;bottom:12px;width:auto}}
