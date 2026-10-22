@@ -109,7 +109,7 @@ test('schema 2 upgrades preserve pending LAST-UNIT and historic counters without
   const legacy=JSON.parse(JSON.stringify(assembledGame()));legacy.schema=2;legacy.tick=350;legacy.status='RUNNING';delete legacy.generation;
   for(const company of legacy.companies)delete company.traffic;
   legacy.companies[0].requests=140;legacy.companies[0].successes=99;legacy.companies[0].errors=11;
-  const recovered=recoverGame(JSON.stringify(legacy));assert.equal(recovered.schema,6);assert.equal(recovered.status,'PAUSED');
+  const recovered=recoverGame(JSON.stringify(legacy));assert.equal(recovered.schema,7);assert.equal(recovered.status,'PAUSED');
   assert.deepEqual(recovered.companies[0].concurrency,legacy.companies[0].concurrency);assert.equal(recovered.companies[0].requests,140);assert.equal(recovered.companies[0].traffic.totals.generated,0);
   command(recovered,'operator','room.start');assert.equal(recovered.companies[0].traffic.totals.generated,0);
 });

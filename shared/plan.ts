@@ -1,4 +1,4 @@
-import type { Role, ServiceId, TerminalReason, TrafficRequest } from './types.js';
+import type { Graph, Role, ServiceId, TerminalReason, TrafficRequest } from './types.js';
 
 /**
  * The service plan: the layer that used to be wired into the engine (SERVICE_IDS, server/traffic.ts)
@@ -42,3 +42,11 @@ export const isPlanReason = (reason: TerminalReason) => PLAN_TERMINAL_REASONS.in
 
 export const PLAN_PIECE_TYPES = Object.keys(PLAN_PIECES) as PlanPiece[];
 export const isPlanPiece = (type: string): type is PlanPiece => Object.hasOwn(PLAN_PIECES, type);
+
+/** Pieces on their solares, chained in the order given. Ids are stable so a draft can name them. */
+export function planGraph(types: PlanPiece[]): Graph {
+  return { nodes: types.map(type => ({ id: `plan-${type}`, type, position: { ...PLAN_SLOTS[type] }, data: { label: PLAN_PIECES[type].label } })),
+    edges: types.slice(1).map((type, i) => ({ id: `plan-e${i}`, source: `plan-${types[i]}`, target: `plan-${type}` })) };
+}
+/** The chain server/traffic.ts used to walk by hand: what a migrated game and an assembled room run. */
+export function completePlan(): Graph { return planGraph(['entry', 'security', 'web', 'checkout', 'inventory', 'payment', 'exit']); }

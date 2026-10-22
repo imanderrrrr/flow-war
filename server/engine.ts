@@ -29,19 +29,13 @@ import { route, evaluateSecurity, sellCapable } from './graphs.js';
 import { lobbyView, resetTeams } from './lobby.js';
 import { auditCommand, advanceProbes, auditorView, chargeLeaks, closeProbes, closeSettledFindings, findingsFor, sustainedEffects, suspendsRestock } from './auditor.js';
 export { route, evaluateSecurity } from './graphs.js';
-import { PLAN_PIECES, PLAN_SLOTS, isPlanPiece, type PlanPiece } from '../shared/plan.js';
+import { PLAN_PIECES, completePlan, isPlanPiece, planGraph } from '../shared/plan.js';
+export { completePlan } from '../shared/plan.js';
 import { BLOCKS, SUITES, type Company, type Domain, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
 
 const NAMES = ['NOVA', 'VERTEX', 'BYTE', 'EMBER', 'ORBIT'];
 const COLORS = ['#f5d45c', '#68dca2', '#69adff', '#f27e79', '#b69af7'];
 export const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
-/** Pieces on their solares, chained in the order given. Ids are stable so a draft can name them. */
-function planGraph(types: PlanPiece[]): Graph {
-  return { nodes: types.map(type => ({ id: `plan-${type}`, type, position: { ...PLAN_SLOTS[type] }, data: { label: PLAN_PIECES[type].label } })),
-    edges: types.slice(1).map((type, i) => ({ id: `plan-e${i}`, source: `plan-${types[i]}`, target: `plan-${type}` })) };
-}
-/** The chain server/traffic.ts used to walk by hand: what a migrated game and an assembled room start on. */
-export function completePlan(): Graph { return planGraph(['entry', 'security', 'web', 'checkout', 'inventory', 'payment', 'exit']); }
 /** Puts the five companies on the complete plan. A new room starts almost empty on purpose, so a
  * fixture or benchmark that measures a company serving traffic opens the room already assembled. */
 export function assembleGame(g: GameState) { for (const company of g.companies) { company.plan = completePlan(); company.assembly = { active: false, closedAt: g.tick }; } }
@@ -59,7 +53,7 @@ export function createGame(duration = 1500, seed = 7357, generation = 0, dvrEnab
     lostRevenue: 0, revenue: 0, latency: 0, utilization: 0, queue: 0, migratedIn: 0, migratedOut: 0, eliminated: false, crisisTicks: 0, deadTicks: 0, bankruptTicks: 0, concurrencyUntil: 0,
     backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), plan: initialGraph('plan'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
   }));
-  const game: GameState = { dvrEnabled, actions: initialActionState(), schema: 6, observability: initialObservability(), slack: { sequence: 0, messages: [], receipts: {}, buckets: {}, groups: {}, automaticCount: 0, sampledCount: 0 }, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
+  const game: GameState = { dvrEnabled, actions: initialActionState(), schema: 7, observability: initialObservability(), slack: { sequence: 0, messages: [], receipts: {}, buckets: {}, groups: {}, automaticCount: 0, sampledCount: 0 }, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
   for (const company of companies) company.runtime.infra = initialOperationsState(company, duration);
   bindMarket(game); bindObservability(game, f=>slackFact(game,f)); assertMarket(game); checkpoint(game, serializeGame, true); return game;
 }

@@ -69,7 +69,7 @@ test('4A public, foreign, own-role and teacher projections omit frozen bundles a
 test('4A schema4 migration preserves 5000 clients and old request semantics; schema5 recovery freezes graph and bundles once', () => {
   const g=assembledGame();g.status='RUNNING';const r=admitTraffic(g.companies[0],0,'purchase');const legacy=JSON.parse(serializeGame(g));legacy.schema=4;delete legacy.actions;
   for(const c of legacy.companies) {for(const req of Object.values(c.traffic.requests) as any[]) {delete req.execution;delete req.executor;}delete c.runtime;delete c.infrastructure;}
-  const restored=recoverGame(JSON.stringify(legacy));assert.equal(restored.schema,6);assert.equal(Object.keys(restored.market.customers).length,5000);assert.equal(restored.companies[0].traffic.requests[r.id].executor,'requests-1');
+  const restored=recoverGame(JSON.stringify(legacy));assert.equal(restored.schema,7);assert.equal(Object.keys(restored.market.customers).length,5000);assert.equal(restored.companies[0].traffic.requests[r.id].executor,'requests-1');
   assert.equal(Object.keys(restored.actions.employees).length,30);command(restored,'operator','room.start');advanceGame(restored,4);assert.equal(restored.companies[0].traffic.requests[r.id]?.result?.revenue??restored.companies[0].traffic.totals.revenue,45);
 });
 test('4A a duplicate forbidden structured order stays counted once across a durable snapshot', () => {

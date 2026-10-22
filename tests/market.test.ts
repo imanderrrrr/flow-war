@@ -166,7 +166,7 @@ test('M-T23 SQLite atomically recovers a pending transfer and settled color with
 test('M-T24 legacy schema3 imports unequal quotas and outside pool with explicitly unknown origin and no invented history', () => {
   const legacy = JSON.parse(JSON.stringify(assembledGame())); legacy.schema = 3; delete legacy.market;
   legacy.companies[0].customers = 400; legacy.companies[1].customers = 1400; legacy.unserved = 200; legacy.migrations = [{ id: 'old-aggregate', from: 0, to: 1, count: 60, at: 300, color: '#f5d45c' }]; legacy.status = 'RUNNING'; legacy.tick = 400;
-  const game = recoverGame(JSON.stringify(legacy)); assert.equal(game.schema, 6); assert.equal(game.status, 'PAUSED'); assert.equal(game.companies[0].customers, 400); assert.equal(game.companies[1].customers, 1400); assert.equal(game.unserved, 200); assert.deepEqual(game.market.legacyAggregateMigrations, legacy.migrations); assertMarket(game);
+  const game = recoverGame(JSON.stringify(legacy)); assert.equal(game.schema, 7); assert.equal(game.status, 'PAUSED'); assert.equal(game.companies[0].customers, 400); assert.equal(game.companies[1].customers, 1400); assert.equal(game.unserved, 200); assert.deepEqual(game.market.legacyAggregateMigrations, legacy.migrations); assertMarket(game);
   for (const customer of Object.values(game.market.customers)) { assert.equal(customer.originCompanyId, null); assert.equal(customer.imported, true); assert.equal(customer.history.length, 0); assert.equal(customer.successfulVisits, 0); assert.equal(customer.loyalty, 0); }
   assert.deepEqual(game.companies[0].concurrency, legacy.companies[0].concurrency); assert.equal(game.companies[0].capital, legacy.companies[0].capital);
 });
