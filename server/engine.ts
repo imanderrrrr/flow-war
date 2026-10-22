@@ -29,7 +29,7 @@ import { route, evaluateSecurity, sellCapable } from './graphs.js';
 import { lobbyView, resetTeams } from './lobby.js';
 import { auditCommand, advanceProbes, auditorView, chargeLeaks, closeProbes, closeSettledFindings, findingsFor, sustainedEffects, suspendsRestock } from './auditor.js';
 export { route, evaluateSecurity } from './graphs.js';
-import { PLAN_PIECES, completePlan, isPlanPiece, planGraph } from '../shared/plan.js';
+import { PLAN_PIECES, completePlan, isPlanPiece, planGraph, planPublicationCost } from '../shared/plan.js';
 export { completePlan } from '../shared/plan.js';
 import { BLOCKS, SUITES, type Company, type Domain, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
 
@@ -116,12 +116,6 @@ export function assertPlanOwnership(previous: Graph, next: Graph, role: Identity
     if (piece.owner !== role) throw new Error(`${piece.label} no es una pieza de tu rol.`);
   }
   return after;
-}
-/** Q100 per publication plus the pieces this one adds, so building in small steps is not punished. */
-export function planPublicationCost(previous: Graph, next: Graph) {
-  const tally = (graph: Graph) => graph.nodes.reduce((count, node) => { count[node.type] = (count[node.type] ?? 0) + 1; return count; }, {} as Record<string, number>);
-  const before = tally(previous), after = tally(next);
-  return Object.entries(after).reduce((sum, [type, count]) => sum + Math.max(0, count - (before[type] ?? 0)) * (isPlanPiece(type) ? PLAN_PIECES[type].cost : 0), 100);
 }
 export function inventoryBatch(graph: Graph, demand: number, stock: number): { completed: number; oversold: number; duplicates: number; remaining: number } {
   const p = route(graph).map(n => n.type), write = p.indexOf('write'), payment = p.indexOf('payment');

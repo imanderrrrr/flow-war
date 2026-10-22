@@ -47,7 +47,10 @@ test('durante el montaje el reclamo del cliente sí se publica en soporte-client
   const request = admitTraffic(game.companies[0], 0, 'purchase');
   advanceGame(game, 1);
   assert.equal(request.result!.reason, 'NO_CHECKOUT');
-  assert.ok(game.slack.messages.some(m => m.companyId === 0 && m.channel === 'soporte-clientes'), 'el equipo tiene que ver el reclamo');
+  const complaints = game.slack.messages.filter(m => m.companyId === 0 && m.channel === 'soporte-clientes');
+  assert.ok(complaints.length, 'el equipo tiene que ver el reclamo');
+  // The customer never got in, so the complaint says that and not that something fell halfway.
+  assert.ok(complaints.some(m => /no puedo terminar la compra|no hay dónde pagar/i.test(m.text)), complaints.map(m => m.text).join(' | '));
 });
 
 test('el montaje se cierra al quedar capaz de vender, una sola vez', () => {

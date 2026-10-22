@@ -50,3 +50,19 @@ export function planGraph(types: PlanPiece[]): Graph {
 }
 /** The chain server/traffic.ts used to walk by hand: what a migrated game and an assembled room run. */
 export function completePlan(): Graph { return planGraph(['entry', 'security', 'web', 'checkout', 'inventory', 'payment', 'exit']); }
+
+const tally = (graph: Graph) => graph.nodes.reduce((count, node) => { count[node.type] = (count[node.type] ?? 0) + 1; return count; }, {} as Record<string, number>);
+/** Q100 per publication plus only the pieces it adds, so building in small steps is not punished.
+ * The server charges with this and the editor previews with it, so the student sees one number. */
+export const PLAN_PUBLICATION_FEE = 100;
+export function planPublicationCost(previous: Graph, next: Graph) {
+  const before = tally(previous), after = tally(next);
+  return Object.entries(after).reduce((sum, [type, count]) =>
+    sum + Math.max(0, count - (before[type] ?? 0)) * (isPlanPiece(type) ? PLAN_PIECES[type].cost : 0), PLAN_PUBLICATION_FEE);
+}
+/** Pieces `next` adds over `previous`, which is what a publication is charged for. */
+export function addedPieces(previous: Graph, next: Graph): PlanPiece[] {
+  const before = tally(previous), after = tally(next);
+  return Object.entries(after).flatMap(([type, count]) =>
+    isPlanPiece(type) ? Array.from({ length: Math.max(0, count - (before[type] ?? 0)) }, () => type) : []);
+}

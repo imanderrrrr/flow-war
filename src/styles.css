@@ -229,3 +229,25 @@ html[data-calm="true"] .slot-banner.shown,html[data-calm="true"] .slot-intro-ico
 .notices-muted{position:fixed;right:18px;bottom:18px;z-index:60;display:inline-flex;align-items:center;gap:7px;background:#0f1724;border:1px solid #2b3647;color:#8d99aa;font-size:8px;letter-spacing:.8px;padding:8px 11px}
 @keyframes notice-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @media(max-width:560px){.customer-notices{right:12px;left:12px;bottom:12px;width:auto}}
+
+/* ── Plano de servicios ─────────────────────────────────────────────────────
+   Fixed solares, roads the team draws. A piece that belongs to another role is
+   visible and dimmed; an empty solar is a dashed ghost carrying its own motive. */
+.plan-node {
+  width: 168px; padding: 10px 12px; border: 2px solid var(--team, #8e9aaf); border-radius: 4px;
+  background: #121a26; display: grid; gap: 4px; font-size: 11px; line-height: 1.35;
+}
+.plan-node .node-type { display: flex; align-items: center; gap: 5px; font-size: 9px; letter-spacing: .08em; color: #8e9aaf; }
+.plan-node strong { font-size: 12px; letter-spacing: .04em; }
+.plan-node span:not(.node-type) { color: #a9b6c7; font-size: 10px; }
+.plan-node.selected { box-shadow: 0 0 0 2px var(--team, #8e9aaf); }
+.plan-node.theirs { opacity: .45; border-style: solid; border-color: #3a4757; pointer-events: none; }
+.plan-node.ghost { background: transparent; border-style: dashed; border-color: #3a4757; color: #8e9aaf; }
+.plan-node.ghost.mine { border-color: var(--team, #8e9aaf); cursor: pointer; }
+.plan-node.ghost.mine:hover { background: #121a26; }
+.palette-block.plan-piece span { display: grid; gap: 2px; }
+.palette-block.plan-piece em { font-style: normal; font-size: 10px; color: #8e9aaf; line-height: 1.3; }
+.node-inspector .piece-text { font-size: 11px; color: #a9b6c7; line-height: 1.4; margin: 0; }
+.plan-inner-editor { border-top: 2px solid #28374b; margin-top: 12px; padding-top: 10px; }
+.plan-inner-editor .node-editor { border: none; padding: 0; }
+button.plan-node { text-align: left; font-family: inherit; cursor: pointer; }
