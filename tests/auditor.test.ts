@@ -5,6 +5,7 @@ import { ensureLobby, formTeams, joinLobby, participantIdentity } from '../serve
 import { pendingControls, auditCompanies } from '../server/auditor.js';
 import { recoverGame, serializeGame } from '../server/persistence.js';
 import { route } from '../server/graphs.js';
+import { serviceRates } from '../server/traffic.js';
 import { DEFAULT_TEST } from '../shared/actions.js';
 import { AUDIT_PROBE, CONTROL_CHECKS } from '../shared/auditor.js';
 import { LOBBY_ICONS } from '../shared/lobby.js';
@@ -16,6 +17,14 @@ const auditor = (n = 1): Identity => ({ id: `auditor-P${n}`, role: 'auditor', co
 let sequence = 0;
 const probe = (g: GameState, who: Identity, payload: Record<string, unknown>) => applyCommand(g, who, { id: `probe-${++sequence}`, type: 'audit.probe', payload });
 const running = () => { const g = createGame(); assert(command(g, 'operator', 'room.start').ok); return g; };
+const sustain = (g: GameState, who: Identity, payload: Record<string, unknown>) => applyCommand(g, who, { id: `sustain-${++sequence}`, type: 'audit.sustain', payload });
+/** Runs a probe on that module until its finding is open, and returns it. */
+function openFindingOn(g: GameState, companyId: number, nodeId: string, check: string, who = auditor()) {
+  assert(probe(g, who, { companyId, nodeId, check }).ok);
+  for (let i = 0; i < 500 && !(g.auditors?.findings ?? []).some(f => f.companyId === companyId && f.nodeId === nodeId); i++) advanceGame(g, 0.1);
+  const finding = g.auditors!.findings.find(f => f.companyId === companyId && f.nodeId === nodeId);
+  assert(finding, 'no se abrió el hallazgo'); return finding;
+}
 
 /** Backend → Seguridad (controls on one block) → QA → CTO → DevOps for company 0. */
 function deployWithControls(g: GameState, nodeId: string, rules: unknown[]) {
@@ -316,4 +325,34 @@ test('el sangrado no lleva el capital por debajo de cero ni sigue tras cerrar el
   assert(finding.closedAt !== undefined, 'el hallazgo quedó cerrado');
   const frozen = finding.uncontained; advanceGame(g, 60);
   assert.equal(finding.uncontained, frozen, 'un hallazgo cerrado deja de sangrar');
+});
+
+test('la prueba sostenida respeta sus topes y nunca deja a la empresa sin capacidad', () => {
+  const g = running(), c = g.companies[0];
+  const finding = openFindingOn(g, 0, 'backend-write', 'waf');
+  assert.equal(sustain(g, auditor(), { findingId: finding.id }).ok, true);
+  const sold = c.traffic.totals.completed;
+  for (let i = 0; i < 700; i++) { advanceGame(g, 0.1); assert(serviceRates(c).web > 0, 'la capacidad nunca llega a cero'); }
+  assert(c.traffic.totals.completed > sold, 'la empresa sigue vendiendo durante la ventana');
+  assert.equal(c.eliminated, false);
+  assert.equal(finding.sustain, undefined, 'la ventana se cerró sola al cumplirse los 60 s');
+});
+
+test('sostener exige un hallazgo abierto y respeta la espera', () => {
+  const g = running(), finding = openFindingOn(g, 0, 'backend-write', 'waf');
+  assert.equal(sustain(g, auditor(), { findingId: 'AF-404' }).code, 'NOT_FOUND');
+  assert(sustain(g, auditor(), { findingId: finding.id }).ok);
+  assert.equal(sustain(g, auditor(), { findingId: finding.id }).code, 'SUSTAIN_ACTIVE');
+  advanceGame(g, 65);
+  assert.equal(sustain(g, auditor(), { findingId: finding.id }).code, 'COOLDOWN');
+});
+
+test('la ventana se corta si la empresa sale de la partida', () => {
+  const g = running(), c = g.companies[2];
+  const finding = openFindingOn(g, 2, 'backend-write', 'waf');
+  assert(sustain(g, auditor(), { findingId: finding.id }).ok);
+  advanceGame(g, 3);
+  c.serviceMode = { mode: 'FULL_MAINTENANCE', since: -1000 }; advanceGame(g, 0.1);
+  assert.equal(c.eliminated, true);
+  assert.equal(finding.sustain, undefined, 'la ventana quedó cerrada');
 });

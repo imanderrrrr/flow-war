@@ -74,6 +74,7 @@ export function validateParameters(type: string, input: unknown) {
       if (!Array.isArray(p.components) || !p.components.length || p.components.length > 6) throw new ActionError('INVALID', 'Componentes inválidos.'); p.components.forEach(v => string(v, 30));
       if (!Array.isArray(p.pending) || !p.pending.length || p.pending.length > CONTROL_CHECKS.length) throw new ActionError('INVALID', 'Controles pendientes inválidos.'); p.pending.forEach(v => oneOf(v, CONTROL_CHECKS)); break;
     case 'audit.probe': keys(p, ['companyId','nodeId','check']); integer(p.companyId, 0, 4); string(p.nodeId); oneOf(p.check, CONTROL_CHECKS); break;
+    case 'audit.sustain': keys(p, ['findingId']); string(p.findingId, 40); break;
     case 'qa.execute': keys(p, ['changeId','scenario','request','threadId']); string(p.changeId); testScenario(p.scenario); if (p.request !== undefined && !freeText(p.request).trim()) throw new ActionError('INVALID', 'Solicitud vacía.'); if (p.threadId !== undefined) string(p.threadId); break;
     case 'infra.maintenance': keys(p, ['mode']); oneOf(p.mode, ['OPERATING','ORDERS_PAUSED','FULL_MAINTENANCE']); break;
     case 'infra.restart': keys(p, ['serverId','duration']); integer(p.serverId, 1, 8); integer(p.duration, 1, 60); break;

@@ -39,6 +39,8 @@ export type ActionParameters = {
   'module.design': { name: string; components: string[]; summary: string; pending: import('./auditor.js').ControlCheck[] };
   /** External auditor: one prueba de control against a control pendiente of a production module. */
   'audit.probe': { companyId: number; nodeId: string; check: import('./auditor.js').ControlCheck };
+  /** External auditor: sustains the anomalous traffic of an open finding for a bounded window. */
+  'audit.sustain': { findingId: string };
   'security.prepare': SecurityConfiguration;
   'qa.execute': { changeId: string; scenario: TestScenario; request?: string; threadId?: string };
   'infra.maintenance': { mode: 'OPERATING' | 'ORDERS_PAUSED' | 'FULL_MAINTENANCE' };
@@ -84,7 +86,7 @@ export const ACTION_CATALOG = {
   'security.save': entry(['security'], 'preparation'), 'security.configure': entry(['security'], 'preparation'), 'security.submit': entry(['security'], 'preparation'),
   'security.correction': entry(['security'], 'preparation'), 'ai.accept': entry(['backend', 'security','qa'], 'preparation'), 'ai.reject': entry(['backend', 'security','qa','cto'], 'preparation'),
   'module.create': entry(['backend'], 'artifact'), 'module.revise': entry(['backend'], 'artifact'), 'module.design': entry(['backend'], 'artifact'),
-  'audit.probe': entry(['auditor'], 'operation'),
+  'audit.probe': entry(['auditor'], 'operation'), 'audit.sustain': entry(['auditor'], 'operation'),
   'security.prepare': entry(['security'], 'preparation'), 'qa.execute': entry(['qa'], 'qa'),
   'infra.maintenance': entry(['devops'], 'operation'),
   'infra.restart': entry(['devops'], 'operation'), 'infra.restart_all': entry(['devops'], 'operation'),

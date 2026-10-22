@@ -1,11 +1,11 @@
 import type { Command, Company, GameState, GraphNode, Identity, Result, TrafficRequest } from '../shared/types.js';
 import type { ExecutionRelease } from '../shared/simulation.js';
 import type { ProtectionRule } from '../shared/collaboration.js';
-import { AUDIT_LEAK, AUDIT_PROBE, CATEGORY_LABELS, CONTROL_CHECKS, CONTROL_CHECK_INFO, RULE_LABELS, type AuditCompany, type AuditFinding, type AuditProbe, type AuditProbeView, type AuditorState, type AuditorView, type ControlCheck, type PendingControl, type ProbeStop } from '../shared/auditor.js';
+import { AUDIT_LEAK, AUDIT_PROBE, AUDIT_SUSTAIN, CATEGORY_LABELS, CONTROL_CHECKS, CONTROL_CHECK_INFO, RULE_LABELS, type AuditCompany, type AuditFinding, type AuditProbe, type AuditProbeView, type AuditorState, type AuditorView, type ControlCheck, type PendingControl, type ProbeStop } from '../shared/auditor.js';
 import { route } from './graphs.js';
 import { releaseFor } from './artifacts.js';
 import { hasDefect } from './defects.js';
-import { admitTraffic } from './traffic.js';
+import { admitTraffic, serviceRates, SERVICE_IDS } from './traffic.js';
 import { validateParameters } from './action-validation.js';
 import { addSlackMessage } from './flowslack.js';
 import type { SecurityVerdict } from './security.js';
@@ -130,9 +130,10 @@ export function auditorView(g: GameState, auditor: Identity): AuditorView {
 
 /** `audit.probe`: validated like every command; duration, cooldown and the per-company limit are enforced here. */
 export function auditCommand(g: GameState, auditor: Identity, command: Command, emit: Emit): Result {
-  if (command.type !== 'audit.probe') return { ok: false, code: 'FORBIDDEN', error: 'Acción no autorizada para este rol.' };
+  if (command.type !== 'audit.probe' && command.type !== 'audit.sustain') return { ok: false, code: 'FORBIDDEN', error: 'Acción no autorizada para este rol.' };
   if (g.status !== 'RUNNING') return { ok: false, code: 'ROOM_PAUSED', error: 'La simulación no está en curso.' };
   const p = command.payload ?? {};
+  if (command.type === 'audit.sustain') return sustainCommand(g, command, p, emit);
   try { validateParameters('audit.probe', p); } catch (e) { return { ok: false, code: 'INVALID', error: e instanceof Error ? e.message : 'Parámetros inválidos.' }; }
   const c = g.companies[p.companyId as number], check = p.check as ControlCheck;
   if (c.eliminated) return { ok: false, code: 'ELIMINATED', error: `${c.name} está fuera de la partida.` };
@@ -154,6 +155,53 @@ export function auditCommand(g: GameState, auditor: Identity, command: Command, 
   // The company sees the traffic, never who requested it.
   emit(g, c.id, `Tráfico inusual entrante · ${CATEGORY_LABELS[category]} · ${AUDIT_PROBE.durationSeconds} s.`, 'bad', 'SECURITY');
   return { ok: true, refs: [probe.id] };
+}
+
+/**
+ * `audit.sustain`: concentrates the traffic of an open finding for a bounded window. Its damage is capped by the
+ * shares in AUDIT_SUSTAIN, so it can never take a company's capacity to zero.
+ */
+function sustainCommand(g: GameState, command: Command, p: Record<string, unknown>, emit: Emit): Result {
+  try { validateParameters('audit.sustain', p); } catch (e) { return { ok: false, code: 'INVALID', error: e instanceof Error ? e.message : 'Parámetros inválidos.' }; }
+  const finding = (g.auditors?.findings ?? []).find(f => f.id === p.findingId && f.closedAt === undefined);
+  if (!finding) return { ok: false, code: 'NOT_FOUND', error: 'Ese hallazgo no está abierto.' };
+  const c = g.companies[finding.companyId];
+  if (c.eliminated) return { ok: false, code: 'ELIMINATED', error: `${c.name} está fuera de la partida.` };
+  if (finding.sustain) return { ok: false, code: 'SUSTAIN_ACTIVE', error: 'Esa prueba sostenida sigue en curso.' };
+  if (finding.sustainedAt !== undefined && g.tick < finding.sustainedAt + AUDIT_SUSTAIN.cooldownSeconds)
+    return { ok: false, code: 'COOLDOWN', error: `Podés sostener esta prueba otra vez en ${Math.ceil(finding.sustainedAt + AUDIT_SUSTAIN.cooldownSeconds - g.tick)} s.` };
+  finding.sustain = { startedAt: g.tick, endsAt: round(g.tick + AUDIT_SUSTAIN.durationSeconds), sent: 0 };
+  emit(g, c.id, `Tráfico inusual sostenido sobre ${finding.module} · ${CATEGORY_LABELS[finding.category]} · ${AUDIT_SUSTAIN.durationSeconds} s.`, 'bad', 'SECURITY');
+  return { ok: true, refs: [finding.id] };
+}
+/** Service the audited module belongs to, so the queue that backs up is the one the module lives in. */
+export function targetService(node: GraphNode | undefined): typeof SERVICE_IDS[number] {
+  const type = node?.type;
+  if (type === 'read' || type === 'write' || type === 'atomic' || type === 'validation' || type === 'lock') return 'inventory';
+  if (type === 'payment') return 'payment';
+  if (type === 'entry') return 'security';
+  return 'checkout';
+}
+/** Sustains the traffic of every open window of this company, under both caps. */
+function advanceSustain(g: GameState, c: Company, emit: Emit) {
+  for (const finding of g.auditors?.findings ?? []) {
+    const window = finding.sustain;
+    if (!window || finding.companyId !== c.id) continue;
+    if (finding.closedAt !== undefined || c.eliminated || g.tick + 1e-9 >= window.endsAt) {
+      delete finding.sustain; finding.sustainedAt = g.tick;
+      if (!c.eliminated) emit(g, c.id, `El tráfico inusual sostenido sobre ${finding.module} terminó.`, 'neutral', 'SECURITY');
+      continue;
+    }
+    // Rate cap: never more than a share of this company's web capacity, so scaling servers really helps.
+    const rate = serviceRates(c).web * AUDIT_SUSTAIN.rateShare;
+    if (rate <= 0) continue;
+    const service = targetService(route(c.backend).find(n => n.id === finding.nodeId));
+    const queue = c.traffic.services[service];
+    // Queue cap: legitimate customers always keep room in the queue the module lives in.
+    if (queue.waiting.length >= queue.capacity * AUDIT_SUSTAIN.queueShare) continue;
+    const due = Math.floor((g.tick - window.startedAt) * rate) - window.sent;
+    for (let i = 0; i < due; i++) { admitTraffic(c, g.tick, 'purchase', 'malicious', finding.category); window.sent++; }
+  }
 }
 
 /** Records where a contained request was stopped (first one only), resolving a readable block/module label. */
@@ -179,6 +227,7 @@ function settle(probe: AuditProbe, r: TrafficRequest) {
  * contained; the engine decides the rest. Runs each tick, so results are counted before retention prunes them.
  */
 export function advanceProbes(g: GameState, c: Company, emit: Emit) {
+  advanceSustain(g, c, emit);
   const probes = (g.auditors?.probes ?? []).filter(x => x.companyId === c.id);
   if (!probes.length) return;
   const byId = new Map(probes.map(x => [x.id, x]));
@@ -263,4 +312,6 @@ export function closeSettledFindings(g: GameState, c: Company, emit: Emit) {
 /** Probes of a company that left the game, or of a finished game, stop where they are. */
 export function closeProbes(g: GameState, companyId?: number) {
   for (const probe of g.auditors?.probes ?? []) if (!probe.finished && (companyId === undefined || probe.companyId === companyId)) probe.finished = true;
+  // An eliminated company and a finished game are no longer reached by the tick, so close their windows here.
+  for (const f of g.auditors?.findings ?? []) if (f.sustain && (companyId === undefined || f.companyId === companyId)) { delete f.sustain; f.sustainedAt = g.tick; }
 }

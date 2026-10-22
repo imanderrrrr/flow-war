@@ -13,6 +13,12 @@ export const AUDIT_PROBE = { durationSeconds: 30, cooldownSeconds: 60, requests:
  * that traffic grows during the game.
  */
 export const AUDIT_LEAK = { fine: 250, costPerRequest: 1, reputationPerRequest: 0.02 } as const;
+/**
+ * The acute burst on top of the leak. The two shares are what keeps it non-lethal by construction: the auditor's
+ * traffic never exceeds a third of the company's web capacity, and none is admitted once the target queue is
+ * two thirds full, so legitimate customers always have room.
+ */
+export const AUDIT_SUSTAIN = { durationSeconds: 60, cooldownSeconds: 120, rateShare: 1 / 3, queueShare: 2 / 3 } as const;
 
 export const RULE_LABELS: Record<ProtectionRule['kind'], string> = { authenticated: 'Auth', owner: 'Role Check', input: 'WAF', bot: 'Bot Detection', origin: 'IP Block', rate: 'Rate Limit' };
 
@@ -53,6 +59,8 @@ export type AuditProbe = {
 export type AuditFinding = {
   id: string; companyId: number; nodeId: string; module: string; check: ControlCheck; category: AnomalyCategory;
   openedAt: number; closedAt?: number; fine: number; uncontained: number; lost: number;
+  /** Open window of a sustained control test, and when the last one ended (for the cooldown). */
+  sustain?: { startedAt: number; endsAt: number; sent: number }; sustainedAt?: number;
 };
 export type AuditorState = { sequence: number; probes: AuditProbe[]; findings: AuditFinding[] };
 
