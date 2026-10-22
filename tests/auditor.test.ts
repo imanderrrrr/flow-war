@@ -202,6 +202,8 @@ test('a room reset starts the new generation without the previous probes or cool
   assert(probe(g, auditor(), { companyId: 0, nodeId: 'backend-read', check: 'waf' }).ok); advanceGame(g, 5);
   assert(command(g, 'operator', 'room.reset', { duration: 1500 }).ok);
   assert.equal(g.auditors, undefined); assert.equal(g.generation, 1);
+  // The new generation starts in montaje, so it is assembled again before anyone audits it.
+  assert(command(g, 'operator', 'room.assembled', { enabled: true }).ok);
   assert(command(g, 'operator', 'room.start').ok);
   assert.equal(probe(g, auditor(), { companyId: 0, nodeId: 'backend-read', check: 'waf' }).ok, true, 'no cooldown carried over');
 });

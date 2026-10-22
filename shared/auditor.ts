@@ -67,7 +67,9 @@ export type AuditorState = { sequence: number; probes: AuditProbe[]; findings: A
 
 export type PendingControl = { check: ControlCheck; control: string; text: string; category: AnomalyCategory };
 export type AuditModule = { nodeId: string; label: string; module: boolean; pending: PendingControl[] };
-export type AuditCompany = { companyId: number; name: string; color: string; version: number; eliminated: boolean; modules: AuditModule[] };
+/** `assembling`: the company is still building its plan and does not accept purchases yet, so it has
+ * nothing to audit. A company becomes auditable exactly when it closes its montaje. */
+export type AuditCompany = { companyId: number; name: string; color: string; version: number; eliminated: boolean; assembling: boolean; modules: AuditModule[] };
 /** A probe plus the server-composed narrative of what its traffic is doing to the company's system. */
 export type AuditProbeView = Omit<AuditProbe, 'auditorId'> & { summary: string[] };
 /** Everything an auditor sees: production modules with their pending controls and the auditor's own probes. */

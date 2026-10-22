@@ -107,7 +107,7 @@ export const ACTION_CATALOG = {
   'cto.rollback_authorize': entry(['cto'], 'finance'), 'deploy.rollback': entry(['devops'], 'publication'),
   'infra.server_stop': entry(['devops'], 'operation'), 'infra.server_start': entry(['devops'], 'operation'),
   'product.draft': entry(['product'], 'artifact'), 'product.submit': entry(['product'], 'preparation'), 'room.product': entry(['operator'], 'administration'),
-  'room.dvr': entry(['operator'], 'administration'),
+  'room.dvr': entry(['operator'], 'administration'), 'room.assembled': entry(['operator'], 'administration'),
   'room.start': entry(['operator'], 'administration'), 'room.pause': entry(['operator'], 'administration'),
   'room.reset': entry(['operator'], 'administration'), 'room.speed': entry(['operator'], 'administration'), 'room.finish': entry(['operator'], 'administration'),
 } as const;

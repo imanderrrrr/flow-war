@@ -67,8 +67,10 @@ export function pendingControls(c: Company, node: GraphNode, release = productio
 export function auditCompanies(g: GameState): AuditCompany[] {
   return g.companies.map(c => {
     const release = production(c);
-    return { companyId: c.id, name: c.name, color: c.color, version: c.version, eliminated: c.eliminated,
-      modules: c.eliminated ? [] : route(c.backend).map(node => ({ nodeId: node.id, label: node.data.label, module: node.type === 'module', pending: pendingControls(c, node, release) })) };
+    // A company becomes auditable when it accepts purchases: while it assembles there is nothing to audit.
+    const assembling = c.assembly.active;
+    return { companyId: c.id, name: c.name, color: c.color, version: c.version, eliminated: c.eliminated, assembling,
+      modules: c.eliminated || assembling ? [] : route(c.backend).map(node => ({ nodeId: node.id, label: node.data.label, module: node.type === 'module', pending: pendingControls(c, node, release) })) };
   });
 }
 
@@ -137,6 +139,8 @@ export function auditCommand(g: GameState, auditor: Identity, command: Command, 
   try { validateParameters('audit.probe', p); } catch (e) { return { ok: false, code: 'INVALID', error: e instanceof Error ? e.message : 'Parámetros inválidos.' }; }
   const c = g.companies[p.companyId as number], check = p.check as ControlCheck;
   if (c.eliminated) return { ok: false, code: 'ELIMINATED', error: `${c.name} está fuera de la partida.` };
+  // Decided from the same c.assembly.active the ficha reads, so there is no tick where they disagree.
+  if (c.assembly.active) return { ok: false, code: 'ASSEMBLING', error: `${c.name} está EN MONTAJE: todavía no acepta compras, así que no hay nada que auditar.` };
   const last = own(g, auditor.id).at(-1);
   if (last && !last.finished) return { ok: false, code: 'PROBE_ACTIVE', error: 'Tu prueba de control anterior sigue en curso.' };
   if (last && g.tick < last.endsAt + AUDIT_PROBE.cooldownSeconds) return { ok: false, code: 'COOLDOWN', error: `Podés lanzar otra prueba de control en ${Math.ceil(last.endsAt + AUDIT_PROBE.cooldownSeconds - g.tick)} s.` };
@@ -167,6 +171,8 @@ function sustainCommand(g: GameState, command: Command, p: Record<string, unknow
   if (!finding) return { ok: false, code: 'NOT_FOUND', error: 'Ese hallazgo no está abierto.' };
   const c = g.companies[finding.companyId];
   if (c.eliminated) return { ok: false, code: 'ELIMINATED', error: `${c.name} está fuera de la partida.` };
+  // Decided from the same c.assembly.active the ficha reads, so there is no tick where they disagree.
+  if (c.assembly.active) return { ok: false, code: 'ASSEMBLING', error: `${c.name} está EN MONTAJE: todavía no acepta compras, así que no hay nada que auditar.` };
   if (finding.sustain) return { ok: false, code: 'SUSTAIN_ACTIVE', error: 'Esa prueba sostenida sigue en curso.' };
   // One sustained window per company at a time, so the third-of-capacity cap holds across auditors.
   if ((g.auditors?.findings ?? []).filter(f => f.sustain && f.companyId === c.id).length >= AUDIT_SUSTAIN.perCompany)

@@ -184,6 +184,14 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       // One switch for the room: the department is enabled or disabled for the five companies alike.
       g.productEnabled = command.payload.enabled; return { ok: true };
     }
+    if (command.type === 'room.assembled') {
+      // Spec §8: a short class can skip the montaje and open with the architecture already built.
+      if (g.status !== 'LOBBY') return { ok: false, code: 'ASSEMBLED_MODE_LOCKED', error: 'Elegí el modo de arranque antes de iniciar la partida.' };
+      if (typeof command.payload?.enabled !== 'boolean') return { ok: false, error: 'Valor inválido.' };
+      if (command.payload.enabled) assembleGame(g);
+      else for (const company of g.companies) { company.plan = initialGraph('plan'); company.assembly = { active: true }; }
+      return { ok: true };
+    }
     if (command.type === 'room.reset') {
       const closed = structuredClone(g); copyHistoryBuffer(g, closed); bindObservability(closed); bindMarket(closed);
       if (closed.status !== 'FINISHED' && closed.status !== 'ABORTED') {
