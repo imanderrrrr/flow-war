@@ -1,0 +1,5 @@
+{"label":"delivery-32-off","tick":374,"status":"RUNNING","wallSeconds":31.173839042,"updates":3177}
+{"label":"delivery-32-off","tick":666,"status":"RUNNING","wallSeconds":46.173819834,"updates":5513}
+{"label":"delivery-32-off","tick":866,"status":"RUNNING","wallSeconds":61.175513042,"updates":6875}
+{"label":"delivery-32-off","tick":1122,"status":"RUNNING","wallSeconds":76.17660091699999,"updates":8835}
+{"output":"/Users/anderson/Documents/proyecto aseguramiento/docs/benchmarks/entrega-7/delivery-32-off.json","status":"passed","errors":[],"wallSeconds":80.64571970899999}

@@ -1,0 +1,54 @@
+{
+  "label": "e8-head-2",
+  "status": "passed",
+  "serverRoot": "entrega-8 HEAD",
+  "duration": 1200,
+  "speed": 20,
+  "mode": "off",
+  "students": 25,
+  "finalEconomicDigest": "27f84255eda7c146796d5116e53ba86e26f511863f7b2c7e61c0854052a1ecad",
+  "ackMs": {
+    "p50": 46.5,
+    "p95": 91.5,
+    "max": 91.9
+  },
+  "nonChatAckMs": {
+    "p50": 53.6,
+    "p95": 91.8,
+    "max": 91.9
+  },
+  "chatAckMs": {
+    "p50": 14.6,
+    "p95": 76.5,
+    "max": 76.8
+  },
+  "cadenceMs": {
+    "p50": 202.6,
+    "p95": 230.5,
+    "max": 6005.9
+  },
+  "segments": [
+    {
+      "cpuPercent": 31.4,
+      "rssMaxMb": 317,
+      "heapMaxMb": 106,
+      "eventLoopP99Ms": 68.3,
+      "commits": 47
+    },
+    {
+      "cpuPercent": 48.6,
+      "rssMaxMb": 473,
+      "heapMaxMb": 246,
+      "eventLoopP99Ms": 86,
+      "commits": 57
+    }
+  ],
+  "liveStateLogicalBytes": 4923274,
+  "hardware": {
+    "node": "v25.9.0",
+    "os": "27.0.0",
+    "cpu": "Apple M5",
+    "cores": 10,
+    "ram": 17179869184
+  }
+}

@@ -1,0 +1,4 @@
+{"label":"delivery-27-off","tick":394,"status":"RUNNING","wallSeconds":30.598829,"updates":2823}
+{"label":"delivery-27-off","tick":686,"status":"RUNNING","wallSeconds":45.599234667,"updates":4794}
+{"label":"delivery-27-off","tick":986,"status":"RUNNING","wallSeconds":60.600048209,"updates":6819}
+{"output":"/Users/anderson/Documents/proyecto aseguramiento/docs/benchmarks/entrega-7/delivery-27-off.json","status":"passed","errors":[],"wallSeconds":71.655561584}

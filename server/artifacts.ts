@@ -48,13 +48,14 @@ export function prepareArtifact(g: GameState, c: Company, actor: Identity, type:
   const dependencies = (p.dependencies as string[]).map(dep => { const v = c.runtime.modules[dep]?.at(-1); if (!v || dep === id) throw new Error('Dependencia inválida.'); return { id: v.id, version: v.version }; });
   const module: ModuleVersion = { id, version: (versions?.length ?? 0) + 1, companyId: c.id, name: String(p.name), configuration, dependencies, defects: [], profile: 'defects-1', createdBy: actor.id, createdAt: g.tick, changeId, graph: { nodes: [], edges: [] } };
   module.defects = generateDefects(g.seed, module);
-  const graph = appendModule(c.backend, module);
+  const graph = appendModule(c.drafts.backend?.graph??c.backend, module);
   if (graph.nodes.length > 25 || graph.edges.length > 30) throw new Error('Límite de piezas alcanzado.');
   // Resolve the entire candidate before committing the artifact or change.
   const candidate = { ...c, runtime: { ...c.runtime, modules: { ...c.runtime.modules, [id]: [...(versions ?? []), module] } } };
   const execution = releaseFor(candidate, graph);
   module.graph = structuredClone(graph);
   c.runtime.modules[id] = [...(versions ?? []), module];
+  c.drafts.backend={graph:structuredClone(graph),revision:(c.drafts.backend?.revision??0)+1};
   const change: Change = { id: changeId, companyId: c.id, domain: 'backend', name: module.name, graph, status: 'QA_PENDING', cost: 150 + dependencies.length * 30, reserved: 0, baseVersion: c.version, created: g.tick, reports: [], actorId: actor.id, artifactRefs: [{ id, version: module.version }], context: { backend: structuredClone(graph), security: structuredClone(c.security), executionVersion: c.version, execution } };
   g.changes.unshift(change); return change;
 }

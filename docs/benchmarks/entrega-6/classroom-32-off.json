@@ -1,0 +1,636 @@
+{
+  "sourceFiles": [
+    "server/action-validation.ts",
+    "server/agents.ts",
+    "server/ai-service.ts",
+    "server/artifacts.ts",
+    "server/blocks.ts",
+    "server/business.ts",
+    "server/chat.ts",
+    "server/claude.ts",
+    "server/collaboration.ts",
+    "server/crisis.ts",
+    "server/defects.ts",
+    "server/discipline.ts",
+    "server/dvr-pool.ts",
+    "server/dvr-query.ts",
+    "server/dvr-worker.mjs",
+    "server/dvr-worker.ts",
+    "server/dvr.ts",
+    "server/engine.ts",
+    "server/flowslack.ts",
+    "server/graphs.ts",
+    "server/history-admin.ts",
+    "server/history.ts",
+    "server/index.ts",
+    "server/infrastructure.ts",
+    "server/load.ts",
+    "server/maintenance.ts",
+    "server/market.ts",
+    "server/module-execution.ts",
+    "server/observability.ts",
+    "server/persistence.ts",
+    "server/postmortem.ts",
+    "server/projections.ts",
+    "server/qa.ts",
+    "server/receipt-storage.ts",
+    "server/requests.ts",
+    "server/scenarios.ts",
+    "server/security.ts",
+    "server/snapshot-sync.ts",
+    "server/storage-lease.ts",
+    "server/storage.ts",
+    "server/traffic.ts",
+    "shared/actions.ts",
+    "shared/agents.ts",
+    "shared/blocks.ts",
+    "shared/collaboration.ts",
+    "shared/crisis.ts",
+    "shared/live-client.ts",
+    "shared/observability.ts",
+    "shared/simulation.ts",
+    "shared/snapshot-codec.ts",
+    "shared/sync.ts",
+    "shared/types.ts"
+  ],
+  "sourceDigest": "f8f8f71e41b72ce856a1f036215d85b9cb7b5fc307bf899ed515e261cc76ec65",
+  "probeDigest": "ca8344983c7a902b613254132cc04207ff70b517b93312447bb8a669ec449480",
+  "seed": 8,
+  "population": 5000,
+  "harnessDigest": "1e638723eeec225cbb6a88c6cd9b616e0969348e9b9c8b2fa4bcf3dfc1f1453b",
+  "label": "classroom-32-off",
+  "duration": 1200,
+  "speed": 20,
+  "mode": "off",
+  "reference": "d35c5ba9e8505ae794b7975eb1ae1302815f2ede",
+  "serverRoot": "working-tree",
+  "at": "2026-10-20T23:57:40.523Z",
+  "hardware": {
+    "node": "v25.9.0",
+    "os": "27.0.0",
+    "cpu": "Apple M5",
+    "cores": 10,
+    "ram": 17179869184
+  },
+  "errors": [
+    "AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:\n\n  assert(r.ok)\n\n    at <anonymous> (/Users/anderson/Documents/proyecto aseguramiento/scripts/collaboration-classroom.ts:44:197)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)"
+  ],
+  "segments": [
+    {
+      "segment": 1,
+      "exitCode": 0,
+      "signal": null,
+      "wallMs": 6224.554167,
+      "workersCreated": 0,
+      "scheduledCommands": 0,
+      "maxScheduled": 0,
+      "websocketFrames": 90,
+      "websocketFrameBytes": 55686,
+      "websocketPayloadBytes": 55446,
+      "websocketFramingBytes": 240,
+      "cpuMicros": {
+        "user": 654652,
+        "system": 63643
+      },
+      "cpuPercent": 11.539701972682664,
+      "rssMax": 149176320,
+      "heapMax": 37340136,
+      "eventLoopP99": 23.052287,
+      "emitted": 30,
+      "logicalBytes": 350993,
+      "socketIoEncodedBytes": 352513,
+      "tcpBytesWritten": 62616,
+      "tcpBytesRead": 12830,
+      "full": 30,
+      "delta": 0,
+      "writes": 48,
+      "commits": 9,
+      "sizes": {
+        "n": 30,
+        "total": 350993,
+        "p50": 11640,
+        "p95": 11648,
+        "p99": 13497,
+        "max": 13497
+      },
+      "socketIoSerializationMs": {
+        "n": 30,
+        "total": 2.7525419999996643,
+        "p50": 0.08800000000019281,
+        "p95": 0.13779199999999037,
+        "p99": 0.20674999999999955,
+        "max": 0.20674999999999955
+      },
+      "broadcastMs": {
+        "n": 30,
+        "total": 247.4911290000008,
+        "p50": 7.9659999999998945,
+        "p95": 12.835708999999952,
+        "p99": 14.27245800000037,
+        "max": 14.27245800000037
+      },
+      "logicalPeakOneSecondBytes": 58204,
+      "transportPeakOneSecondBytes": 10459,
+      "compression": true,
+      "syncMetrics": [
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        },
+        {
+          "full": 1,
+          "delta": 0,
+          "coalesced": 1,
+          "resyncs": 0
+        }
+      ],
+      "layer": "net.Socket.bytesWritten: TCP payload including HTTP upgrade, Engine.IO and WebSocket framing after negotiated compression; excludes IP/TCP headers and Wi-Fi airtime",
+      "serializationScope": "Actual Socket.IO Encoder.encode time for state messages; logical bytes derived from that encoding without reserializing payloads. Broadcast includes projection, codec, diff and encoding, excludes asynchronous zlib CPU."
+    }
+  ],
+  "limitations": [
+    "32 Node Socket.IO clients over local loopback; no Wi-Fi or browser FPS measurement. No live Claude calls in this benchmark.",
+    "CPU includes SQLite serialization and benchmark instrumentation. Transport excludes TCP/IP headers.",
+    "Scheduled commands arrive over the real 27 sockets; a common test-only preload releases the unchanged server handlers at declared ticks. Intentional scheduling wait is excluded from reported ACK latency and reported separately."
+  ],
+  "status": "failed",
+  "actionTrace": [],
+  "actionTraceDigest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "clients": {
+    "connections": 32,
+    "projectedFullBytes": 389894,
+    "updates": 30,
+    "full": 30,
+    "deltas": 0,
+    "resyncs": 0,
+    "nonChatAckMs": {
+      "n": 0,
+      "p50": 0,
+      "p95": 0,
+      "p99": 0,
+      "max": 0
+    },
+    "chatAckMs": {
+      "n": 0,
+      "p50": 0,
+      "p95": 0,
+      "p99": 0,
+      "max": 0
+    },
+    "byIdentity": [
+      {
+        "id": "operator",
+        "role": "operator",
+        "logicalBytes": 13497,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2000
+      },
+      {
+        "id": "0-backend",
+        "role": "backend",
+        "logicalBytes": 11644,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2088
+      },
+      {
+        "id": "0-security",
+        "role": "security",
+        "logicalBytes": 11648,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2090
+      },
+      {
+        "id": "0-qa",
+        "role": "qa",
+        "logicalBytes": 11624,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2086
+      },
+      {
+        "id": "0-cto",
+        "role": "cto",
+        "logicalBytes": 11628,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2087
+      },
+      {
+        "id": "0-devops",
+        "role": "devops",
+        "logicalBytes": 11640,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2089
+      },
+      {
+        "id": "0-product",
+        "role": "product",
+        "logicalBytes": 11644,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2090
+      },
+      {
+        "id": "1-backend",
+        "role": "backend",
+        "logicalBytes": 11644,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2087
+      },
+      {
+        "id": "1-security",
+        "role": "security",
+        "logicalBytes": 11648,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2091
+      },
+      {
+        "id": "1-qa",
+        "role": "qa",
+        "logicalBytes": 11624,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2087
+      },
+      {
+        "id": "1-cto",
+        "role": "cto",
+        "logicalBytes": 11628,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2087
+      },
+      {
+        "id": "1-devops",
+        "role": "devops",
+        "logicalBytes": 11640,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2090
+      },
+      {
+        "id": "1-product",
+        "role": "product",
+        "logicalBytes": 11644,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2089
+      },
+      {
+        "id": "2-backend",
+        "role": "backend",
+        "logicalBytes": 11644,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2091
+      },
+      {
+        "id": "2-security",
+        "role": "security",
+        "logicalBytes": 11648,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2094
+      },
+      {
+        "id": "2-qa",
+        "role": "qa",
+        "logicalBytes": 11624,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2089
+      },
+      {
+        "id": "2-cto",
+        "role": "cto",
+        "logicalBytes": 11628,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2090
+      },
+      {
+        "id": "2-devops",
+        "role": "devops",
+        "logicalBytes": 11640,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2092
+      },
+      {
+        "id": "2-product",
+        "role": "product",
+        "logicalBytes": 11644,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2089
+      },
+      {
+        "id": "3-backend",
+        "role": "backend",
+        "logicalBytes": 11644,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2091
+      },
+      {
+        "id": "3-security",
+        "role": "security",
+        "logicalBytes": 11648,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2093
+      },
+      {
+        "id": "3-qa",
+        "role": "qa",
+        "logicalBytes": 11624,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2091
+      },
+      {
+        "id": "3-cto",
+        "role": "cto",
+        "logicalBytes": 11628,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2092
+      },
+      {
+        "id": "3-devops",
+        "role": "devops",
+        "logicalBytes": 11640,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2095
+      },
+      {
+        "id": "3-product",
+        "role": "product",
+        "logicalBytes": 11644,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2092
+      },
+      {
+        "id": "4-backend",
+        "role": "backend",
+        "logicalBytes": 11644,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2090
+      },
+      {
+        "id": "4-security",
+        "role": "security",
+        "logicalBytes": 11648,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2092
+      },
+      {
+        "id": "4-qa",
+        "role": "qa",
+        "logicalBytes": 11624,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2090
+      },
+      {
+        "id": "4-cto",
+        "role": "cto",
+        "logicalBytes": 11628,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2091
+      },
+      {
+        "id": "4-devops",
+        "role": "devops",
+        "logicalBytes": 11640,
+        "updates": 1,
+        "connections": 1,
+        "tcpBytesRead": 2093
+      }
+    ],
+    "ackMs": {
+      "n": 0,
+      "p50": 0,
+      "p95": 0,
+      "p99": 0,
+      "max": 0
+    },
+    "ackIncludingScheduledWaitMs": {
+      "n": 0,
+      "p50": 0,
+      "p95": 0,
+      "p99": 0,
+      "max": 0
+    },
+    "cadenceMs": {
+      "n": 0,
+      "p50": 0,
+      "p95": 0,
+      "p99": 0,
+      "max": 0
+    },
+    "applyMs": {
+      "n": 30,
+      "p50": 0.022875000000567525,
+      "p95": 0.051750000000083674,
+      "p99": 0.11320799999998599,
+      "max": 0.11320799999998599
+    },
+    "sizeBytes": {
+      "n": 30,
+      "p50": 11640,
+      "p95": 11648,
+      "p99": 13497,
+      "max": 13497
+    },
+    "receivedLogicalBytes": 350993,
+    "tcpBytesRead": 62616
+  },
+  "sourceUnchanged": true,
+  "storageAfterShutdown": {
+    "mainBytes": 1798144,
+    "walBytes": 0
+  },
+  "exitCode": 1
+}

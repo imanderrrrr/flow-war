@@ -1,0 +1,35 @@
+{
+  "status": "passed",
+  "at": "2026-10-21T23:41:57.325Z",
+  "transport": "official SDK over a simulated Messages API transport; not a measurement of Anthropic capacity",
+  "requests": 30,
+  "companies": 5,
+  "capacity": 5,
+  "perCompany": 2,
+  "maxGlobal": 5,
+  "maxPerCompany": [
+    2,
+    1,
+    1,
+    1,
+    1
+  ],
+  "slowCompany": 0,
+  "wallMs": 412,
+  "waitMs": {
+    "n": 30,
+    "p50": 79,
+    "p95": 264,
+    "max": 285
+  },
+  "durationMs": {
+    "n": 30,
+    "p50": 21,
+    "p95": 122,
+    "max": 135
+  },
+  "inputTokens": 63000,
+  "outputTokens": 900,
+  "cacheReadTokens": 57000,
+  "toolsPerRequest": 9
+}

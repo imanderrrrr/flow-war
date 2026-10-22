@@ -21,25 +21,44 @@ export function historySchema(db: DatabaseSync) {
  if (!columns.some(c=>c.name==='closure')) db.exec('ALTER TABLE history_games ADD COLUMN closure TEXT');
  if (!columns.some(c=>c.name==='closedAt')) db.exec('ALTER TABLE history_games ADD COLUMN closedAt INTEGER');
 }
+/** Statements persist for the database lifetime, not per command. */
+const writeStatementCache=new WeakMap<DatabaseSync,ReturnType<typeof createWriteStatements>>();
+function createWriteStatements(db:DatabaseSync){
+ return {
+  meta:db.prepare('SELECT generation,dvrEnabled FROM history_games WHERE generation=?'),
+  game:db.prepare('INSERT INTO history_games (generation,start,tick,duration,status,version,closure,closedAt,dvrEnabled) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(generation) DO UPDATE SET dvrEnabled=excluded.dvrEnabled,tick=excluded.tick,status=excluded.status,closure=excluded.closure,closedAt=coalesce(history_games.closedAt,excluded.closedAt)'),
+  slack:db.prepare('INSERT OR IGNORE INTO slack_messages VALUES (?,?,?,?,?,?)'),
+  event:db.prepare('INSERT OR IGNORE INTO history_events VALUES (?,?,?,?,?,?)'),
+  input:db.prepare('INSERT OR IGNORE INTO history_inputs VALUES (?,?,?,?)'),
+  point:db.prepare('INSERT OR REPLACE INTO history_points VALUES (?,?,?)'),
+  checkpoint:db.prepare('INSERT OR IGNORE INTO history_checkpoints VALUES (?,?,?,?,?)')
+ };
+}
+function writeStatements(db:DatabaseSync){
+ let sql=writeStatementCache.get(db);
+ if(!sql){sql=createWriteStatements(db);writeStatementCache.set(db,sql);}
+ return sql;
+}
 export function writeHistory(db: DatabaseSync, g: GameState) {
- const meta = db.prepare('SELECT generation,dvrEnabled FROM history_games WHERE generation=?').get(g.generation) as {dvrEnabled:number}|undefined;
+ const sql=writeStatements(db);
+ const meta = sql.meta.get(g.generation) as {dvrEnabled:number}|undefined;
  if (g.dvrEnabled && !meta && !buffer(g).checkpoints.length) checkpoint(g,serializeGame,true);
- db.prepare('INSERT INTO history_games (generation,start,tick,duration,status,version,closure,closedAt,dvrEnabled) VALUES (?,?,?,?,?,?,?,?,?) ON CONFLICT(generation) DO UPDATE SET dvrEnabled=excluded.dvrEnabled,tick=excluded.tick,status=excluded.status,closure=excluded.closure,closedAt=coalesce(history_games.closedAt,excluded.closedAt)').run(g.generation,g.observability.startTick,g.tick,g.duration,g.status,g.observability.version,g.closure?JSON.stringify(g.closure):null,['FINISHED','ABORTED'].includes(g.status)?Date.now():null,g.dvrEnabled?1:0);
+ sql.game.run(g.generation,g.observability.startTick,g.tick,g.duration,g.status,g.observability.version,g.closure?JSON.stringify(g.closure):null,['FINISHED','ABORTED'].includes(g.status)?Date.now():null,g.dvrEnabled?1:0);
  const p=buffer(g);
  // FlowSlack durability is operational and independent of forensic recording.
- const slack=db.prepare('INSERT OR IGNORE INTO slack_messages VALUES (?,?,?,?,?,?)');
+ const slack=sql.slack;
  for(const m of p.slack) slack.run(g.generation,m.id,m.sequence,m.companyId,m.channel,JSON.stringify(m));
  if (!g.dvrEnabled) {
   if(meta?.dvrEnabled===1) for(const table of ['history_events','history_inputs','history_points','history_checkpoints','request_receipts','receipt_paths']) db.prepare(`DELETE FROM ${table} WHERE generation=?`).run(g.generation);
   return;
  }
- const event=db.prepare('INSERT OR IGNORE INTO history_events VALUES (?,?,?,?,?,?)');
+ const event=sql.event;
  for(const e of p.events) event.run(g.generation,e.id,e.at,e.companyId,e.kind,JSON.stringify(e));
- const input=db.prepare('INSERT OR IGNORE INTO history_inputs VALUES (?,?,?,?)');
+ const input=sql.input;
  for(const i of p.commands) input.run(g.generation,i.id,i.at,JSON.stringify(i));
- const point=db.prepare('INSERT OR REPLACE INTO history_points VALUES (?,?,?)');
+ const point=sql.point;
  for(const s of p.points) point.run(g.generation,s.at,JSON.stringify(s));
- const cp=db.prepare('INSERT OR IGNORE INTO history_checkpoints VALUES (?,?,?,?,?)');
+ const cp=sql.checkpoint;
  for(const c of p.checkpoints) cp.run(g.generation,c.sequence,c.at,deflateSync(c.state),createHash('sha256').update(c.state).digest('hex'));
 }
 export { clearBuffer as commitHistory };

@@ -1,3 +1,4 @@
+import { workflow } from './workflow.js';
 import { initialObservability, bindObservability } from './observability.js';
 import { initialActionState } from './discipline.js';
 import { initialRuntime } from './artifacts.js';
@@ -72,6 +73,7 @@ export function recoverGame(serialized: string): GameState {
       }
     }
   }
+  if(originalSchema<6)for(const change of saved.changes)delete change.implementation;
   if (saved.schema === 3) { importLegacyMarket(saved); saved.schema = 4; }
   if (saved.schema === 4) {
     saved.schema = 5; saved.actions = initialActionState();
@@ -89,6 +91,8 @@ export function recoverGame(serialized: string): GameState {
   for (const company of saved.companies) { company.crisis ??= { active: false, episode: 0, lastReputation: company.reputation }; company.serviceMode ??= { mode: 'OPERATING', since: saved.tick }; }
   if (saved.market.config.version !== 'market-3.0') throw new Error('Versión de mercado no soportada.');
   for (const company of saved.companies) { company.runtime ??= initialRuntime(); syncInfrastructure(company); }
+  for(const c of saved.companies){if(!c.runtime.workflow){const ch=saved.changes.find((x:any)=>x.companyId===c.id&&x.implementation&& !['STALE','QA_REJECTED'].includes(x.status));if(ch)workflow(c).backendLock={featureId:'purchase-flow',changeId:ch.id,at:ch.created};}}
+  for(const c of saved.companies)for(const a of c.runtime.aiAttempts??[])if(['QUEUED','RUNNING'].includes(a.state)){a.state='INTERRUPTED';a.code='SERVER_RESTART';}
   bindMarket(saved); bindObservability(saved); assertMarket(saved);
   if (saved.status === 'RUNNING') saved.status = 'PAUSED';
   return saved as GameState;

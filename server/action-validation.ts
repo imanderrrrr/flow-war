@@ -28,9 +28,11 @@ export function moduleConfiguration(input: unknown): ModuleConfiguration {
   }
 }
 export function testScenario(input: unknown): TestScenario {
-  const p = object(input); keys(p, ['suite','requests','stock','concurrency','retries','duplicateIntent','coupons','newCustomer','invalidInput','attack','interrupt']);
+  const p = object(input); keys(p, ['suite','requests','stock','concurrency','retries','duplicateIntent','coupons','newCustomer','invalidInput','attack','interrupt','authenticated','ownsPurchase','automated','origin']);
+  const context:Record<string,unknown>={};for(const key of ['authenticated','ownsPurchase','automated'])if(p[key]!==undefined)context[key]=bool(p[key]);
+  if(p.origin!==undefined){if(!/^sim-\d{1,3}$/.test(string(p.origin)))throw new ActionError('INVALID','Origen sintético requerido.');context.origin=p.origin;}
   const requests = integer(p.requests, 1, 500);
-  return { suite: oneOf(p.suite, ['unit','integration','concurrency','load','security','regression']), requests, stock: integer(p.stock, 0, 2000), concurrency: integer(p.concurrency, 1, requests), retries: integer(p.retries, 0, 5), duplicateIntent: bool(p.duplicateIntent), coupons: integer(p.coupons, 0, 3), newCustomer: bool(p.newCustomer), invalidInput: bool(p.invalidInput), attack: oneOf(p.attack, ['none','forged','injection','bot']), interrupt: bool(p.interrupt) };
+  return { ...context, suite: oneOf(p.suite, ['unit','integration','concurrency','load','security','regression']), requests, stock: integer(p.stock, 0, 2000), concurrency: integer(p.concurrency, 1, requests), retries: integer(p.retries, 0, 5), duplicateIntent: bool(p.duplicateIntent), coupons: integer(p.coupons, 0, 3), newCustomer: bool(p.newCustomer), invalidInput: bool(p.invalidInput), attack: oneOf(p.attack, ['none','forged','injection','bot']), interrupt: bool(p.interrupt) };
 }
 export function securityConfiguration(input: unknown): SecurityConfiguration {
   const p = object(input); keys(p, ['auth','authorization','waf','botThreshold','blockedOrigins','rate']);
@@ -43,12 +45,30 @@ export function securityConfiguration(input: unknown): SecurityConfiguration {
 export function validateParameters(type: string, input: unknown) {
   const p = object(input);
   switch (type) {
+    case 'ai.confirm':keys(p,['proposalId','confirmed']);string(p.proposalId);if(p.confirmed!==true)throw new ActionError('INVALID','Confirma la decisión.');break;
+    case 'investment.link':keys(p,['orderId','changeId']);string(p.orderId);string(p.changeId);break;
+    case 'qa.return':
+      keys(p,['changeId','recipient','subject','description','steps','observed','expected','severity','evidenceIds','observationRefs']);string(p.changeId);oneOf(p.recipient,['backend','security','product']);oneOf(p.severity,['low','medium','high','critical']);
+      for(const k of ['subject','description','steps','observed','expected'])if(!freeText(p[k]).trim())throw new ActionError('INVALID','Carta incompleta.');
+      for(const k of ['evidenceIds','observationRefs']){if(!Array.isArray(p[k])||(p[k] as unknown[]).length>160)throw new ActionError('INVALID','Referencias inválidas.');(p[k] as unknown[]).forEach(v=>string(v));}break;
+    case 'qa.repeat':keys(p,['runId']);string(p.runId);break;
+    case 'qa.review':keys(p,['changeId','risks','evidenceIds']);string(p.changeId);if(!freeText(p.risks).trim())throw new ActionError('INVALID','Registra tu evaluación de riesgos.');if(!Array.isArray(p.evidenceIds)||!p.evidenceIds.length||p.evidenceIds.length>160)throw new ActionError('INVALID','Selecciona evidencia.');p.evidenceIds.forEach(v=>string(v));break;
+    case 'change.cancel':keys(p,['changeId','reason','confirmed']);string(p.changeId);if(p.confirmed!==true||!freeText(p.reason).trim())throw new ActionError('INVALID','Confirmación y motivo requeridos.');break;
+    case 'cto.decide':keys(p,['changeId','decision','reason','confirmed']);string(p.changeId);oneOf(p.decision,['authorize','reject','evidence']);if(p.confirmed!==true||!freeText(p.reason).trim())throw new ActionError('INVALID','Confirmación y motivo requeridos.');break;
+    case 'investment.create':keys(p,['department','objective','justification','maximum','changeId','confirmed']);oneOf(p.department,['backend','security']);for(const k of ['objective','justification'])if(!freeText(p[k]).trim())throw new ActionError('INVALID','Objetivo y justificación requeridos.');integer(p.maximum,1,10000);if(p.changeId!==undefined)string(p.changeId);if(p.confirmed!==true)throw new ActionError('INVALID','Confirma la orden.');break;
+    case 'investment.transition':keys(p,['orderId','status','spent','confirmed']);string(p.orderId);oneOf(p.status,['AUTHORIZED','IN_PROGRESS','COMPLETED','CANCELLED']);integer(p.spent,0,0);if(p.confirmed!==true)throw new ActionError('INVALID','Confirma la transición.');break;
+    case 'security.save':
+      keys(p, ['changeId','nodeId','text','revision','interpretationId']); string(p.changeId); string(p.nodeId); freeText(p.text); integer(p.revision,0,100000); if(p.interpretationId!==undefined)string(p.interpretationId); break;
+    case 'security.configure': keys(p,['changeId','nodeId','revision','rules']); string(p.changeId); string(p.nodeId); integer(p.revision,0,100000); if(!Array.isArray(p.rules)||p.rules.length>12)throw new ActionError('INVALID','Política inválida.'); break;
+    case 'security.submit': keys(p,['changeId','revision']); string(p.changeId); integer(p.revision,0,100000); break;
+    case 'security.correction': keys(p,['changeId','nodeId','text']); string(p.changeId); string(p.nodeId); freeText(p.text); if(!String(p.text).trim())throw new ActionError('INVALID','Observación vacía.'); break;
+    case 'ai.accept': case 'ai.reject': keys(p,['proposalId']); string(p.proposalId); break;
     case 'module.create': case 'module.revise':
       keys(p, ['name','configuration','dependencies', ...(type === 'module.revise' ? ['moduleId'] : [])]); string(p.name); moduleConfiguration(p.configuration);
       if (type === 'module.revise') string(p.moduleId);
       if (!Array.isArray(p.dependencies) || p.dependencies.length > 8) throw new ActionError('INVALID', 'Dependencias inválidas.'); p.dependencies.forEach(v => string(v)); break;
     case 'security.prepare': securityConfiguration(p); break;
-    case 'qa.execute': keys(p, ['changeId','scenario']); string(p.changeId); testScenario(p.scenario); break;
+    case 'qa.execute': keys(p, ['changeId','scenario','request','threadId']); string(p.changeId); testScenario(p.scenario); if (p.request !== undefined && !freeText(p.request).trim()) throw new ActionError('INVALID', 'Solicitud vacía.'); if (p.threadId !== undefined) string(p.threadId); break;
     case 'infra.maintenance': keys(p, ['mode']); oneOf(p.mode, ['OPERATING','ORDERS_PAUSED','FULL_MAINTENANCE']); break;
     case 'infra.restart': keys(p, ['serverId','duration']); integer(p.serverId, 1, 8); integer(p.duration, 1, 60); break;
     case 'infra.restart_all': keys(p, ['duration']); integer(p.duration, 1, 60); break;
@@ -62,9 +82,19 @@ export function validateParameters(type: string, input: unknown) {
     case 'qa.approve': case 'qa.reject': case 'cto.authorize': case 'cto.reject': keys(p, []); break;
     case 'cto.budget': keys(p, ['amount']); if (![250,500,1000].includes(integer(p.amount, 250, 1000))) throw new ActionError('INVALID', 'Importe no soportado.'); break;
     case 'cto.prioritize': keys(p, ['incident']); oneOf(p.incident, ['security','concurrency']); break;
-    case 'infra.scale': keys(p, ['delta']); if (![1,-1].includes(integer(p.delta, -1, 1))) throw new ActionError('INVALID', 'Delta inválido.'); break;
+    case 'infra.scale': if ('target' in p) { keys(p, ['target']); integer(p.target, 1, 8); } else { keys(p, ['delta']); if (![1,-1].includes(integer(p.delta, -1, 1))) throw new ActionError('INVALID', 'Delta inválido.'); } break;
     case 'infra.balancer': keys(p, ['enabled']); bool(p.enabled); break;
     case 'deploy.start': keys(p, ['strategy']); oneOf(p.strategy, ['rolling','restart']); break;
+    case 'infra.request_budget': case 'cto.infra_authorize':
+      keys(p, ['amount','durationSeconds','maxServers','operations', ...(type === 'cto.infra_authorize' ? ['requestId'] : [])]); integer(p.amount, type === 'cto.infra_authorize' ? 0 : 1, 10000); integer(p.durationSeconds, 10, 1500); integer(p.maxServers, 1, 8);
+      if (!Array.isArray(p.operations) || !p.operations.length || p.operations.length > 2 || p.operations.some(o => !['scale','balancer'].includes(o as string))) throw new ActionError('INVALID', 'Operaciones: scale y/o balancer.');
+      if (p.requestId !== undefined) string(p.requestId); break;
+    case 'cto.infra_reject': keys(p, ['requestId']); string(p.requestId); break;
+    case 'cto.rollback_authorize': keys(p, ['targetVersion','amount']); integer(p.targetVersion, 1, 1000); integer(p.amount, 1, 10000); break;
+    case 'deploy.rollback': keys(p, ['strategy','authorizationId']); oneOf(p.strategy, ['rolling','restart']); if (p.authorizationId !== undefined) string(p.authorizationId); break;
+    case 'infra.server_stop': case 'infra.server_start': keys(p, ['serverId']); integer(p.serverId, 1, 8); break;
+    case 'product.draft': keys(p, ['catalogId','percent','duration','demandMultiplier','budget']); string(p.catalogId, 20); integer(p.percent, 0, 70); integer(p.duration, 10, 300); integer(p.budget, 1, 2000); if (typeof p.demandMultiplier !== 'number' || !Number.isFinite(p.demandMultiplier) || p.demandMultiplier < 1 || p.demandMultiplier > 4) throw new ActionError('INVALID', 'Multiplicador: 1–4.'); break;
+    case 'product.submit': keys(p, ['draftId']); string(p.draftId, 20); break;
     default: throw new ActionError('UNSUPPORTED', 'Acción no implementada.');
   }
 }
@@ -78,3 +108,5 @@ export function parseAction(input: unknown): SimulatedAction {
   validateParameters(p.type as ActionType, p.parameters);
   return structuredClone(p) as SimulatedAction;
 }
+
+export function freeText(v: unknown): string { if(typeof v !== 'string' || v.length>4000 || /[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(v))throw new ActionError('INVALID','Texto inválido.'); return v; }

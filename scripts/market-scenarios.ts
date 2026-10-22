@@ -28,6 +28,7 @@ export function marketScenario(duration = 1200, strategy: MarketStrategy = 'D-do
       const id = company.id, change = game.changes.find(change => change.companyId === id);
       if (game.tick === 10) {
         command('backend', 'change.submit', id, { graph: insert(initialGraph('backend'), 'atomic', 'write'), revision: 0 });
+        command('security','security.submit',id,{changeId:game.changes[0].id,revision:0});
         command('qa', 'qa.run', id, { suite: 'Concurrencia' }, game.changes[0].id);
       }
       if (game.tick === 15 || game.tick === 28) {
@@ -35,10 +36,12 @@ export function marketScenario(duration = 1200, strategy: MarketStrategy = 'D-do
       }
       if (game.tick === 23) {
         let graph = initialGraph('security'); graph = insert(graph, 'auth', 'exit'); graph = insert(graph, 'waf', 'exit'); graph = insert(graph, 'bot', 'exit', 100);
-        command('security', 'change.submit', id, { graph, revision: 0 }); command('qa', 'qa.run', id, { suite: 'Seguridad' }, game.changes[0].id);
+        command('security', 'security.prepare', id, {auth:true,authorization:false,waf:true,botThreshold:100,blockedOrigins:[],rate:null}); command('qa', 'qa.run', id, { suite: 'Seguridad' }, game.changes[0].id);
       }
       if (strategy === 'D-domino' && id === 0 && game.tick === 450) {
-        command('backend', 'change.submit', id, { graph: insert(initialGraph('backend'), 'atomic', 'write'), revision: 1 });
+        const locked=company.runtime.workflow?.backendLock;if(locked)command('qa','qa.return',id,{changeId:locked.changeId,recipient:'backend',subject:'Revisión de operación',description:'QA solicita una revisión de la implementación.',steps:'Repetir las pruebas ya registradas.',observed:'La evidencia permanece en el cambio original.',expected:'Validar la siguiente revisión.',severity:'medium',evidenceIds:[],observationRefs:[]});
+        command('backend', 'change.submit', id, { graph: insert(initialGraph('backend'), 'atomic', 'write'), revision: company.drafts.backend?.revision??1 });
+        command('security','security.submit',id,{changeId:game.changes[0].id,revision:0});
         command('qa', 'qa.run', id, { suite: 'Concurrencia' }, game.changes[0].id);
       }
       if (strategy === 'D-domino' && id === 0 && game.tick === 455) {

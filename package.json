@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx server/index.ts",
+    "dev": "node --env-file-if-exists=.env --import tsx server/index.ts",
     "build": "tsc --noEmit && vite build",
-    "start": "NODE_ENV=production tsx server/index.ts",
+    "start": "NODE_ENV=production node --env-file-if-exists=.env --import tsx server/index.ts",
     "test": "tsx --test tests/*.test.ts",
     "bench:traffic": "tsx scripts/traffic-benchmark.ts && tsx scripts/market-benchmark.ts",
     "bench:actions": "tsx scripts/actions-benchmark.ts && tsx scripts/verify-actions-benchmark.ts",
@@ -18,9 +18,15 @@
     "bench:classroom": "tsx scripts/audit-classroom-load.ts",
     "bench:snapshots": "tsx scripts/performance-classroom.ts",
     "bench:dvr-modes": "tsx scripts/performance-modes.ts",
-    "bench:performance-matrix": "node scripts/performance-matrix.mjs"
+    "bench:performance-matrix": "node scripts/performance-matrix.mjs",
+    "bench:collaboration": "tsx scripts/collaboration-classroom.ts",
+    "bench:ai": "node --import tsx scripts/ai-concurrency-benchmark.ts",
+    "bench:executor": "node --import tsx scripts/executor-classroom.ts",
+    "verify:anthropic": "node --env-file-if-exists=.env --import tsx scripts/anthropic-smoke.ts",
+    "setup:anthropic": "tsx scripts/set-anthropic-key.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "0.132.0",
     "@fontsource/press-start-2p": "^5.2.5",
     "@fontsource/space-mono": "^5.2.9",
     "@xyflow/react": "^12.9.3",

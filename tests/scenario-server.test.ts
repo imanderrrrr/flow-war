@@ -77,7 +77,7 @@ test('real server resumes a saved race, preserves sessions and enforces the comp
     assert.deepEqual(recovered.privateCompany!.concurrency.run!.requests.map(request => request.id), initialIds);
     assert.deepEqual(recovered.companies[0].concurrency.totals, settled.companies[0].concurrency.totals);
     const otherSession = await connect('qa', 1);
-    const qa = (await connect('qa', 0)).socket, cto = (await connect('cto', 0)).socket, devops = (await connect('devops', 0)).socket, other = otherSession.socket;
+    const qa = (await connect('qa', 0)).socket, security = (await connect('security', 0)).socket, cto = (await connect('cto', 0)).socket, devops = (await connect('devops', 0)).socket, other = otherSession.socket;
     assert.equal((await run(op, { type: 'room.start' })).ok, true);
     const submit = { id: 'atomic-submission', type: 'change.submit', companyId: 0, payload: { graph: insertBlock('atomic'), revision: 0 } };
     assert.equal((await run(be, submit)).ok, true); assert.equal((await run(be, submit)).ok, true);
@@ -87,6 +87,7 @@ test('real server resumes a saved race, preserves sessions and enforces the comp
     assert.equal((await run(cto, { type: 'cto.authorize', companyId: 0, changeId })).ok, false);
     assert.equal((await run(qa, { type: 'qa.approve', companyId: 0, changeId })).ok, false);
     assert.equal((await run(devops, { type: 'deploy.start', companyId: 0, changeId, payload: { strategy: 'rolling' } })).ok, false);
+    assert.equal((await run(security,{type:'security.submit',companyId:0,payload:{changeId,revision:0}})).ok,true);
     assert.equal((await run(qa, { type: 'qa.run', companyId: 0, changeId, payload: { suite: 'Concurrencia' } })).ok, true);
     const tested = await waitState(qa, snapshot => snapshot.changes[0].reports.length === 1), report = tested.changes[0].reports[0];
     assert.deepEqual([report.requests, report.completed, report.rejected, report.oversold], [2, 1, 1, 0]);

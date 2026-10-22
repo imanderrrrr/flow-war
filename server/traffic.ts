@@ -5,6 +5,7 @@ import { admissionReason } from './maintenance.js';
 import { observeCompany } from './observability.js';
 import { hasDefect } from './defects.js';
 import { activeCampaign } from './business.js';
+import { recordFunnel } from './product.js';
 import { releaseResources, pruneOperations } from './blocks.js';
 import { admitSecurity } from './security.js';
 import { settleReservation, activation } from './module-execution.js';
@@ -62,7 +63,7 @@ function enqueue(company: Company, request: TrafficRequest, service: ServiceId, 
   queue.waiting.push(request.id); queue.offered++;
 }
 
-export function admitTraffic(company: Company, now: number, type: TrafficRequest['type'] = 'browse', trafficClass: TrafficRequest['trafficClass'] = 'legitimate', attackKind?: TrafficRequest['attackKind'], selected?: MarketCustomer): TrafficRequest {
+export function admitTraffic(company: Company, now: number, type: TrafficRequest['type'] = 'browse', trafficClass: TrafficRequest['trafficClass'] = 'legitimate', attackKind?: TrafficRequest['attackKind'], selected?: MarketCustomer, securityContext?: import('../shared/collaboration.js').RequestSecurityContext): TrafficRequest {
   if (company.eliminated) throw new Error('Empresa eliminada.');
   const customer = trafficClass === 'legitimate' && company.traffic.scope !== 'qa' ? selected ?? selectCustomer(company) : undefined;
   if (trafficClass === 'legitimate' && company.traffic.scope !== 'qa' && !customer) throw new Error('No hay cliente admisible.');
@@ -76,7 +77,7 @@ export function admitTraffic(company: Company, now: number, type: TrafficRequest
     id, ...(type === 'purchase' ? { intentId: `${id}-intent` } : {}), companyId: company.id,
     ...(trafficClass === 'legitimate' && state.scope === 'qa' ? { customerId: `qa-${company.id}-${ordinal}`, customerSource: 'qa' as const } : {}),
     type, trafficClass, ...(attackKind ? { attackKind } : {}), attempt: 0, commercial: type === 'purchase' && trafficClass === 'legitimate',
-    executor: 'requests-4a', loadDepth: state.services.web.waiting.length + state.services.checkout.waiting.length, execution: executionFor(company), newCustomer: customer ? customer.successfulVisits === 0 : true, couponCount: ordinal % 10 === 0 ? 2 : 1, executionVersion: company.version, path, securityAllowed: blocked ? false : admitSecurity(company, executionFor(company), trafficClass === 'legitimate' ? 'valid' : attackKind ?? 'bot', ordinal - 1, now, `sim-${trafficClass === 'malicious' ? 64 + ordinal % 16 : customer ? customer.cohort % 64 : ordinal % 64}`, customer?.id, type),
+    executor: 'requests-4a', loadDepth: state.services.web.waiting.length + state.services.checkout.waiting.length, execution: executionFor(company), newCustomer: customer ? customer.successfulVisits === 0 : true, couponCount: ordinal % 10 === 0 ? 2 : 1, executionVersion: company.version, path, securityAllowed: blocked ? false : admitSecurity(company, executionFor(company), trafficClass === 'legitimate' ? 'valid' : attackKind ?? 'bot', ordinal - 1, now, `sim-${trafficClass === 'malicious' ? 64 + ordinal % 16 : customer ? customer.cohort % 64 : ordinal % 64}`, customer?.id, type, securityContext),
     arrivalAt: now, nextAt: now, deadline: round(now + state.config.patience[type]), cursor: 1,
     status: 'PENDING', atomic: false, quantity: 1, committed: 0, oversold: 0, paid: false, accounted: false,
     service: 'security', stage: 'entry', phase: 'security', transaction: 'NONE', breach: false, waits: [], trace: [],
@@ -170,7 +171,7 @@ export function settleTraffic(company: Company, now: number) {
     company.successes += Number(result.status === 'COMPLETED'); company.errors += Number(result.status !== 'COMPLETED');
     company.revenue += result.revenue; company.lostRevenue += result.lostRevenue; company.capital += result.capitalDelta;
     company.oversold += request.oversold; company.breaches += Number(request.breach);
-    if (request.trafficClass === 'legitimate') recordCustomerExperience(company, request, request.type, request.latencyMs!);
+    if (request.trafficClass === 'legitimate') { recordCustomerExperience(company, request, request.type, request.latencyMs!); recordFunnel(company, request, now); }
     request.accounted = true;
     observeCompany(company, 'request.settled', { requestId: request.id, customerId: request.customerId, trafficClass: request.trafficClass, type: request.type, version: request.executionVersion, result: request.result, transaction: request.transaction, duplicates: request.duplicates ?? 0, oversold: request.oversold, defects: request.effectCodes ?? [], modules: capturesReceipts(company) ? request.execution?.modules.map(m => ({ id: m.id, version: m.version, defects: m.defects.filter(d => request.effectCodes?.includes(d.code)).map(d => d.code) })) ?? [] : [], latencyMs: request.latencyMs }, [request.id]);
     if (request.transaction === 'PENDING_RESOLUTION') state.unresolvedCount++;

@@ -1,3 +1,4 @@
+import { evaluateBlockPolicies } from './security.js';
 import { hasDefect } from './defects.js';
 import { executeBlock, releaseResources } from './blocks.js';
 import { executeModule, settleReservation, activation } from './module-execution.js';
@@ -15,6 +16,7 @@ const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(valu
 
 /** One SKU, two distinct purchase intentions. Graphs are frozen at admission. */
 export function createConcurrencyRun(id: string, context: ScenarioContext, at: number, offsets: [number, number] = [0, 0]): ConcurrencyRun {
+  const buckets:Record<string,{start:number;count:number}>={};
   return {
     id, engineVersion: REQUEST_ENGINE_VERSION, fixture: 'last-unit-1', startedAt: at,
     backendHash: hash(context.backend), securityHash: hash(context.security),
@@ -25,7 +27,7 @@ export function createConcurrencyRun(id: string, context: ScenarioContext, at: n
       return {
         id: `${id}-R${index + 1}`, intentId: `${id}-purchase-${index + 1}`,
         executor: 'requests-4a', execution: context.execution && structuredClone(context.execution), newCustomer: true, couponCount: 1, executionVersion: context.executionVersion, path: structuredClone(route(context.backend)),
-        securityAllowed: evaluateSecurity(context.security, 'valid', index),
+        securityAllowed: context.execution?.blockPolicies ? evaluateBlockPolicies(context.execution,context.backend,{authenticated:true,ownsPurchase:true,maliciousInput:false,automated:false,origin:'sim-1',customerId:`fixture-${index}`,type:'purchase'},arrivalAt,buckets,String(context.executionVersion)) : evaluateSecurity(context.security, 'valid', index),
         arrivalAt, nextAt: roundTime(arrivalAt + OPERATION_SECONDS), deadline: roundTime(arrivalAt + 16),
         cursor: 0, status: 'PENDING', atomic: false, quantity: 1, committed: 0, oversold: 0,
         paid: false, accounted: false,

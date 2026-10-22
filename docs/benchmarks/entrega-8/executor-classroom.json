@@ -1,0 +1,45 @@
+{
+  "status": "passed",
+  "at": "2026-10-22T03:57:56.718Z",
+  "label": "executor-classroom",
+  "transport": "real server + official SDK + local Messages API stand-in; not a measurement of the real model",
+  "machine": {
+    "cpus": 10,
+    "memoryGb": 16
+  },
+  "speed": 20,
+  "modelLatencyMs": {
+    "configured": 800,
+    "p50": 800,
+    "p95": 1153
+  },
+  "students": 25,
+  "ordersSent": 100,
+  "outcomes": {
+    "EXECUTED": 40,
+    "INFORMATION": 40,
+    "DECLINED": 20
+  },
+  "executorLatencyMs": {
+    "p50": 4063.8,
+    "p95": 4911.2,
+    "max": 5445.8
+  },
+  "ordinaryAckMs": {
+    "control": {
+      "p50": 15.9,
+      "p95": 19.1
+    },
+    "duringClaudeLoad": {
+      "p50": 18.1,
+      "p95": 43.6
+    }
+  },
+  "simulation": {
+    "wallSeconds": 17.6,
+    "simulatedSeconds": 322,
+    "ratio": 0.91,
+    "controlRatio": 0.95
+  },
+  "company0Servers": 5
+}

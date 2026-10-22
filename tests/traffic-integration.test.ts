@@ -5,7 +5,7 @@ import { createGame, project, reportFor, step } from '../server/engine.js';
 import { admitTraffic, initialTraffic, trafficParticles, TRAFFIC_SCENARIO } from '../server/traffic.js';
 import { createGameWriter } from '../server/storage.js';
 import { recoverGame } from '../server/persistence.js';
-import { advanceGame, authorizeAtomic, command, insertBlock } from './helpers.js';
+import { advanceGame, authorizeAtomic, command, insertBlock , reviewForQa } from './helpers.js';
 import { advanceLoadRun, createLoadRun, loadReport } from '../server/load.js';
 
 function dbFixture() { const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE commands (identity TEXT,id TEXT,digest TEXT,result TEXT,PRIMARY KEY(identity,id))');return {db,write:createGameWriter(db)}; }
@@ -46,7 +46,7 @@ test('a failed SQLite transaction retains its receipts and leaves state/ledger u
 });
 
 test('T12 pause freezes queues, operations, deadlines, money and QA load jobs', () => {
-  const game=createGame();command(game,'operator','room.start');command(game,'backend','change.submit',{graph:insertBlock('atomic'),revision:0});command(game,'qa','qa.run',{suite:'Carga'},game.changes[0].id);
+  const game=createGame();command(game,'operator','room.start');command(game,'backend','change.submit',{graph:insertBlock('atomic'),revision:0});reviewForQa(game);command(game,'qa','qa.run',{suite:'Carga'},game.changes[0].id);
   for(let i=0;i<30;i++)admitTraffic(game.companies[0],0,'purchase');advanceGame(game,.5);command(game,'operator','room.pause');const before=structuredClone(game);advanceGame(game,100);assert.deepEqual(game,before);
 });
 
@@ -94,7 +94,7 @@ test('T19 Carga executes real FIFO work and observed deadlines without mutating 
 });
 
 test('a pending isolated load job resumes deterministically after a restart', () => {
-  const game=createGame();game.status='RUNNING';command(game,'backend','change.submit',{graph:game.companies[0].backend,revision:0});const id=game.changes[0].id;command(game,'qa','qa.run',{suite:'Carga'},id);advanceGame(game,.5);
+  const game=createGame();game.status='RUNNING';command(game,'backend','change.submit',{graph:game.companies[0].backend,revision:0});const id=game.changes[0].id;reviewForQa(game);command(game,'qa','qa.run',{suite:'Carga'},id);advanceGame(game,.5);
   const recovered=recoverGame(JSON.stringify(game));command(recovered,'operator','room.start');advanceGame(recovered,3);advanceGame(game,3);
   assert.deepEqual(recovered.changes[0].reports,game.changes[0].reports);assert.equal(recovered.changes[0].reports.length,1);
 });

@@ -6,7 +6,7 @@ import { advanceMarket, assertMarket, bindMarket, blendCustomerColor, flushMigra
 import { admitTraffic, advanceTraffic, generateTraffic, settleTraffic, trafficParticles } from '../server/traffic.js';
 import { recoverGame, serializeGame } from '../server/persistence.js';
 import { createGameWriter } from '../server/storage.js';
-import { advanceGame, command, insertBlock } from './helpers.js';
+import { advanceGame, command, insertBlock , reviewForQa } from './helpers.js';
 import type { GameState, MarketCustomer } from '../shared/types.js';
 
 const customerOf = (game: GameState, companyId = 0) => game.market.customers[game.market.members[companyId][0]];
@@ -188,7 +188,7 @@ test('M-T25 bounded public/private projections contain no customer population/in
 test('M-T28 QA load/concurrency and unauthorized roles cannot mutate production customers', () => {
   const game = createGame(); game.status = 'RUNNING'; command(game, 'backend', 'change.submit', { graph: insertBlock('atomic'), revision: 0 }); const before = structuredClone(game.market);
   assert.equal(command(game, 'backend', 'deploy.start').code, 'FORBIDDEN'); assert.equal(command(game, 'devops', 'cto.authorize', {}, game.changes[0].id).code, 'FORBIDDEN');
-  command(game, 'qa', 'qa.run', { suite: 'Carga' }, game.changes[0].id);
+  reviewForQa(game);command(game, 'qa', 'qa.run', { suite: 'Carga' }, game.changes[0].id);
   const staging = game.changes[0].qaLoad!.company; assert.equal(staging.traffic.scope, 'qa');
   admitTraffic(staging, 0); advanceTraffic(staging, .1); assert.deepEqual(game.market, before);
 });

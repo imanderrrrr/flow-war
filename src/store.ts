@@ -3,11 +3,14 @@ import { io } from '../shared/live-client';
 import type { Command, Result, Snapshot } from '../shared/types';
 
 export const socket = io({ reconnection: true });
-type Store = { snapshot: Snapshot | null; connected: boolean; selected: number; notice: { text: string; error: boolean } | null; sound: boolean; select: (id: number) => void; notify: (text: string, error?: boolean) => void; toggleSound: () => void };
+export type Selection = { changeId?: string; nodeId?: string; serverId?: number; draftId?: string };
+type Store = { snapshot: Snapshot | null; connected: boolean; selected: number; notice: { text: string; error: boolean } | null; sound: boolean; selection: Selection; select: (id: number) => void; setSelection: (patch: Selection) => void; notify: (text: string, error?: boolean) => void; toggleSound: () => void };
 let noticeTimer: ReturnType<typeof setTimeout>;
 export const useGame = create<Store>((set) => ({
-  snapshot: null, connected: false, selected: 0, notice: null, sound: false,
+  snapshot: null, connected: false, selected: 0, notice: null, sound: false, selection: {},
   select: selected => set({ selected }),
+  /** What the student has selected on their own panel; sent with Claude orders to resolve "este cambio". */
+  setSelection: patch => set(s => ({ selection: Object.fromEntries(Object.entries({ ...s.selection, ...patch }).filter(([, v]) => v !== undefined && v !== '')) as Selection })),
   notify: (text, error = false) => { clearTimeout(noticeTimer); set({ notice: { text, error } }); noticeTimer = setTimeout(() => set({ notice: null }), 4500); },
   toggleSound: () => set(s => ({ sound: !s.sound })),
 }));
