@@ -25,28 +25,35 @@ import { advanceLoadRun, createLoadRun, loadReport, runLoadFixture } from './loa
 import { initialTraffic, issueInitialTraffic, generateTraffic, serviceRates, advanceTraffic, restockTraffic, cancelTraffic, trafficParticles, trafficView } from './traffic.js';
 import { advanceConcurrency, cancelConcurrency, concurrencyParticles, concurrencyReport, createConcurrencyRun, isRunFinished, runConcurrencyFixture } from './requests.js';
 import { initialConcurrency, productionContext, settleConcurrency, stepConcurrency } from './scenarios.js';
-import { route, evaluateSecurity } from './graphs.js';
+import { route, evaluateSecurity, sellCapable } from './graphs.js';
 import { lobbyView, resetTeams } from './lobby.js';
 import { auditCommand, advanceProbes, auditorView, chargeLeaks, closeProbes, closeSettledFindings, findingsFor, sustainedEffects, suspendsRestock } from './auditor.js';
 export { route, evaluateSecurity } from './graphs.js';
-import { BLOCKS, SUITES, type Company, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
+import { PLAN_PIECES, completePlan, isPlanPiece, planGraph, planPublicationCost } from '../shared/plan.js';
+export { completePlan } from '../shared/plan.js';
+import { BLOCKS, SUITES, type Company, type Domain, type Role, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
 
 const NAMES = ['NOVA', 'VERTEX', 'BYTE', 'EMBER', 'ORBIT'];
 const COLORS = ['#f5d45c', '#68dca2', '#69adff', '#f27e79', '#b69af7'];
 export const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
-export function initialGraph(domain: 'backend' | 'security' | 'product'): Graph {
+/** Puts the five companies on the complete plan. A new room starts almost empty on purpose, so a
+ * fixture or benchmark that measures a company serving traffic opens the room already assembled. */
+export function assembleGame(g: GameState) { for (const company of g.companies) { company.plan = completePlan(); company.assembly = { active: false, closedAt: g.tick }; } }
+export function initialGraph(domain: Domain): Graph {
+  // Only the entrance and a road to the storefront: the team builds the rest.
+  if (domain === 'plan') return planGraph(['entry', 'web']);
   const types = domain === 'backend' ? ['entry', 'read', 'write', 'payment', 'exit'] : ['entry', 'exit'];
   const labels: Record<string, string> = { entry: 'Request IN', read: 'Read Stock', write: 'Write Stock', payment: 'Payment', exit: 'Response OUT' };
   return { nodes: types.map((type, i) => ({ id: `${domain}-${type}`, type, position: { x: i * 190, y: 160 }, data: { label: labels[type] } })), edges: types.slice(1).map((type, i) => ({ id: `${domain}-e${i}`, source: `${domain}-${types[i]}`, target: `${domain}-${type}` })) };
 }
 export function createGame(duration = 1500, seed = 7357, generation = 0, dvrEnabled = true): GameState {
   const companies: Company[] = NAMES.map((name, id) => ({
-    crisis: { active: false, episode: 0, lastReputation: 80 }, serviceMode: { mode: 'OPERATING', since: 0 }, runtime: initialRuntime(), infrastructure: initialInfrastructure(), id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
+    crisis: { active: false, episode: 0, lastReputation: 80 }, serviceMode: { mode: 'OPERATING', since: 0 }, assembly: { active: true }, runtime: initialRuntime(), infrastructure: initialInfrastructure(), id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
     servers: 1, balancer: false, infraBudget: duration * .5, reserved: 0, version: 1, deployments: 0, active: 0, requests: 0, successes: 0, errors: 0, breaches: 0, oversold: 0, duplicates: 0,
     lostRevenue: 0, revenue: 0, latency: 0, utilization: 0, queue: 0, migratedIn: 0, migratedOut: 0, eliminated: false, crisisTicks: 0, deadTicks: 0, bankruptTicks: 0, concurrencyUntil: 0,
-    backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
+    backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), plan: initialGraph('plan'), particles: [], drafts: {}, planDrafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
   }));
-  const game: GameState = { dvrEnabled, actions: initialActionState(), schema: 6, observability: initialObservability(), slack: { sequence: 0, messages: [], receipts: {}, buckets: {}, groups: {}, automaticCount: 0, sampledCount: 0 }, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
+  const game: GameState = { dvrEnabled, actions: initialActionState(), schema: 7, observability: initialObservability(), slack: { sequence: 0, messages: [], receipts: {}, buckets: {}, groups: {}, automaticCount: 0, sampledCount: 0 }, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
   for (const company of companies) company.runtime.infra = initialOperationsState(company, duration);
   bindMarket(game); bindObservability(game, f=>slackFact(game,f)); assertMarket(game); checkpoint(game, serializeGame, true); return game;
 }
@@ -55,23 +62,32 @@ export function event(g: GameState, companyId: number | null, text: string, tone
   g.events.unshift({ id: ++g.eventSeq, at: g.tick, companyId, text, tone, category });
   g.events.length = Math.min(g.events.length, 60);
 }
-export function validateGraph(input: unknown, domain: 'backend' | 'security' | 'product', complete = true): Graph {
+export function validateGraph(input: unknown, domain: Domain, complete = true): Graph {
   if (!input || typeof input !== 'object') throw new Error('Grafo inválido.');
   const graph = structuredClone(input) as Graph;
   if (!Array.isArray(graph.nodes) || !Array.isArray(graph.edges) || graph.nodes.length > 25 || graph.edges.length > 30) throw new Error('Máximo 25 piezas y 30 conexiones.');
-  const catalog = domain === 'product' ? [] : BLOCKS[domain];
-  const allowed = new Set(['entry', 'exit', ...(domain === 'backend' ? ['read', 'write', 'payment', 'module'] : []), ...catalog.map(b => b.type)]);
-  const ids = new Set<string>();
+  const catalog = domain === 'product' || domain === 'plan' ? [] : BLOCKS[domain];
+  const allowed = new Set(domain === 'plan' ? Object.keys(PLAN_PIECES) : ['entry', 'exit', ...(domain === 'backend' ? ['read', 'write', 'payment', 'module'] : []), ...catalog.map(b => b.type)]);
+  const ids = new Set<string>(), solares = new Set<string>();
   for (const n of graph.nodes) {
     if (typeof n.id !== 'string' || !n.id.trim() || n.id.length > 100 || ids.has(n.id) || !allowed.has(n.type) || !n.position || !Number.isFinite(n.position.x) || !Number.isFinite(n.position.y)) throw new Error('Nodo inválido.');
     ids.add(n.id);
+    if (domain === 'plan' && isPlanPiece(n.type)) {
+      // One piece per solar. The server bay is the only one that stacks.
+      if (n.type !== 'server') {
+        if (solares.has(n.type)) throw new Error(`El solar de ${PLAN_PIECES[n.type].label.toLowerCase()} ya está ocupado.`);
+        solares.add(n.type);
+      }
+      n.data = { label: PLAN_PIECES[n.type].label };
+      continue;
+    }
     const block = catalog.find(b => b.type === n.type);
     if (n.type === 'atomic' && (!Number.isInteger(Number(n.data?.value ?? block!.value)) || Number(n.data?.value ?? block!.value) < 1 || Number(n.data?.value ?? block!.value) > 120)) throw new Error('Atomic Update requiere una cantidad entera entre 1 y 120.');
     const config = blockConfiguration(n);
     const moduleRef = n.data?.module;
     n.data = { ...(n.data?.config && config ? { config } : {}), ...(n.type === 'module' ? { module: moduleRef } : {}), label: block?.label ?? ({ entry: 'Request IN', exit: 'Response OUT', read: 'Read Stock', write: 'Write Stock', payment: 'Payment' }[n.type] ?? n.type), ...(block ? { value: clamp(Number(n.data?.value ?? block.value) || block.value, 1, n.type === 'lock' ? 5000 : 120) } : {}) };
   }
-  for (const type of ['entry', 'exit', ...(domain === 'backend' ? ['read', 'write', 'payment'] : [])]) if (graph.nodes.filter(n => n.type === type).length !== 1) throw new Error(`El grafo requiere un módulo ${type}.`);
+  if (domain !== 'plan') for (const type of ['entry', 'exit', ...(domain === 'backend' ? ['read', 'write', 'payment'] : [])]) if (graph.nodes.filter(n => n.type === type).length !== 1) throw new Error(`El grafo requiere un módulo ${type}.`);
   const out = new Set<string>(), edgeIds = new Set<string>();
   for (const e of graph.edges) {
     if (!ids.has(e.source) || !ids.has(e.target) || out.has(e.source) || typeof e.id !== 'string' || edgeIds.has(e.id)) throw new Error('Puertos o conexiones incompatibles.');
@@ -83,10 +99,42 @@ export function validateGraph(input: unknown, domain: 'backend' | 'security' | '
     while (id) { if (seen.has(id)) throw new Error('Ciclo no soportado.'); seen.add(id); id = graph.edges.find(e => e.source === id)?.target; }
   }
   const path = route(graph);
-  if (complete && path.length !== graph.nodes.length) throw new Error('Todos los bloques deben estar conectados en la ruta ejecutable.');
-  if (complete && path.at(-1)?.type !== 'exit') throw new Error('No existe una ruta de entrada a salida.');
+  // A half-built plan is valid on purpose: server/requests.ts reports what it cannot serve, in Spanish.
+  if (complete && domain !== 'plan' && path.length !== graph.nodes.length) throw new Error('Todos los bloques deben estar conectados en la ruta ejecutable.');
+  if (complete && domain !== 'plan' && path.at(-1)?.type !== 'exit') throw new Error('No existe una ruta de entrada a salida.');
   if (complete && domain === 'backend' && !['read', 'write', 'payment'].every(t => path.some(n => n.type === t))) throw new Error('La ruta debe atravesar inventario y pagos.');
   return graph;
+}
+const planTally = (graph: Graph) => graph.nodes.reduce((count, node) => { count[node.type] = (count[node.type] ?? 0) + 1; return count; }, {} as Record<string, number>);
+/** Roads named by the pieces they join, so a comparison does not depend on the ids a client sent. */
+function planRoads(graph: Graph) {
+  const type = new Map(graph.nodes.map(node => [node.id, node.type]));
+  return new Set(graph.edges.map(edge => `${type.get(edge.source) ?? '?'}>${type.get(edge.target) ?? '?'}`));
+}
+/** True when the plan is untouched: same pieces on the same solares, joined by the same roads. */
+export function samePlan(previous: Graph, next: Graph) {
+  const before = planTally(previous), after = planTally(next), roads = planRoads(previous), nextRoads = planRoads(next);
+  return [...new Set([...Object.keys(before), ...Object.keys(after)])].every(type => (before[type] ?? 0) === (after[type] ?? 0))
+    && roads.size === nextRoads.size && [...roads].every(road => nextRoads.has(road));
+}
+/** Each role moves only its own pieces, and only the roads that leave them: the rest of the plan is
+ * visible and not grabbable. The entrance belongs to nobody, so any of the three may connect it. */
+export function assertPlanOwnership(previous: Graph, next: Graph, role: Identity['role']) {
+  const before = planTally(previous), after = planTally(next);
+  for (const type of new Set([...Object.keys(before), ...Object.keys(after)])) {
+    if ((before[type] ?? 0) === (after[type] ?? 0)) continue;
+    if (!isPlanPiece(type)) throw new Error('Esa pieza no existe en el catálogo del plano.');
+    const piece = PLAN_PIECES[type];
+    if (piece.owner !== role) throw new Error(`${piece.label} no es una pieza de tu rol.`);
+  }
+  const roads = planRoads(previous), nextRoads = planRoads(next);
+  for (const road of new Set([...roads, ...nextRoads])) {
+    if (roads.has(road) === nextRoads.has(road)) continue;
+    const source = road.split('>')[0];
+    if (source === 'entry' || !isPlanPiece(source)) continue;
+    if (PLAN_PIECES[source].owner !== role) throw new Error(`El camino que sale de ${PLAN_PIECES[source].label.toLowerCase()} lo dibuja su rol, no vos.`);
+  }
+  return after;
 }
 export function inventoryBatch(graph: Graph, demand: number, stock: number): { completed: number; oversold: number; duplicates: number; remaining: number } {
   const p = route(graph).map(n => n.type), write = p.indexOf('write'), payment = p.indexOf('payment');
@@ -142,6 +190,14 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       if (g.lobby?.formation) return { ok: false, code: 'PRODUCT_MODE_LOCKED', error: 'Los equipos ya se formaron. Restablecé la sala para cambiar Producto/UX.' };
       // One switch for the room: the department is enabled or disabled for the five companies alike.
       g.productEnabled = command.payload.enabled; return { ok: true };
+    }
+    if (command.type === 'room.assembled') {
+      // Spec §8: a short class can skip the montaje and open with the architecture already built.
+      if (g.status !== 'LOBBY') return { ok: false, code: 'ASSEMBLED_MODE_LOCKED', error: 'Elegí el modo de arranque antes de iniciar la partida.' };
+      if (typeof command.payload?.enabled !== 'boolean') return { ok: false, error: 'Valor inválido.' };
+      if (command.payload.enabled) assembleGame(g);
+      else for (const company of g.companies) { company.plan = initialGraph('plan'); company.assembly = { active: true }; }
+      return { ok: true };
     }
     if (command.type === 'room.reset') {
       const closed = structuredClone(g); copyHistoryBuffer(g, closed); bindObservability(closed); bindMarket(closed);
@@ -225,6 +281,31 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       if (command.type.startsWith('infra.restart')) restart(c, g.tick, Number(p.duration), command.type === 'infra.restart' ? Number(p.serverId) : undefined);
       else setService(c, p.service as import('../shared/types.js').ServiceId, command.type === 'infra.stop');
       event(g, c.id, command.type.startsWith('infra.restart') ? 'Reinicio iniciado.' : command.type === 'infra.stop' ? 'Servicio detenido.' : 'Servicio recuperado.', 'neutral', 'DEVOPS'); return { ok: true };
+    }
+    if (command.type === 'plan.save' || command.type === 'plan.publish') {
+      // Each role keeps its own draft of the shared board, so an unpublished piece of one role never
+      // blocks another from saving or publishing its own.
+      const current = c.planDrafts[identity.role]?.revision ?? 0;
+      if (Number(p.revision) !== current) throw new Error('La revisión cambió. Recarga el plano.');
+      const graph = validateGraph(p.graph, 'plan', false);
+      assertPlanOwnership(c.plan, graph, identity.role);
+      if (command.type === 'plan.publish') {
+        // While a company cannot sell there is nothing to break, so Backend, Seguridad and DevOps
+        // publish straight to production. From the first sale on, every change takes the full cycle.
+        if (!c.assembly.active) return { ok: false, code: 'PIPELINE_REQUIRED', error: 'La empresa ya acepta compras: el plano se cambia por el ciclo completo, no directo.' };
+        if (samePlan(c.plan, graph)) throw new Error('El plano no cambió: no hay nada que publicar.');
+        const cost = planPublicationCost(c.plan, graph);
+        if (c.capital - c.reserved - c.infraBudget < cost) throw new Error('Saldo disponible insuficiente.');
+        c.plan = structuredClone(graph); c.capital -= cost;
+        // A new production version, so a request already walking the previous plan finishes on it.
+        // A plan publication changes which services exist, never the modules or the protections
+        // inside them, so the production release is carried forward exactly as it stood.
+        const execution = structuredClone(c.runtime.releases[c.version] ?? releaseFor(c));
+        c.version++; c.runtime.releases[c.version] = execution; staleOthers(g, c);
+        event(g, c.id, `Plano publicado · v${c.version} · Q${cost}.`, 'neutral', 'PIPELINE');
+      }
+      c.planDrafts[identity.role] = { graph, revision: current + 1 };
+      return { ok: true };
     }
     if (command.type === 'draft.save' || command.type === 'change.submit') {
       const domain = identity.role as 'backend' | 'security';
@@ -351,6 +432,11 @@ export function step(g: GameState, dt = .1) {
   if (g.tick - dt < g.duration * .24 && concurrencyIncident) event(g, null, 'Ráfagas de compra sobre inventario compartido.', 'bad', 'CONCURRENCIA');
   for (const c of g.companies) {
     if (c.eliminated) continue;
+    // The montaje closes the first time the plan can take a purchase, and never reopens.
+    if (c.assembly.active && sellCapable(c.plan)) {
+      c.assembly = { active: false, closedAt: g.tick };
+      event(g, c.id, 'Montaje cerrado: la empresa ya acepta compras. Desde ahora todo cambio pasa por el ciclo completo.', 'good', 'PIPELINE');
+    }
     const recovered = c.infrastructure.instances.filter(instance=>instance.status==='RESTARTING'&&g.tick>=instance.readyAt!).map(instance=>`APP-${instance.id}`);
     advanceInfrastructure(c, g.tick); advanceCampaigns(c, g.tick);expireInvestments(c,g.tick,false,g.changes.filter(ch=>ch.companyId===c.id&&['AUTHORIZED','DEPLOYING'].includes(ch.status)).map(ch=>ch.id));
     if (recovered.length) auditCompletion(g, c.id, 'infra.recovered', recovered, ['availability.restored']);
@@ -387,7 +473,9 @@ export function step(g: GameState, dt = .1) {
     reconcileRollbacks(c);
     if (c.capital < c.reserved + c.infraBudget) c.infraBudget = Math.max(0, c.capital - c.reserved);
     c.particles = c.particles.filter(p => g.tick - p.born < p.duration).slice(-90);
-    c.deadTicks = capacity === 0 ? c.deadTicks + dt : 0;
+    // Spec §5: while a team is still building, nobody loses their company over a service they have
+    // not placed yet. The clock only runs once the company accepts purchases.
+    c.deadTicks = capacity === 0 && !c.assembly.active ? c.deadTicks + dt : 0;
     c.bankruptTicks = c.capital <= 0 ? c.bankruptTicks + dt : 0;
     c.crisisTicks = c.customers < 50 && c.pressure >= 200 && !health ? c.crisisTicks + dt : 0;
   }
@@ -426,6 +514,9 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
     if (privateC.concurrency.run && !internal) privateC.concurrency.run.requests = privateC.concurrency.run.requests.map(r => visibleRequest(r)) as unknown as typeof privateC.concurrency.run.requests;
     const ownDraft = identity?.role === 'backend' || identity?.role === 'security' ? identity.role : null;
     privateC.drafts = ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {};
+    // A role sees its own plan draft and nobody else's; the published plan is public on its own.
+    const ownPlan = identity && identity.role !== 'operator' && identity.role !== 'auditor' ? privateC.planDrafts[identity.role] : undefined;
+    privateC.planDrafts = ownPlan ? { [identity!.role as Role]: ownPlan } : {};
   }
   return {
     ...(identity?.role === 'auditor' ? { auditor: auditorView(g, identity) } : {}),
@@ -436,7 +527,7 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
     slack: ownCompany ? structuredClone(g.slack.messages.filter(m=>m.companyId===ownCompany.id)) : undefined,
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
     companies: common?.companies ?? g.companies.map(c => {
-      const { infraBudget, reserved, runtime, drafts, backend, security, product, breaches, migrationRemainder, arrivalRemainder, processedRemainder, crisisTicks, deadTicks, bankruptTicks, concurrencyUntil, concurrency, traffic, ...pub } = c;
+      const { infraBudget, reserved, runtime, drafts, planDrafts, backend, security, product, breaches, migrationRemainder, arrivalRemainder, processedRemainder, crisisTicks, deadTicks, bankruptTicks, concurrencyUntil, concurrency, traffic, ...pub } = c;
       return { ...pub, ...(internal?{breaches,infraBudget,reserved}:{}), traffic: trafficView(traffic, internal), concurrency: { runId: concurrency.run?.id, inventory: concurrency.run && { ...concurrency.run.inventory }, totals: { ...concurrency.totals } }, particles: particles(c), modules: [...route(backend), ...route(security)].map(n => n.type), pipelineCounts: [['QA_PENDING', 'QA_RUNNING'], ['CTO_PENDING'], ['AUTHORIZED', 'DEPLOYING'], ['DEPLOYED']].map(states => g.changes.filter(ch => ch.companyId === c.id && states.includes(ch.status)).length) };
     }),
     events: internal ? g.events : g.events.filter(e=>e.companyId===null||e.companyId===identity?.companyId||['CONCURRENCIA','COLAPSO'].includes(e.category)), migrations: g.migrations, unserved: g.unserved, privateCompany: privateC,

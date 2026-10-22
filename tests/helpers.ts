@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import type { GameState, Graph, Role } from '../shared/types.js';
-import { applyCommand, initialGraph, step } from '../server/engine.js';
+import type { Company, GameState, Graph, Role } from '../shared/types.js';
+import { applyCommand, assembleGame, completePlan, createGame, initialGraph, step } from '../server/engine.js';
 
 export function insertBlock(type: string, before = 'write', value = 1, graph = initialGraph('backend')): Graph {
   const copy = structuredClone(graph), target = copy.nodes.find(node => node.type === before)!;
@@ -56,3 +56,20 @@ export function publishPromotion(game: GameState, configuration: { catalogId: st
   assert.equal(command(game, 'devops', 'deploy.start', { strategy }, change.id, companyId).ok, true);
   return change;
 }
+
+/** entrada → …types…, chained exactly as listed, on the plan's own node ids. The caller names the salida. */
+export function planWith(...types: string[]): Graph {
+  const chain = ['entry', ...types];
+  return { nodes: chain.map(type => ({ id: `plan-${type}`, type, position: { x: 0, y: 0 }, data: { label: type } })),
+    edges: chain.slice(1).map((type, i) => ({ id: `plan-e${i}`, source: `plan-${chain[i]}`, target: `plan-${type}` })) };
+}
+
+/** Puts the five companies on the complete plan, the way a migrated game or an assembled room starts. */
+export function assemble(game: GameState) { assembleGame(game); }
+
+/** A game whose five companies already built their plan. Fixtures that drive production traffic use
+ * this: a new room now starts almost empty on purpose, so an unassembled company serves nothing. */
+export function assembledGame(...args: Parameters<typeof createGame>): GameState { const game = createGame(...args); assemble(game); return game; }
+
+/** Puts a plan in production the way a deploy does, so the per-version route caches follow it. */
+export function publishPlan(company: Company, plan: Graph) { company.plan = plan; company.version++; }

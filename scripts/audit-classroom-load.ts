@@ -9,7 +9,7 @@ import {tmpdir,cpus,totalmem,freemem,platform,release} from 'node:os';
 import {join,resolve} from 'node:path';
 import {performance} from 'node:perf_hooks';
 import {io,type Socket} from '../shared/live-client.js';
-import {createGame,applyCommand,step,initialGraph} from '../server/engine.js';
+import { applyCommand, assembleGame, createGame, initialGraph, step } from '../server/engine.js';
 import {createGameWriter} from '../server/storage.js';
 import {serializeGame} from '../server/persistence.js';
 import {clearBuffer,checkpoint} from '../server/observability.js';
@@ -85,7 +85,7 @@ try{
  const receipt=(db.prepare('SELECT id FROM request_receipts WHERE generation=0 AND companyId=0 LIMIT 1').get() as {id:string}).id;
  const foreignReceipt=(db.prepare('SELECT id FROM request_receipts WHERE generation=0 AND companyId=1 LIMIT 1').get() as {id:string}).id;
  const historyDigest=()=>{const h=createHash('sha256');for(const row of db.prepare('SELECT generation,seq,body FROM history_events WHERE generation=0 ORDER BY seq').iterate())h.update(JSON.stringify(row)+'\n');return h.digest('hex');};const savedHistoryDigest=historyDigest();
- const active=createGame(duration,8,1);for(const c of active.companies)c.reputation=34;clearBuffer(active);checkpoint(active,serializeGame,true);write(active);
+ const active=createGame(duration,8,1);assembleGame(active);for(const c of active.companies)c.reputation=34;clearBuffer(active);checkpoint(active,serializeGame,true);write(active);
  const visualBefore=serializeGame(active),visualAt=performance.now();for(let i=0;i<10000;i++)for(const c of active.companies)crisisVisual({...c.crisis,active:true,enteredAt:0},600);report.visual={calls:50000,totalMs:performance.now()-visualAt,economyUnchanged:serializeGame(active)===visualBefore,scope:'Pure derived visual function, not browser FPS; server does not run paper animation.'};assert(report.visual.economyUnchanged);
  report.scenarios.preparation={wallMs:performance.now()-prepAt,historicalTicks:historyDuration*10,historicalStatus:history.status,archiveDigest:archived.digest,archiveBytes:statSync(archive).size,expectedFrames:expected.size};
  await launch();const credentials=JSON.parse(readFileSync(join(dir,'access.json'),'utf8')).credentials as {code:string;identity:Identity}[];

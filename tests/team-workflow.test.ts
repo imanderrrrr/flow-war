@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyCommand, createGame, project } from '../server/engine.js';
+import { applyCommand, project } from '../server/engine.js';
 import { AiGateway, AnthropicProvider, validateOutput, type Provider } from '../server/claude.js';
 import { AiScheduler } from '../server/ai-scheduler.js';
 import { workflow, available } from '../server/workflow.js';
@@ -9,9 +9,9 @@ import { recoverGame, serializeGame } from '../server/persistence.js';
 import { DEFAULT_TEST, type TestScenario } from '../shared/actions.js';
 import type { AiInput } from '../shared/collaboration.js';
 import type { GameState, Identity } from '../shared/types.js';
-import { command, advanceGame, reviewForQa, insertBlock } from './helpers.js';
+import { advanceGame, assembledGame, command, insertBlock, reviewForQa } from './helpers.js';
 const actor=(role:Identity['role'],companyId=0):Identity=>({id:`${companyId}-${role}`,role,companyId});
-const start=()=>{const g=createGame();g.status='RUNNING';return g;};
+const start=()=>{const g=assembledGame();g.status='RUNNING';return g;};
 function candidate(atomic=false){const g=start();assert(command(g,'backend','change.submit',{graph:atomic?insertBlock('atomic'):g.companies[0].backend,revision:0}).ok);return g;}
 const fixture=(output:unknown):Provider=>({name:'test',model:'simulated',async generate(){return structuredClone(output);}});
 const letter=(g:GameState,recipient='backend')=>({changeId:g.changes[0].id,recipient,subject:'Investigación de compra',description:'Observo un comportamiento que deseo revisar.',steps:'Ejecutar el escenario adjunto.',observed:'Consultar la evidencia adjunta.',expected:'La expectativa que define el estudiante.',severity:'high',evidenceIds:workflow(g.companies[0]).runs.filter(r=>r.report&&r.changeId===g.changes[0].id).map(r=>r.id),observationRefs:[]});

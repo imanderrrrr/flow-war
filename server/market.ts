@@ -1,5 +1,6 @@
 import { observe } from './observability.js';
 import type { Company, GameState, MarketConfig, MarketCustomer, MarketState, PurchaseRequest, TrafficRequest } from '../shared/types.js';
+import { isPlanReason } from '../shared/plan.js';
 
 export const MARKET_CONFIG: MarketConfig = {
   version: 'market-3.0', population: 5000, hazardPerSecond: .002, cooldownSeconds: 90, reentryPerSecond: .003,
@@ -92,6 +93,9 @@ export function recordCustomerExperience(company: Company, request: PurchaseRequ
   const customer = binding.market.customers[request.customerId!], config = binding.market.config, result = request.result!;
   if (!customer || customer.currentCompanyId !== company.id || customer.activeRequests <= 0) throw new Error('Experiencia de cliente inconsistente.');
   customer.activeRequests--;
+  // A company still in montaje is not answerable for a service nobody asked it to build yet: the
+  // lost sale and the complaint stand, the customer's loyalty, patience and allegiance do not move.
+  if (company.assembly?.active && isPlanReason(result.reason)) return;
   // Administrative finish/cancellation is observed as no service, never as a fabricated visit.
   if (result.reason === 'ROOM_FINISHED' || result.reason === 'ROOM_INTERRUPTED' || result.reason === 'COMPANY_ELIMINATED') return;
   const experience = customer.experiences[company.id] ??= { successes: 0, failures: 0 };

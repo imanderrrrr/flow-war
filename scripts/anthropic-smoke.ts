@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { AiGateway, AnthropicProvider } from '../server/claude.js';
-import { applyCommand, createGame } from '../server/engine.js';
+import { applyCommand, assembleGame, createGame } from '../server/engine.js';
 import { beginExecution, buildRequest, executeCalls, finishExecution, replyFor } from '../server/executor-service.js';
 import { command, advanceGame, reviewForQa } from '../tests/helpers.js';
 import type { GameState, Identity, Role } from '../shared/types.js';
@@ -21,7 +21,7 @@ if (!key) {
 }
 const gateway = new AiGateway(provider), cases = report.cases as unknown[];
 const actor = (role: Role, companyId = 0): Identity => ({ id: `${companyId}-${role}`, role, companyId });
-const g: GameState = createGame(); g.status = 'RUNNING'; g.productEnabled = true;
+const g: GameState = createGame(); assembleGame(g); g.status = 'RUNNING'; g.productEnabled = true;
 // Setup through ordinary commands: a Backend change in QA and a defective one for Test F.
 command(g, 'backend', 'change.submit', { graph: g.companies[0].backend, revision: 0 }); reviewForQa(g);
 const qaChange = g.changes[0].id;

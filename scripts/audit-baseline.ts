@@ -3,14 +3,14 @@ import {mkdtempSync,statSync,writeFileSync,rmSync} from 'node:fs';
 import {tmpdir,cpus} from 'node:os';
 import {join} from 'node:path';
 import {performance,monitorEventLoopDelay} from 'node:perf_hooks';
-import {createGame,applyCommand,step} from '../server/engine.js';
+import { applyCommand, assembleGame, createGame, step } from '../server/engine.js';
 import {createGameWriter} from '../server/storage.js';
 import {historyAccess,reconstruct} from '../server/history.js';
 import {trafficReceipt} from '../server/traffic.js';
 import {marketSample} from './market-scenarios.js';
 const dir=mkdtempSync(join(tmpdir(),'flow-audit-base-')),path=join(dir,'game.sqlite'),db=new DatabaseSync(path);
 db.exec('PRAGMA journal_mode=WAL;CREATE TABLE commands(identity TEXT,id TEXT,digest TEXT,result TEXT)');
-const write=createGameWriter(db),g=createGame(1200),op={id:'operator',role:'operator',companyId:null} as const;
+const write=createGameWriter(db),g=createGame(1200),_assembled=assembleGame(g),op={id:'operator',role:'operator',companyId:null} as const;
 const run=(type:string)=>applyCommand(g,op,{id:crypto.randomUUID(),type});
 const ticks:number[]=[],saves:number[]=[];write(g);run('room.start');
 for(let i=0;i<1200;i++){const t=performance.now();step(g);ticks.push(performance.now()-t);if(i%100===0){const t=performance.now();write(g);saves.push(performance.now()-t);}}

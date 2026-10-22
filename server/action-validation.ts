@@ -84,7 +84,7 @@ export function validateParameters(type: string, input: unknown) {
     case 'campaign.authorize': case 'campaign.reject': case 'campaign.activate': keys(p, ['campaignId']); string(p.campaignId); break;
     case 'product.propose': keys(p, ['name','description']); string(p.name); string(p.description, 1000); break;
     case 'employee.correct': keys(p, ['employeeId','justification']); string(p.employeeId); string(p.justification, 1000); break;
-    case 'draft.save': case 'change.submit': keys(p, ['graph','revision']); integer(p.revision, 0, 100000); object(p.graph); break;
+    case 'plan.save': case 'plan.publish': case 'draft.save': case 'change.submit': keys(p, ['graph','revision']); integer(p.revision, 0, 100000); object(p.graph); break;
     case 'qa.run': keys(p, ['suite']); oneOf(p.suite, ['Concurrencia','Regresión','Carga','Seguridad','Integración','Unitarias']); break;
     case 'qa.approve': case 'qa.reject': case 'cto.authorize': case 'cto.reject': keys(p, []); break;
     case 'cto.budget': keys(p, ['amount']); if (![250,500,1000].includes(integer(p.amount, 250, 1000))) throw new ActionError('INVALID', 'Importe no soportado.'); break;

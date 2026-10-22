@@ -1,6 +1,7 @@
-import type { GameState } from '../shared/types.js';
+import type { GameState, TerminalReason } from '../shared/types.js';
 import type { Observation, Channel, SlackMessage } from '../shared/observability.js';
 import { observe } from './observability.js';
+import { isPlanReason } from '../shared/plan.js';
 export const ALERT_POLICY = { version:'symptoms-1', minimumResults:5, errorRate:.2, queueDepth:40, latencyMs:3000, interval:10, groupSeconds:20 } as const;
 function add(g:GameState,m:Omit<SlackMessage,'id'|'sequence'|'at'|'mentions'> & {mentions?:string[]}) {
  const sequence=++g.slack.sequence;
@@ -33,6 +34,9 @@ export function slackFact(g:GameState,f:Observation){
  if(r.reason==='DEADLINE')auto(g,f,'soporte-clientes','timeout',v?'llevo un rato esperando y nunca me respondió':'se queda cargando y al final no pasa nada',author);
  else if(Number(f.data.duplicates)>0)auto(g,f,'soporte-clientes','duplicate',v?'me aparece cobrada dos veces, ¿pueden revisar?':'hice una sola compra y me figura repetida',author);
  else if(r.reason==='OUT_OF_STOCK')auto(g,f,'soporte-clientes','failure:OUT_OF_STOCK',v?'no pude completar mi compra y la necesitaba':'hace un rato me dejaba comprar y ahora dice que no hay',author);
+ // A service the company has not built yet never let the customer in, so the complaint says that
+ // and not that something fell halfway: what the team reads is what the customer actually lived.
+ else if(isPlanReason(r.reason as TerminalReason))auto(g,f,'soporte-clientes',`failure:${r.reason}`,r.reason==='NO_STOREFRONT'?(v?'entré y no cargó nada, ¿están abiertos?':'me quedé esperando la página y nunca apareció'):r.reason==='NO_INVENTORY'?(v?'no me dice si les queda stock':'quería saber si hay disponible y no aparece por ningún lado'):(v?'no me deja comprar, no hay dónde pagar':'llego hasta el pedido y no puedo terminar la compra'),author);
  else if(r.status!=='COMPLETED')auto(g,f,'soporte-clientes',`failure:${r.reason}`,['MAINTENANCE','ORDERS_PAUSED'].includes(r.reason)?'no me deja entrar, ¿están caídos?':v?'me deja a medias y se cae, llevo tres intentos':'¿les pasa algo? no logro terminar la compra',author);
  else if(Number(f.data.latencyMs)>3000)auto(g,f,'soporte-clientes','slow',v?'tardísimo, casi lo dejo':'antes era instantáneo, ahora se tarda un montón',author);
  }

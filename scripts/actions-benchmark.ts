@@ -5,7 +5,7 @@ import { tmpdir, cpus } from 'node:os';
 import { join } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { DatabaseSync } from 'node:sqlite';
-import { applyCommand, step, project } from '../server/engine.js';
+import { applyCommand, assembleGame, project, step } from '../server/engine.js';
 import { assertMarket } from '../server/market.js';
 import { recoverGame, serializeGame } from '../server/persistence.js';
 import { createGameWriter } from '../server/storage.js';
@@ -22,7 +22,7 @@ type Strategy = typeof strategies[number];
 const config = { kind: 'coupon' as const, percent: 20, audience: 'all' as const, stackable: false };
 function seedForCoupon() {
   for (let seed=1;seed<=500;seed++) {
-    const g=createGame(1500,seed); prepareArtifact(g,g.companies[0],{id:'0-backend',role:'backend',companyId:0},'module.create',{name:'Coupon',configuration:config,dependencies:[]});
+    const g=createGame(1500,seed); assembleGame(g); prepareArtifact(g,g.companies[0],{id:'0-backend',role:'backend',companyId:0},'module.create',{name:'Coupon',configuration:config,dependencies:[]});
     if (generateDefects(seed,g.companies[0].runtime.modules['C0-M1'][0]).some(d=>d.code==='D02')) return seed;
   }
   throw new Error('No D02 seed.');

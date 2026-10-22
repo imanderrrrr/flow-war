@@ -55,6 +55,9 @@ export type ActionParameters = {
   'product.propose': { name: string; description: string };
   'employee.correct': { employeeId: string; justification: string };
   'draft.save': { graph: Graph; revision: number };
+  /** The service plan: each role saves and publishes only its own pieces (shared/plan.ts PLAN_PIECES). */
+  'plan.save': { graph: Graph; revision: number };
+  'plan.publish': { graph: Graph; revision: number };
   'change.submit': { graph: Graph; revision: number };
   'qa.run': { suite: string };
   'qa.approve': Record<string, never>; 'qa.reject': Record<string, never>;
@@ -95,6 +98,7 @@ export const ACTION_CATALOG = {
   'campaign.reject': entry(['cto'], 'finance'), 'campaign.activate': entry(['product'], 'operation'),
   'product.propose': entry(['product'], 'preparation'), 'employee.correct': entry(['operator'], 'administration'),
   'draft.save': entry(['backend', 'security'], 'preparation'), 'change.submit': entry(['backend', 'security'], 'preparation'),
+  'plan.save': entry(['backend', 'security', 'devops'], 'preparation'), 'plan.publish': entry(['backend', 'security', 'devops'], 'publication'),
   'qa.run': entry(['qa'], 'qa'), 'qa.approve': entry(['qa'], 'qa'), 'qa.reject': entry(['qa'], 'qa'),
   'cto.authorize': entry(['cto'], 'finance'), 'cto.reject': entry(['cto'], 'finance'),
   'cto.budget': entry(['cto'], 'finance'), 'cto.prioritize': entry(['cto'], 'operation'),
@@ -103,7 +107,7 @@ export const ACTION_CATALOG = {
   'cto.rollback_authorize': entry(['cto'], 'finance'), 'deploy.rollback': entry(['devops'], 'publication'),
   'infra.server_stop': entry(['devops'], 'operation'), 'infra.server_start': entry(['devops'], 'operation'),
   'product.draft': entry(['product'], 'artifact'), 'product.submit': entry(['product'], 'preparation'), 'room.product': entry(['operator'], 'administration'),
-  'room.dvr': entry(['operator'], 'administration'),
+  'room.dvr': entry(['operator'], 'administration'), 'room.assembled': entry(['operator'], 'administration'),
   'room.start': entry(['operator'], 'administration'), 'room.pause': entry(['operator'], 'administration'),
   'room.reset': entry(['operator'], 'administration'), 'room.speed': entry(['operator'], 'administration'), 'room.finish': entry(['operator'], 'administration'),
 } as const;

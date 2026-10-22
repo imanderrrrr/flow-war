@@ -4,6 +4,8 @@ import { initialActionState } from './discipline.js';
 import { initialRuntime } from './artifacts.js';
 import { syncInfrastructure } from './infrastructure.js';
 import { assertMarket, bindMarket, importLegacyMarket } from './market.js';
+import { completePlan } from '../shared/plan.js';
+import { planServices } from './graphs.js';
 import type { GameState } from '../shared/types.js';
 import { initialConcurrency } from './scenarios.js';
 import { initialTraffic } from './traffic.js';
@@ -14,7 +16,7 @@ export function recoverGame(serialized: string): GameState {
   const originalSchema = saved.schema;
   // Missing mode means a pre-5.5 recorded generation, never a new lightweight room.
   saved.dvrEnabled ??= true;
-  if (![1, 2, 3, 4, 5, 6].includes(saved.schema)) throw new Error('Versión de partida no soportada.');
+  if (![1, 2, 3, 4, 5, 6, 7].includes(saved.schema)) throw new Error('Versión de partida no soportada.');
   if (saved.schema === 1) {
     for (const company of saved.companies) company.concurrency = initialConcurrency(saved.duration, saved.tick);
     for (const change of saved.changes) {
@@ -58,12 +60,20 @@ export function recoverGame(serialized: string): GameState {
     }
     saved.schema = 3;
   }
-  for (const company of [...saved.companies, ...saved.changes.flatMap((change: any) => [change.qaLoad?.company, change.testJob?.staging].filter(Boolean))]) { company.runtime ??= initialRuntime(); syncInfrastructure(company); }
+  for (const company of [...saved.companies, ...saved.changes.flatMap((change: any) => [change.qaLoad?.company, change.testJob?.staging].filter(Boolean))]) {
+    company.runtime ??= initialRuntime(); syncInfrastructure(company);
+    // A saved QA fixture carries no schema of its own, and the engine needs a plan to know where a
+    // request goes. Before this entrega the service layer was wired in, so that plan is the complete one.
+    company.plan ??= completePlan(); company.assembly ??= { active: false, closedAt: saved.tick }; company.planDrafts ??= {};
+  }
   for (const change of saved.changes) if (change.testJob?.run) change.testJob.requests = change.testJob.run.requests;
   for (const change of saved.changes) if (change.qaLoad) change.qaLoad.company.traffic.scope = 'qa';
   for (const company of [...saved.companies, ...saved.changes.flatMap((change: {qaLoad?: {company: unknown}}) => [change.qaLoad?.company, (change as any).testJob?.staging].filter(Boolean))]) {
     company.traffic.paths ??= {};
+    company.traffic.planPaths ??= {};
     for (const request of Object.values(company.traffic.requests) as any[]) {
+      // A request in flight keeps walking the plan of its own version, so that route is restored too.
+      company.traffic.planPaths[request.executionVersion] ??= planServices(company.plan);
       if (originalSchema < 5) request.executor ??= 'requests-1';
       if (request.execution?.release !== undefined) { const release = company.runtime.releases[request.executionVersion]; if (!release) throw new Error('Versión de ejecución ausente.'); request.execution = release; }
       if (!Array.isArray(request.path)) {
@@ -88,6 +98,12 @@ export function recoverGame(serialized: string): GameState {
     }
   }
   if (saved.schema === 5) { saved.schema = 6; saved.observability = initialObservability(saved.tick); saved.slack = { sequence: 0, messages: [], receipts: {}, buckets: {}, groups: {}, automaticCount: 0, sampledCount: 0 }; }
+  if (saved.schema === 6) {
+    // Before this entrega the service layer was wired into the engine, so every saved company ran
+    // the complete plan and was long past a montaje it never had. The loops above already filled
+    // both in; this step only records that the save is now a schema 7 one.
+    saved.schema = 7;
+  }
   for (const company of saved.companies) { company.crisis ??= { active: false, episode: 0, lastReputation: company.reputation }; company.serviceMode ??= { mode: 'OPERATING', since: saved.tick }; }
   if (saved.market.config.version !== 'market-3.0') throw new Error('Versión de mercado no soportada.');
   for (const company of saved.companies) { company.runtime ??= initialRuntime(); syncInfrastructure(company); }

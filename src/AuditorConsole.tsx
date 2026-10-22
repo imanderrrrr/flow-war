@@ -65,8 +65,8 @@ export default function AuditorConsole() {
       <div className="panel-title"><span>1 · EMPRESA</span><span>{view.companies.filter(c => !c.eliminated).length} EN JUEGO</span></div>
       <div className="auditor-companies">{view.companies.map(c => {
         const count = c.modules.reduce((n, m) => n + m.pending.length, 0);
-        return <button key={c.companyId} disabled={c.eliminated} aria-pressed={c.companyId === company.companyId} style={{ '--team': c.color } as CSSProperties} onClick={() => { setCompanyId(c.companyId); setNodeId(undefined); }}>
-          <Mascot id={c.companyId} color={c.color} size={24}/><strong>{c.name}</strong><small>{c.eliminated ? 'FUERA' : `${count} pendientes`}</small>
+        return <button key={c.companyId} disabled={c.eliminated || c.assembling} aria-pressed={c.companyId === company.companyId} style={{ '--team': c.color } as CSSProperties} onClick={() => { setCompanyId(c.companyId); setNodeId(undefined); }}>
+          <Mascot id={c.companyId} color={c.color} size={24}/><strong>{c.name}</strong><small>{c.eliminated ? 'FUERA' : c.assembling ? 'EN MONTAJE · todavía no acepta compras' : `${count} pendientes`}</small>
         </button>; })}</div>
     </section>
 

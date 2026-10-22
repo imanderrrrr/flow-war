@@ -47,7 +47,7 @@ test('v1 migration preserves the old market, economy and stock, and never invent
   const legacy = JSON.parse(JSON.stringify(game)); legacy.schema = 1;
   for (const company of legacy.companies) delete company.concurrency;
   const serialized = JSON.stringify(legacy), recovered = recoverGame(serialized);
-  assert.equal(JSON.stringify(legacy), serialized); assert.equal(recovered.schema, 6); assert.equal(recovered.status, 'PAUSED');
+  assert.equal(JSON.stringify(legacy), serialized); assert.equal(recovered.schema, 7); assert.equal(recovered.status, 'PAUSED');
   for (const company of recovered.companies) {
     const { concurrency, active, queue, latency, utilization, ...existing } = company;
     const { active: oldActive, queue: oldQueue, latency: oldLatency, utilization: oldUtilization, ...historical } = legacy.companies[company.id];

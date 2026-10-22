@@ -20,6 +20,9 @@ for (const duration of [1200, 1500]) for (const strategy of ['baseline', 'scaled
   db.exec('PRAGMA journal_mode=WAL; CREATE TABLE commands (identity TEXT,id TEXT,digest TEXT,result TEXT,PRIMARY KEY(identity,id))');
   const writer = baseArgument ? undefined : createGameWriter(db);
   const game = engine.createGame(duration, 7357);
+  // A new room starts almost empty on purpose; this benchmark measures a company that serves traffic.
+  // A historical baseline engine has no plan at all, so the call is optional.
+  (engine as Partial<typeof current>).assembleGame?.(game);
   let commandSequence = 0;
   const command = (role: 'operator' | 'cto' | 'devops' | 'backend' | 'security' | 'qa', type: string, payload: Record<string,unknown> = {}, companyId = 0) => {
     const result = engine.applyCommand(game, { id: `bench-${role}-${companyId}`, role, companyId: role === 'operator' ? null : companyId }, { id: `bench-${++commandSequence}`, type, companyId, payload });
@@ -30,6 +33,12 @@ for (const duration of [1200, 1500]) for (const strategy of ['baseline', 'scaled
     const change = game.changes.find(item=>item.companyId===companyId);
     const result = engine.applyCommand(game,{id:`bench-${role}-${companyId}`,role,companyId},{id:`bench-${++commandSequence}`,type,companyId,changeId:change?.id,payload});
     if(!result.ok)throw new Error(`${type}: ${result.error}`);
+  };
+  /** A submitted change waits on Seguridad before QA can run it; the benchmark adds no protections. */
+  const reviewForQa = (companyId: number) => {
+    const change = game.changes.find(item => item.companyId === companyId);
+    if (change?.status !== 'SECURITY_PENDING') return;
+    changeCommand('security', 'security.submit', companyId, { changeId: change.id, revision: game.companies[companyId].runtime.collaboration!.reviews[change.id].revision });
   };
   const insert = (graph: ReturnType<typeof engine.initialGraph>, type: string, before: string, value: number) => {
     const target=graph.nodes.find(node=>node.type===before)!,edge=graph.edges.find(edge=>edge.target===target.id)!;
@@ -43,9 +52,9 @@ for (const duration of [1200, 1500]) for (const strategy of ['baseline', 'scaled
   try {
     while (game.status === 'RUNNING') {
       if (strategy === 'protected-scaled') {
-        if(game.tick===10)for(const company of game.companies){changeCommand('backend','change.submit',company.id,{graph:insert(engine.initialGraph('backend'),'atomic','write',1),revision:0});changeCommand('qa','qa.run',company.id,{suite:'Concurrencia'});}
+        if(game.tick===10)for(const company of game.companies){changeCommand('backend','change.submit',company.id,{graph:insert(engine.initialGraph('backend'),'atomic','write',1),revision:0});reviewForQa(company.id);changeCommand('qa','qa.run',company.id,{suite:'Concurrencia'});}
         if(game.tick===15||game.tick===28)for(const company of game.companies){changeCommand('qa','qa.approve',company.id);changeCommand('cto','cto.authorize',company.id);changeCommand('devops','deploy.start',company.id,{strategy:'rolling'});}
-        if(game.tick===23)for(const company of game.companies){let graph=engine.initialGraph('security');graph=insert(graph,'auth','exit',1);graph=insert(graph,'waf','exit',1);graph=insert(graph,'bot','exit',100);changeCommand('security','change.submit',company.id,{graph,revision:0});changeCommand('qa','qa.run',company.id,{suite:'Seguridad'});}
+        if(game.tick===23)for(const company of game.companies){let graph=engine.initialGraph('security');graph=insert(graph,'auth','exit',1);graph=insert(graph,'waf','exit',1);graph=insert(graph,'bot','exit',100);changeCommand('security','change.submit',company.id,{graph,revision:0});reviewForQa(company.id);changeCommand('qa','qa.run',company.id,{suite:'Seguridad'});}
       }
       if (strategy !== 'baseline' && game.tick === 300) for (const company of game.companies) {
         for(let budget=0;budget<(strategy==='protected-scaled'?6:2);budget++)command('cto','cto.budget',{amount:1000},company.id);

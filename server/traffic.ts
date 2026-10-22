@@ -13,8 +13,9 @@ import { initialOperations } from './artifacts.js';
 import { executionFor } from './artifacts.js';
 import { effectiveServers } from './infrastructure.js';
 import { attachCustomer, customerColor, recordCustomerExperience, selectCustomer } from './market.js';
-import type { MarketCustomer, ServiceQueue, Company, FlowParticle, InventoryState, RequestResult, ScenarioTotals, ServiceId, TrafficMetrics, TrafficReceipt, TrafficRequest, TrafficScenario, TrafficState, TrafficView } from '../shared/types.js';
-import { evaluateSecurity, route } from './graphs.js';
+import type { Graph, MarketCustomer, ServiceQueue, Company, FlowParticle, InventoryState, RequestResult, ScenarioTotals, ServiceId, TerminalReason, TrafficMetrics, TrafficReceipt, TrafficRequest, TrafficScenario, TrafficState, TrafficView } from '../shared/types.js';
+import { isPlanReason } from '../shared/plan.js';
+import { evaluateSecurity, missingFor, planServices, route } from './graphs.js';
 import { executePurchaseOperation, finishRequest, moveRequest } from './requests.js';
 
 export const SERVICE_IDS: ServiceId[] = ['security', 'web', 'checkout', 'inventory', 'payment'];
@@ -34,9 +35,20 @@ export function initialTraffic(stock = 100, seed = 7357, namespace = 'g0', tick 
   return {
     namespace, seed, config: structuredClone(config), sequence: 0, initialIssued: false, initialDebt: 0, arrivalRemainder: 0, attackRemainder: 0, attackSequence: 0, lastTick: tick,
     inventory: { sku: 'REGULAR', initialStock: stock, stock, version: 0, committed: 0, oversold: 0, supplied: 0 },
-    paths: {}, services: SERVICE_IDS.reduce((queues, id) => { queues[id] = { id, capacity: config.queues[id], waiting: [], processing: [], credit: 0, rate: 0, started: 0, offered: 0 }; return queues; }, {} as Record<ServiceId, ServiceQueue>),
+    paths: {}, planPaths: {}, services: SERVICE_IDS.reduce((queues, id) => { queues[id] = { id, capacity: config.queues[id], waiting: [], processing: [], credit: 0, rate: 0, started: 0, offered: 0 }; return queues; }, {} as Record<ServiceId, ServiceQueue>),
     requests: {}, totals: emptyTotals(), legitimate: emptyTotals(), malicious: emptyTotals(), metrics: emptyMetrics(), observations: [], capacityWindow: [], outbox: [], unresolvedCount: 0,
   };
+}
+
+/** Services that have capacity at all: the ones the team placed on its plan. Inside a QA fixture
+ * every service answers, because staging is a complete system — a suite grades the change under
+ * test, not what the company happens to have deployed. */
+const servedByPlan = new WeakMap<Graph, ServiceId[]>();
+function servedServices(company: Company): ServiceId[] {
+  if (company.traffic.scope === 'qa') return SERVICE_IDS;
+  let served = servedByPlan.get(company.plan);
+  if (!served) servedByPlan.set(company.plan, served = planServices(company.plan));
+  return served;
 }
 
 export function serviceRates(company: Company, deployment?: { strategy?: string }): Record<ServiceId, number> {
@@ -47,8 +59,43 @@ export function serviceRates(company: Company, deployment?: { strategy?: string 
   else if (deployment) servers *= company.servers === 1 ? .12 : (company.servers - 1) / company.servers;
   const available = servers > 0;
   const rates = { security: available ? config.rates.security : 0, web: config.rates.web * servers, checkout: config.rates.checkout * servers, inventory: available ? config.rates.inventory : 0, payment: available ? config.rates.payment : 0 };
+  // A service that is not on the plan yet and one DevOps stopped are the same calculation: no rate.
+  const served = servedServices(company);
+  for (const service of SERVICE_IDS) if (!served.includes(service)) rates[service] = 0;
   for (const service of company.infrastructure?.stoppedServices ?? []) rates[service] = 0;
   return rates;
+}
+
+/** What a half-built plan could not serve, in the words the student reads. */
+const MISSING_REASONS: Record<ServiceId | 'exit', TerminalReason> = {
+  exit: 'NO_STOREFRONT', web: 'NO_STOREFRONT', security: 'NO_STOREFRONT',
+  inventory: 'NO_INVENTORY', checkout: 'NO_CHECKOUT', payment: 'NO_CHECKOUT',
+};
+function missingReason(company: Company, type: TrafficRequest['type']): TerminalReason | undefined {
+  const missing = missingFor(company.plan, type);
+  return missing ? MISSING_REASONS[missing] : undefined;
+}
+
+/** Stops the plan puts before the purchase interpreter takes over: exactly the non-backend phases. */
+type CoarseStop = Exclude<TrafficRequest['phase'], 'backend'>;
+const COARSE_SERVICES: ServiceId[] = ['security', 'web', 'checkout'];
+const isCoarse = (service: ServiceId): service is CoarseStop => COARSE_SERVICES.includes(service);
+/** The coarse itinerary this request type takes through the plan the team drew, in the drawn order.
+ * Navigation is answered by the storefront, so it never goes past the tienda web.
+ * Memoized on the frozen route array of each production version — every request of a version walks
+ * the same itinerary, and this runs on each phase transition of every request in the room. */
+const itineraries = new WeakMap<ServiceId[], Partial<Record<TrafficRequest['type'], CoarseStop[]>>>();
+function coarseStops(services: ServiceId[], type: TrafficRequest['type']): CoarseStop[] {
+  let byType = itineraries.get(services);
+  if (!byType) itineraries.set(services, byType = {});
+  const cached = byType[type];
+  if (cached) return cached;
+  const stops = services.filter(isCoarse);
+  return byType[type] = type === 'browse' ? stops.slice(0, stops.indexOf('web') + 1) : stops;
+}
+/** The plan route frozen for a production version: a request in flight finishes on its own plan. */
+function planRouteFor(company: Company, version: number): ServiceId[] {
+  return (company.traffic.planPaths ??= {})[version] ??= planServices(company.plan);
 }
 
 function enqueue(company: Company, request: TrafficRequest, service: ServiceId, now: number) {
@@ -67,11 +114,13 @@ export function admitTraffic(company: Company, now: number, type: TrafficRequest
   if (company.eliminated) throw new Error('Empresa eliminada.');
   const customer = trafficClass === 'legitimate' && company.traffic.scope !== 'qa' ? selected ?? selectCustomer(company) : undefined;
   if (trafficClass === 'legitimate' && company.traffic.scope !== 'qa' && !customer) throw new Error('No hay cliente admisible.');
-  const blocked = company.traffic.scope !== 'qa' ? admissionReason(company,type) : undefined;
+  const blocked = company.traffic.scope !== 'qa' ? admissionReason(company, type) ?? missingReason(company, type) : undefined;
   const state = company.traffic, ordinal = ++state.sequence;
   const id = `${state.namespace}-C${company.id}-O${ordinal}`;
   const executionPath = state.paths[company.version] ??= structuredClone(route(company.backend));
   const path = type === 'query' ? executionPath.filter(node => ['entry', 'read', 'exit'].includes(node.type)) : executionPath;
+  // Every served type requires the tienda web, so the itinerary is never empty.
+  const firstStop = coarseStops(planRouteFor(company, company.version), type)[0] ?? 'web';
   const request: TrafficRequest = {
     ...(activeCampaign(company, now) ? { promotion: { percent: activeCampaign(company, now)!.configuration.percent, audience: activeCampaign(company, now)!.configuration.audience } } : {}),
     id, ...(type === 'purchase' ? { intentId: `${id}-intent` } : {}), companyId: company.id,
@@ -80,14 +129,14 @@ export function admitTraffic(company: Company, now: number, type: TrafficRequest
     executor: 'requests-4a', loadDepth: state.services.web.waiting.length + state.services.checkout.waiting.length, execution: executionFor(company), newCustomer: customer ? customer.successfulVisits === 0 : true, couponCount: ordinal % 10 === 0 ? 2 : 1, executionVersion: company.version, path, securityAllowed: blocked ? false : admitSecurity(company, executionFor(company), trafficClass === 'legitimate' ? 'valid' : attackKind ?? 'bot', ordinal - 1, now, `sim-${trafficClass === 'malicious' ? 64 + ordinal % 16 : customer ? customer.cohort % 64 : ordinal % 64}`, customer?.id, type, securityContext, verdict),
     arrivalAt: now, nextAt: now, deadline: round(now + state.config.patience[type]), cursor: 1,
     status: 'PENDING', atomic: false, quantity: 1, committed: 0, oversold: 0, paid: false, accounted: false,
-    service: 'security', stage: 'entry', phase: 'security', transaction: 'NONE', breach: false, waits: [], trace: [],
+    service: 'security', stage: 'entry', phase: firstStop, transaction: 'NONE', breach: false, waits: [], trace: [],
     journey: { from: 'entry', to: 'entry', at: now, duration: .2 },
   };
   if (customer) attachCustomer(company, request, customer);
   state.requests[id] = request;
   state.totals.generated++; state[trafficClass].generated++; company.requests++;
   if (blocked) terminate(request, 'REJECTED', blocked, now);
-  else enqueue(company, request, 'security', now);
+  else enqueue(company, request, firstStop, now);
   return request;
 }
 
@@ -115,17 +164,22 @@ function backendService(request: TrafficRequest): ServiceId {
   return type === 'read' && request.cachedRead ? 'checkout' : type === 'payment' ? 'payment' : ['read', 'write', 'atomic', 'validation', 'lock'].includes(type) ? 'inventory' : 'checkout';
 }
 
+/** Next stop on the request's own itinerary, or the purchase interpreter once the plan runs out. */
+function advanceByPlan(company: Company, request: TrafficRequest, now: number) {
+  const stops = coarseStops(planRouteFor(company, request.executionVersion), request.type);
+  const next = stops[stops.findIndex(stop => stop === request.service) + 1];
+  if (next) { request.phase = next; enqueue(company, request, next, now); return; }
+  if (request.type === 'browse') { moveRequest(request, 'exit', now); terminate(request, 'COMPLETED', 'OK', now); return; }
+  request.phase = 'backend'; enqueue(company, request, backendService(request), now);
+}
+
 function completeOperation(company: Company, request: TrafficRequest, now: number) {
   const state = company.traffic;
   request.trace.push({ type: request.phase === 'backend' ? request.path[request.cursor]?.type ?? 'invalid' : request.phase, at: now });
-  if (request.phase === 'security') {
-    if (!request.securityAllowed) terminate(request, 'REJECTED', 'SECURITY_REJECTED', now);
-    else { request.phase = 'web'; enqueue(company, request, 'web', now); }
-  } else if (request.phase === 'web') {
-    if (request.type === 'browse') { moveRequest(request, 'exit', now); terminate(request, 'COMPLETED', 'OK', now); }
-    else { request.phase = 'checkout'; enqueue(company, request, 'checkout', now); }
-  } else if (request.phase === 'checkout') {
-    request.phase = 'backend'; enqueue(company, request, backendService(request), now);
+  if (request.phase !== 'backend') {
+    // The perímetro only filters where the team drew it: with no piece placed, nothing is filtered.
+    if (request.phase === 'security' && !request.securityAllowed) terminate(request, 'REJECTED', 'SECURITY_REJECTED', now);
+    else advanceByPlan(company, request, now);
   } else {
     if (request.type === 'query') {
       request.read = { stock: state.inventory.stock, version: state.inventory.version };
@@ -182,7 +236,10 @@ export function settleTraffic(company: Company, now: number) {
     request.accounted = true;
     observeCompany(company, 'request.settled', { ...(request.auditedAs ? { auditedAs: request.auditedAs } : {}), requestId: request.id, customerId: request.customerId, trafficClass: request.trafficClass, type: request.type, version: request.executionVersion, result: request.result, transaction: request.transaction, duplicates: request.duplicates ?? 0, oversold: request.oversold, defects: request.effectCodes ?? [], modules: capturesReceipts(company) ? request.execution?.modules.map(m => ({ id: m.id, version: m.version, defects: m.defects.filter(d => request.effectCodes?.includes(d.code)).map(d => d.code) })) ?? [] : [], latencyMs: request.latencyMs }, [request.id]);
     if (request.transaction === 'PENDING_RESOLUTION') state.unresolvedCount++;
-    state.observations.push({ at: now, legitimate: request.trafficClass === 'legitimate', status: result.status, latency: request.latencyMs!, breach: request.breach, oversold: request.oversold });
+    // Spec §5 keeps reputation still during the montaje, and reputation is computed from this
+    // window, so a request a half-built plan could never receive is not an observed failure either.
+    if (!(company.assembly?.active && isPlanReason(result.reason)))
+      state.observations.push({ at: now, legitimate: request.trafficClass === 'legitimate', status: result.status, latency: request.latencyMs!, breach: request.breach, oversold: request.oversold });
     if(capturesReceipts(company)){const receipt=trafficReceipt(request, true);
     state.outbox.push(receipt);
     if(isLiveEvidence(company))prepareReceipt(receipt);}
@@ -190,7 +247,7 @@ export function settleTraffic(company: Company, now: number) {
 }
 
 export function advanceTraffic(company: Company, now: number, rates = serviceRates(company)) {
-  const state = company.traffic;
+  const state = company.traffic, served = servedServices(company);
   if (now <= state.lastTick) { settleTraffic(company, now); return; }
   const dt = round(now - state.lastTick); const prune = Math.floor(now) !== Math.floor(state.lastTick); state.lastTick = now;
   if (prune && state.operations) pruneOperations(state.operations, now);
@@ -210,7 +267,8 @@ export function advanceTraffic(company: Company, now: number, rates = serviceRat
     queue.processing = queue.processing.filter(key => state.requests[key].status === 'PROCESSING' && state.requests[key].service === id && !completed.includes(key));
     queue.waiting = queue.waiting.filter(key => !state.requests[key].result && state.requests[key].status === 'QUEUED' && state.requests[key].service === id);
     queue.rate = rate;
-    queue.capacity = state.config.queues[id] * (id === 'web' || id === 'checkout' ? company.balancer ? company.servers : 1 : 1);
+    // A solar nobody filled has no waiting room either, so nothing queues for a service that is not there.
+    queue.capacity = served.includes(id) ? state.config.queues[id] * (id === 'web' || id === 'checkout' ? company.balancer ? company.servers : 1 : 1) : 0;
     queue.credit = rate > 0 ? Math.min(Math.max(1, rate * dt) + 1, round(queue.credit + rate * dt)) : 0;
     while (queue.credit >= 1 && queue.waiting.length) {
       const key = queue.waiting.shift()!, request = state.requests[key];
@@ -223,6 +281,7 @@ export function advanceTraffic(company: Company, now: number, rates = serviceRat
   for (const [key, request] of Object.entries(state.requests)) if (request.accounted && now - request.result!.at > state.config.retention) delete state.requests[key];
   const versions = new Set(Object.values(state.requests).map(request => request.executionVersion));
   for (const version of Object.keys(state.paths)) if (!versions.has(Number(version))) delete state.paths[Number(version)];
+  for (const version of Object.keys(state.planPaths ??= {})) if (!versions.has(Number(version))) delete state.planPaths[Number(version)];
   updateTrafficMetrics(company, now, dt, rates);
   company.stock = state.inventory.stock;
 }
@@ -233,7 +292,10 @@ function updateTrafficMetrics(company: Company, now: number, dt: number, rates: 
     const queue = state.services[id];
     return queue.waiting.length ? rates[id] > 0 ? 1 + Math.min(2, queue.waiting.length / Math.max(1, queue.capacity)) : 3 : queue.processing.length / Math.max(1, rates[id] * state.config.delays[id]);
   }));
-  if (dt > 0) state.capacityWindow.push({ at: now, dt, utilization: saturated, unavailable: rates.web === 0 || company.serviceMode?.mode === 'FULL_MAINTENANCE' ? 1 : 0 });
+  // A storefront the team has not placed yet is not an outage: during the montaje it costs the
+  // sale, never the reputation (spec §5).
+  const unbuilt = company.assembly?.active && rates.web === 0 && company.serviceMode?.mode !== 'FULL_MAINTENANCE';
+  if (dt > 0) state.capacityWindow.push({ at: now, dt, utilization: saturated, unavailable: !unbuilt && (rates.web === 0 || company.serviceMode?.mode === 'FULL_MAINTENANCE') ? 1 : 0 });
   state.capacityWindow = state.capacityWindow.filter(sample => sample.at > now - state.config.window);
   state.observations = state.observations.filter(sample => sample.at > now - state.config.window);
   const legit = state.observations.filter(sample => sample.legitimate), totalTime = state.capacityWindow.reduce((sum, sample) => sum + sample.dt, 0);

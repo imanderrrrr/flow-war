@@ -64,6 +64,7 @@ test('auditors over HTTP and sockets; Backend drafts a module with Claude; probe
     assert((await get('/api/snapshot', member.cookie)).auditor === undefined);
     assert.equal((await send(auditor.cookie, 'audit.probe', { companyId: 1, nodeId: 'backend-write', check: 'waf' })).code, 'ROOM_PAUSED');
 
+    assert.equal((await send(operator, 'room.assembled', { enabled: true })).ok, true);
     assert.equal((await send(operator, 'room.start')).ok, true);
     const backend = cookieOf(await post('/api/login', { code: 'backend-test' })), qa = cookieOf(await post('/api/login', { code: 'qa-test' }));
 
