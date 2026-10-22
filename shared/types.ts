@@ -100,6 +100,9 @@ export type FlowParticle = { id: string; born: number; duration: number; color: 
 export type Infrastructure = { instances: { id: number; status: 'UP' | 'RESTARTING' | 'STOPPED'; readyAt?: number }[]; stoppedServices: ServiceId[] };
 export type Company = {
   crisis: CrisisState; serviceMode: { mode: ServiceMode; since: number };
+  /** While `active`, the team is still building its plan: a request lost to a missing service costs
+   * the sale but never a customer. Closing is irreversible, so no plan can be dismantled for cover. */
+  assembly: { active: boolean; closedAt?: number };
   runtime: CompanyRuntime; infrastructure: Infrastructure;
   id: number; name: string; tag: string; color: string; customers: number; capital: number; reputation: number; pressure: number;
   servers: number; balancer: boolean; infraBudget: number; reserved: number; version: number; deployments: number;

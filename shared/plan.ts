@@ -1,4 +1,4 @@
-import type { Role, ServiceId, TrafficRequest } from './types.js';
+import type { Role, ServiceId, TerminalReason, TrafficRequest } from './types.js';
 
 /**
  * The service plan: the layer that used to be wired into the engine (SERVICE_IDS, server/traffic.ts)
@@ -34,6 +34,11 @@ export const PLAN_REQUIREMENTS: Record<TrafficRequest['type'], ServiceId[]> = {
   query: ['web', 'inventory'],
   purchase: ['web', 'checkout', 'inventory', 'payment'],
 };
+
+/** Terminal reasons only a half-built plan produces. While a company is still assembling these
+ * spare the customer: nobody loses clients over a service nobody asked them to build yet. */
+export const PLAN_TERMINAL_REASONS: readonly TerminalReason[] = ['NO_STOREFRONT', 'NO_INVENTORY', 'NO_CHECKOUT'];
+export const isPlanReason = (reason: TerminalReason) => PLAN_TERMINAL_REASONS.includes(reason);
 
 export const PLAN_PIECE_TYPES = Object.keys(PLAN_PIECES) as PlanPiece[];
 export const isPlanPiece = (type: string): type is PlanPiece => Object.hasOwn(PLAN_PIECES, type);

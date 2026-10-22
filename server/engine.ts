@@ -25,7 +25,7 @@ import { advanceLoadRun, createLoadRun, loadReport, runLoadFixture } from './loa
 import { initialTraffic, issueInitialTraffic, generateTraffic, serviceRates, advanceTraffic, restockTraffic, cancelTraffic, trafficParticles, trafficView } from './traffic.js';
 import { advanceConcurrency, cancelConcurrency, concurrencyParticles, concurrencyReport, createConcurrencyRun, isRunFinished, runConcurrencyFixture } from './requests.js';
 import { initialConcurrency, productionContext, settleConcurrency, stepConcurrency } from './scenarios.js';
-import { route, evaluateSecurity } from './graphs.js';
+import { route, evaluateSecurity, sellCapable } from './graphs.js';
 import { lobbyView, resetTeams } from './lobby.js';
 import { auditCommand, advanceProbes, auditorView, chargeLeaks, closeProbes, closeSettledFindings, findingsFor, sustainedEffects, suspendsRestock } from './auditor.js';
 export { route, evaluateSecurity } from './graphs.js';
@@ -44,7 +44,7 @@ function planGraph(types: PlanPiece[]): Graph {
 export function completePlan(): Graph { return planGraph(['entry', 'security', 'web', 'checkout', 'inventory', 'payment', 'exit']); }
 /** Puts the five companies on the complete plan. A new room starts almost empty on purpose, so a
  * fixture or benchmark that measures a company serving traffic opens the room already assembled. */
-export function assembleGame(g: GameState) { for (const company of g.companies) company.plan = completePlan(); }
+export function assembleGame(g: GameState) { for (const company of g.companies) { company.plan = completePlan(); company.assembly = { active: false, closedAt: g.tick }; } }
 export function initialGraph(domain: Domain): Graph {
   // Only the entrance and a road to the storefront: the team builds the rest.
   if (domain === 'plan') return planGraph(['entry', 'web']);
@@ -54,7 +54,7 @@ export function initialGraph(domain: Domain): Graph {
 }
 export function createGame(duration = 1500, seed = 7357, generation = 0, dvrEnabled = true): GameState {
   const companies: Company[] = NAMES.map((name, id) => ({
-    crisis: { active: false, episode: 0, lastReputation: 80 }, serviceMode: { mode: 'OPERATING', since: 0 }, runtime: initialRuntime(), infrastructure: initialInfrastructure(), id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
+    crisis: { active: false, episode: 0, lastReputation: 80 }, serviceMode: { mode: 'OPERATING', since: 0 }, assembly: { active: true }, runtime: initialRuntime(), infrastructure: initialInfrastructure(), id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
     servers: 1, balancer: false, infraBudget: duration * .5, reserved: 0, version: 1, deployments: 0, active: 0, requests: 0, successes: 0, errors: 0, breaches: 0, oversold: 0, duplicates: 0,
     lostRevenue: 0, revenue: 0, latency: 0, utilization: 0, queue: 0, migratedIn: 0, migratedOut: 0, eliminated: false, crisisTicks: 0, deadTicks: 0, bankruptTicks: 0, concurrencyUntil: 0,
     backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), plan: initialGraph('plan'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
@@ -374,6 +374,11 @@ export function step(g: GameState, dt = .1) {
   if (g.tick - dt < g.duration * .24 && concurrencyIncident) event(g, null, 'Ráfagas de compra sobre inventario compartido.', 'bad', 'CONCURRENCIA');
   for (const c of g.companies) {
     if (c.eliminated) continue;
+    // The montaje closes the first time the plan can take a purchase, and never reopens.
+    if (c.assembly.active && sellCapable(c.plan)) {
+      c.assembly = { active: false, closedAt: g.tick };
+      event(g, c.id, 'Montaje cerrado: la empresa ya acepta compras. Desde ahora todo cambio pasa por el ciclo completo.', 'good', 'PIPELINE');
+    }
     const recovered = c.infrastructure.instances.filter(instance=>instance.status==='RESTARTING'&&g.tick>=instance.readyAt!).map(instance=>`APP-${instance.id}`);
     advanceInfrastructure(c, g.tick); advanceCampaigns(c, g.tick);expireInvestments(c,g.tick,false,g.changes.filter(ch=>ch.companyId===c.id&&['AUTHORIZED','DEPLOYING'].includes(ch.status)).map(ch=>ch.id));
     if (recovered.length) auditCompletion(g, c.id, 'infra.recovered', recovered, ['availability.restored']);

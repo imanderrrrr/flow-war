@@ -14,6 +14,7 @@ import { executionFor } from './artifacts.js';
 import { effectiveServers } from './infrastructure.js';
 import { attachCustomer, customerColor, recordCustomerExperience, selectCustomer } from './market.js';
 import type { MarketCustomer, ServiceQueue, Company, FlowParticle, InventoryState, RequestResult, ScenarioTotals, ServiceId, TerminalReason, TrafficMetrics, TrafficReceipt, TrafficRequest, TrafficScenario, TrafficState, TrafficView } from '../shared/types.js';
+import { isPlanReason } from '../shared/plan.js';
 import { evaluateSecurity, missingFor, planServices, route } from './graphs.js';
 import { executePurchaseOperation, finishRequest, moveRequest } from './requests.js';
 
@@ -224,7 +225,10 @@ export function settleTraffic(company: Company, now: number) {
     request.accounted = true;
     observeCompany(company, 'request.settled', { ...(request.auditedAs ? { auditedAs: request.auditedAs } : {}), requestId: request.id, customerId: request.customerId, trafficClass: request.trafficClass, type: request.type, version: request.executionVersion, result: request.result, transaction: request.transaction, duplicates: request.duplicates ?? 0, oversold: request.oversold, defects: request.effectCodes ?? [], modules: capturesReceipts(company) ? request.execution?.modules.map(m => ({ id: m.id, version: m.version, defects: m.defects.filter(d => request.effectCodes?.includes(d.code)).map(d => d.code) })) ?? [] : [], latencyMs: request.latencyMs }, [request.id]);
     if (request.transaction === 'PENDING_RESOLUTION') state.unresolvedCount++;
-    state.observations.push({ at: now, legitimate: request.trafficClass === 'legitimate', status: result.status, latency: request.latencyMs!, breach: request.breach, oversold: request.oversold });
+    // Spec §5 keeps reputation still during the montaje, and reputation is computed from this
+    // window, so a request a half-built plan could never receive is not an observed failure either.
+    if (!(company.assembly?.active && isPlanReason(result.reason)))
+      state.observations.push({ at: now, legitimate: request.trafficClass === 'legitimate', status: result.status, latency: request.latencyMs!, breach: request.breach, oversold: request.oversold });
     if(capturesReceipts(company)){const receipt=trafficReceipt(request, true);
     state.outbox.push(receipt);
     if(isLiveEvidence(company))prepareReceipt(receipt);}
