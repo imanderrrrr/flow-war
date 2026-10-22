@@ -29,9 +29,9 @@ import { route, evaluateSecurity, sellCapable } from './graphs.js';
 import { lobbyView, resetTeams } from './lobby.js';
 import { auditCommand, advanceProbes, auditorView, chargeLeaks, closeProbes, closeSettledFindings, findingsFor, sustainedEffects, suspendsRestock } from './auditor.js';
 export { route, evaluateSecurity } from './graphs.js';
-import { PLAN_PIECES, completePlan, isPlanPiece, planGraph, planPublicationCost } from '../shared/plan.js';
-export { completePlan } from '../shared/plan.js';
-import { BLOCKS, SUITES, type Company, type Domain, type Role, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
+import { PLAN_PIECES, assertPlanOwnership, completePlan, isPlanPiece, planGraph, planPublicationCost, samePlan } from '../shared/plan.js';
+export { assertPlanOwnership, completePlan, samePlan } from '../shared/plan.js';
+import { BLOCKS, ROLE_LABELS, SUITES, type Company, type Domain, type Role, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
 
 const NAMES = ['NOVA', 'VERTEX', 'BYTE', 'EMBER', 'ORBIT'];
 const COLORS = ['#f5d45c', '#68dca2', '#69adff', '#f27e79', '#b69af7'];
@@ -104,37 +104,6 @@ export function validateGraph(input: unknown, domain: Domain, complete = true): 
   if (complete && domain !== 'plan' && path.at(-1)?.type !== 'exit') throw new Error('No existe una ruta de entrada a salida.');
   if (complete && domain === 'backend' && !['read', 'write', 'payment'].every(t => path.some(n => n.type === t))) throw new Error('La ruta debe atravesar inventario y pagos.');
   return graph;
-}
-const planTally = (graph: Graph) => graph.nodes.reduce((count, node) => { count[node.type] = (count[node.type] ?? 0) + 1; return count; }, {} as Record<string, number>);
-/** Roads named by the pieces they join, so a comparison does not depend on the ids a client sent. */
-function planRoads(graph: Graph) {
-  const type = new Map(graph.nodes.map(node => [node.id, node.type]));
-  return new Set(graph.edges.map(edge => `${type.get(edge.source) ?? '?'}>${type.get(edge.target) ?? '?'}`));
-}
-/** True when the plan is untouched: same pieces on the same solares, joined by the same roads. */
-export function samePlan(previous: Graph, next: Graph) {
-  const before = planTally(previous), after = planTally(next), roads = planRoads(previous), nextRoads = planRoads(next);
-  return [...new Set([...Object.keys(before), ...Object.keys(after)])].every(type => (before[type] ?? 0) === (after[type] ?? 0))
-    && roads.size === nextRoads.size && [...roads].every(road => nextRoads.has(road));
-}
-/** Each role moves only its own pieces, and only the roads that leave them: the rest of the plan is
- * visible and not grabbable. The entrance belongs to nobody, so any of the three may connect it. */
-export function assertPlanOwnership(previous: Graph, next: Graph, role: Identity['role']) {
-  const before = planTally(previous), after = planTally(next);
-  for (const type of new Set([...Object.keys(before), ...Object.keys(after)])) {
-    if ((before[type] ?? 0) === (after[type] ?? 0)) continue;
-    if (!isPlanPiece(type)) throw new Error('Esa pieza no existe en el catálogo del plano.');
-    const piece = PLAN_PIECES[type];
-    if (piece.owner !== role) throw new Error(`${piece.label} no es una pieza de tu rol.`);
-  }
-  const roads = planRoads(previous), nextRoads = planRoads(next);
-  for (const road of new Set([...roads, ...nextRoads])) {
-    if (roads.has(road) === nextRoads.has(road)) continue;
-    const source = road.split('>')[0];
-    if (source === 'entry' || !isPlanPiece(source)) continue;
-    if (PLAN_PIECES[source].owner !== role) throw new Error(`El camino que sale de ${PLAN_PIECES[source].label.toLowerCase()} lo dibuja su rol, no vos.`);
-  }
-  return after;
 }
 export function inventoryBatch(graph: Graph, demand: number, stock: number): { completed: number; oversold: number; duplicates: number; remaining: number } {
   const p = route(graph).map(n => n.type), write = p.indexOf('write'), payment = p.indexOf('payment');
@@ -282,7 +251,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       else setService(c, p.service as import('../shared/types.js').ServiceId, command.type === 'infra.stop');
       event(g, c.id, command.type.startsWith('infra.restart') ? 'Reinicio iniciado.' : command.type === 'infra.stop' ? 'Servicio detenido.' : 'Servicio recuperado.', 'neutral', 'DEVOPS'); return { ok: true };
     }
-    if (command.type === 'plan.save' || command.type === 'plan.publish') {
+    if (command.type === 'plan.save' || command.type === 'plan.publish' || command.type === 'plan.submit') {
       // Each role keeps its own draft of the shared board, so an unpublished piece of one role never
       // blocks another from saving or publishing its own.
       const current = c.planDrafts[identity.role]?.revision ?? 0;
@@ -292,7 +261,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       if (command.type === 'plan.publish') {
         // While a company cannot sell there is nothing to break, so Backend, Seguridad and DevOps
         // publish straight to production. From the first sale on, every change takes the full cycle.
-        if (!c.assembly.active) return { ok: false, code: 'PIPELINE_REQUIRED', error: 'La empresa ya acepta compras: el plano se cambia por el ciclo completo, no directo.' };
+        if (!c.assembly.active) return { ok: false, code: 'PIPELINE_REQUIRED', error: 'La empresa ya acepta compras: el plano se cambia por el ciclo completo (QA → CTO → DevOps), no directo.' };
         if (samePlan(c.plan, graph)) throw new Error('El plano no cambió: no hay nada que publicar.');
         const cost = planPublicationCost(c.plan, graph);
         if (c.capital - c.reserved - c.infraBudget < cost) throw new Error('Saldo disponible insuficiente.');
@@ -303,6 +272,22 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
         const execution = structuredClone(c.runtime.releases[c.version] ?? releaseFor(c));
         c.version++; c.runtime.releases[c.version] = execution; staleOthers(g, c);
         event(g, c.id, `Plano publicado · v${c.version} · Q${cost}.`, 'neutral', 'PIPELINE');
+      }
+      if (command.type === 'plan.submit') {
+        // Spec §5: from the first sale on, a plan change takes the same cycle as any other change —
+        // QA tests it in staging, the CTO authorizes its cost and DevOps deploys it.
+        if (c.assembly.active) throw new Error('Durante el montaje el plano se publica directo, sin pasar por el ciclo.');
+        if (samePlan(c.plan, graph)) throw new Error('El plano no cambió: no hay nada que enviar.');
+        if (g.changes.some(x => x.companyId === c.id && x.status === 'DEPLOYING') || rollbackInProgress(c)) throw new Error('Espera a que finalice la publicación en curso.');
+        const twin = g.changes.find(x => x.companyId === c.id && x.domain === 'plan' && ['QA_PENDING', 'QA_RUNNING', 'CTO_PENDING', 'AUTHORIZED', 'EXPIRED'].includes(x.status) && samePlan(x.graph, graph));
+        if (twin) throw new Error(`Ese plano ya está en el ciclo como ${twin.id}.`);
+        // Frozen like plan.publish carries it: a plan change decides which services exist, never the
+        // modules or the protections inside them, so production's release travels with it unchanged.
+        const execution = structuredClone(c.runtime.releases[c.version] ?? releaseFor(c));
+        const change: Change = { id: `CH-${String(g.changes.length + 1).padStart(3, '0')}`, companyId: c.id, domain: 'plan', name: `Plano · ${ROLE_LABELS[identity.role]} · revisión ${current + 1}`, graph: structuredClone(graph), status: 'QA_PENDING', cost: planPublicationCost(c.plan, graph), reserved: 0, baseVersion: c.version, created: g.tick, reports: [], actorId: identity.id, context: { backend: structuredClone(c.backend), security: structuredClone(c.security), executionVersion: c.version, execution } };
+        g.changes.unshift(change); c.planDrafts[identity.role] = { graph, revision: current + 1 };
+        event(g, c.id, `${change.id} (plano) enviado a QA.`, 'neutral', 'PIPELINE');
+        return { ok: true, refs: [change.id] };
       }
       c.planDrafts[identity.role] = { graph, revision: current + 1 };
       return { ok: true };
@@ -350,9 +335,12 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
     }
     if (command.type === 'qa.run') {
       if (ch.status !== 'QA_PENDING' || !SUITES.includes(String(p.suite))) throw new Error('No se puede ejecutar esa suite en este estado.');
-      // Product changes always run the staging job, where their frozen promotion is applied.
-      if (ch.product || ch.context?.execution?.modules.length || ch.context?.execution?.security || ch.context?.execution?.blockPolicies?.some(b=>b.rules.length) || !['Concurrencia','Carga'].includes(String(p.suite))) {
-        ch.testJob = createTestJob(c, ch, scenarioForSuite(String(p.suite))); ch.status = 'QA_RUNNING'; ch.runningSuite = String(p.suite); return { ok: true };
+      // Product and plan changes always run the staging job, where their frozen artifact is applied.
+      // A staging run is recorded exactly like a manual case (startQa), so a quick suite is selectable
+      // evidence under the same server checks as qa.execute. The historical Concurrencia and Carga
+      // fixtures below keep their own engine and produce a report only.
+      if (ch.product || ch.domain === 'plan' || ch.context?.execution?.modules.length || ch.context?.execution?.security || ch.context?.execution?.blockPolicies?.some(b=>b.rules.length) || !['Concurrencia','Carga'].includes(String(p.suite))) {
+        startQa(g, c, ch, identity, scenarioForSuite(String(p.suite)), `Suite ${p.suite}`); ch.runningSuite = String(p.suite); return { ok: true, refs: [ch.id, ch.qaRunId!] };
       }
       ch.status = 'QA_RUNNING'; ch.runningSuite = String(p.suite); ch.due = g.tick + 4;
       if (p.suite === 'Carga') ch.qaLoad = createLoadRun(c, ch.context ?? productionContext(c), g.tick);

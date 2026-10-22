@@ -55,9 +55,12 @@ export type ActionParameters = {
   'product.propose': { name: string; description: string };
   'employee.correct': { employeeId: string; justification: string };
   'draft.save': { graph: Graph; revision: number };
-  /** The service plan: each role saves and publishes only its own pieces (shared/plan.ts PLAN_PIECES). */
+  /** The service plan: each role saves and publishes only its own pieces (shared/plan.ts PLAN_PIECES).
+   * `plan.publish` goes straight to production during the montaje; `plan.submit` sends the change
+   * through QA → CTO → DevOps once the company accepts purchases. */
   'plan.save': { graph: Graph; revision: number };
   'plan.publish': { graph: Graph; revision: number };
+  'plan.submit': { graph: Graph; revision: number };
   'change.submit': { graph: Graph; revision: number };
   'qa.run': { suite: string };
   'qa.approve': Record<string, never>; 'qa.reject': Record<string, never>;
@@ -99,6 +102,7 @@ export const ACTION_CATALOG = {
   'product.propose': entry(['product'], 'preparation'), 'employee.correct': entry(['operator'], 'administration'),
   'draft.save': entry(['backend', 'security'], 'preparation'), 'change.submit': entry(['backend', 'security'], 'preparation'),
   'plan.save': entry(['backend', 'security', 'devops'], 'preparation'), 'plan.publish': entry(['backend', 'security', 'devops'], 'publication'),
+  'plan.submit': entry(['backend', 'security', 'devops'], 'preparation'),
   'qa.run': entry(['qa'], 'qa'), 'qa.approve': entry(['qa'], 'qa'), 'qa.reject': entry(['qa'], 'qa'),
   'cto.authorize': entry(['cto'], 'finance'), 'cto.reject': entry(['cto'], 'finance'),
   'cto.budget': entry(['cto'], 'finance'), 'cto.prioritize': entry(['cto'], 'operation'),
