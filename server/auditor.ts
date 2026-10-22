@@ -331,7 +331,12 @@ export function chargeLeaks(g: GameState, c: Company) {
   }
 }
 
-/** A finding closes by itself when its control stops being pending in production: Seguridad configured it. */
+/**
+ * A finding closes by itself once its control stops being pending in production, which happens two different
+ * ways: Seguridad configured the control, or Backend took the module out of the flow. Both close the finding,
+ * because neither leaves a pending control in production, but only the first one is work the team did. Saying
+ * "configurado" for a module that was simply deleted congratulates a team that never did the job.
+ */
 export function closeSettledFindings(g: GameState, c: Company, emit: Emit) {
   for (const f of g.auditors?.findings ?? []) {
     if (f.closedAt !== undefined || f.companyId !== c.id) continue;
@@ -339,9 +344,15 @@ export function closeSettledFindings(g: GameState, c: Company, emit: Emit) {
     if (node && pendingControls(c, node).some(x => x.check === f.check)) continue;
     f.closedAt = g.tick;
     const control = CONTROL_CHECK_INFO[f.check].control;
-    emit(g, c.id, `Hallazgo de auditoría corregido en ${f.module}: ${control} configurado.`, 'good', 'SECURITY');
-    addSlackMessage(g, { companyId: c.id, channel: 'alertas-sistema', source: 'system', author: 'Sistema', cause: 0, dedup: `finding-closed:${f.id}`,
-      text: `[SISTEMA] El control ${control} de ${f.module} quedó configurado. El hallazgo de auditoría se cerró.`, refs: [f.id] });
+    if (node) {
+      emit(g, c.id, `Hallazgo de auditoría corregido en ${f.module}: ${control} configurado.`, 'good', 'SECURITY');
+      addSlackMessage(g, { companyId: c.id, channel: 'alertas-sistema', source: 'system', author: 'Sistema', cause: 0, dedup: `finding-closed:${f.id}`,
+        text: `[SISTEMA] El control ${control} de ${f.module} quedó configurado. El hallazgo de auditoría se cerró.`, refs: [f.id] });
+    } else {
+      emit(g, c.id, `Hallazgo de auditoría cerrado en ${f.module}: el módulo salió de producción.`, 'neutral', 'SECURITY');
+      addSlackMessage(g, { companyId: c.id, channel: 'alertas-sistema', source: 'system', author: 'Sistema', cause: 0, dedup: `finding-closed:${f.id}`,
+        text: `[SISTEMA] ${f.module} salió de producción y el hallazgo de auditoría se cerró. El control ${control} nunca quedó configurado.`, refs: [f.id] });
+    }
   }
 }
 

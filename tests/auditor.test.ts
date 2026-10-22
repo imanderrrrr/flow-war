@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, applyCommand, project } from '../server/engine.js';
+import { createGame, applyCommand, initialGraph, project } from '../server/engine.js';
 import { ensureLobby, formTeams, joinLobby, participantIdentity } from '../server/lobby.js';
 import { pendingControls, auditCompanies, targetService } from '../server/auditor.js';
 import { recoverGame, serializeGame } from '../server/persistence.js';
@@ -11,7 +11,7 @@ import { AUDIT_LEAK, AUDIT_PROBE, CONTROL_CHECKS } from '../shared/auditor.js';
 import { LOBBY_ICONS } from '../shared/lobby.js';
 import type { GameState, GraphNode, Identity } from '../shared/types.js';
 import type { ModuleVersion } from '../shared/simulation.js';
-import { command, advanceGame } from './helpers.js';
+import { command, advanceGame, insertBlock, reviewForQa } from './helpers.js';
 
 const auditor = (n = 1): Identity => ({ id: `auditor-P${n}`, role: 'auditor', companyId: null });
 let sequence = 0;
@@ -33,6 +33,27 @@ function deployWithControls(g: GameState, nodeId: string, rules: unknown[]) {
   const ch = g.changes[0];
   assert(command(g, 'security', 'security.configure', { changeId: ch.id, nodeId, revision: 0, rules }).ok);
   assert(command(g, 'security', 'security.submit', { changeId: ch.id, revision: 1 }).ok);
+  assert(command(g, 'qa', 'qa.execute', { changeId: ch.id, scenario: DEFAULT_TEST }).ok); advanceGame(g, 1);
+  assert(command(g, 'qa', 'qa.approve', {}, ch.id).ok); assert(command(g, 'cto', 'cto.authorize', {}, ch.id).ok);
+  assert(command(g, 'devops', 'deploy.start', { strategy: 'rolling' }, ch.id).ok); advanceGame(g, 7);
+  assert.equal(ch.status, 'DEPLOYED');
+}
+
+/** QA's formal return letter: the only way Backend gets the flow back after a publication. */
+function returnToBackend(g: GameState) {
+  const lock = g.companies[0].runtime.workflow?.backendLock; if (!lock) return;
+  assert(command(g, 'qa', 'qa.return', { changeId: lock.changeId, recipient: 'backend', subject: 'Nueva revisión del flujo',
+    description: 'Solicito revisar el flujo publicado.', steps: 'Repetir la prueba registrada.', observed: 'Resultado registrado.',
+    expected: 'Reevaluación del comportamiento.', severity: 'medium', evidenceIds: [], observationRefs: [] }).ok);
+}
+/** Backend → Seguridad → QA → CTO → DevOps for one whole backend graph of company 0. */
+function deployBackend(g: GameState, graph: unknown) {
+  const c = g.companies[0];
+  returnToBackend(g);
+  const submitted = command(g, 'backend', 'change.submit', { graph, revision: c.drafts.backend?.revision ?? 0 });
+  assert(submitted.ok, submitted.error);
+  const ch = g.changes.find(x => x.id === submitted.refs![0])!;
+  reviewForQa(g, ch.id);
   assert(command(g, 'qa', 'qa.execute', { changeId: ch.id, scenario: DEFAULT_TEST }).ok); advanceGame(g, 1);
   assert(command(g, 'qa', 'qa.approve', {}, ch.id).ok); assert(command(g, 'cto', 'cto.authorize', {}, ch.id).ok);
   assert(command(g, 'devops', 'deploy.start', { strategy: 'rolling' }, ch.id).ok); advanceGame(g, 7);
@@ -272,6 +293,7 @@ test('un hallazgo se abre una vez, cobra Q250 y se cierra al configurar el contr
   deployWithControls(g, 'backend-write', [{ kind: 'input' }]);
   advanceGame(g, 1);
   assert(g.auditors!.findings[0].closedAt !== undefined, 'se cerró al desaparecer el control pendiente');
+  assert.match(closingEvent(g, finding).text, /configurado/, 'configurar el control sí se informa como corregido');
 });
 
 test('el hallazgo llega a Seguridad y al CTO de su empresa, y a nadie más', () => {
@@ -471,4 +493,35 @@ test('el hueco de cobro y el de confirmación generan sus propias quejas', () =>
     const texts = g.slack.messages.filter(m => m.companyId === c.id && m.channel === 'soporte-clientes').map(m => m.text);
     assert(texts.some(t => pattern.test(t)), `${nodeId}: ${texts.join(' | ') || 'sin quejas'}`);
   }
+});
+
+/** The company event that closed this finding. */
+function closingEvent(g: GameState, finding: { id: string; module: string }) {
+  const found = g.events.find(e => e.category === 'SECURITY' && /hallazgo/i.test(e.text) && e.text.includes(finding.module) && !/Multa/.test(e.text));
+  assert(found, `no se informó el cierre de ${finding.id}: ${g.events.map(e => e.text).join(' | ')}`); return found;
+}
+/** The FlowSlack message that closed this finding, told apart from the one that opened it. */
+function closingMessage(g: GameState, finding: { id: string }) {
+  const found = g.slack.messages.find(m => m.refs.includes(finding.id) && /cerr/i.test(m.text));
+  assert(found, 'el cierre no llegó a FlowSlack'); return found;
+}
+
+test('un hallazgo cuyo módulo salió de producción se cierra sin decir que se configuró el control', () => {
+  const g = running();
+  // Backend publica un bloque extra y la auditoría externa le abre un hallazgo.
+  deployBackend(g, insertBlock('atomic'));
+  const finding = openFindingOn(g, 0, 'test-atomic', 'waf');
+  assert.equal(finding.module, 'Atomic Update');
+  // Backend lo borra del flujo: nadie configuró nada, el módulo simplemente dejó de existir.
+  deployBackend(g, initialGraph('backend'));
+  advanceGame(g, 1);
+  assert(finding.closedAt !== undefined, 'el hallazgo se cierra: el módulo no está en producción');
+  const event = closingEvent(g, finding), slack = closingMessage(g, finding);
+  for (const text of [event.text, slack.text]) {
+    assert.match(text, /salió de producción/, text);
+    assert.doesNotMatch(text, /corregido/, `felicita a un equipo que no hizo el trabajo: ${text}`);
+    // "configurado" solo puede aparecer negado: el control sigue sin configurarse.
+    if (/configurado/.test(text)) assert.match(text, /nunca quedó configurado/, `afirma que el control se configuró: ${text}`);
+  }
+  assert.notEqual(event.tone, 'good', 'quitar el módulo no es un logro del equipo');
 });
