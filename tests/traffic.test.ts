@@ -4,7 +4,7 @@ import { ROAD_PATHS, SERVICES, TRAFFIC_PATHS, particlePath, particlePosition, pa
 import { createGame } from '../server/engine.js';
 import { advanceConcurrency, concurrencyParticles } from '../server/requests.js';
 import { startConcurrency } from '../server/scenarios.js';
-import { insertBlock } from './helpers.js';
+import { advanceGame, insertBlock } from './helpers.js';
 import { admitTraffic, advanceTraffic, trafficParticles } from '../server/traffic.js';
 
 function onDrawnRoad([x, y]: Point): boolean {
@@ -73,4 +73,19 @@ test('ordinary navigation and query journeys use existing roads and never imply 
       for(let progress=0;progress<=1;progress+=.05)assert.ok(onDrawnRoad(particlePosition(path,progress,particle.seed)));
     }
   }
+});
+
+test('la demanda y el tráfico anómalo suben despacio al principio', () => {
+  const g = createGame(), c = g.companies[0];
+  g.status = 'RUNNING';
+  advanceGame(g, 300);
+  assert.equal(c.traffic.malicious.generated, 0, 'antes del minuto 6 no hay tráfico anómalo');
+  advanceGame(g, 200);
+  assert(c.traffic.malicious.generated > 0, 'después del minuto 6 sí');
+  // Al minuto 10 la demanda legítima sigue siendo baja: con la curva anterior pasaba de 19/s.
+  advanceGame(g, 100);
+  const before = c.traffic.legitimate.generated;
+  advanceGame(g, 10);
+  const perSecond = (c.traffic.legitimate.generated - before) / 10;
+  assert(perSecond > 3 && perSecond < 12, `llegadas por segundo al minuto 10: ${perSecond}`);
 });

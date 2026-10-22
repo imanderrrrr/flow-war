@@ -245,7 +245,7 @@ function updateTrafficMetrics(company: Company, now: number, dt: number, rates: 
 export function generateTraffic(company: Company, at: number, dt: number, duration: number) {
   if (company.eliminated) return;
   const state = company.traffic;
-  const demand = (5 + 295 * (at / duration) ** 1.25) * company.customers / 5000 * (activeCampaign(company, at)?.configuration.demandMultiplier ?? 1);
+  const demand = (5 + 295 * (at / duration) ** 2.5) * company.customers / 5000 * (activeCampaign(company, at)?.configuration.demandMultiplier ?? 1);
   state.arrivalRemainder = round(state.arrivalRemainder + demand * dt);
   while (state.arrivalRemainder >= 1) {
     state.arrivalRemainder = round(state.arrivalRemainder - 1);
@@ -255,8 +255,10 @@ export function generateTraffic(company: Company, at: number, dt: number, durati
     const customer = selectCustomer(company);
     if (customer) admitTraffic(company, at, (ordinal + offset) % 10 < 7 ? 'browse' : 'purchase', 'legitimate', undefined, customer);
   }
-  if (at >= duration * .12) {
-    state.attackRemainder = round(state.attackRemainder + (2 + 18 * at / duration) * dt);
+  // Anomalous traffic starts a quarter into the game and ramps on the same slow curve as demand,
+  // so a team has time to organize and an auditor's work stands out against the background.
+  if (at >= duration * .25) {
+    state.attackRemainder = round(state.attackRemainder + (2 + 18 * (at / duration) ** 2.5) * dt);
     while (state.attackRemainder >= 1) {
       state.attackRemainder = round(state.attackRemainder - 1);
       admitTraffic(company, at, 'purchase', 'malicious', (['forged', 'injection', 'bot'] as const)[state.attackSequence++ % 3]);

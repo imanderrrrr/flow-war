@@ -345,9 +345,9 @@ export function step(g: GameState, dt = .1) {
   g.tick = Math.min(g.duration, Math.round((g.tick + dt) * 1000) / 1000);
   jobs(g);
   const second = Math.floor(g.tick) !== previousSecond;
-  const securityIncident = g.tick >= g.duration * .12;
+  const securityIncident = g.tick >= g.duration * .25;
   const concurrencyIncident = g.tick >= g.duration * .24;
-  if (g.tick - dt < g.duration * .12 && securityIncident) event(g, null, 'Tráfico anómalo detectado en las cinco empresas.', 'bad', 'SECURITY');
+  if (g.tick - dt < g.duration * .25 && securityIncident) event(g, null, 'Tráfico anómalo detectado en las cinco empresas.', 'bad', 'SECURITY');
   if (g.tick - dt < g.duration * .24 && concurrencyIncident) event(g, null, 'Ráfagas de compra sobre inventario compartido.', 'bad', 'CONCURRENCIA');
   for (const c of g.companies) {
     if (c.eliminated) continue;
