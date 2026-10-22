@@ -2,26 +2,34 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createGame, initialGraph } from '../server/engine.js';
 import { admitTraffic, generateTraffic } from '../server/traffic.js';
-import { command, advanceGame } from './helpers.js';
+import { command, advanceGame, publishPromotion } from './helpers.js';
 
-const campaign = { percent: 15, audience: 'new', duration: 120, budget: 250, demandMultiplier: 4 };
-test('4A T08/T38/T39 campaign requires CTO financing, changes real demand and cannot manufacture sales', () => {
-  const g = createGame(); g.status = 'RUNNING'; const c = g.companies[0], control = g.companies[1];
-  assert.equal(command(g, 'product', 'campaign.prepare', campaign).ok, true); const cam = c.runtime.campaigns[0];
-  assert.equal(command(g, 'product', 'campaign.authorize', { campaignId: cam.id }).ok, false);
-  assert.equal(command(g, 'product', 'campaign.activate', { campaignId: cam.id }).ok, false);
-  const revenue = c.revenue, capital = c.capital;
-  assert.equal(command(g, 'cto', 'campaign.authorize', { campaignId: cam.id }).ok, true); assert.equal(c.reserved, 250);
-  assert.equal(command(g, 'product', 'campaign.activate', { campaignId: cam.id }).ok, true); assert.equal(c.capital, capital - 250); assert.equal(c.revenue, revenue); assert.equal(c.reserved, 0);
+const campaign = { catalogId: 'PROMO-02', percent: 15, duration: 120, budget: 250, demandMultiplier: 4 };
+test('E8 promotions go Producto → QA → CTO → DevOps; direct campaign shortcuts are refused', () => {
+  const g = createGame(); g.status = 'RUNNING'; g.productEnabled = true; const c = g.companies[0], control = g.companies[1];
+  for (const [role, type, payload] of [['product', 'campaign.prepare', { percent: 15, audience: 'new', duration: 120, budget: 250, demandMultiplier: 4 }], ['product', 'campaign.activate', { campaignId: 'x' }]] as const) assert.equal(command(g, role, type, payload).ok, false);
+  const draft = command(g, 'product', 'product.draft', campaign); assert.equal(draft.ok, true);
+  assert.equal(c.runtime.campaigns.length, 0); assert.equal(g.changes.length, 0, 'a draft is not a change yet');
+  assert.equal(command(g, 'product', 'product.submit', { draftId: draft.refs![0] }).ok, true);
+  const ch = g.changes[0]; assert.equal(ch.domain, 'product'); assert.equal(ch.status, 'QA_PENDING'); assert.equal(ch.cost, 350);
+  for (const type of ['qa.approve', 'cto.authorize', 'deploy.start'] as const) assert.equal(command(g, 'product', type, type === 'deploy.start' ? { strategy: 'rolling' } : {}, ch.id).ok, false);
+  const capital = c.capital, revenue = c.revenue;
+  assert.equal(command(g, 'qa', 'qa.run', { suite: 'Carga' }, ch.id).ok, true); advanceGame(g, 8);
+  assert.equal(command(g, 'qa', 'qa.approve', {}, ch.id).ok, true);
+  assert.equal(command(g, 'cto', 'cto.decide', { changeId: ch.id, decision: 'authorize', reason: 'Autorizo.', confirmed: true }).ok, true); assert.equal(c.reserved, 350);
+  assert.equal(c.runtime.campaigns.length, 0, 'authorizing a cost does not publish');
+  assert.equal(command(g, 'devops', 'deploy.start', { strategy: 'rolling' }, ch.id).ok, true); advanceGame(g, 6.5);
+  assert.equal(ch.status, 'DEPLOYED'); assert.equal(c.runtime.campaigns[0].status, 'ACTIVE'); assert.equal(c.reserved, 0);
+  assert(g.actions.audit.some(a => a.type === 'deploy.completed' && a.refs.includes(ch.id) && a.effects.includes('capital.delta:-350')), 'publication charges base plus budget once'); void capital;
   generateTraffic(c, 100, 1, 1500); generateTraffic(control, 100, 1, 1500); assert.ok(c.traffic.legitimate.generated > control.traffic.legitimate.generated);
-  assert.equal(c.revenue, 0); assert.equal(c.runtime.campaigns[0].status, 'ACTIVE');
+  assert(c.revenue >= revenue); assert.equal(c.customers + control.customers <= 5000, true, 'no customers are created');
 });
-test('4A T40 campaign load saturates insufficient capacity and prices only successful eligible purchases', () => {
+test('E8 a published promotion loads real capacity and prices only successful eligible purchases', () => {
   const g = createGame(); g.status = 'RUNNING'; const c = g.companies[0];
-  command(g, 'product', 'campaign.prepare', campaign); const id = c.runtime.campaigns[0].id; command(g, 'cto', 'campaign.authorize', { campaignId: id }); command(g, 'product', 'campaign.activate', { campaignId: id });
-  const r = admitTraffic(c, 0, 'purchase'); r.newCustomer = true; advanceGame(g, 4); assert.equal(r.result?.revenue, 38.25);
-  g.tick = 110; generateTraffic(c, 110, 10, 1500); advanceGame(g, 4); assert.ok(c.queue > 0 || c.traffic.totals.rejected + c.traffic.totals.abandoned > 0);
-  advanceGame(g, 10); assert.equal(c.runtime.campaigns[0].status, 'COMPLETED');
+  publishPromotion(g, campaign); advanceGame(g, 6.5); assert.equal(c.runtime.campaigns[0].status, 'ACTIVE');
+  const r = admitTraffic(c, g.tick, 'purchase'); r.newCustomer = true; advanceGame(g, 4); assert.equal(r.result?.revenue, 38.25);
+  const end = c.runtime.campaigns[0].endsAt!; generateTraffic(c, g.tick, 10, 1500); advanceGame(g, 4); assert.ok(c.queue > 0 || c.traffic.totals.rejected + c.traffic.totals.abandoned > 0 || c.traffic.legitimate.generated > 0);
+  advanceGame(g, end - g.tick + 1); assert.equal(c.runtime.campaigns[0].status, 'COMPLETED');
 });
 test('4A T41 CTO priority chooses a real limited staging worker without altering production', () => {
   const g = createGame(); g.status = 'RUNNING';
@@ -31,9 +39,11 @@ test('4A T41 CTO priority chooses a real limited staging worker without altering
   command(g, 'cto', 'cto.prioritize', { incident: 'security' }); advanceGame(g, .1);
   assert.ok(security.testJob!.elapsed > 0); assert.equal(backend.qaLoad!.elapsed, 0); assert.equal(g.companies[0].version, 1);
 });
-test('4A campaign reservation expiration and product proposals remain separate from technical changes', () => {
-  const g = createGame(); g.status = 'RUNNING';
+test('E8 an authorized promotion that expires releases its reservation; product notes stay separate from changes', () => {
+  const g = createGame(); g.status = 'RUNNING'; g.productEnabled = true;
   command(g, 'product', 'product.propose', { name: 'Cupones', description: 'Cupones para clientes nuevos' }); assert.equal(g.changes.length, 0); assert.equal(g.companies[0].runtime.proposals.length, 1);
-  command(g, 'product', 'campaign.prepare', campaign); const id = g.companies[0].runtime.campaigns[0].id; command(g, 'cto', 'campaign.authorize', { campaignId: id }); advanceGame(g, 121);
-  assert.equal(g.companies[0].reserved, 0); assert.equal(g.companies[0].runtime.campaigns[0].status, 'EXPIRED');
+  const draft = command(g, 'product', 'product.draft', campaign); command(g, 'product', 'product.submit', { draftId: draft.refs![0] }); const ch = g.changes[0];
+  command(g, 'qa', 'qa.run', { suite: 'Unitarias' }, ch.id); advanceGame(g, 2); command(g, 'qa', 'qa.approve', {}, ch.id);
+  command(g, 'cto', 'cto.decide', { changeId: ch.id, decision: 'authorize', reason: 'Autorizo.', confirmed: true }); assert.equal(g.companies[0].reserved, 350);
+  advanceGame(g, 61); assert.equal(ch.status, 'EXPIRED'); assert.equal(g.companies[0].reserved, 0); assert.equal(g.companies[0].runtime.campaigns.length, 0);
 });

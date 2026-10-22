@@ -4,6 +4,7 @@ import type { AiUsage } from '../shared/workflow.js';
 import { object, keys, string, integer, freeText } from './action-validation.js';
 import { AiError, type AiGateway, type InterpretResult } from './claude.js';
 import { stableDigest } from './discipline.js';
+import { productEnabled } from './product.js';
 import { EXECUTOR_SYSTEM, commandsFor, executorContext, finalReply, modelContext, outcome, planCalls, toolDefinitions, type ExecutorContext } from './executor.js';
 
 export function parseExecutorInput(raw: unknown): ExecutorInput {
@@ -33,6 +34,7 @@ export function tokenBudget(g: GameState, companyId: number) {
 }
 /** Records the human instruction before any network I/O. A retry with the same ID and text reuses it. */
 export function beginExecution(g: GameState, actor: Identity, input: ExecutorInput) {
+  if (actor.role === 'product' && !productEnabled(g)) throw new AiError('PRODUCT_DISABLED', 'Producto/UX no está habilitado en esta partida.');
   if (g.status !== 'RUNNING') throw new AiError('ROOM_PAUSED', 'La simulación no está en curso.');
   const ctx = executorContext(g, actor, input, []), c = ctx.c;
   if (c.eliminated) throw new AiError('FORBIDDEN', 'La empresa está fuera de la partida.');

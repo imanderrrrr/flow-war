@@ -16,6 +16,9 @@ export function createTestJob(c: Company, ch: Change, scenario: TestScenario, se
   staging.infrastructure = { instances: [{ id: 1, status: 'UP' }], stoppedServices: [] };
   staging.runtime = { ...initialRuntime(), modules: structuredClone(c.runtime.modules), releases: { [context.executionVersion]: context.execution ?? releaseFor(c, context.backend) } };
   staging.traffic = initialTraffic(scenario.stock, seed, `qa-${ch.id}`); staging.traffic.scope = 'qa';
+  // A product change is tested with its frozen promotion active in staging, never in the company market.
+  const promotion = ch.product ? { percent: ch.product.configuration.percent, audience: ch.product.configuration.audience, demandMultiplier: ch.product.configuration.demandMultiplier } : undefined;
+  if (ch.product) staging.runtime.campaigns = [{ id: `qa-${ch.id}`, configuration: structuredClone(ch.product.configuration), status: 'ACTIVE', createdBy: ch.actorId, createdAt: 0, reserved: 0, activatedAt: 0, endsAt: Number.MAX_SAFE_INTEGER }];
   for (const key of ['requests','successes','errors','breaches','oversold','duplicates','revenue','lostRevenue'] as const) staging[key] = 0;
   const template = createConcurrencyRun(`qa-${ch.id}`, context, 0), spacing = Math.max(4, template.requests[0].path.length * .5 + 1);
   template.inventory.stock = template.inventory.initialStock = scenario.stock;
@@ -24,17 +27,18 @@ export function createTestJob(c: Company, ch: Change, scenario: TestScenario, se
     r.id = `qa-${ch.id}-R${index + 1}`; r.intentId = scenario.duplicateIntent ? 'qa-shared-payment' : `${r.id}-intent`;
     r.customerId=`qa-${index}`;r.customerSource='qa';r.arrivalAt = at; r.nextAt = at + .5; r.deadline = at + 16; r.journey.at = at;
     r.transportFailures = scenario.retries; r.newCustomer = scenario.newCustomer; r.couponCount = scenario.coupons; r.invalidInput = scenario.invalidInput;
+    if (promotion) r.promotion = { percent: promotion.percent, audience: promotion.audience };
     r.securityAllowed = admitSecurity(staging, r.execution ?? { modules: [] }, scenario.attack === 'none' ? 'valid' : scenario.attack, index, at, 'sim-1', `qa-${index}`, 'purchase',securityContext(scenario,index));
     return r;
   });
-  return { finished: [], scenario: structuredClone(scenario), staging, elapsed: 0, next: 0, requests: scenario.suite === 'load' ? [] : template.requests, run: scenario.suite === 'load' ? undefined : template, reports: [] };
+  return { ...(promotion ? { promotion } : {}), finished: [], scenario: structuredClone(scenario), staging, elapsed: 0, next: 0, requests: scenario.suite === 'load' ? [] : template.requests, run: scenario.suite === 'load' ? undefined : template, reports: [] };
 }
 /** Ten 100ms rounds per room tick; pause freezes the entire persisted job. */
 export function advanceTestJob(job: TestJob) {
   for (let round = 0; round < 10; round++) {
     job.elapsed = Math.round((job.elapsed + .1) * 10) / 10;
     if (job.scenario.suite === 'load') {
-      const target = Math.min(job.scenario.requests, Math.floor(job.elapsed * job.scenario.concurrency));
+      const target = Math.min(job.scenario.requests, Math.floor(job.elapsed * job.scenario.concurrency * (job.promotion?.demandMultiplier ?? 1)));
       while (job.next < target) {
         const r = admitTraffic(job.staging, job.elapsed, 'purchase', job.scenario.attack === 'none' ? 'legitimate' : 'malicious', job.scenario.attack === 'none' ? undefined : job.scenario.attack,undefined,securityContext(job.scenario,job.next));
         r.transportFailures = job.scenario.retries; r.couponCount = job.scenario.coupons; r.newCustomer = job.scenario.newCustomer; r.invalidInput = job.scenario.invalidInput;
@@ -61,6 +65,7 @@ function expectedPrice(job: TestJob) {
     const c = m.configuration;
     if ((c.kind === 'discount' || c.kind === 'coupon') && (c.audience === 'all' || job.scenario.newCustomer) && (c.kind !== 'coupon' || job.scenario.coupons > 0) && (!applied || c.stackable)) { price = Math.round(price * (1 - c.percent / 100) * 100) / 100; applied = true; }
   }
+  if (job.promotion && (job.promotion.audience === 'all' || job.scenario.newCustomer)) price = Math.round(price * (1 - job.promotion.percent / 100) * 100) / 100;
   return price;
 }
 export function testReport(job: TestJob, at: number): Report {

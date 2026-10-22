@@ -21,7 +21,7 @@ export type CampaignConfiguration = { percent: number; audience: 'all' | 'new'; 
 export type ActionParameters = {
   'ai.confirm': {proposalId:string;confirmed:true};
   'investment.link': {orderId:string;changeId:string};
-  'qa.return': {changeId:string; recipient:'backend'|'security'; subject:string; description:string; steps:string; observed:string; expected:string; severity:'low'|'medium'|'high'|'critical'; evidenceIds:string[]; observationRefs:string[]};
+  'qa.return': {changeId:string; recipient:'backend'|'security'|'product'; subject:string; description:string; steps:string; observed:string; expected:string; severity:'low'|'medium'|'high'|'critical'; evidenceIds:string[]; observationRefs:string[]};
   'qa.repeat': {runId:string};
   'qa.review': {changeId:string; risks:string; evidenceIds:string[]};
   'change.cancel': {changeId:string; reason:string; confirmed:true};
@@ -62,6 +62,7 @@ export type ActionParameters = {
   'cto.rollback_authorize': { targetVersion: number; amount: number };
   'deploy.rollback': { strategy: 'rolling' | 'restart'; authorizationId?: string };
   'infra.server_stop': { serverId: number }; 'infra.server_start': { serverId: number };
+  'product.draft': { catalogId: string; percent: number; duration: number; demandMultiplier: number; budget: number }; 'product.submit': { draftId: string };
 };
 export type ActionType = keyof ActionParameters;
 export type SimulatedAction = { [K in ActionType]: {
@@ -94,6 +95,7 @@ export const ACTION_CATALOG = {
   'infra.request_budget': entry(['devops'], 'finance'), 'cto.infra_authorize': entry(['cto'], 'finance'), 'cto.infra_reject': entry(['cto'], 'finance'),
   'cto.rollback_authorize': entry(['cto'], 'finance'), 'deploy.rollback': entry(['devops'], 'publication'),
   'infra.server_stop': entry(['devops'], 'operation'), 'infra.server_start': entry(['devops'], 'operation'),
+  'product.draft': entry(['product'], 'artifact'), 'product.submit': entry(['product'], 'preparation'), 'room.product': entry(['operator'], 'administration'),
   'room.dvr': entry(['operator'], 'administration'),
   'room.start': entry(['operator'], 'administration'), 'room.pause': entry(['operator'], 'administration'),
   'room.reset': entry(['operator'], 'administration'), 'room.speed': entry(['operator'], 'administration'), 'room.finish': entry(['operator'], 'administration'),

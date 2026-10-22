@@ -17,6 +17,7 @@ import { initialRuntime, executionFor, releaseFor, prepareArtifact } from './art
 import { initialInfrastructure, syncInfrastructure, advanceInfrastructure, restart, setService } from './infrastructure.js';
 import { initialOperationsState, operationsCommand, assertScope, activeDeployment, advanceOperations, reconcileRollbacks, closeOperations, recordRelease, rollbackInProgress, infraView } from './operations.js';
 import { RESTART_SECONDS } from './executor.js';
+import { productCommand, activateProduct, productEnabled, productView } from './product.js';
 import { parseAction, validateParameters } from './action-validation.js';
 import { allowedAction } from '../shared/actions.js';
 import { advanceMarket, assertMarket, bindMarket, createMarket, evacuateEliminated, flushMigrations } from './market.js';
@@ -130,6 +131,12 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       else checkpoint(g, serializeGame, true);
       return { ok: true };
     }
+    if (command.type === 'room.product') {
+      if (g.status !== 'LOBBY') return { ok: false, code: 'PRODUCT_MODE_LOCKED', error: 'Habilita Producto/UX antes de iniciar la partida.' };
+      if (typeof command.payload?.enabled !== 'boolean') return { ok: false, error: 'Valor inválido.' };
+      // One switch for the room: the department is enabled or disabled for the five companies alike.
+      g.productEnabled = command.payload.enabled; return { ok: true };
+    }
     if (command.type === 'room.reset') {
       const closed = structuredClone(g); copyHistoryBuffer(g, closed); bindObservability(closed); bindMarket(closed);
       if (closed.status !== 'FINISHED' && closed.status !== 'ABORTED') {
@@ -143,7 +150,8 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       // Keep both generations and all pending evidence until one durable transaction commits.
       const earlier = buffer(closed).closed; buffer(closed).closed = [];
       clearBuffer(g); delete g.closure;
-      Object.assign(g, createGame(Number(command.payload?.duration) === 1200 ? 1200 : 1500, 7357, g.generation + 1, g.dvrEnabled));
+      const product = g.productEnabled;
+      Object.assign(g, createGame(Number(command.payload?.duration) === 1200 ? 1200 : 1500, 7357, g.generation + 1, g.dvrEnabled)); g.productEnabled = product;
       buffer(g).closed.push(...earlier, closed);
       bindObservability(g, f => slackFact(g, f));
       checkpoint(g, serializeGame, true);
@@ -155,6 +163,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
     if (command.type === 'room.speed') g.speed = [1, 5, 20].includes(Number(command.payload?.speed)) ? Number(command.payload?.speed) : 1;
     return { ok: true };
   }
+  if (identity.role === 'product' && !productEnabled(g)) return { ok: false, code: 'PRODUCT_DISABLED', error: 'Producto/UX no está habilitado en esta partida.' };
   if (g.status !== 'RUNNING') return { ok: false, code: 'ROOM_PAUSED', error: 'La simulación no está en curso.' };
   if (command.companyId !== identity.companyId) return { ok: false, code: 'FORBIDDEN', error: 'Empresa no autorizada.' };
   const c = g.companies[identity.companyId!];
@@ -166,6 +175,9 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
     if(identity.role==='backend'&&['draft.save','change.submit','module.create','module.revise','ai.accept'].includes(command.type))assertBackendEditable(c);
     const handled=workflowCommand(g,c,identity,command.type,p);if(handled)return handled;
     const operated=operationsCommand(g,c,identity,command.type,p,event);if(operated)return operated;
+    const commercial=productCommand(g,c,identity,command.type,p,event);if(commercial)return commercial;
+    // Promotions are published only through Producto → QA → CTO → DevOps.
+    if (command.type.startsWith('campaign.')) throw new Error('Las promociones se preparan en el catálogo de Producto y se publican por QA, CTO y DevOps.');
     if(identity.role==='backend' && ['module.create','module.revise','change.submit'].includes(command.type) && g.changes.some(x=>x.companyId===c.id&&x.status==='DEPLOYING'))throw new Error('Espera a que finalice la publicación en curso.');
     if (command.type.startsWith('campaign.') || command.type === 'product.propose') { const result = businessCommand(g, c, identity, command.type, p); event(g, c.id, command.type === 'campaign.activate' ? 'Campaña activada.' : 'Operación comercial registrada.', 'neutral', 'PRODUCTO'); return result; }
     if (command.type.startsWith('security.') && ['security.save','security.configure','security.submit','security.correction'].includes(command.type)) return securityCommand(g,identity,command.type,p);
@@ -276,6 +288,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       if (ch.status !== 'AUTHORIZED' || g.tick > (ch.expires ?? 0)) throw new Error('No existe autorización vigente.');
       if (g.changes.some(x => x.companyId === c.id && x.status === 'DEPLOYING') || rollbackInProgress(c)) throw new Error('Ya existe un despliegue activo.');
       if (!['rolling', 'restart'].includes(String(p.strategy))) throw new Error('Estrategia no disponible.');
+      if (ch.product && c.runtime.campaigns.some(cam => cam.status === 'ACTIVE')) throw new Error('Ya existe una promoción activa.');
       ch.status = 'DEPLOYING'; ch.strategy = String(p.strategy); ch.due = g.tick + (p.strategy === 'rolling' ? 6 : 3);
       event(g, c.id, `${ch.id} · DEPLOY INICIADO`, 'neutral', 'DEVOPS');
     }
@@ -307,7 +320,7 @@ function jobs(g: GameState) {
     if (ch.status === 'DEPLOYING' && g.tick >= (ch.due ?? Infinity)) {
       if(c.capital<ch.cost||c.capital-c.infraBudget<c.reserved){ch.status='DEPLOY_FAILED';releaseReservation(c,ch);event(g,c.id,`${ch.id} · publicación cancelada por saldo insuficiente.`, 'neutral','CTO');continue;}
       assertBundle(ch);
-      if(ch.implementation){c.backend=structuredClone(ch.context!.backend);c.security=structuredClone(ch.context!.security);}else c[ch.domain] = structuredClone(ch.graph); c.version++; c.runtime.releases[c.version] = structuredClone(ch.context?.execution ?? releaseFor(c)); c.deployments++; c.capital -= ch.cost;settleInvestment(c,ch); releaseReservation(c, ch); ch.status = 'DEPLOYED'; ch.releasedVersion = c.version; recordRelease(g, c, ch.id, 'deploy');
+      if(ch.implementation){c.backend=structuredClone(ch.context!.backend);c.security=structuredClone(ch.context!.security);}else c[ch.domain] = structuredClone(ch.graph); c.version++; c.runtime.releases[c.version] = structuredClone(ch.context?.execution ?? releaseFor(c)); c.deployments++; c.capital -= ch.cost;settleInvestment(c,ch); releaseReservation(c, ch); ch.status = 'DEPLOYED'; ch.releasedVersion = c.version; recordRelease(g, c, ch.id, 'deploy'); activateProduct(g, c, ch, event);
       auditCompletion(g, c.id, 'deploy.completed', [ch.id, ...(ch.artifactRefs?.map(ref=>`${ref.id}@${ref.version}`) ?? [])], [`production.version:${c.version}`, `capital.delta:${-ch.cost}`]);
       event(g, c.id, `${ch.id} EN PRODUCCIÓN · v${c.version}`, 'good', 'DEPLOY');
       staleOthers(g, c, ch);
@@ -402,8 +415,8 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
     privateC.drafts = ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {};
   }
   return {
-    operations: identity ? { infra:ownCompany&&['devops','cto'].includes(identity.role)?infraView(ownCompany,g.tick):undefined, qaLive:ownCompany&&identity.role==='qa'?qaProgress(g,ownCompany):undefined, ...(ownCompany ? { workflow:workflowView(ownCompany), conversations:ownCompany.runtime.conversations?.filter(t=>t.actor===identity!.id&&t.role===identity!.role&&t.generation===g.generation).map(t=>({...t,messages:t.messages.slice(-20)})), collaboration: collaborationView(ownCompany,identity!) } : {}), modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
-    dvrEnabled: g.dvrEnabled, generation: g.generation,
+    operations: identity ? { product:ownCompany&&['product','operator'].includes(identity.role)?productView(g,ownCompany,g.tick):undefined, infra:ownCompany&&['devops','cto'].includes(identity.role)?infraView(ownCompany,g.tick):undefined, qaLive:ownCompany&&identity.role==='qa'?qaProgress(g,ownCompany):undefined, ...(ownCompany ? { workflow:workflowView(ownCompany), conversations:ownCompany.runtime.conversations?.filter(t=>t.actor===identity!.id&&t.role===identity!.role&&t.generation===g.generation).map(t=>({...t,messages:t.messages.slice(-20)})), collaboration: collaborationView(ownCompany,identity!) } : {}), modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
+    dvrEnabled: g.dvrEnabled, ...(productEnabled(g) ? { productEnabled: true } : {}), generation: g.generation,
     slack: ownCompany ? structuredClone(g.slack.messages.filter(m=>m.companyId===ownCompany.id)) : undefined,
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
     companies: common?.companies ?? g.companies.map(c => {

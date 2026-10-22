@@ -5,6 +5,7 @@ import { admissionReason } from './maintenance.js';
 import { observeCompany } from './observability.js';
 import { hasDefect } from './defects.js';
 import { activeCampaign } from './business.js';
+import { recordFunnel } from './product.js';
 import { releaseResources, pruneOperations } from './blocks.js';
 import { admitSecurity } from './security.js';
 import { settleReservation, activation } from './module-execution.js';
@@ -170,7 +171,7 @@ export function settleTraffic(company: Company, now: number) {
     company.successes += Number(result.status === 'COMPLETED'); company.errors += Number(result.status !== 'COMPLETED');
     company.revenue += result.revenue; company.lostRevenue += result.lostRevenue; company.capital += result.capitalDelta;
     company.oversold += request.oversold; company.breaches += Number(request.breach);
-    if (request.trafficClass === 'legitimate') recordCustomerExperience(company, request, request.type, request.latencyMs!);
+    if (request.trafficClass === 'legitimate') { recordCustomerExperience(company, request, request.type, request.latencyMs!); recordFunnel(company, request, now); }
     request.accounted = true;
     observeCompany(company, 'request.settled', { requestId: request.id, customerId: request.customerId, trafficClass: request.trafficClass, type: request.type, version: request.executionVersion, result: request.result, transaction: request.transaction, duplicates: request.duplicates ?? 0, oversold: request.oversold, defects: request.effectCodes ?? [], modules: capturesReceipts(company) ? request.execution?.modules.map(m => ({ id: m.id, version: m.version, defects: m.defects.filter(d => request.effectCodes?.includes(d.code)).map(d => d.code) })) ?? [] : [], latencyMs: request.latencyMs }, [request.id]);
     if (request.transaction === 'PENDING_RESOLUTION') state.unresolvedCount++;

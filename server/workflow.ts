@@ -4,6 +4,7 @@ import type { WorkflowState, WorkflowView, QaRun, ReturnLetter } from '../shared
 import { stableDigest } from './discipline.js';
 import { createTestJob } from './qa.js';
 import { assertBundle } from './collaboration.js';
+import { returnProduct } from './product.js';
 
 export const workflow=(c:Company):WorkflowState=>c.runtime.workflow??={letters:[],runs:[],decisions:[],investments:[]};
 export const available=(c:Company)=>Math.max(0,Math.round((c.capital-c.infraBudget-c.reserved)*100)/100);
@@ -37,6 +38,15 @@ export function workflowCommand(g:GameState,c:Company,actor:Identity,type:string
   }
   if(type==='qa.return'){
     const ch=changeFor(g,c,p.changeId);
+    if(ch.domain==='product'){
+      // Producto: the formal return frees the frozen draft for a new proposal; no Backend lock is involved.
+      if(p.recipient!=='product'||['QA_RUNNING','DEPLOYING','DEPLOYED','STALE','QA_REJECTED'].includes(ch.status))throw new Error('La versión no admite devolución.');
+      if(s.letters.some(l=>l.changeId===ch.id))throw new Error('La devolución ya fue registrada.');
+      const runs=evidence(c,ch,p.evidenceIds as string[]);
+      const letter:ReturnLetter={id:`C${c.id}-RET${s.letters.length+1}`,companyId:c.id,changeId:ch.id,backendVersion:0,securityRevision:0,recipient:'product',subject:String(p.subject),description:String(p.description),steps:String(p.steps),observed:String(p.observed),expected:String(p.expected),severity:p.severity as ReturnLetter['severity'],evidenceIds:runs.map(r=>r.id),observationRefs:[],author:actor.id,at:g.tick,generation:g.generation};
+      c.reserved-=ch.reserved;ch.reserved=0;ch.status='QA_REJECTED';returnProduct(c,ch);s.letters.push(letter);return {ok:true,refs:[letter.id,ch.id]};
+    }
+    if(p.recipient==='product')throw new Error('Destinatario incompatible con el cambio.');
     if(!ch.implementation||['QA_RUNNING','DEPLOYING','STALE','QA_REJECTED'].includes(ch.status))throw new Error('La versión no admite devolución.');
     const runs=evidence(c,ch,p.evidenceIds as string[]);
     const review=c.runtime.collaboration?.reviews[ch.id];

@@ -15,11 +15,11 @@ const cases = [
   ['qa','qa.execute',{},'module.create',{name:'x',configuration:{kind:'inventory',minimum:1},dependencies:[]}],
   ['cto','cto.budget',{amount:1000},'deploy.start',{strategy:'rolling'}],
   ['devops','infra.restart_all',{duration:10},'cto.budget',{amount:1000}],
-  ['product','campaign.prepare',{percent:15,audience:'new',duration:120,budget:250,demandMultiplier:2},'campaign.authorize',{campaignId:'x'}],
+  ['product','product.draft',{catalogId:'PROMO-02',percent:15,duration:120,budget:250,demandMultiplier:2},'campaign.authorize',{campaignId:'x'}],
 ] as const;
 for (const [role,allowed,params,denied,other] of cases) {
   test(`4A role ${role} executes its supported operation through the common catalog`, () => {
-    const g=createGame();g.status='RUNNING';
+    const g=createGame();g.status='RUNNING';if(role==='product')g.productEnabled=true;
     if(role==='qa') {command(g,'backend','module.create',{name:'QA',configuration:{kind:'inventory',minimum:1},dependencies:[]});reviewForQa(g);assert.equal(command(g,role,allowed,{changeId:g.changes[0].id,scenario:DEFAULT_TEST}).ok,true);}
     else assert.equal(command(g,role,allowed,{...params}).ok,true);
     assert.equal(g.actions.employees[`0-${role}`].violations.length,0);

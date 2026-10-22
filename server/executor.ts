@@ -9,6 +9,8 @@ import { effectiveServers } from './infrastructure.js';
 import { describeControls } from './collaboration.js';
 import { available } from './workflow.js';
 import { activeScope, operations } from './operations.js';
+import { productState, productView } from './product.js';
+import { PRODUCT_CATALOG, PROMOTION_PARAMETERS } from '../shared/product.js';
 import { employeeFor } from './discipline.js';
 import { checkQuotes, groundChoice, groundNumber, groundVerbatim, mentionsId, normalize, GroundingError, type Sources } from './grounding.js';
 
@@ -486,11 +488,36 @@ function devopsTools(): ToolSpec[] {
 }
 
 const operations_ = (ctx: ExecutorContext) => operations(ctx.c);
+// ---------- Producto/UX: drafts from the neutral catalog, then the pipeline ----------
+function productTools(): ToolSpec[] {
+  return [
+    { name: 'producto_crear_borrador', description: 'Crea un borrador de promoción del catálogo con los parámetros explícitos del estudiante. Si falta uno, pedilo con solicitar_dato.', schema: obj({ item: choice(PRODUCT_CATALOG.map(i => i.id)), descuento_pct: nullable(int()), duracion_segundos: nullable(int()), multiplicador_demanda: nullable(num()), presupuesto: nullable(int()), citas: quotes }),
+      fields: { item: 'opción del catálogo', descuento_pct: 'descuento (%)', duracion_segundos: 'duración', multiplicador_demanda: 'multiplicador de llegadas', presupuesto: 'presupuesto' },
+      plan(p, _ctx, q) {
+        const item = PRODUCT_CATALOG.find(i => i.id === p.item); if (!item) return needs(this.name, ['item']);
+        if (!mentionsId(item.id, q) && !mentionsId(item.id, [normalize(_ctx.sources.instruction)])) return needs(this.name, ['item']);
+        const missing = (['descuento_pct', 'duracion_segundos', 'multiplicador_demanda', 'presupuesto'] as const).filter(k => p[k] === null || p[k] === undefined);
+        if (missing.length) return needs(this.name, [...missing]);
+        const percent = groundNumber('descuento_pct', Number(p.descuento_pct), q), duration = groundNumber('duracion_segundos', Number(p.duracion_segundos), q, 'seconds'), multiplier = groundNumber('multiplicador_demanda', Number(p.multiplicador_demanda), q), budget = groundNumber('presupuesto', Number(p.presupuesto), q, 'money');
+        const P = PROMOTION_PARAMETERS;
+        if (percent < P.percent.min || percent > P.percent.max || duration < P.duration.min || duration > P.duration.max || multiplier < P.demandMultiplier.min || multiplier > P.demandMultiplier.max || budget < P.budget.min || budget > P.budget.max || !Number.isInteger(percent) || !Number.isInteger(duration) || !Number.isInteger(budget)) return restriction('Parámetros fuera de los rangos del catálogo.');
+        return commands({ type: 'product.draft', payload: { catalogId: item.id, percent, duration, demandMultiplier: multiplier, budget }, describe: r => r.ok ? `Borrador ${r.refs?.[0] ?? ''} creado: ${item.id} · ${percent}% · ${duration} s · ×${multiplier} · ${money(budget)}.` : failure(r) });
+      } },
+    { name: 'producto_enviar_a_qa', description: 'Envía a QA el borrador de Producto indicado. Congela su configuración.', schema: obj({ borrador: str('ID PRD-NNN o vacío'), citas: quotes }), fields: { borrador: 'borrador' },
+      plan(p, ctx, q) {
+        const drafts = productState(ctx.c).drafts.filter(d => d.status === 'DRAFT'), id = String(p.borrador ?? '').trim();
+        const draft = id ? drafts.find(d => d.id.toLowerCase() === id.toLowerCase()) : ctx.selection.draftId ? drafts.find(d => d.id === ctx.selection.draftId) : drafts.length === 1 ? drafts[0] : undefined;
+        if (!draft) return id ? restriction('Borrador no disponible.') : drafts.length ? needs(this.name, ['borrador'], drafts.map(d => d.id)) : restriction('No hay borradores pendientes.');
+        if (id && !mentionsId(draft.id, [...q, normalize(ctx.sources.instruction)])) return needs(this.name, ['borrador']);
+        return commands({ type: 'product.submit', payload: { draftId: draft.id }, describe: r => r.ok ? `${draft.id} enviado a QA como ${r.refs?.[0] ?? ''}.` : failure(r) });
+      } },
+  ];
+}
 // ---------- Objective data, scoped to the session company and role ----------
 const money = (n: number) => `Q${(Math.round(n * 100) / 100).toLocaleString('es-GT')}`;
 export const TOPICS: Record<Role, readonly string[]> = {
   backend: ['borrador', 'bloques', 'devoluciones'], security: ['revision', 'controles'], qa: ['cambios', 'pruebas', 'suites'],
-  cto: ['finanzas', 'cambios', 'decisiones', 'solicitudes', 'versiones', 'incidentes'], devops: ['infraestructura', 'presupuesto', 'despliegues', 'estrategias', 'staging', 'rollback'], product: ['embudo'],
+  cto: ['finanzas', 'cambios', 'decisiones', 'solicitudes', 'versiones', 'incidentes'], devops: ['infraestructura', 'presupuesto', 'despliegues', 'estrategias', 'staging', 'rollback'], product: ['embudo', 'catalogo', 'borradores', 'campanas'],
 };
 export function information(ctx: ExecutorContext, topic: string): string {
   const { g, c } = ctx, own = g.changes.filter(ch => ch.companyId === c.id);
@@ -512,6 +539,10 @@ export function information(ctx: ExecutorContext, topic: string): string {
     case 'versiones': case 'rollback': { const state = operations(c); return `Versión activa v${c.version}. Publicadas: ${state.releases.map(r => `v${r.version} (${r.kind}${r.changeId ? ` ${r.changeId}` : ''}${r.rollbackOf ? ` restaura v${r.rollbackOf}` : ''})`).join(', ')}.\n` + (state.rollbacks.slice(-4).map(r => `${r.id} · v${r.targetVersion} · ${money(r.amount)} · ${r.status}`).join('\n') || 'Sin autorizaciones de rollback.'); }
     case 'staging': { const ch = own.find(x => x.id === ctx.selection.changeId) ?? own.find(x => x.status === 'AUTHORIZED'); if (!ch) return 'Sin cambio seleccionado ni autorizado.'; const runs = (c.runtime.workflow?.runs ?? []).filter(r => r.changeId === ch.id && r.report); return `${ch.id} · ${STATUS_LABELS[ch.status]} · base v${ch.baseVersion} · Backend v${ch.implementation?.backendVersion ?? '—'} · Seguridad r${ch.implementation?.security?.revision ?? '—'} · costo ${money(ch.cost)}${ch.status === 'AUTHORIZED' ? ` · autorización vence en ${Math.max(0, Math.ceil((ch.expires ?? 0) - g.tick))} s` : ''}.\nArtefacto: ${ch.graph.nodes.map(n => n.data.label).join(' → ')}.\n` + (runs.map(r => `${r.id}: ${r.report!.requests} solicitudes, ${r.report!.completed} completadas, ${r.report!.rejected} rechazadas, ${r.report!.oversold} sobreventas`).join('\n') || 'Sin pruebas QA registradas.'); }
     case 'incidentes': return g.events.filter(e => (e.companyId === c.id || e.companyId === null) && e.tone === 'bad').slice(0, 8).map(e => `${Math.floor(e.at)} s · ${e.text}`).join('\n') || 'Sin incidentes observados.';
+    case 'embudo': { const v = productView(g, c, g.tick), f = v.funnel.window; return `Últimos ${v.funnel.windowSeconds} s (muestra ${f.visits}): visitas ${f.visits} · entradas a checkout ${f.checkout} · compras ${f.purchased} · abandonos ${f.abandoned} · rechazos ${f.rejected}. Motivos: ${Object.entries(f.reasons).map(([r, n]) => `${r} ${n}`).join(', ') || 'ninguno'}. Fidelidad media ${v.satisfaction.loyaltyMean ?? '—'} (${v.satisfaction.customers} clientes).`; }
+    case 'catalogo': return PRODUCT_CATALOG.map(i => `${i.id} · ${i.name} · descuento 0–70% · duración 10–300 s · multiplicador 1–4 · presupuesto Q1–2000`).join('\n');
+    case 'borradores': return productState(c).drafts.slice(-8).map(d => `${d.id} · ${d.catalogId} · ${d.configuration.percent}% · ${d.configuration.duration} s · ×${d.configuration.demandMultiplier} · ${money(d.configuration.budget)} · ${d.status}${d.changeId ? ` · ${d.changeId}` : ''}`).join('\n') || 'Sin borradores.';
+    case 'campanas': return c.runtime.campaigns.slice(-8).map(cam => `${cam.id} · ${cam.status} · ${cam.configuration.percent}% · ${cam.configuration.duration} s`).join('\n') || 'Sin campañas.';
     case 'estrategias': return 'ROLLING: 6 s; cambia servidores uno por uno; capacidad accesible (n−1)/n, o 12% con un servidor.\nRESTART REPLACE: 3 s; capacidad de aplicación cero durante el reemplazo.\nCosto: el autorizado por CTO para el cambio; el gasto operativo continúa a Q0.50/s por servidor.';
     default: return 'Tema no disponible.';
   }
@@ -526,7 +557,7 @@ function commonTools(role: Role, operations: string[]): ToolSpec[] {
       plan(p) { return { kind: 'decline', reason: (['CONSEJO', 'DECISION_DELEGADA', 'FUERA_DE_ROL', 'FUERA_DEL_JUEGO', 'NO_DISPONIBLE'].includes(String(p.motivo)) ? p.motivo : 'NO_DISPONIBLE') as DeclineReason }; } },
   ];
 }
-const ROLE_TOOLS: Partial<Record<Role, () => ToolSpec[]>> = { backend: backendTools, security: securityTools, qa: qaTools, cto: ctoTools, devops: devopsTools };
+const ROLE_TOOLS: Partial<Record<Role, () => ToolSpec[]>> = { backend: backendTools, security: securityTools, qa: qaTools, cto: ctoTools, devops: devopsTools, product: productTools };
 export function registerRoleTools(role: Role, factory: () => ToolSpec[]) { const prior = ROLE_TOOLS[role]; ROLE_TOOLS[role] = () => [...(prior?.() ?? []), ...factory()]; }
 export function toolsFor(role: Role): ToolSpec[] {
   const own = ROLE_TOOLS[role]?.() ?? [];
@@ -606,6 +637,7 @@ export function authorizedContext(ctx: ExecutorContext) {
   if (role === 'qa') return { ...base, cambios: changes, pruebas: (c.runtime.workflow?.runs ?? []).filter(r => r.generation === g.generation).slice(-8).map(r => ({ id: r.id, cambio: r.changeId, tipo: r.scenario.suite, terminada: !!r.report })), suites: Object.keys(SUITE_LABELS) };
   if (role === 'cto') return { ...base, cambios: changes, solicitudes: operations(c).requests.filter(r => r.status === 'REQUESTED').map(r => ({ id: r.id, monto: r.amount, duracion_segundos: r.durationSeconds, max_servidores: r.maxServers, operaciones: r.operations })), versiones: operations(c).releases.map(r => r.version), version_activa: c.version };
   if (role === 'devops') { const scope = activeScope(c, g.tick); return { ...base, servidores: c.infrastructure.instances.map(i => ({ id: i.id, estado: i.status })), balanceador: c.balancer, modo_servicio: c.serviceMode.mode, servicios_detenidos: c.infrastructure.stoppedServices, cambios: changes, version_activa: c.version, estrategias: ['rolling', 'restart_replace'], alcance: scope ? { operaciones: scope.operations, max_servidores: scope.maxServers } : null, rollback_autorizado: operations(c).rollbacks.filter(r => r.status === 'AUTHORIZED').map(r => ({ id: r.id, version: r.targetVersion })) }; }
+  if (role === 'product') return { ...base, catalogo: PRODUCT_CATALOG.map(i => ({ id: i.id, nombre: i.name, publico: i.audience })), borradores: productState(c).drafts.slice(-8).map(d => ({ id: d.id, item: d.catalogId, estado: d.status })), cambios: changes.filter(ch => ch.dominio === 'product') };
   return base;
 }
 export function contextExtensions() { return CONTEXT_EXTENSIONS; }

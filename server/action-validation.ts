@@ -48,7 +48,7 @@ export function validateParameters(type: string, input: unknown) {
     case 'ai.confirm':keys(p,['proposalId','confirmed']);string(p.proposalId);if(p.confirmed!==true)throw new ActionError('INVALID','Confirma la decisión.');break;
     case 'investment.link':keys(p,['orderId','changeId']);string(p.orderId);string(p.changeId);break;
     case 'qa.return':
-      keys(p,['changeId','recipient','subject','description','steps','observed','expected','severity','evidenceIds','observationRefs']);string(p.changeId);oneOf(p.recipient,['backend','security']);oneOf(p.severity,['low','medium','high','critical']);
+      keys(p,['changeId','recipient','subject','description','steps','observed','expected','severity','evidenceIds','observationRefs']);string(p.changeId);oneOf(p.recipient,['backend','security','product']);oneOf(p.severity,['low','medium','high','critical']);
       for(const k of ['subject','description','steps','observed','expected'])if(!freeText(p[k]).trim())throw new ActionError('INVALID','Carta incompleta.');
       for(const k of ['evidenceIds','observationRefs']){if(!Array.isArray(p[k])||(p[k] as unknown[]).length>160)throw new ActionError('INVALID','Referencias inválidas.');(p[k] as unknown[]).forEach(v=>string(v));}break;
     case 'qa.repeat':keys(p,['runId']);string(p.runId);break;
@@ -93,6 +93,8 @@ export function validateParameters(type: string, input: unknown) {
     case 'cto.rollback_authorize': keys(p, ['targetVersion','amount']); integer(p.targetVersion, 1, 1000); integer(p.amount, 1, 10000); break;
     case 'deploy.rollback': keys(p, ['strategy','authorizationId']); oneOf(p.strategy, ['rolling','restart']); if (p.authorizationId !== undefined) string(p.authorizationId); break;
     case 'infra.server_stop': case 'infra.server_start': keys(p, ['serverId']); integer(p.serverId, 1, 8); break;
+    case 'product.draft': keys(p, ['catalogId','percent','duration','demandMultiplier','budget']); string(p.catalogId, 20); integer(p.percent, 0, 70); integer(p.duration, 10, 300); integer(p.budget, 1, 2000); if (typeof p.demandMultiplier !== 'number' || !Number.isFinite(p.demandMultiplier) || p.demandMultiplier < 1 || p.demandMultiplier > 4) throw new ActionError('INVALID', 'Multiplicador: 1–4.'); break;
+    case 'product.submit': keys(p, ['draftId']); string(p.draftId, 20); break;
     default: throw new ActionError('UNSUPPORTED', 'Acción no implementada.');
   }
 }
