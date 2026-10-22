@@ -1,4 +1,5 @@
-import type { Graph } from '../shared/types.js';
+import { PLAN_PIECES, PLAN_REQUIREMENTS, isPlanPiece } from '../shared/plan.js';
+import type { Graph, ServiceId, TrafficRequest } from '../shared/types.js';
 
 export function route(graph: Graph): Graph['nodes'] {
   const start = graph.nodes.find(n => n.type === 'entry');
@@ -34,3 +35,24 @@ export function evaluateSecurity(graph: Graph, kind: 'valid' | 'forged' | 'injec
   }
   return true;
 }
+
+/** Services the team's plan actually puts on the route, in the order it drew them, without repeats. */
+export function planServices(plan: Graph): ServiceId[] {
+  const services: ServiceId[] = [];
+  for (const node of route(plan)) {
+    const service = isPlanPiece(node.type) ? PLAN_PIECES[node.type].service : undefined;
+    if (service && !services.includes(service)) services.push(service);
+  }
+  return services;
+}
+
+/** The first service this request type needs and the plan does not have, or `'exit'` when the route
+ * never reaches the salida, or `null` when the company can serve it. */
+export function missingFor(plan: Graph, type: TrafficRequest['type']): ServiceId | 'exit' | null {
+  const services = planServices(plan);
+  for (const service of PLAN_REQUIREMENTS[type]) if (!services.includes(service)) return service;
+  return route(plan).at(-1)?.type === 'exit' ? null : 'exit';
+}
+
+/** A company accepts purchases — and so closes its montaje — exactly when nothing is missing for one. */
+export function sellCapable(plan: Graph): boolean { return missingFor(plan, 'purchase') === null; }
