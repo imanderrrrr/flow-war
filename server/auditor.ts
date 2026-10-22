@@ -168,9 +168,12 @@ function sustainCommand(g: GameState, command: Command, p: Record<string, unknow
   const c = g.companies[finding.companyId];
   if (c.eliminated) return { ok: false, code: 'ELIMINATED', error: `${c.name} está fuera de la partida.` };
   if (finding.sustain) return { ok: false, code: 'SUSTAIN_ACTIVE', error: 'Esa prueba sostenida sigue en curso.' };
+  // One sustained window per company at a time, so the third-of-capacity cap holds across auditors.
+  if ((g.auditors?.findings ?? []).filter(f => f.sustain && f.companyId === c.id).length >= AUDIT_SUSTAIN.perCompany)
+    return { ok: false, code: 'COMPANY_BUSY', error: `${c.name} ya tiene una prueba sostenida en curso.` };
   if (finding.sustainedAt !== undefined && g.tick < finding.sustainedAt + AUDIT_SUSTAIN.cooldownSeconds)
     return { ok: false, code: 'COOLDOWN', error: `Podés sostener esta prueba otra vez en ${Math.ceil(finding.sustainedAt + AUDIT_SUSTAIN.cooldownSeconds - g.tick)} s.` };
-  finding.sustain = { startedAt: g.tick, endsAt: round(g.tick + AUDIT_SUSTAIN.durationSeconds), sent: 0 };
+  finding.sustain = { startedAt: g.tick, endsAt: round(g.tick + AUDIT_SUSTAIN.durationSeconds), sent: 0, credit: 0, at: g.tick };
   // An exposed inventory write lets the figure be wiped: the system believes there is nothing left to sell.
   if (sustainEffect(c, finding) === 'zero') { c.traffic.inventory.stock = 0; c.traffic.inventory.version++; c.stock = 0; }
   emit(g, c.id, `Tráfico inusual sostenido sobre ${finding.module} · ${CATEGORY_LABELS[finding.category]} · ${AUDIT_SUSTAIN.durationSeconds} s.`, 'bad', 'SECURITY');
@@ -223,13 +226,17 @@ function advanceSustain(g: GameState, c: Company, emit: Emit) {
     }
     // Rate cap: never more than a share of this company's web capacity, so scaling servers really helps.
     const rate = serviceRates(c).web * AUDIT_SUSTAIN.rateShare;
-    if (rate <= 0) continue;
+    const dt = Math.max(0, Math.min(1, g.tick - window.at)); window.at = g.tick;
+    if (rate <= 0) { window.credit = 0; continue; }
+    // Allowance is earned tick by tick and never banks more than a second: a capacity change cannot burst.
+    window.credit = Math.min(window.credit + rate * dt, rate);
     const service = targetService(route(c.backend).find(n => n.id === finding.nodeId));
     const queue = c.traffic.services[service];
-    // Queue cap: legitimate customers always keep room in the queue the module lives in.
-    if (queue.waiting.length >= queue.capacity * AUDIT_SUSTAIN.queueShare) continue;
-    const due = Math.floor((g.tick - window.startedAt) * rate) - window.sent;
-    for (let i = 0; i < due; i++) { admitTraffic(c, g.tick, 'purchase', 'malicious', finding.category); window.sent++; }
+    while (window.credit >= 1) {
+      // Queue cap, re-checked before every admission: legitimate customers always keep room.
+      if (queue.waiting.length >= queue.capacity * AUDIT_SUSTAIN.queueShare) break;
+      admitTraffic(c, g.tick, 'purchase', 'malicious', finding.category); window.sent++; window.credit -= 1;
+    }
   }
 }
 
@@ -318,7 +325,7 @@ export function chargeLeaks(g: GameState, c: Company) {
     const finding = findings.find(f => f.category === r.attackKind);
     if (!finding) continue;
     finding.uncontained++;
-    const cost = Math.min(AUDIT_LEAK.costPerRequest, c.capital);
+    const cost = Math.min(AUDIT_LEAK.costPerRequest, Math.max(0, c.capital));
     finding.lost += cost; c.capital -= cost;
     c.reputation = Math.min(100, Math.max(0, c.reputation - AUDIT_LEAK.reputationPerRequest));
   }

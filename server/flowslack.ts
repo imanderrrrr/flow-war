@@ -26,6 +26,9 @@ export function slackFact(g:GameState,f:Observation){
  if(f.kind==='request.settled'&&f.companyId!==null&&f.data.trafficClass==='legitimate'&&f.data.customerId){
  const r=f.data.result as {status:string;reason:string};if(['ROOM_FINISHED','ROOM_INTERRUPTED','COMPANY_ELIMINATED'].includes(r.reason))return;
  const v=variant(g,f),author=`Cliente ${f.data.customerId}`;
+ // A billing or confirmation hole does not fail on availability, so its complaint is emitted on its own terms.
+ if(f.data.auditedAs==='uncharged'){auto(g,f,'soporte-clientes','billing',v?'no me recibe el pago':'me descontaron y la compra no aparece',author);return;}
+ if(f.data.auditedAs==='confirmation'){auto(g,f,'soporte-clientes','confirmation',v?'me dice que falló pero ya me cobraron':'¿entonces la tengo o no la tengo?',author);return;}
  // Customers write like people, and say when it used to work: that contrast is what makes a team look.
  if(r.reason==='DEADLINE')auto(g,f,'soporte-clientes','timeout',v?'llevo un rato esperando y nunca me respondió':'se queda cargando y al final no pasa nada',author);
  else if(Number(f.data.duplicates)>0)auto(g,f,'soporte-clientes','duplicate',v?'me aparece cobrada dos veces, ¿pueden revisar?':'hice una sola compra y me figura repetida',author);

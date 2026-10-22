@@ -161,6 +161,13 @@ export function settleTraffic(company: Company, now: number) {
     settleReservation(request, state.inventory);
     if (state.operations) releaseResources(request, state.operations);
     const result = request.result;
+    const audited = company.runtime.auditEffects;
+    if (audited && request.trafficClass === 'legitimate') {
+      // An exposed payment module lets a purchase complete without the company ever collecting it.
+      if (audited.includes('uncharged') && result.revenue > 0) { result.lostRevenue += result.revenue; result.capitalDelta -= result.revenue; result.revenue = 0; request.auditedAs = 'uncharged'; }
+      // An exposed response module returns a failure to a customer who was already charged.
+      if (audited.includes('confirmation') && result.status === 'COMPLETED') { result.status = 'FAILED'; result.reason = 'DEADLINE'; request.status = 'FAILED'; request.auditedAs = 'confirmation'; }
+    }
     company.duplicates += request.duplicates ?? 0;
     for (const code of request.effectCodes ?? []) { const counters = (state.operations ??= initialOperations()).counters; counters.activations[code] = (counters.activations[code] ?? 0) + 1; }
     const key = { COMPLETED: 'completed', REJECTED: 'rejected', ABANDONED: 'abandoned', FAILED: 'failed' } as const;
@@ -168,19 +175,12 @@ export function settleTraffic(company: Company, now: number) {
       totals[key[result.status]]++; totals.committed += request.committed; totals.oversold += request.oversold;
       totals.revenue += result.revenue; totals.lostRevenue += result.lostRevenue; totals.capitalDelta += result.capitalDelta;
     }
-    const audited = company.runtime.auditEffects;
-    if (audited && request.trafficClass === 'legitimate') {
-      // An exposed payment module lets a purchase complete without the company ever collecting it.
-      if (audited.includes('uncharged') && result.revenue > 0) { result.lostRevenue += result.revenue; result.capitalDelta -= result.revenue; result.revenue = 0; }
-      // An exposed response module returns a failure to a customer who was already charged.
-      if (audited.includes('confirmation') && result.status === 'COMPLETED') { result.status = 'FAILED'; result.reason = 'DEADLINE'; request.status = 'FAILED'; }
-    }
     company.successes += Number(result.status === 'COMPLETED'); company.errors += Number(result.status !== 'COMPLETED');
     company.revenue += result.revenue; company.lostRevenue += result.lostRevenue; company.capital += result.capitalDelta;
     company.oversold += request.oversold; company.breaches += Number(request.breach);
     if (request.trafficClass === 'legitimate') { recordCustomerExperience(company, request, request.type, request.latencyMs!); recordFunnel(company, request, now); }
     request.accounted = true;
-    observeCompany(company, 'request.settled', { requestId: request.id, customerId: request.customerId, trafficClass: request.trafficClass, type: request.type, version: request.executionVersion, result: request.result, transaction: request.transaction, duplicates: request.duplicates ?? 0, oversold: request.oversold, defects: request.effectCodes ?? [], modules: capturesReceipts(company) ? request.execution?.modules.map(m => ({ id: m.id, version: m.version, defects: m.defects.filter(d => request.effectCodes?.includes(d.code)).map(d => d.code) })) ?? [] : [], latencyMs: request.latencyMs }, [request.id]);
+    observeCompany(company, 'request.settled', { ...(request.auditedAs ? { auditedAs: request.auditedAs } : {}), requestId: request.id, customerId: request.customerId, trafficClass: request.trafficClass, type: request.type, version: request.executionVersion, result: request.result, transaction: request.transaction, duplicates: request.duplicates ?? 0, oversold: request.oversold, defects: request.effectCodes ?? [], modules: capturesReceipts(company) ? request.execution?.modules.map(m => ({ id: m.id, version: m.version, defects: m.defects.filter(d => request.effectCodes?.includes(d.code)).map(d => d.code) })) ?? [] : [], latencyMs: request.latencyMs }, [request.id]);
     if (request.transaction === 'PENDING_RESOLUTION') state.unresolvedCount++;
     state.observations.push({ at: now, legitimate: request.trafficClass === 'legitimate', status: result.status, latency: request.latencyMs!, breach: request.breach, oversold: request.oversold });
     if(capturesReceipts(company)){const receipt=trafficReceipt(request, true);

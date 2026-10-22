@@ -45,6 +45,8 @@ export type TrafficRequest = PurchaseRequest & {
   probe?: string; probeSettled?: boolean;
   /** Already counted against an open audit finding, so the leak never charges one request twice. */
   leakCharged?: boolean;
+  /** Damage an open audit window applied to this legitimate request, so its complaint tells the right story. */
+  auditedAs?: 'uncharged' | 'confirmation';
   companyId: number; customerId?: string; type: 'browse' | 'query' | 'purchase'; trafficClass: 'legitimate' | 'malicious';
   attackKind?: 'forged' | 'injection' | 'bot'; attempt: number; admittedAt?: number; startedAt?: number; finishedAt?: number; latencyMs?: number;
   queueEnteredAt?: number; queueExitedAt?: number; waits: QueueVisit[]; service: ServiceId; stage: RequestStage;

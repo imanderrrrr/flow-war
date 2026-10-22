@@ -414,3 +414,61 @@ test('calibración: corregir temprano cuesta poco más que la multa; ignorarlo d
   assert(ignored.total > fixed.total * 3, `ignorarlo cuesta mucho más: Q${Math.round(ignored.total)} contra Q${Math.round(fixed.total)}`);
   assert(ignored.reputation < fixed.reputation, `ignorarlo deja peor reputación: ${ignored.reputation} contra ${fixed.reputation}`);
 });
+
+/** Opens a finding and sustains it, returning the finding. */
+function sustainOn(g: GameState, companyId: number, nodeId: string, check: string, who = auditor()) {
+  const finding = openFindingOn(g, companyId, nodeId, check, who);
+  assert(sustain(g, who, { findingId: finding.id }).ok);
+  return finding;
+}
+
+test('escalar servidores nunca dispara una ráfaga: la tasa sostenida se respeta tick a tick', () => {
+  const g = running(), c = g.companies[0];
+  sustainOn(g, 0, 'backend-write', 'waf');
+  advanceGame(g, 20);
+  // El equipo se defiende escalando; eso debe aliviar, nunca provocar una avalancha.
+  c.servers = 8; c.balancer = true;
+  c.infrastructure.instances = Array.from({ length: 8 }, (_, i) => ({ id: i + 1, status: 'UP' as const }));
+  const before = c.traffic.malicious.generated;
+  advanceGame(g, 0.1);
+  const admitted = c.traffic.malicious.generated - before;
+  assert(admitted <= 12, `un solo tick admitió ${admitted} solicitudes`);
+});
+
+test('una empresa recibe como máximo una prueba sostenida a la vez', () => {
+  const g = running();
+  sustainOn(g, 0, 'backend-write', 'waf', auditor(1));
+  const second = openFindingOn(g, 0, 'backend-payment', 'auth', auditor(2));
+  assert.equal(sustain(g, auditor(2), { findingId: second.id }).code, 'COMPANY_BUSY');
+});
+
+test('el daño de auditoría deja la contabilidad del motor consistente', () => {
+  const g = running(), c = g.companies[0];
+  advanceGame(g, 60);
+  sustainOn(g, 0, 'backend-payment', 'auth');
+  const before = { revenue: c.revenue, totals: c.traffic.totals.revenue };
+  advanceGame(g, 45);
+  assert.equal(Math.round(c.traffic.totals.revenue - before.totals), Math.round(c.revenue - before.revenue),
+    `totales ${c.traffic.totals.revenue - before.totals} contra empresa ${c.revenue - before.revenue}`);
+});
+
+test('con capital negativo la fuga no devuelve dinero', () => {
+  const g = running(), c = g.companies[0];
+  const finding = sustainOn(g, 0, 'backend-write', 'waf');
+  advanceGame(g, 10);
+  c.capital = -40; const lost = finding.lost;
+  advanceGame(g, 20);
+  assert(c.capital <= -40, `el capital subió a ${c.capital}`);
+  assert(finding.lost >= lost, `lo perdido bajó de ${lost} a ${finding.lost}`);
+});
+
+test('el hueco de cobro y el de confirmación generan sus propias quejas', () => {
+  for (const [nodeId, pattern] of [['backend-payment', /pago|descontaron/i], ['backend-exit', /cobraron|la tengo/i]] as const) {
+    const g = running(), c = g.companies[0];
+    advanceGame(g, 60);
+    sustainOn(g, 0, nodeId, 'auth');
+    advanceGame(g, 50);
+    const texts = g.slack.messages.filter(m => m.companyId === c.id && m.channel === 'soporte-clientes').map(m => m.text);
+    assert(texts.some(t => pattern.test(t)), `${nodeId}: ${texts.join(' | ') || 'sin quejas'}`);
+  }
+});
