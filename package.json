@@ -14,7 +14,7 @@
     "bench:entrega5": "tsx scripts/entrega5-benchmark.ts",
     "bench:chat": "tsx scripts/chat-benchmark.ts",
     "history:admin": "tsx scripts/history-admin.ts",
-    "bench:audit": "tsx scripts/audit-load.ts",
+    "bench:audit": "node --import tsx scripts/audit-calibration.ts",
     "bench:classroom": "tsx scripts/audit-classroom-load.ts",
     "bench:snapshots": "tsx scripts/performance-classroom.ts",
     "bench:dvr-modes": "tsx scripts/performance-modes.ts",

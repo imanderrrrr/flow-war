@@ -7,7 +7,7 @@ import { recoverGame, serializeGame } from '../server/persistence.js';
 import { route } from '../server/graphs.js';
 import { serviceRates } from '../server/traffic.js';
 import { DEFAULT_TEST } from '../shared/actions.js';
-import { AUDIT_PROBE, CONTROL_CHECKS } from '../shared/auditor.js';
+import { AUDIT_LEAK, AUDIT_PROBE, CONTROL_CHECKS } from '../shared/auditor.js';
 import { LOBBY_ICONS } from '../shared/lobby.js';
 import type { GameState, GraphNode, Identity } from '../shared/types.js';
 import type { ModuleVersion } from '../shared/simulation.js';
@@ -395,4 +395,22 @@ test('cada módulo golpea el servicio al que pertenece', () => {
   assert.equal(targetService({ id: 'a', type: 'entry', position: { x: 0, y: 0 }, data: { label: '' } }), 'security');
   assert.equal(targetService({ id: 'a', type: 'write', position: { x: 0, y: 0 }, data: { label: '' } }), 'inventory');
   assert.equal(targetService({ id: 'a', type: 'payment', position: { x: 0, y: 0 }, data: { label: '' } }), 'payment');
+});
+
+test('calibración: corregir temprano cuesta poco más que la multa; ignorarlo deja a la empresa en crisis', () => {
+  const horizon = 600;
+  const play = (fix: boolean) => {
+    const g = createGame(horizon); assert(command(g, 'operator', 'room.start').ok);
+    const c = g.companies[0];
+    advanceGame(g, horizon * 0.27);
+    const finding = openFindingOn(g, 0, 'backend-write', 'waf');
+    if (fix) { advanceGame(g, 120); deployWithControls(g, 'backend-write', [{ kind: 'input' }]); }
+    while (g.status === 'RUNNING') advanceGame(g, 1);
+    return { total: finding.fine + finding.lost, reputation: c.reputation, closed: finding.closedAt !== undefined };
+  };
+  const fixed = play(true), ignored = play(false);
+  assert(fixed.closed, 'configurar el control cierra el hallazgo');
+  assert(fixed.total < AUDIT_LEAK.fine * 3, `corregir temprano cuesta poco más que la multa: Q${Math.round(fixed.total)}`);
+  assert(ignored.total > fixed.total * 3, `ignorarlo cuesta mucho más: Q${Math.round(ignored.total)} contra Q${Math.round(fixed.total)}`);
+  assert(ignored.reputation < fixed.reputation, `ignorarlo deja peor reputación: ${ignored.reputation} contra ${fixed.reputation}`);
 });
