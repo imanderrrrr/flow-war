@@ -1,4 +1,5 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { AiGateway, AnthropicProvider } from '../server/claude.js';
 import { applyCommand, createGame } from '../server/engine.js';
 import { beginExecution, buildRequest, executeCalls, finishExecution, replyFor } from '../server/executor-service.js';
@@ -10,8 +11,8 @@ import type { ExecutorInput } from '../shared/executor.js';
  * Test I — real Anthropic HTTP with tool calling. Runs only with ANTHROPIC_API_KEY; otherwise records
  * not_run. Each case checks the engine state, never the model prose. Results: docs/benchmarks/entrega-8/anthropic.json
  */
-const out = 'docs/benchmarks/entrega-8/anthropic.json';
-mkdirSync('docs/benchmarks/entrega-8', { recursive: true });
+const out = process.env.FLOW_SMOKE_OUT ?? 'docs/benchmarks/entrega-8/anthropic.json';
+mkdirSync(dirname(out), { recursive: true });
 const provider = new AnthropicProvider(), key = process.env.ANTHROPIC_API_KEY ?? '';
 const report: Record<string, unknown> = { at: new Date().toISOString(), transport: 'real Anthropic HTTPS through @anthropic-ai/sdk', status: 'pending', configuration: provider.status(), cases: [] as unknown[] };
 if (!key) {

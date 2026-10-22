@@ -38,6 +38,9 @@ Historial de corridas reales del mismo día:
 3. Se corrigió la preparación (el CTO autoriza escalar y balanceador antes de D; toda preparación rechazada
    aborta la corrida) y se registró el modelo que respondió en cada caso. Dos corridas seguidas: 19/19 ambas.
 
+Después de esta entrega el modelo por defecto pasó a `claude-haiku-5-5`: el mismo Test I dio 19/19 en dos corridas,
+p50 2403 / 2086 ms, unas 25 veces más barato que Opus ([comparación](../haiku/README.md)).
+
 Límites: 19 casos no agotan las redacciones posibles; una orden informal que el modelo no cite literalmente
 termina en pedido de dato (falla segura). La latencia de 18,8 s quedó cerca del límite de 20 s
 (`FLOW_AI_PROVIDER_TIMEOUT_MS`); si se excede, la orden no se ejecuta y el estudiante puede reintentarla.

@@ -18,7 +18,8 @@ export type Provider = {
 };
 
 /** Default when ANTHROPIC_MODEL is not set. The operator can choose any model enabled for the account. */
-export const DEFAULT_MODEL = 'claude-opus-5-5';
+/** Haiku 5.5 for every call: the executor only maps an explicit order to one tool, which needs speed and volume, not depth. */
+export const DEFAULT_MODEL = 'claude-haiku-5-5';
 /** Models that accept the server-side refusal fallback in its "default" form on the Claude API. */
 const FALLBACK_MODELS = new Set(['claude-fable-5-1', 'claude-opus-5-5', 'claude-opus-5', 'claude-sonnet-5-5']);
 const setting = (name: string, fallback: number, min: number, max: number) => { const n = Number(process.env[name] ?? fallback); return Number.isInteger(n) && n >= min && n <= max ? n : fallback; };

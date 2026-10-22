@@ -39,7 +39,7 @@ if (!/^sk-ant-[A-Za-z0-9_-]{20,}$/.test(key)) { console.error('El formato no par
 
 let content = existsSync(envPath) ? readFileSync(envPath, 'utf8') : existsSync(examplePath) ? readFileSync(examplePath, 'utf8') : '';
 content = /^ANTHROPIC_API_KEY=.*$/m.test(content) ? content.replace(/^ANTHROPIC_API_KEY=.*$/m, `ANTHROPIC_API_KEY=${key}`) : `${content.replace(/\n?$/, '\n')}ANTHROPIC_API_KEY=${key}\n`;
-if (!/^ANTHROPIC_MODEL=\S+/m.test(content)) content = /^ANTHROPIC_MODEL=.*$/m.test(content) ? content.replace(/^ANTHROPIC_MODEL=.*$/m, 'ANTHROPIC_MODEL=claude-opus-5-5') : `${content}ANTHROPIC_MODEL=claude-opus-5-5\n`;
+if (!/^ANTHROPIC_MODEL=\S+/m.test(content)) content = /^ANTHROPIC_MODEL=.*$/m.test(content) ? content.replace(/^ANTHROPIC_MODEL=.*$/m, 'ANTHROPIC_MODEL=claude-haiku-5-5') : `${content}ANTHROPIC_MODEL=claude-haiku-5-5\n`;
 writeFileSync(envPath, content, { mode: 0o600 }); chmodSync(envPath, 0o600);
 console.log(`Clave guardada en ${envPath} (permisos 600, ignorado por Git).`);
 console.log('Siguiente paso: npm run verify:anthropic');

@@ -91,8 +91,7 @@ escribió el estudiante; ahora descarta reglas cuyos umbrales u orígenes no est
 | Variable | Defecto | Uso |
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` | — | Solo en el entorno del servidor. Nunca llega a logs, respuestas, snapshots ni frontend. |
-| `ANTHROPIC_MODEL` | `claude-opus-5-5` | Modelo con *tool calling* estricto. |
-| `ANTHROPIC_WORKSPACE_ID` | — | Cabecera de workspace si la credencial lo requiere. |
+| `ANTHROPIC_MODEL` | `claude-haiku-5-5` | Modelo con *tool calling* estricto. Haiku por defecto: el ejecutor solo mapea una orden a una herramienta ([comparación](benchmarks/haiku/README.md)). || `ANTHROPIC_WORKSPACE_ID` | — | Cabecera de workspace si la credencial lo requiere. |
 | `FLOW_AI_EFFORT` | `low` | Esfuerzo del razonamiento adaptativo (las órdenes son cortas). |
 | `FLOW_AI_MAX_TOKENS` | 4096 | Límite por respuesta. |
 | `FLOW_AI_CONCURRENCY` / `FLOW_AI_COMPANY_CONCURRENCY` | 5 / 2 | Llamadas simultáneas totales y por empresa, con cola round-robin. |
@@ -210,7 +209,7 @@ principal; los proyectos DVR anteriores se leen sin cambios. Resultados en
 | F resultado QA | `tests/executor.test.ts` (Test F), `tests/executor-service.test.ts` |
 | G aislamiento | `tests/executor.test.ts` (Test G), servidor real |
 | H concurrencia | `tests/executor-service.test.ts` (Test H), `npm run bench:executor`, `npm run bench:ai` |
-| I Anthropic real | `npm run verify:anthropic` — **19/19 con la API real** (`claude-opus-5-5`, 2026-10-22); evidencia en `docs/benchmarks/entrega-8/anthropic.json` |
+| I Anthropic real | `npm run verify:anthropic` — **19/19 con la API real** con `claude-haiku-5-5` (modelo por defecto, dos corridas) y con `claude-opus-5-5` (base); evidencia en `docs/benchmarks/haiku/` y `docs/benchmarks/entrega-8/anthropic.json` |
 
 Además: una regresión por cada hallazgo de la revisión independiente (`tests/executor-review.test.ts`),
 adversariales (inyección, citas inventadas, valores ausentes, verbos contradictorios, más de cuatro
@@ -220,7 +219,7 @@ consecuencias económicas, embudo, órdenes por Claude).
 
 ## 9. Bloqueos y riesgos pendientes
 
-- **Anthropic real verificado con 19 casos** (Test I, `claude-opus-5-5`): A–H, ejemplos obligatorios y cuatro
+- **Anthropic real verificado con 19 casos** (Test I, `claude-opus-5-5`; después `claude-haiku-5-5`, el modelo por defecto, también 19/19 en dos corridas): A–H, ejemplos obligatorios y cuatro
   empresas concurrentes, 19/19 en dos corridas seguidas. No agota las redacciones posibles; las pruebas
   automáticas siguen usando transportes simulados o un servidor local que imita la API de Messages. Una corrida
   registró 18,8 s de latencia frente al límite de 20 s (`FLOW_AI_PROVIDER_TIMEOUT_MS`); si se excede, la orden no

@@ -92,8 +92,9 @@ El dominio actual mantiene compras, inventario y pagos; la adaptación a platafo
 
 Backend entrega su funcionalidad a Seguridad, que escribe protecciones libres sobre los mismos bloques.
 QA, CTO y DevOps trabajan con la combinación exacta de versiones. Ambos departamentos pueden preparar
-borradores revisables con Claude. La integración real requiere `ANTHROPIC_API_KEY` y `ANTHROPIC_MODEL`
-en el servidor; no hay sustitución simulada en producción.
+borradores revisables con Claude. La integración real requiere `ANTHROPIC_API_KEY` en el servidor; el
+modelo por defecto es `claude-haiku-5-5` (el ejecutor solo traduce órdenes a herramientas) y se puede
+cambiar con `ANTHROPIC_MODEL`. No hay sustitución simulada en producción.
 
 - [Arquitectura, configuración, migración y límites](docs/17-backend-seguridad-colaborativos-ia.md)
 - [Pruebas y mediciones de 27/32 conexiones](docs/benchmarks/entrega-6/README.md)

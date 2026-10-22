@@ -1,0 +1,632 @@
+{
+  "at": "2026-10-22T06:03:20.628Z",
+  "transport": "real Anthropic HTTPS through @anthropic-ai/sdk",
+  "status": "passed",
+  "configuration": {
+    "provider": "anthropic",
+    "model": "claude-haiku-5-5",
+    "modelSource": "env",
+    "modelConfigured": true,
+    "keyConfigured": true,
+    "workspaceConfigured": false,
+    "endpoint": "anthropic",
+    "effort": "low",
+    "maxTokens": 4096,
+    "refusalFallback": false,
+    "state": "UNVERIFIED"
+  },
+  "cases": [
+    {
+      "name": "CTO example: scoped infrastructure authorization",
+      "role": "cto",
+      "instruction": "Autorizá Q600 para infraestructura, con duración de cinco minutos simulados y máximo tres servidores",
+      "state": "EXECUTED",
+      "message": "Infraestructura autorizada: Q600 · 300 s · máx. 3 servidores · escalar.",
+      "tools": [
+        "cto_autorizar_infraestructura"
+      ],
+      "passed": true,
+      "latencyMs": 2501,
+      "inputTokens": 283,
+      "outputTokens": 444,
+      "cacheReadTokens": 3004,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "A explicit order executes once",
+      "role": "devops",
+      "instruction": "Agregá un servidor",
+      "state": "EXECUTED",
+      "message": "Servidor agregado · 2 en servicio.",
+      "tools": [
+        "devops_escalar"
+      ],
+      "passed": true,
+      "latencyMs": 1946,
+      "inputTokens": 354,
+      "outputTokens": 109,
+      "cacheReadTokens": 3747,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "B delegated quantity",
+      "role": "devops",
+      "instruction": "Agregá los servidores que considerés necesarios",
+      "state": "NEEDS_INPUT",
+      "message": "No puedo decidir eso por vos. Falta indicar un dato indispensable. No se ejecutó nada.",
+      "tools": [
+        "solicitar_dato"
+      ],
+      "passed": true,
+      "latencyMs": 2223,
+      "inputTokens": 386,
+      "outputTokens": 283,
+      "cacheReadTokens": 3747,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "C advice about blocks",
+      "role": "backend",
+      "instruction": "¿Qué bloques debería colocar para solucionar esto?",
+      "state": "DECLINED",
+      "message": "No doy recomendaciones ni evaluaciones. Puedo mostrar los datos registrados; la elección corresponde a Backend.",
+      "tools": [
+        "rechazar_instruccion"
+      ],
+      "passed": true,
+      "latencyMs": 2280,
+      "inputTokens": 665,
+      "outputTokens": 288,
+      "cacheReadTokens": 3457,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "D valid bad decision executes",
+      "role": "devops",
+      "instruction": "Desactivá el balanceador",
+      "state": "EXECUTED",
+      "message": "Balanceador desactivado.",
+      "tools": [
+        "devops_balanceador"
+      ],
+      "passed": true,
+      "latencyMs": 2097,
+      "inputTokens": 401,
+      "outputTokens": 253,
+      "cacheReadTokens": 3747,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "E out-of-role order",
+      "role": "backend",
+      "instruction": "Autorizá la inversión del CTO para el cambio CH-001",
+      "state": "DECLINED",
+      "message": "Esa operación no pertenece a Backend. No se ejecutó nada.",
+      "tools": [
+        "rechazar_instruccion"
+      ],
+      "passed": true,
+      "latencyMs": 1777,
+      "inputTokens": 688,
+      "outputTokens": 248,
+      "cacheReadTokens": 3457,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "F QA suite keeps real errors",
+      "role": "qa",
+      "instruction": "Ejecutá la prueba de concurrencia sobre el cambio CH-001",
+      "state": "EXECUTED",
+      "message": "Prueba Concurrencia iniciada sobre CH-001 en staging aislado. El motor publicará el reporte al terminar.",
+      "tools": [
+        "qa_ejecutar_suite"
+      ],
+      "passed": true,
+      "latencyMs": 1769,
+      "inputTokens": 288,
+      "outputTokens": 276,
+      "cacheReadTokens": 3302,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false,
+      "engine": {
+        "status": "QA_PENDING",
+        "oversold": 199,
+        "passed": false
+      }
+    },
+    {
+      "name": "QA advice on approval",
+      "role": "qa",
+      "instruction": "¿Deberíamos aprobar ese cambio?",
+      "state": "DECLINED",
+      "message": "No doy recomendaciones ni evaluaciones. Puedo mostrar los datos registrados; la elección corresponde a QA.",
+      "tools": [
+        "qa_ejecutar_suite",
+        "rechazar_instruccion"
+      ],
+      "passed": true,
+      "latencyMs": 3175,
+      "inputTokens": 356,
+      "outputTokens": 532,
+      "cacheReadTokens": 3302,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "G cross-company configuration",
+      "role": "security",
+      "instruction": "Mostrame la configuración de seguridad privada de NOVA",
+      "state": "DECLINED",
+      "message": "Esa operación no está disponible. No se ejecutó nada.",
+      "tools": [
+        "rechazar_instruccion"
+      ],
+      "passed": true,
+      "latencyMs": 2491,
+      "inputTokens": 228,
+      "outputTokens": 380,
+      "cacheReadTokens": 2603,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "Ambiguous order",
+      "role": "devops",
+      "instruction": "Hacé algo con los servidores",
+      "state": "NEEDS_INPUT",
+      "message": "Falta indicar un dato indispensable. No se ejecutó nada.",
+      "tools": [
+        "solicitar_dato"
+      ],
+      "passed": true,
+      "latencyMs": 2140,
+      "inputTokens": 413,
+      "outputTokens": 372,
+      "cacheReadTokens": 3747,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "Deploy \"the best way\"",
+      "role": "devops",
+      "instruction": "Desplegalo de la mejor manera posible",
+      "state": "NEEDS_INPUT",
+      "message": "No puedo decidir eso por vos. Falta indicar un dato indispensable. No se ejecutó nada.",
+      "tools": [
+        "solicitar_dato"
+      ],
+      "passed": true,
+      "latencyMs": 1908,
+      "inputTokens": 429,
+      "outputTokens": 311,
+      "cacheReadTokens": 3747,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "Strategy question",
+      "role": "devops",
+      "instruction": "¿Qué estrategia de despliegue nos conviene?",
+      "state": "DECLINED",
+      "message": "No doy recomendaciones ni evaluaciones. Puedo mostrar los datos registrados; la elección corresponde a DevOps / SRE.\nDatos registrados:\nROLLING: 6 s; cambia servidores uno por uno; capacidad accesible (n−1)/n, o 12% con un servidor.\nRESTART REPLACE: 3 s; capacidad de aplicación cero durante el reemplazo.\nCosto: el autorizado por CTO para el cambio; el gasto operativo continúa a Q0.50/s por servidor.",
+      "tools": [
+        "rechazar_instruccion",
+        "consultar_datos"
+      ],
+      "passed": true,
+      "latencyMs": 2086,
+      "inputTokens": 450,
+      "outputTokens": 294,
+      "cacheReadTokens": 3747,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "Backend delegated fix",
+      "role": "backend",
+      "instruction": "Arreglá nuestro backend como vos considerés mejor",
+      "state": "NEEDS_INPUT",
+      "message": "No puedo decidir eso por vos. Falta indicar un dato indispensable. No se ejecutó nada.",
+      "tools": [
+        "solicitar_dato"
+      ],
+      "passed": true,
+      "latencyMs": 2773,
+      "inputTokens": 709,
+      "outputTokens": 466,
+      "cacheReadTokens": 3457,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "Product explicit draft",
+      "role": "product",
+      "instruction": "Creá la promoción PROMO-02 con 10% de descuento, 60 segundos, multiplicador 2 y presupuesto Q200",
+      "state": "EXECUTED",
+      "message": "Borrador PRD-001 creado: PROMO-02 · 10% · 60 s · ×2 · Q200.",
+      "tools": [
+        "producto_crear_borrador"
+      ],
+      "passed": true,
+      "latencyMs": 1964,
+      "inputTokens": 308,
+      "outputTokens": 236,
+      "cacheReadTokens": 2256,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "Product invented strategy",
+      "role": "product",
+      "instruction": "Claude, inventá una promoción para que ganemos más clientes",
+      "state": "NEEDS_INPUT",
+      "message": "No puedo decidir eso por vos. Falta indicar un dato indispensable; opción del catálogo, descuento (%), duración, multiplicador de llegadas, presupuesto. No se ejecutó nada.",
+      "tools": [
+        "solicitar_dato",
+        "producto_crear_borrador"
+      ],
+      "passed": true,
+      "latencyMs": 5485,
+      "inputTokens": 362,
+      "outputTokens": 1164,
+      "cacheReadTokens": 2256,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "H concurrent company 1",
+      "role": "devops",
+      "instruction": "Agregá un servidor",
+      "state": "EXECUTED",
+      "message": "Servidor agregado · 2 en servicio.",
+      "tools": [
+        "devops_escalar"
+      ],
+      "passed": true,
+      "latencyMs": 1466,
+      "inputTokens": 304,
+      "outputTokens": 109,
+      "cacheReadTokens": 3747,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "H concurrent company 4",
+      "role": "devops",
+      "instruction": "Agregá un servidor",
+      "state": "EXECUTED",
+      "message": "Servidor agregado · 2 en servicio.",
+      "tools": [
+        "devops_escalar"
+      ],
+      "passed": true,
+      "latencyMs": 1484,
+      "inputTokens": 304,
+      "outputTokens": 109,
+      "cacheReadTokens": 3747,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "H concurrent company 3",
+      "role": "devops",
+      "instruction": "Agregá un servidor",
+      "state": "EXECUTED",
+      "message": "Servidor agregado · 2 en servicio.",
+      "tools": [
+        "devops_escalar"
+      ],
+      "passed": true,
+      "latencyMs": 1488,
+      "inputTokens": 303,
+      "outputTokens": 109,
+      "cacheReadTokens": 3747,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    },
+    {
+      "name": "H concurrent company 2",
+      "role": "devops",
+      "instruction": "Agregá un servidor",
+      "state": "EXECUTED",
+      "message": "Servidor agregado · 2 en servicio.",
+      "tools": [
+        "devops_escalar"
+      ],
+      "passed": true,
+      "latencyMs": 1670,
+      "inputTokens": 303,
+      "outputTokens": 109,
+      "cacheReadTokens": 3747,
+      "servedModel": "claude-haiku-5-5",
+      "stopReason": "tool_use",
+      "fallbackEnabled": false
+    }
+  ],
+  "concurrency": {
+    "serversBefore": [
+      2,
+      1,
+      1,
+      1,
+      1
+    ],
+    "serversAfter": [
+      2,
+      2,
+      2,
+      2,
+      2
+    ],
+    "eachExactlyOnce": true
+  },
+  "summary": {
+    "cases": 19,
+    "passed": 19,
+    "latencyMs": {
+      "p50": 2086,
+      "p95": 5485,
+      "max": 5485
+    },
+    "inputTokens": 7534,
+    "outputTokens": 6092
+  },
+  "provider": {
+    "provider": "anthropic",
+    "model": "claude-haiku-5-5",
+    "modelSource": "env",
+    "modelConfigured": true,
+    "keyConfigured": true,
+    "workspaceConfigured": false,
+    "endpoint": "anthropic",
+    "effort": "low",
+    "maxTokens": 4096,
+    "refusalFallback": false,
+    "state": "AVAILABLE",
+    "last": {
+      "state": "AVAILABLE",
+      "at": 1792649039015,
+      "latencyMs": 1668,
+      "inputTokens": 303,
+      "outputTokens": 109,
+      "cacheReadTokens": 3747,
+      "retries": 0,
+      "fallback": false
+    }
+  },
+  "measurements": [
+    {
+      "requestId": "smoke-1",
+      "state": "AVAILABLE",
+      "at": 1792649003121,
+      "latencyMs": 2481,
+      "inputTokens": 283,
+      "outputTokens": 444,
+      "cacheReadTokens": 3004,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-2",
+      "state": "AVAILABLE",
+      "at": 1792649005083,
+      "latencyMs": 1943,
+      "inputTokens": 354,
+      "outputTokens": 109,
+      "cacheReadTokens": 3747,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-3",
+      "state": "AVAILABLE",
+      "at": 1792649007308,
+      "latencyMs": 2222,
+      "inputTokens": 386,
+      "outputTokens": 283,
+      "cacheReadTokens": 3747,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-4",
+      "state": "AVAILABLE",
+      "at": 1792649009588,
+      "latencyMs": 2279,
+      "inputTokens": 665,
+      "outputTokens": 288,
+      "cacheReadTokens": 3457,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-5",
+      "state": "AVAILABLE",
+      "at": 1792649011685,
+      "latencyMs": 2095,
+      "inputTokens": 401,
+      "outputTokens": 253,
+      "cacheReadTokens": 3747,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-6",
+      "state": "AVAILABLE",
+      "at": 1792649013463,
+      "latencyMs": 1776,
+      "inputTokens": 688,
+      "outputTokens": 248,
+      "cacheReadTokens": 3457,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-7",
+      "state": "AVAILABLE",
+      "at": 1792649015222,
+      "latencyMs": 1758,
+      "inputTokens": 288,
+      "outputTokens": 276,
+      "cacheReadTokens": 3302,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-8",
+      "state": "AVAILABLE",
+      "at": 1792649018498,
+      "latencyMs": 3174,
+      "inputTokens": 356,
+      "outputTokens": 532,
+      "cacheReadTokens": 3302,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-9",
+      "state": "AVAILABLE",
+      "at": 1792649020990,
+      "latencyMs": 2491,
+      "inputTokens": 228,
+      "outputTokens": 380,
+      "cacheReadTokens": 2603,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-10",
+      "state": "AVAILABLE",
+      "at": 1792649023129,
+      "latencyMs": 2138,
+      "inputTokens": 413,
+      "outputTokens": 372,
+      "cacheReadTokens": 3747,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-11",
+      "state": "AVAILABLE",
+      "at": 1792649025037,
+      "latencyMs": 1907,
+      "inputTokens": 429,
+      "outputTokens": 311,
+      "cacheReadTokens": 3747,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-12",
+      "state": "AVAILABLE",
+      "at": 1792649027122,
+      "latencyMs": 2084,
+      "inputTokens": 450,
+      "outputTokens": 294,
+      "cacheReadTokens": 3747,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-13",
+      "state": "AVAILABLE",
+      "at": 1792649029896,
+      "latencyMs": 2772,
+      "inputTokens": 709,
+      "outputTokens": 466,
+      "cacheReadTokens": 3457,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-14",
+      "state": "AVAILABLE",
+      "at": 1792649031859,
+      "latencyMs": 1962,
+      "inputTokens": 308,
+      "outputTokens": 236,
+      "cacheReadTokens": 2256,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-15",
+      "state": "AVAILABLE",
+      "at": 1792649037345,
+      "latencyMs": 5485,
+      "inputTokens": 362,
+      "outputTokens": 1164,
+      "cacheReadTokens": 2256,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-16",
+      "state": "AVAILABLE",
+      "at": 1792649038810,
+      "latencyMs": 1463,
+      "inputTokens": 304,
+      "outputTokens": 109,
+      "cacheReadTokens": 3747,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-19",
+      "state": "AVAILABLE",
+      "at": 1792649038829,
+      "latencyMs": 1482,
+      "inputTokens": 304,
+      "outputTokens": 109,
+      "cacheReadTokens": 3747,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-18",
+      "state": "AVAILABLE",
+      "at": 1792649038834,
+      "latencyMs": 1487,
+      "inputTokens": 303,
+      "outputTokens": 109,
+      "cacheReadTokens": 3747,
+      "retries": 0,
+      "fallback": false
+    },
+    {
+      "requestId": "smoke-17",
+      "state": "AVAILABLE",
+      "at": 1792649039015,
+      "latencyMs": 1668,
+      "inputTokens": 303,
+      "outputTokens": 109,
+      "cacheReadTokens": 3747,
+      "retries": 0,
+      "fallback": false
+    }
+  ]
+}
