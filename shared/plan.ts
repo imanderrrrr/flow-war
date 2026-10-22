@@ -60,9 +60,3 @@ export function planPublicationCost(previous: Graph, next: Graph) {
   return Object.entries(after).reduce((sum, [type, count]) =>
     sum + Math.max(0, count - (before[type] ?? 0)) * (isPlanPiece(type) ? PLAN_PIECES[type].cost : 0), PLAN_PUBLICATION_FEE);
 }
-/** Pieces `next` adds over `previous`, which is what a publication is charged for. */
-export function addedPieces(previous: Graph, next: Graph): PlanPiece[] {
-  const before = tally(previous), after = tally(next);
-  return Object.entries(after).flatMap(([type, count]) =>
-    isPlanPiece(type) ? Array.from({ length: Math.max(0, count - (before[type] ?? 0)) }, () => type) : []);
-}

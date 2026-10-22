@@ -64,7 +64,7 @@ export function recoverGame(serialized: string): GameState {
     company.runtime ??= initialRuntime(); syncInfrastructure(company);
     // A saved QA fixture carries no schema of its own, and the engine needs a plan to know where a
     // request goes. Before this entrega the service layer was wired in, so that plan is the complete one.
-    company.plan ??= completePlan(); company.assembly ??= { active: false, closedAt: saved.tick };
+    company.plan ??= completePlan(); company.assembly ??= { active: false, closedAt: saved.tick }; company.planDrafts ??= {};
   }
   for (const change of saved.changes) if (change.testJob?.run) change.testJob.requests = change.testJob.run.requests;
   for (const change of saved.changes) if (change.qaLoad) change.qaLoad.company.traffic.scope = 'qa';

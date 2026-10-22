@@ -281,7 +281,10 @@ function updateTrafficMetrics(company: Company, now: number, dt: number, rates: 
     const queue = state.services[id];
     return queue.waiting.length ? rates[id] > 0 ? 1 + Math.min(2, queue.waiting.length / Math.max(1, queue.capacity)) : 3 : queue.processing.length / Math.max(1, rates[id] * state.config.delays[id]);
   }));
-  if (dt > 0) state.capacityWindow.push({ at: now, dt, utilization: saturated, unavailable: rates.web === 0 || company.serviceMode?.mode === 'FULL_MAINTENANCE' ? 1 : 0 });
+  // A storefront the team has not placed yet is not an outage: during the montaje it costs the
+  // sale, never the reputation (spec §5).
+  const unbuilt = company.assembly?.active && rates.web === 0 && company.serviceMode?.mode !== 'FULL_MAINTENANCE';
+  if (dt > 0) state.capacityWindow.push({ at: now, dt, utilization: saturated, unavailable: !unbuilt && (rates.web === 0 || company.serviceMode?.mode === 'FULL_MAINTENANCE') ? 1 : 0 });
   state.capacityWindow = state.capacityWindow.filter(sample => sample.at > now - state.config.window);
   state.observations = state.observations.filter(sample => sample.at > now - state.config.window);
   const legit = state.observations.filter(sample => sample.legitimate), totalTime = state.capacityWindow.reduce((sum, sample) => sum + sample.dt, 0);

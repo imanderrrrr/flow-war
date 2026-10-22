@@ -101,3 +101,25 @@ test('el montaje no altera el castigo de los motivos de siempre', () => {
   assert.equal(customer.failedVisits, 1);
   assert.ok(customer.dissatisfaction > 0);
 });
+
+test('el montaje no castiga a la empresa que dibujó mal sus caminos', () => {
+  // La salida conectada directo a la entrada deja la tienda web fuera del recorrido.
+  const game = started(planWith('exit'));
+  const company = game.companies[0];
+  company.plan.nodes.push({ id: 'plan-web', type: 'web', position: { x: 0, y: 0 }, data: { label: 'Tienda web' } });
+  advanceGame(game, 95);
+  assert.equal(company.assembly.active, true);
+  assert.equal(company.eliminated, false, 'nadie pierde su empresa por no haber construido todavía');
+  assert.equal(company.deadTicks, 0);
+  assert.ok(company.reputation >= 80, `la reputación cayó a ${company.reputation}`);
+});
+
+test('cerrado el montaje, quedarse sin tienda web sí elimina', () => {
+  const game = started(planWith('web', 'checkout', 'inventory', 'payment', 'exit'));
+  const company = game.companies[0];
+  advanceGame(game, .1);
+  assert.equal(company.assembly.active, false);
+  publishPlan(company, planWith('exit'));
+  advanceGame(game, 95);
+  assert.equal(company.eliminated, true);
+});

@@ -31,7 +31,7 @@ import { auditCommand, advanceProbes, auditorView, chargeLeaks, closeProbes, clo
 export { route, evaluateSecurity } from './graphs.js';
 import { PLAN_PIECES, completePlan, isPlanPiece, planGraph, planPublicationCost } from '../shared/plan.js';
 export { completePlan } from '../shared/plan.js';
-import { BLOCKS, SUITES, type Company, type Domain, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
+import { BLOCKS, SUITES, type Company, type Domain, type Role, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
 
 const NAMES = ['NOVA', 'VERTEX', 'BYTE', 'EMBER', 'ORBIT'];
 const COLORS = ['#f5d45c', '#68dca2', '#69adff', '#f27e79', '#b69af7'];
@@ -51,7 +51,7 @@ export function createGame(duration = 1500, seed = 7357, generation = 0, dvrEnab
     crisis: { active: false, episode: 0, lastReputation: 80 }, serviceMode: { mode: 'OPERATING', since: 0 }, assembly: { active: true }, runtime: initialRuntime(), infrastructure: initialInfrastructure(), id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
     servers: 1, balancer: false, infraBudget: duration * .5, reserved: 0, version: 1, deployments: 0, active: 0, requests: 0, successes: 0, errors: 0, breaches: 0, oversold: 0, duplicates: 0,
     lostRevenue: 0, revenue: 0, latency: 0, utilization: 0, queue: 0, migratedIn: 0, migratedOut: 0, eliminated: false, crisisTicks: 0, deadTicks: 0, bankruptTicks: 0, concurrencyUntil: 0,
-    backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), plan: initialGraph('plan'), particles: [], drafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
+    backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), plan: initialGraph('plan'), particles: [], drafts: {}, planDrafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
   }));
   const game: GameState = { dvrEnabled, actions: initialActionState(), schema: 7, observability: initialObservability(), slack: { sequence: 0, messages: [], receipts: {}, buckets: {}, groups: {}, automaticCount: 0, sampledCount: 0 }, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
   for (const company of companies) company.runtime.infra = initialOperationsState(company, duration);
@@ -105,15 +105,34 @@ export function validateGraph(input: unknown, domain: Domain, complete = true): 
   if (complete && domain === 'backend' && !['read', 'write', 'payment'].every(t => path.some(n => n.type === t))) throw new Error('La ruta debe atravesar inventario y pagos.');
   return graph;
 }
-/** Each role moves only its own pieces: the rest of the plan is visible and not grabbable. */
+const planTally = (graph: Graph) => graph.nodes.reduce((count, node) => { count[node.type] = (count[node.type] ?? 0) + 1; return count; }, {} as Record<string, number>);
+/** Roads named by the pieces they join, so a comparison does not depend on the ids a client sent. */
+function planRoads(graph: Graph) {
+  const type = new Map(graph.nodes.map(node => [node.id, node.type]));
+  return new Set(graph.edges.map(edge => `${type.get(edge.source) ?? '?'}>${type.get(edge.target) ?? '?'}`));
+}
+/** True when the plan is untouched: same pieces on the same solares, joined by the same roads. */
+export function samePlan(previous: Graph, next: Graph) {
+  const before = planTally(previous), after = planTally(next), roads = planRoads(previous), nextRoads = planRoads(next);
+  return [...new Set([...Object.keys(before), ...Object.keys(after)])].every(type => (before[type] ?? 0) === (after[type] ?? 0))
+    && roads.size === nextRoads.size && [...roads].every(road => nextRoads.has(road));
+}
+/** Each role moves only its own pieces, and only the roads that leave them: the rest of the plan is
+ * visible and not grabbable. The entrance belongs to nobody, so any of the three may connect it. */
 export function assertPlanOwnership(previous: Graph, next: Graph, role: Identity['role']) {
-  const tally = (graph: Graph) => graph.nodes.reduce((count, node) => { count[node.type] = (count[node.type] ?? 0) + 1; return count; }, {} as Record<string, number>);
-  const before = tally(previous), after = tally(next);
+  const before = planTally(previous), after = planTally(next);
   for (const type of new Set([...Object.keys(before), ...Object.keys(after)])) {
     if ((before[type] ?? 0) === (after[type] ?? 0)) continue;
     if (!isPlanPiece(type)) throw new Error('Esa pieza no existe en el catálogo del plano.');
     const piece = PLAN_PIECES[type];
     if (piece.owner !== role) throw new Error(`${piece.label} no es una pieza de tu rol.`);
+  }
+  const roads = planRoads(previous), nextRoads = planRoads(next);
+  for (const road of new Set([...roads, ...nextRoads])) {
+    if (roads.has(road) === nextRoads.has(road)) continue;
+    const source = road.split('>')[0];
+    if (source === 'entry' || !isPlanPiece(source)) continue;
+    if (PLAN_PIECES[source].owner !== role) throw new Error(`El camino que sale de ${PLAN_PIECES[source].label.toLowerCase()} lo dibuja su rol, no vos.`);
   }
   return after;
 }
@@ -264,7 +283,9 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       event(g, c.id, command.type.startsWith('infra.restart') ? 'Reinicio iniciado.' : command.type === 'infra.stop' ? 'Servicio detenido.' : 'Servicio recuperado.', 'neutral', 'DEVOPS'); return { ok: true };
     }
     if (command.type === 'plan.save' || command.type === 'plan.publish') {
-      const current = c.drafts.plan?.revision ?? 0;
+      // Each role keeps its own draft of the shared board, so an unpublished piece of one role never
+      // blocks another from saving or publishing its own.
+      const current = c.planDrafts[identity.role]?.revision ?? 0;
       if (Number(p.revision) !== current) throw new Error('La revisión cambió. Recarga el plano.');
       const graph = validateGraph(p.graph, 'plan', false);
       assertPlanOwnership(c.plan, graph, identity.role);
@@ -272,14 +293,18 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
         // While a company cannot sell there is nothing to break, so Backend, Seguridad and DevOps
         // publish straight to production. From the first sale on, every change takes the full cycle.
         if (!c.assembly.active) return { ok: false, code: 'PIPELINE_REQUIRED', error: 'La empresa ya acepta compras: el plano se cambia por el ciclo completo, no directo.' };
+        if (samePlan(c.plan, graph)) throw new Error('El plano no cambió: no hay nada que publicar.');
         const cost = planPublicationCost(c.plan, graph);
         if (c.capital - c.reserved - c.infraBudget < cost) throw new Error('Saldo disponible insuficiente.');
         c.plan = structuredClone(graph); c.capital -= cost;
         // A new production version, so a request already walking the previous plan finishes on it.
-        c.version++; c.runtime.releases[c.version] ??= releaseFor(c); staleOthers(g, c);
+        // A plan publication changes which services exist, never the modules or the protections
+        // inside them, so the production release is carried forward exactly as it stood.
+        const execution = structuredClone(c.runtime.releases[c.version] ?? releaseFor(c));
+        c.version++; c.runtime.releases[c.version] = execution; staleOthers(g, c);
         event(g, c.id, `Plano publicado · v${c.version} · Q${cost}.`, 'neutral', 'PIPELINE');
       }
-      c.drafts.plan = { graph, revision: current + 1 };
+      c.planDrafts[identity.role] = { graph, revision: current + 1 };
       return { ok: true };
     }
     if (command.type === 'draft.save' || command.type === 'change.submit') {
@@ -448,7 +473,9 @@ export function step(g: GameState, dt = .1) {
     reconcileRollbacks(c);
     if (c.capital < c.reserved + c.infraBudget) c.infraBudget = Math.max(0, c.capital - c.reserved);
     c.particles = c.particles.filter(p => g.tick - p.born < p.duration).slice(-90);
-    c.deadTicks = capacity === 0 ? c.deadTicks + dt : 0;
+    // Spec §5: while a team is still building, nobody loses their company over a service they have
+    // not placed yet. The clock only runs once the company accepts purchases.
+    c.deadTicks = capacity === 0 && !c.assembly.active ? c.deadTicks + dt : 0;
     c.bankruptTicks = c.capital <= 0 ? c.bankruptTicks + dt : 0;
     c.crisisTicks = c.customers < 50 && c.pressure >= 200 && !health ? c.crisisTicks + dt : 0;
   }
@@ -486,10 +513,10 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
     if (privateC.concurrency.run) delete privateC.concurrency.run.operationsState;
     if (privateC.concurrency.run && !internal) privateC.concurrency.run.requests = privateC.concurrency.run.requests.map(r => visibleRequest(r)) as unknown as typeof privateC.concurrency.run.requests;
     const ownDraft = identity?.role === 'backend' || identity?.role === 'security' ? identity.role : null;
-    // The plan draft is shared by the three roles that own pieces on the board, and the plan itself
-    // is public anyway, so it travels with every one of them.
-    const planDraft = privateC.drafts.plan && ['backend', 'security', 'devops'].includes(identity!.role) ? { plan: privateC.drafts.plan } : {};
-    privateC.drafts = { ...(ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {}), ...planDraft };
+    privateC.drafts = ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {};
+    // A role sees its own plan draft and nobody else's; the published plan is public on its own.
+    const ownPlan = identity && identity.role !== 'operator' && identity.role !== 'auditor' ? privateC.planDrafts[identity.role] : undefined;
+    privateC.planDrafts = ownPlan ? { [identity!.role as Role]: ownPlan } : {};
   }
   return {
     ...(identity?.role === 'auditor' ? { auditor: auditorView(g, identity) } : {}),
@@ -500,7 +527,7 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
     slack: ownCompany ? structuredClone(g.slack.messages.filter(m=>m.companyId===ownCompany.id)) : undefined,
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
     companies: common?.companies ?? g.companies.map(c => {
-      const { infraBudget, reserved, runtime, drafts, backend, security, product, breaches, migrationRemainder, arrivalRemainder, processedRemainder, crisisTicks, deadTicks, bankruptTicks, concurrencyUntil, concurrency, traffic, ...pub } = c;
+      const { infraBudget, reserved, runtime, drafts, planDrafts, backend, security, product, breaches, migrationRemainder, arrivalRemainder, processedRemainder, crisisTicks, deadTicks, bankruptTicks, concurrencyUntil, concurrency, traffic, ...pub } = c;
       return { ...pub, ...(internal?{breaches,infraBudget,reserved}:{}), traffic: trafficView(traffic, internal), concurrency: { runId: concurrency.run?.id, inventory: concurrency.run && { ...concurrency.run.inventory }, totals: { ...concurrency.totals } }, particles: particles(c), modules: [...route(backend), ...route(security)].map(n => n.type), pipelineCounts: [['QA_PENDING', 'QA_RUNNING'], ['CTO_PENDING'], ['AUTHORIZED', 'DEPLOYING'], ['DEPLOYED']].map(states => g.changes.filter(ch => ch.companyId === c.id && states.includes(ch.status)).length) };
     }),
     events: internal ? g.events : g.events.filter(e=>e.companyId===null||e.companyId===identity?.companyId||['CONCURRENCIA','COLAPSO'].includes(e.category)), migrations: g.migrations, unserved: g.unserved, privateCompany: privateC,

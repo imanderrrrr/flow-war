@@ -51,7 +51,8 @@ export default function TrafficCanvas({ company, snapshot, zoom }: { company: Pu
         return start >= 0 && end > start ? whole.slice(start, end + 1) : [from, to];
       };
       for (let i = 1; i < CHAIN.length; i++) road(segment(CHAIN[i - 1][1], CHAIN[i][1]), false, !carried.has(i));
-      road(TRAFFIC_PATHS.browse);
+      // Navigation leaves from the tienda web, so its corridor is only a road once both ends exist.
+      road(TRAFFIC_PATHS.browse, false, !(placed.has('web') && carried.has(order.get('exit')!)));
       for (const path of SERVICE_CONNECTIONS) road(path, true);
       text('NAVEGACIÓN / SALIDA', 790, 51, '#718299', 9);
       // Deliberately square, top-down buildings drawn from a small pixel grid.

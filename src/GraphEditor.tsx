@@ -49,7 +49,7 @@ export const planNodeTypes={...Object.fromEntries(PLAN_PIECE_TYPES.map(t=>[t,Pla
 
 /** The service plan: fixed solares, roads the team draws, and each role moving only its own pieces. */
 function PlanEditor({ company:c, role, active }: { company: PrivateCompany; role: Role; active: boolean }) {
-  const draft=c.drafts.plan;
+  const draft=c.planDrafts?.[role];
   const [plan,setPlan]=useState<Graph>(structuredClone(draft?.graph??c.plan));
   const servers=c.servers;
   const [selected,setSelected]=useState<string|null>(null),[dirty,setDirty]=useState(false),[busy,setBusy]=useState(false);

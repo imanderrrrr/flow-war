@@ -111,12 +111,15 @@ export type Company = {
   eliminated: boolean; eliminatedAt?: number; crisisTicks: number; deadTicks: number; bankruptTicks: number; concurrencyUntil: number;
   backend: Graph; security: Graph; product: Graph; plan: Graph; particles: FlowParticle[];
   drafts: Partial<Record<Domain, { graph: Graph; revision: number }>>;
+  /** One plan draft per role: the three roles share the board but not their unpublished work, so
+   * nobody is blocked by a piece another role saved and has not published. */
+  planDrafts: Partial<Record<Role, { graph: Graph; revision: number }>>;
   migrationRemainder: number; arrivalRemainder: number; processedRemainder: number; history: number[]; stock: number;
   concurrency: ConcurrencyState;
   traffic: TrafficState;
 };
 export type PrivateCompany = Omit<Company, 'drafts' | 'traffic' | 'runtime' | 'breaches'> & { breaches?:number; drafts: Company['drafts']; traffic: TrafficView };
-export type PublicCompany = Omit<Company, 'infraBudget' | 'reserved' | 'breaches' | 'runtime' | 'drafts' | 'backend' | 'security' | 'product' | 'migrationRemainder' | 'arrivalRemainder' | 'processedRemainder' | 'crisisTicks' | 'deadTicks' | 'bankruptTicks' | 'concurrencyUntil' | 'concurrency' | 'traffic'> & { infraBudget?:number; reserved?:number; breaches?:number; modules: string[]; pipelineCounts: number[]; concurrency: ConcurrencyView; traffic: TrafficView };
+export type PublicCompany = Omit<Company, 'infraBudget' | 'reserved' | 'breaches' | 'runtime' | 'drafts' | 'planDrafts' | 'backend' | 'security' | 'product' | 'migrationRemainder' | 'arrivalRemainder' | 'processedRemainder' | 'crisisTicks' | 'deadTicks' | 'bankruptTicks' | 'concurrencyUntil' | 'concurrency' | 'traffic'> & { infraBudget?:number; reserved?:number; breaches?:number; modules: string[]; pipelineCounts: number[]; concurrency: ConcurrencyView; traffic: TrafficView };
 export type HistoricalClosure = { generation: number; tick: number; previousStatus: string; reason: 'TEACHER_RESET' | 'LEGACY_UNCLOSED'; actor: Identity | null; receivedAt: number | null };
 export type GameState = { auditors?: import('./auditor.js').AuditorState; lobby?: LobbyState; productEnabled?: boolean; dvrEnabled: boolean; closure?: HistoricalClosure; actions: ActionState; schema: 7; observability: ObservabilityState; slack: SlackState; market: MarketState; generation: number; tick: number; duration: number; status: 'LOBBY' | 'RUNNING' | 'PAUSED' | 'FINISHED' | 'ABORTED'; seed: number; eventSeq: number; companies: Company[]; changes: Change[]; events: GameEvent[]; migrations: Migration[]; unserved: number; speed: number };
 export type Snapshot = { auditor?: import('./auditor.js').AuditorView; lobby?: LobbyView; productEnabled?: boolean; dvrEnabled?: boolean; generation: number; slack?: SlackMessage[]; operations?: OperationsView; tick: number; duration: number; status: GameState['status']; companies: PublicCompany[]; events: GameEvent[]; migrations: Migration[]; unserved: number; identity: Identity | null; privateCompany?: PrivateCompany; changes: Change[]; speed: number };
