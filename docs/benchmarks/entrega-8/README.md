@@ -14,11 +14,33 @@ Línea base en `59ba951`: 327/327.
 
 ## Anthropic real (Test I)
 
-[`anthropic.json`](anthropic.json): `failed` por **saldo de créditos insuficiente** en la cuenta de Anthropic.
-El 2026-10-22 se configuró una clave real (`npm run setup:anthropic`) y `npm run verify:anthropic` llegó a la API
-real: la clave fue aceptada (sin error de autenticación) y las 19 solicitudes fueron rechazadas con
-`INSUFFICIENT_CREDITS`, sin tokens consumidos ni salida del modelo. El informe no contiene la clave.
-La comprensión del modelo real sigue **sin verificar**: al recargar créditos, repetir `npm run verify:anthropic`.
+[`anthropic.json`](anthropic.json): **`passed`, 19/19** con HTTPS real a la API de Anthropic mediante
+`@anthropic-ai/sdk`, corrida del 2026-10-22 04:44 UTC. Las 19 respuestas las sirvió `claude-opus-5-5`
+(`stop_reason: tool_use`, sin reintentos; el *fallback* por rechazo estaba habilitado y no se usó). Cada caso se
+comprueba sobre el estado del motor, no sobre el texto del modelo.
+
+| Métrica | Valor |
+| --- | --- |
+| Casos | A–H, ejemplos obligatorios (autorización del CTO, borrador de Producto, "de la mejor manera", pregunta de estrategia, arreglo delegado) y 4 empresas concurrentes |
+| Resultados | 5 ejecutadas, 4 pedidos de dato, 6 rechazos; más 4 ejecuciones concurrentes (H) |
+| Latencia por orden | p50 2386 ms, p95 4155 ms |
+| Tokens | 7 534 de entrada sin caché + 64 564 leídos de caché; 2 807 de salida |
+| Concurrencia (H) | 4 empresas a la vez; cada una pasó de 1 a 2 servidores, exactamente una vez |
+| Clave en el informe | no |
+
+Historial de corridas reales del mismo día:
+
+1. La cuenta no tenía créditos: las 19 solicitudes fueron rechazadas con `INSUFFICIENT_CREDITS`, sin tokens.
+2. Con créditos: 18/19. El caso D falló por el guion, no por el modelo: Claude eligió `devops_balanceador`, pero
+   el escenario no había autorizado el balanceador (el primer caso deja una autorización del CTO solo para
+   escalar) y el servidor rechazó la orden, que es lo correcto. En esa corrida hubo latencias de 11,7, 14,8 y
+   18,8 s.
+3. Se corrigió la preparación (el CTO autoriza escalar y balanceador antes de D; toda preparación rechazada
+   aborta la corrida) y se registró el modelo que respondió en cada caso. Dos corridas seguidas: 19/19 ambas.
+
+Límites: 19 casos no agotan las redacciones posibles; una orden informal que el modelo no cite literalmente
+termina en pedido de dato (falla segura). La latencia de 18,8 s quedó cerca del límite de 20 s
+(`FLOW_AI_PROVIDER_TIMEOUT_MS`); si se excede, la orden no se ejecuta y el estudiante puede reintentarla.
 
 ## Ejecutor en aula (servidor real, endpoint Messages local)
 

@@ -210,7 +210,7 @@ principal; los proyectos DVR anteriores se leen sin cambios. Resultados en
 | F resultado QA | `tests/executor.test.ts` (Test F), `tests/executor-service.test.ts` |
 | G aislamiento | `tests/executor.test.ts` (Test G), servidor real |
 | H concurrencia | `tests/executor-service.test.ts` (Test H), `npm run bench:executor`, `npm run bench:ai` |
-| I Anthropic real | `npm run verify:anthropic` — **pendiente**: la clave real es aceptada, pero la cuenta no tiene créditos (`INSUFFICIENT_CREDITS`) |
+| I Anthropic real | `npm run verify:anthropic` — **19/19 con la API real** (`claude-opus-5-5`, 2026-10-22); evidencia en `docs/benchmarks/entrega-8/anthropic.json` |
 
 Además: una regresión por cada hallazgo de la revisión independiente (`tests/executor-review.test.ts`),
 adversariales (inyección, citas inventadas, valores ausentes, verbos contradictorios, más de cuatro
@@ -220,10 +220,11 @@ consecuencias económicas, embudo, órdenes por Claude).
 
 ## 9. Bloqueos y riesgos pendientes
 
-- **Anthropic real no verificado aquí**: no hay `ANTHROPIC_API_KEY`. Las pruebas usan transportes simulados o un
-  servidor local que imita la API de Messages; demuestran el contrato, no la comprensión del modelo. Ejecutar
-  `npm run verify:anthropic` con credenciales (Test I: casos A–H, ejemplos obligatorios, latencia, tokens y
-  ausencia de la clave en las salidas).
+- **Anthropic real verificado con 19 casos** (Test I, `claude-opus-5-5`): A–H, ejemplos obligatorios y cuatro
+  empresas concurrentes, 19/19 en dos corridas seguidas. No agota las redacciones posibles; las pruebas
+  automáticas siguen usando transportes simulados o un servidor local que imita la API de Messages. Una corrida
+  registró 18,8 s de latencia frente al límite de 20 s (`FLOW_AI_PROVIDER_TIMEOUT_MS`); si se excede, la orden no
+  se ejecuta.
 - **Verificación léxica**: depende de que el modelo copie las citas. Si no lo hace, la orden se rechaza y se pide
   el dato (falla segura). Expresiones numéricas poco comunes pueden requerir reformular.
 - **Fórmulas no definidas** (no inventadas): costo y duración propios de rollback (los fija el CTO y la
