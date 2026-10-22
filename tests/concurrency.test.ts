@@ -4,6 +4,8 @@ import { createGame, initialGraph, project, reportFor, validateGraph } from '../
 import { advanceConcurrency, concurrencyReport, createConcurrencyRun, runConcurrencyFixture } from '../server/requests.js';
 import { settleConcurrency, startConcurrency, stepConcurrency } from '../server/scenarios.js';
 import { advanceGame, authorizeAtomic, command, insertBlock } from './helpers.js';
+// These tests measure the engine at full pressure; the calm start has its own (tests/pacing.test.ts).
+process.env.FLOW_CALM_START = '0';
 
 const context = (backend = initialGraph('backend')) => ({ backend, security: initialGraph('security'), executionVersion: 1 });
 

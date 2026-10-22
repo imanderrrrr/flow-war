@@ -8,6 +8,7 @@ import { join } from 'node:path';
 import { createServer } from 'node:net';
 import { io } from '../shared/live-client.js';
 import { LOBBY_ICONS } from '../shared/lobby.js';
+import { finishTutorial } from './tutorial-helpers.js';
 
 test('room over HTTP: PIN join, teacher-only draw, seated sessions act as their role and survive a restart', { timeout: 60000 }, async () => {
   const dir = await mkdtemp(join(tmpdir(), 'flow-lobby-')), listener = createServer(); listener.listen(0, '127.0.0.1'); await once(listener, 'listening');
@@ -63,6 +64,9 @@ test('room over HTTP: PIN join, teacher-only draw, seated sessions act as their 
     // A seated player sends commands with the identity the draw gave them.
     assert.equal((await send(operator, 'room.start')).ok, true);
     const cto = present[seats.findIndex(s => s?.role === 'cto' && s.companyId === 0)];
+    // The seat owes its tutorial first (docs/25): until then its commands reach only the practice copy.
+    assert.equal((await send(cto.cookie, 'cto.infra_authorize', { amount: 0, durationSeconds: 60, maxServers: 2, operations: ['scale'] }, 0) as { code?: string }).code, 'TUTORIAL_PENDING');
+    await finishTutorial(base, cto.cookie);
     assert.equal((await send(cto.cookie, 'cto.infra_authorize', { amount: 0, durationSeconds: 60, maxServers: 2, operations: ['scale'] }, 0)).ok, true);
     assert.equal((await send(spare.cookie, 'cto.infra_authorize', { amount: 0, durationSeconds: 60, maxServers: 2, operations: ['scale'] }, 0)).ok, false);
 

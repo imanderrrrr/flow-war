@@ -32,6 +32,7 @@ import { LobbyError, checkPin, ensureLobby, formTeams, isParticipantRef, joinLob
 import { networkInterfaces } from 'node:os';
 import { ROOM_SLOT } from './ai-scheduler.js';
 import { applyRoomPlan, describeChanges, parseRoomInput, planRoomCalls, roomRequest } from './room-assistant.js';
+import { acknowledge, createPractice, enterTutorial, entryFor, pendingPlayers, practiceCommand, practiceExpired, practiceFinished, practiceSnapshot, setStep, settle, tickPractice, tutorialBoard, tutorialPending, type Practice, type Subject } from './tutorial.js';
 
 const directory = resolve(process.env.FLOW_DATA_DIR ?? '.local');
 mkdirSync(directory, { recursive: true, mode: 0o700 });
@@ -78,6 +79,38 @@ function session(cookie?: string, includeExpelled = false): Identity | null {
   return !includeExpelled && game.actions.employees[identity.id]?.status === 'EXPELLED' ? null : identity;
 }
 function participantSession(cookie?: string) { const stored = storedSession(cookie); return stored && isParticipantRef(stored) ? participantOf(game, stored) : undefined; }
+/** Who owes a tutorial (docs/25): a room seat is keyed by the participant, so a seat moved by the teacher starts
+ * that role's tutorial over; a credential login by its identity. The teacher owes none. */
+function subjectOf(cookie?: string): Subject | null {
+  const stored = storedSession(cookie);
+  if (!stored) return null;
+  if (isParticipantRef(stored)) { const p = participantOf(game, stored), identity = participantIdentity(game, stored); return p && identity ? { key: `p:${p.id}`, identity, participantId: p.id } : null; }
+  const identity = stored as Identity;
+  return identity.role === 'operator' || game.actions.employees[identity.id]?.status === 'EXPELLED' ? null : { key: `i:${identity.id}`, identity };
+}
+/** One practice copy per player still in its tutorial; never persisted, rebuilt at the saved step when missing. */
+const practices = new Map<string, { subject: Subject; practice: Practice }>();
+let practiceGeneration = -1;
+function practiceFor(subject: Subject): Practice | undefined {
+  if (practiceGeneration !== game.generation) { practices.clear(); practiceGeneration = game.generation; }
+  const held = practices.get(subject.key);
+  if (held && held.subject.identity.id === subject.identity.id && !practiceExpired(held.practice)) return held.practice;
+  try {
+    const practice = createPractice(game, subject, entryFor(game, subject)?.step ?? 0);
+    practices.set(subject.key, { subject, practice });
+    return practice;
+  } catch (e) { console.error('No se pudo preparar la práctica:', e); return undefined; }
+}
+/** The step a practice reached is written to the room before anything else depends on it. */
+function syncProgress(subject: Subject, practice: Practice) {
+  if (entryFor(game, subject)?.step !== practice.step) journal(() => setStep(game, subject, practice.step, Date.now()));
+  if (practiceFinished(practice)) practices.delete(subject.key);
+}
+/** Players with a live connection right now, by tutorial key: only they can hold the start of the game. */
+function connectedKeys() { const keys = new Set<string>(); for (const socket of io.sockets.sockets.values()) { const key = subjectOf(socket.request.headers.cookie)?.key; if (key) keys.add(key); } return keys; }
+/** The practice a request belongs to, when its player is still in the tutorial. */
+function practiceOf(cookie?: string) { const subject = subjectOf(cookie); return subject && tutorialPending(game, subject) ? practiceFor(subject) : undefined; }
+const TUTORIAL_PENDING = { ok: false, code: 'TUTORIAL_PENDING', error: 'Primero terminá el tutorial de tu rol en MI ESPACIO.' };
 const app = express();
 app.disable('x-powered-by');
 app.use((req, res, next) => { if (/\.local|access\.json|\.sqlite/i.test(req.path)) return res.sendStatus(404); next(); });
@@ -178,6 +211,7 @@ app.post('/api/ai', async (req,res) => {
   const identity=session(req.headers.cookie);
   // Proposals belong to a company employee; the teacher and auditors have none.
   if(!identity||identity.companyId===null)return res.status(403).json({ok:false,code:'FORBIDDEN',error:'Sesión no autorizada.'});
+  if(practiceOf(req.headers.cookie))return res.status(403).json(TUTORIAL_PENDING);
   const key=identity.id,now=Date.now();let budget=aiAttempts.get(key);
   if(!budget||now-budget.at>=60000){budget={at:now,count:0};aiAttempts.set(key,budget);}
   if(++budget.count>8)return res.status(429).json({ok:false,code:'AI_RATE_LIMIT',error:'Límite de solicitudes de Claude alcanzado.'});
@@ -214,6 +248,7 @@ app.post('/api/ai/execute',async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   const identity=session(req.headers.cookie);
   if(!identity||identity.role==='operator'||identity.companyId===null)return res.status(403).json({ok:false,code:'FORBIDDEN',error:'Sesión no autorizada.'});
+  if(practiceOf(req.headers.cookie))return res.status(403).json(TUTORIAL_PENDING);
   const key=identity.id,now=Date.now();let budget=aiAttempts.get(key);
   if(!budget||now-budget.at>=60000){budget={at:now,count:0};aiAttempts.set(key,budget);}
   if(++budget.count>8)return res.status(429).json({ok:false,code:'AI_RATE_LIMIT',error:'Límite de solicitudes de Claude alcanzado.'});
@@ -247,7 +282,7 @@ app.post('/api/ai/execute',async(req,res)=>{
 app.get('/api/ai/status',(req,res)=>{
  res.setHeader('Cache-Control','no-store');const identity=session(req.headers.cookie);if(!identity)return res.sendStatus(403);
  if(identity.role==='operator')return res.json({provider:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.status():{state:'TEST_PROVIDER'},usage:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.metrics():[],scheduler:aiGateway.scheduler.metrics(),consumption:{companies:game.companies.map(c=>({companyId:c.id,...(c.runtime.aiUsage??{requests:0,inputTokens:0,outputTokens:0,cacheReadTokens:0,cacheWriteTokens:0})})),room:game.lobby?.aiUsage??{requests:0,inputTokens:0,outputTokens:0,cacheReadTokens:0,cacheWriteTokens:0},gameTokenLimit:aiGateway.gameTokenLimit,companyTokenLimit:aiGateway.companyTokenLimit}});
- if(identity.companyId===null)return res.json({requests:[]});
+ if(identity.companyId===null||practiceOf(req.headers.cookie))return res.json({requests:[]});
  const attempts=game.companies[identity.companyId].runtime.aiAttempts?.filter(a=>a.actor===identity.id&&a.role===identity.role&&a.generation===game.generation)??[];
  res.json({requests:attempts.map(a=>{const live=aiGateway.scheduler.status(identity.id,a.id)[0];return {...a,...live,state:['QUEUED','RUNNING'].includes(a.state)?live?.state??a.state:a.state,code:a.code??live?.code};})});
 });
@@ -299,10 +334,19 @@ app.post('/api/lobby/assistant', async (req, res) => {
   } finally { aiPending.delete(key); }
 });
 app.get('/api/health', (_req, res) => res.json({ ok: true, room: 'FW-001' }));
+/** The caller's own tutorial: whether it owes one and where it is. */
+app.get('/api/tutorial', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store'); flushCommands();
+  const subject = subjectOf(req.headers.cookie); if (!subject) return res.json({ pending: false });
+  const entry = entryFor(game, subject);
+  res.json({ pending: tutorialPending(game, subject), step: entry?.step ?? 0, finished: entry?.finishedAt !== undefined });
+});
 app.get('/api/snapshot', (req, res) => { res.setHeader('Cache-Control', 'no-store'); res.json(project(game, session(req.headers.cookie))); });
 app.get('/api/qa/runs/:id',(req,res)=>{
  res.setHeader('Cache-Control','no-store');const identity=session(req.headers.cookie);if(!identity||identity.companyId===null)return res.sendStatus(403);
- const c=game.companies[identity.companyId],run=c.runtime.workflow?.runs.find(r=>r.id===req.params.id&&r.generation===game.generation),ch=run&&game.changes.find(ch=>ch.companyId===c.id&&ch.id===run.changeId);
+ // A player in its tutorial reads the evidence of its practice copy.
+ const g=practiceOf(req.headers.cookie)?.game??game;
+ const c=g.companies[identity.companyId],run=c.runtime.workflow?.runs.find(r=>r.id===req.params.id&&r.generation===g.generation),ch=run&&g.changes.find(ch=>ch.companyId===c.id&&ch.id===run.changeId);
  const report=ch?.reports.find(r=>r.testEvidence?.runId===run?.id);if(!run||!report)return res.sendStatus(404);res.json({run,report});
 });
 app.get('/api/ai/conversation/:id',(req,res)=>{
@@ -314,6 +358,8 @@ app.get('/api/requests/:id', (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const identity = session(req.headers.cookie);
   if (!identity) return res.sendStatus(403);
+  const practice = practiceOf(req.headers.cookie);
+  if (practice) { const request = identity.companyId === null ? undefined : practice.game.companies[identity.companyId].traffic.requests[req.params.id]; return request ? res.json(trafficReceipt(request)) : res.sendStatus(404); }
   for (const company of game.companies) {
     if (identity.role !== 'operator' && identity.companyId !== company.id) continue;
     const request = company.traffic.requests[req.params.id];
@@ -328,6 +374,8 @@ app.get('/api/flowslack', (req,res)=>{
  if(!identity||identity.companyId===null||(req.query.companyId!==undefined&&Number(req.query.companyId)!==identity.companyId))return res.sendStatus(403);
  const channel=String(req.query.channel??'general');if(!CHANNELS.includes(channel as any))return res.sendStatus(400);
  const before=Number(req.query.before??Number.MAX_SAFE_INTEGER);if(!Number.isSafeInteger(before)||before<1)return res.sendStatus(400);
+ const practice=practiceOf(req.headers.cookie);
+ if(practice)return res.json({messages:practice.game.slack.messages.filter(m=>m.companyId===identity.companyId&&m.channel===channel&&m.sequence<before).slice(-80)});
  const rows=db.prepare('SELECT body FROM slack_messages WHERE generation=? AND companyId=? AND channel=? AND seq<? ORDER BY seq DESC LIMIT 80').all(game.generation,identity.companyId,channel,before) as {body:string}[];
  res.json({messages:rows.map(r=>JSON.parse(r.body)).reverse()});
 });
@@ -355,11 +403,15 @@ const commands = createCommandPipeline({
 function flushCommands() { commands.flush(); }
 io.on('connection', socket => {
   socket.data.authenticated = !!session(socket.request.headers.cookie);
+  // The page that opened the connection: only the workspace shows the practice copy and the tutorial.
+  socket.data.view = typeof socket.handshake.auth?.view === 'string' ? socket.handshake.auth.view.slice(0, 40) : '';
   const sync = new SnapshotSync(socket); synchronizers.set(socket.id, sync);
-  sync.send(() => project(game, session(socket.request.headers.cookie)));
+  // The first entry into the workspace starts the tutorial: for a credential login, this is what makes it owed.
+  if (socket.data.view === '/workspace') { const subject = subjectOf(socket.request.headers.cookie); if (subject && !entryFor(game, subject) && (subject.participantId ? tutorialPending(game, subject) : true)) journal(() => enterTutorial(game, subject, Date.now())); }
+  sync.send(() => snapshotFor(socket));
   socket.on('disconnect', () => synchronizers.delete(socket.id));
   let resyncAt = 0;
-  socket.on('state:resync', () => { if (Date.now()-resyncAt<250) return; resyncAt=Date.now(); sync.resync(); sync.send(() => project(game, session(socket.request.headers.cookie))); });
+  socket.on('state:resync', () => { if (Date.now()-resyncAt<250) return; resyncAt=Date.now(); sync.resync(); sync.send(() => snapshotFor(socket)); });
   let count = 0, at = Date.now();
   socket.on('command', (command: Command, ack: (result: unknown) => void) => {
     if (typeof ack !== 'function') return;
@@ -368,9 +420,45 @@ io.on('connection', socket => {
     if(command?.type==='agent.fixture')return ack({ok:false,code:'UNSUPPORTED',error:'Intérprete disponible únicamente en pruebas.'});
     const identity = session(socket.request.headers.cookie, true);
     if (!identity || !command || typeof command.id !== 'string' || command.id.length > 100 || typeof command.type !== 'string') return ack({ ok: false, code: 'FORBIDDEN', error: 'Sesión o comando no autorizado.' });
+    // A player still in its tutorial acts on its practice copy, with the same validation, and nowhere else.
+    const subject = subjectOf(socket.request.headers.cookie);
+    if (subject && tutorialPending(game, subject)) {
+      if (socket.data.view !== '/workspace') return ack(TUTORIAL_PENDING);
+      const practice = practiceFor(subject); if (!practice) return ack({ ok: false, code: 'TUTORIAL_UNAVAILABLE', error: 'La práctica no está disponible. Recargá la página.' });
+      const result = practiceCommand(practice, command);
+      settle(practice); syncProgress(subject, practice); ack(result); scheduleBroadcast(); return;
+    }
+    // EMPEZAR JUEGO waits for every connected player to finish its tutorial (docs/25).
+    if (identity.role === 'operator' && command.type === 'room.start' && game.status === 'LOBBY') {
+      const pending = pendingPlayers(game, connectedKeys());
+      if (pending.length) return ack({ ok: false, code: 'TUTORIALS_PENDING', error: `Faltan ${pending.length} ${pending.length === 1 ? 'jugador' : 'jugadores'} por terminar el tutorial: ${pending.slice(0, 6).map(p => p.name).join(', ')}${pending.length > 6 ? '…' : ''}.` });
+    }
     commands.receive(identity, command, ack);
   });
+  // ENTENDIDO on a reading step, or a UI state the step asked for.
+  socket.on('tutorial:ack', (payload: { step?: unknown }, ack: (result: unknown) => void) => {
+    if (typeof ack !== 'function') return;
+    const subject = subjectOf(socket.request.headers.cookie);
+    if (!subject || !tutorialPending(game, subject) || socket.data.view !== '/workspace' || typeof payload?.step !== 'string') return ack({ ok: false });
+    const practice = practiceFor(subject); if (!practice) return ack({ ok: false });
+    const ok = acknowledge(practice, payload.step);
+    if (ok) { settle(practice); syncProgress(subject, practice); scheduleBroadcast(); }
+    ack({ ok });
+  });
 });
+/** What one connection sees: the practice copy while its player is in the tutorial, the room otherwise. */
+function snapshotFor(socket: import('socket.io').Socket, connected?: () => Set<string>) {
+  const identity = session(socket.request.headers.cookie);
+  if (socket.data.view === '/workspace' && identity && identity.role !== 'operator') {
+    const subject = subjectOf(socket.request.headers.cookie), practice = subject && tutorialPending(game, subject) ? practiceFor(subject) : undefined;
+    if (practice) return practiceSnapshot(practice, game.generation);
+  }
+  return operatorView(project(game, identity), identity, connected);
+}
+/** The teacher's projection carries every player's tutorial progress and whether they are connected. */
+function operatorView(snapshot: Snapshot, identity: Identity | null, connected = connectedKeys) {
+  return identity?.role === 'operator' && (game.lobby?.formation || game.tutorials) ? { ...snapshot, tutorials: tutorialBoard(game, connected()) } : snapshot;
+}
 let pendingBroadcast: ReturnType<typeof setImmediate> | undefined;
 // Every ACK follows its COMMIT. Notifications can share the latest committed
 // state within one event-loop turn; every forensic input is retained. Queued
@@ -383,19 +471,36 @@ function broadcast() {
   const projections = new Map<string, ReturnType<typeof project>>();
   let publicProjection: ReturnType<typeof project> | undefined;
   let sharedPacked: Snapshot['companies'] | undefined;
+  let connected: Set<string> | undefined;
+  const online = () => connected ??= connectedKeys();
   for (const socket of io.sockets.sockets.values()) {
     const identity = session(socket.request.headers.cookie);
     if (socket.data.authenticated && !identity) { socket.data.authenticated=false; socket.emit('state:clear'); synchronizers.get(socket.id)?.resync(); }
     if (identity) socket.data.authenticated = true;
+    if (socket.data.view === '/workspace' && identity && identity.role !== 'operator') {
+      const subject = subjectOf(socket.request.headers.cookie), practice = subject && tutorialPending(game, subject) ? practiceFor(subject) : undefined;
+      if (practice) { synchronizers.get(socket.id)?.send(() => practiceSnapshot(practice, game.generation)); continue; }
+    }
     synchronizers.get(socket.id)?.send(() => {
     const key = JSON.stringify(identity);
-    let value = projections.get(key); if (!value) { if (identity?.role === 'operator') value = project(game,identity);
+    let value = projections.get(key); if (!value) { if (identity?.role === 'operator') value = operatorView(project(game,identity),identity,online);
       else { publicProjection ??= project(game,null); value = identity ? project(game,identity,publicProjection) : publicProjection; }
       projections.set(key,value); } return value;
   },Date.now(),identity?.role==='operator'?undefined:()=>{
     publicProjection ??= project(game,null);
     return sharedPacked ??= compactCompanies(publicProjection.companies);
   });
+  }
+}
+/** Practice copies run on their own clocks, whatever the room is doing; the progress they reach is saved. */
+function advancePractices() {
+  if (practiceGeneration !== game.generation) { practices.clear(); practiceGeneration = game.generation; }
+  for (const [key, { subject, practice }] of practices) {
+    // A seat moved by the teacher, a finished tutorial or a reset room leaves the copy behind.
+    const current = subject.participantId && game.lobby ? participantIdentity(game, { participant: subject.participantId, lobby: game.lobby.id }) : subject.identity;
+    if (!current || current.id !== subject.identity.id || !tutorialPending(game, subject)) { practices.delete(key); continue; }
+    if (practiceExpired(practice)) { practices.delete(key); continue; }
+    try { if (tickPractice(practice)) syncProgress(subject, practice); } catch (e) { console.error('Práctica detenida por un error:', e); practices.delete(key); }
   }
 }
 let iterations = 0;
@@ -405,6 +510,7 @@ const timer = setInterval(() => {
     // A recovered room that never had a lobby gets one as soon as it waits for players.
     if (game.status === 'LOBBY' && !game.lobby) journal(() => ensureLobby(game));
     for (let i = 0; i < game.speed; i++) step(game);
+    advancePractices();
     // Deferred to the check phase: commands that arrive meanwhile are answered before the broadcast.
     if (++iterations % 2 === 0) scheduleBroadcast();
     if (iterations % 10 === 0) persist();

@@ -27,6 +27,7 @@ import { advanceConcurrency, cancelConcurrency, concurrencyParticles, concurrenc
 import { initialConcurrency, productionContext, settleConcurrency, stepConcurrency } from './scenarios.js';
 import { route, evaluateSecurity, sellCapable } from './graphs.js';
 import { lobbyView, resetTeams } from './lobby.js';
+import { CALM_START, intensity, phaseView, type Pacing } from '../shared/pacing.js';
 import { auditCommand, advanceProbes, auditorView, chargeLeaks, closeProbes, closeSettledFindings, findingsFor, sustainedEffects, suspendsRestock } from './auditor.js';
 export { route, evaluateSecurity } from './graphs.js';
 import { PLAN_PIECES, completePlan, isPlanPiece, planGraph, planPublicationCost } from '../shared/plan.js';
@@ -46,14 +47,19 @@ export function initialGraph(domain: Domain): Graph {
   const labels: Record<string, string> = { entry: 'Request IN', read: 'Read Stock', write: 'Write Stock', payment: 'Payment', exit: 'Response OUT' };
   return { nodes: types.map((type, i) => ({ id: `${domain}-${type}`, type, position: { x: i * 190, y: 160 }, data: { label: labels[type] } })), edges: types.slice(1).map((type, i) => ({ id: `${domain}-e${i}`, source: `${domain}-${types[i]}`, target: `${domain}-${type}` })) };
 }
-export function createGame(duration = 1500, seed = 7357, generation = 0, dvrEnabled = true): GameState {
+/** The schedule a new game freezes into its state. FLOW_CALM_START=0 keeps the previous schedule, for rehearsals
+ * and benchmarks that must stay comparable with games recorded before the calm start existed. */
+export const defaultPacing = (): Pacing | undefined => process.env.FLOW_CALM_START === '0' ? undefined : CALM_START;
+/** `schedule`: omitted, the default calm start; `null`, none at all (the schedule games had before the calm start). */
+export function createGame(duration = 1500, seed = 7357, generation = 0, dvrEnabled = true, schedule?: Pacing | null): GameState {
+  const pacing = schedule === undefined ? defaultPacing() : schedule ?? undefined;
   const companies: Company[] = NAMES.map((name, id) => ({
     crisis: { active: false, episode: 0, lastReputation: 80 }, serviceMode: { mode: 'OPERATING', since: 0 }, assembly: { active: true }, runtime: initialRuntime(), infrastructure: initialInfrastructure(), id, name, tag: `EMPRESA 0${id + 1}`, color: COLORS[id], customers: 1000, capital: 10000, reputation: 80, pressure: 0,
     servers: 1, balancer: false, infraBudget: duration * .5, reserved: 0, version: 1, deployments: 0, active: 0, requests: 0, successes: 0, errors: 0, breaches: 0, oversold: 0, duplicates: 0,
     lostRevenue: 0, revenue: 0, latency: 0, utilization: 0, queue: 0, migratedIn: 0, migratedOut: 0, eliminated: false, crisisTicks: 0, deadTicks: 0, bankruptTicks: 0, concurrencyUntil: 0,
     backend: initialGraph('backend'), security: initialGraph('security'), product: initialGraph('product'), plan: initialGraph('plan'), particles: [], drafts: {}, planDrafts: {}, migrationRemainder: 0, arrivalRemainder: 0, processedRemainder: 0, history: Array(24).fill(20), stock: 100, concurrency: initialConcurrency(duration), traffic: initialTraffic(100, seed, `g${generation}`),
   }));
-  const game: GameState = { dvrEnabled, actions: initialActionState(), schema: 7, observability: initialObservability(), slack: { sequence: 0, messages: [], receipts: {}, buckets: {}, groups: {}, automaticCount: 0, sampledCount: 0 }, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
+  const game: GameState = { ...(pacing ? { pacing: structuredClone(pacing) } : {}), dvrEnabled, actions: initialActionState(), schema: 7, observability: initialObservability(), slack: { sequence: 0, messages: [], receipts: {}, buckets: {}, groups: {}, automaticCount: 0, sampledCount: 0 }, market: createMarket(companies, generation), generation, tick: 0, duration, status: 'LOBBY', seed, eventSeq: 0, companies, changes: [], events: [{ id: 0, at: 0, companyId: null, text: 'Cinco empresas conectadas al mercado.', tone: 'neutral', category: 'SISTEMA' }], migrations: [], unserved: 0, speed: 1 };
   for (const company of companies) company.runtime.infra = initialOperationsState(company, duration);
   bindMarket(game); bindObservability(game, f=>slackFact(game,f)); assertMarket(game); checkpoint(game, serializeGame, true); return game;
 }
@@ -213,9 +219,11 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       const earlier = buffer(closed).closed; buffer(closed).closed = [];
       clearBuffer(g); delete g.closure;
       const product = g.productEnabled;
-      Object.assign(g, createGame(Number(command.payload?.duration) === 1200 ? 1200 : 1500, 7357, g.generation + 1, g.dvrEnabled)); g.productEnabled = product;
-      // Optional fields createGame does not set would otherwise survive the reset; probes belong to their generation.
-      delete g.auditors;
+      const fresh = createGame(Number(command.payload?.duration) === 1200 ? 1200 : 1500, 7357, g.generation + 1, g.dvrEnabled);
+      Object.assign(g, fresh); g.productEnabled = product;
+      // Optional fields createGame does not set would otherwise survive the reset; probes and tutorial
+      // progress belong to their generation.
+      delete g.auditors; delete g.tutorials; if (!fresh.pacing) delete g.pacing;
       resetTeams(g);
       buffer(g).closed.push(...earlier, closed);
       bindObservability(g, f => slackFact(g, f));
@@ -426,10 +434,21 @@ export function step(g: GameState, dt = .1) {
   g.tick = Math.min(g.duration, Math.round((g.tick + dt) * 1000) / 1000);
   jobs(g);
   const second = Math.floor(g.tick) !== previousSecond;
-  const securityIncident = g.tick >= g.duration * .25;
-  const concurrencyIncident = g.tick >= g.duration * .24;
-  if (g.tick - dt < g.duration * .25 && securityIncident) event(g, null, 'Tráfico anómalo detectado en las cinco empresas.', 'bad', 'SECURITY');
-  if (g.tick - dt < g.duration * .24 && concurrencyIncident) event(g, null, 'Ráfagas de compra sobre inventario compartido.', 'bad', 'CONCURRENCIA');
+  const pace = intensity(g.pacing, g.tick), crossed = (at: number) => g.tick - dt < at && g.tick >= at;
+  if (g.pacing) {
+    // The calm start announces its own end, so the class hears when the pressure begins.
+    if (crossed(g.pacing.calmUntil)) {
+      event(g, null, `Termina la fase tranquila: la demanda sube durante ${Math.round((g.pacing.rampUntil - g.pacing.calmUntil) / 60)} minutos.`, 'bad', 'SISTEMA');
+      event(g, null, 'Ráfagas de compra sobre inventario compartido.', 'bad', 'CONCURRENCIA');
+      event(g, null, 'Tráfico anómalo detectado en las cinco empresas.', 'bad', 'SECURITY');
+    }
+    if (crossed(g.pacing.rampUntil)) event(g, null, 'Presión completa: el mercado ya no da respiro.', 'bad', 'SISTEMA');
+  } else {
+    const securityIncident = g.tick >= g.duration * .25;
+    const concurrencyIncident = g.tick >= g.duration * .24;
+    if (g.tick - dt < g.duration * .25 && securityIncident) event(g, null, 'Tráfico anómalo detectado en las cinco empresas.', 'bad', 'SECURITY');
+    if (g.tick - dt < g.duration * .24 && concurrencyIncident) event(g, null, 'Ráfagas de compra sobre inventario compartido.', 'bad', 'CONCURRENCIA');
+  }
   for (const c of g.companies) {
     if (c.eliminated) continue;
     // The montaje closes the first time the plan can take a purchase, and never reopens.
@@ -444,7 +463,7 @@ export function step(g: GameState, dt = .1) {
     const deploying = activeDeployment(g, c);
     const rates = serviceRates(c, deploying);
     const capacity = rates.web;
-    generateTraffic(c, g.tick, dt, g.duration);
+    generateTraffic(c, g.tick, dt, g.duration, pace);
     advanceProbes(g, c, event); closeSettledFindings(g, c, event);
     // The settlement in traffic.ts reads these off the company, which is all it can see.
     const audited = sustainedEffects(g, c); if (audited.size) c.runtime.auditEffects = [...audited]; else delete c.runtime.auditEffects;
@@ -452,7 +471,7 @@ export function step(g: GameState, dt = .1) {
     const breachesBefore = c.breaches;
     advanceTraffic(c, g.tick, rates); chargeLeaks(g, c);
     if (c.breaches > breachesBefore && second && previousSecond % 12 === 0) event(g, c.id, `${c.breaches - breachesBefore} accesos indebidos · SECURITY BREACH`, 'bad', 'SECURITY');
-    const scenario = stepConcurrency(c, g.tick, capacity > 0);
+    const scenario = stepConcurrency(c, g.tick, capacity > 0, pace.bursts);
     if (scenario.started) event(g, c.id, 'SKU LAST-UNIT · 2 compras / 1 unidad.', 'neutral', 'CONCURRENCIA');
     if (scenario.oversold) c.concurrencyUntil = g.tick + 20;
     if (scenario.finished) {
@@ -466,8 +485,9 @@ export function step(g: GameState, dt = .1) {
     const fraud = observed.fraudRate;
     const quality = c.traffic.config.quality;
     const health = observed.legitimateTerminated > 0 && errorFraction < .02 && fraud === 0 && c.latency < quality.healthyLatencyMs && c.utilization < .9 && !concurrencyRisk && capacity > 0 ? 1 : 0;
-    c.pressure = clamp(c.pressure + dt * (.8 * errorFraction + .4 * clamp((c.latency - quality.healthyLatencyMs) / (quality.latencyCeilingMs - quality.healthyLatencyMs), 0, 1) + .5 * clamp(c.utilization - 1, 0, 1) + 1.2 * fraud + .2 * observed.unavailable + concurrencyRisk - .35 * health - .002 * c.pressure), 0, 300);
-    c.reputation = clamp(c.reputation + dt * (.04 * health - .15 * errorFraction - .30 * fraud - .1 * observed.unavailable - .06 * concurrencyRisk), 0, 100);
+    // The calm start scales what a mistake costs (pace.penalty); at full pressure the factor is exactly 1.
+    c.pressure = clamp(c.pressure + dt * (pace.penalty * (.8 * errorFraction + .4 * clamp((c.latency - quality.healthyLatencyMs) / (quality.latencyCeilingMs - quality.healthyLatencyMs), 0, 1) + .5 * clamp(c.utilization - 1, 0, 1) + 1.2 * fraud + .2 * observed.unavailable + concurrencyRisk) - .35 * health - .002 * c.pressure), 0, 300);
+    c.reputation = clamp(c.reputation + dt * (.04 * health - .15 * pace.penalty * errorFraction - .30 * pace.penalty * fraud - .1 * pace.penalty * observed.unavailable - .06 * pace.penalty * concurrencyRisk), 0, 100);
     const operation = Math.min(c.infraBudget, c.servers * .5 * dt); c.infraBudget -= operation; c.capital -= operation;
     for (const ch of g.changes) if (ch.companyId === c.id && ch.status === 'AUTHORIZED' && c.capital < c.reserved + c.infraBudget) { releaseReservation(c, ch); ch.status = 'EXPIRED'; }
     reconcileRollbacks(c);
@@ -475,7 +495,7 @@ export function step(g: GameState, dt = .1) {
     c.particles = c.particles.filter(p => g.tick - p.born < p.duration).slice(-90);
     // Spec §5: while a team is still building, nobody loses their company over a service they have
     // not placed yet. The clock only runs once the company accepts purchases.
-    c.deadTicks = capacity === 0 && !c.assembly.active ? c.deadTicks + dt : 0;
+    c.deadTicks = capacity === 0 && !c.assembly.active ? c.deadTicks + dt * pace.penalty : 0;
     c.bankruptTicks = c.capital <= 0 ? c.bankruptTicks + dt : 0;
     c.crisisTicks = c.customers < 50 && c.pressure >= 200 && !health ? c.crisisTicks + dt : 0;
   }
@@ -523,6 +543,7 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
     // Auditors get the module/control view only: no company operations, people or audit trail.
     operations: identity && identity.role !== 'auditor' ? { ...(ownCompany && ['security','cto'].includes(identity.role) ? { findings: findingsFor(g, ownCompany.id) } : {}), product:ownCompany&&['product','operator'].includes(identity.role)?productView(g,ownCompany,g.tick):undefined, infra:ownCompany&&['devops','cto'].includes(identity.role)?infraView(ownCompany,g.tick):undefined, qaLive:ownCompany&&identity.role==='qa'?qaProgress(g,ownCompany):undefined, ...(ownCompany ? { workflow:workflowView(ownCompany), conversations:ownCompany.runtime.conversations?.filter(t=>t.actor===identity!.id&&t.role===identity!.role&&t.generation===g.generation).map(t=>({...t,messages:t.messages.slice(-20)})), collaboration: collaborationView(ownCompany,identity!) } : {}), modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
     dvrEnabled: g.dvrEnabled, ...(productEnabled(g) ? { productEnabled: true } : {}), generation: g.generation,
+    ...(g.pacing && !g.practice ? { phase: phaseView(g.pacing, g.tick) } : {}),
     ...(lobby ? { lobby } : {}),
     slack: ownCompany ? structuredClone(g.slack.messages.filter(m=>m.companyId===ownCompany.id)) : undefined,
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,

@@ -76,7 +76,8 @@ test('ordinary navigation and query journeys use existing roads and never imply 
 });
 
 test('la demanda y el tráfico anómalo suben despacio al principio', () => {
-  const g = createGame(), c = g.companies[0];
+  // The curves themselves, without the calm start on top (tests/pacing.test.ts covers that schedule).
+  const g = createGame(1500, 7357, 0, true, null), c = g.companies[0];
   g.status = 'RUNNING';
   advanceGame(g, 300);
   assert.equal(c.traffic.malicious.generated, 0, 'antes del minuto 6 no hay tráfico anómalo');
