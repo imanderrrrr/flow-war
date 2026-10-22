@@ -28,6 +28,10 @@ import { ROLES, type Identity, type GameState, type Command, type Snapshot } fro
 import { createGame, project, step } from './engine.js';
 import { recoverGame } from './persistence.js';
 import { trafficReceipt } from './traffic.js';
+import { LobbyError, checkPin, ensureLobby, formTeams, isParticipantRef, joinLobby, participantIdentity, participantOf, removeParticipant, type ParticipantRef } from './lobby.js';
+import { networkInterfaces } from 'node:os';
+import { ROOM_SLOT } from './ai-scheduler.js';
+import { applyRoomPlan, describeChanges, parseRoomInput, planRoomCalls, roomRequest } from './room-assistant.js';
 
 const directory = resolve(process.env.FLOW_DATA_DIR ?? '.local');
 mkdirSync(directory, { recursive: true, mode: 0o700 });
@@ -57,16 +61,23 @@ if (saved) { observe(game,'server.recovered',null,{status:game.status}); checkpo
 const writeGame = createGameWriter(db);
 sealLegacyGenerations(db, game.generation);
 const persist = () => writeGame(game);
+ensureLobby(game);
 persist();
 const sessionLookup = db.prepare('SELECT identity,expires FROM sessions WHERE token=?');
-function session(cookie?: string, includeExpelled = false): Identity | null {
+function storedSession(cookie?: string): Identity | ParticipantRef | null {
   const match = cookie?.match(/(?:^|;\s*)fw_session=([^;]+)/);
   if (!match) return null;
   const value = sessionLookup.get(hash(match[1])) as { identity: string; expires: number } | undefined;
-  if (!value || value.expires < Date.now()) return null;
-  const identity = JSON.parse(value.identity) as Identity;
+  return value && value.expires >= Date.now() ? JSON.parse(value.identity) : null;
+}
+function session(cookie?: string, includeExpelled = false): Identity | null {
+  const stored = storedSession(cookie);
+  // A room participant has no identity until the draw seats them in a company role.
+  const identity = stored && isParticipantRef(stored) ? participantIdentity(game, stored) : stored;
+  if (!identity) return null;
   return !includeExpelled && game.actions.employees[identity.id]?.status === 'EXPELLED' ? null : identity;
 }
+function participantSession(cookie?: string) { const stored = storedSession(cookie); return stored && isParticipantRef(stored) ? participantOf(game, stored) : undefined; }
 const app = express();
 app.disable('x-powered-by');
 app.use((req, res, next) => { if (/\.local|access\.json|\.sqlite/i.test(req.path)) return res.sendStatus(404); next(); });
@@ -99,13 +110,74 @@ app.post('/api/logout', (req, res) => {
   }
   res.setHeader('Set-Cookie', 'fw_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); res.json({ ok: true });
 });
+const lobbyAttempts = new Map<string, { at: number; count: number; failed: number }>();
+/** PIN guessing is bounded per address like credential guessing. */
+function lobbyBucket(req: express.Request, res: express.Response) {
+  const ip = req.ip ?? 'local', now = Date.now();
+  let bucket = lobbyAttempts.get(ip); if (!bucket || now - bucket.at > 60000) { bucket = { at: now, count: 0, failed: 0 }; lobbyAttempts.set(ip, bucket); }
+  if (++bucket.count > 240 || bucket.failed >= 20) { res.status(429).json({ ok: false, code: 'RATE_LIMIT', error: 'Demasiados intentos. Esperá un minuto.' }); return undefined; }
+  return bucket;
+}
+function lobbyFailure(res: express.Response, e: unknown) {
+  if (e instanceof LobbyError) return res.status(e.status).json({ ok: false, code: e.code, error: e.message });
+  res.status(503).json({ ok: false, code: 'STORAGE', error: 'No se pudo registrar el cambio en la sala.' });
+}
+/** Applies a room change in one durable write; the error of a rejected change reaches the caller unchanged. */
+function lobbyChange(mutate: () => void) { let error: unknown; if (!journal(() => { try { mutate(); } catch (e) { error = e; throw e; } })) throw error ?? new Error('STORAGE'); }
+const participantView = (p: NonNullable<ReturnType<typeof participantOf>>) => ({ id: p.id, name: p.name, icon: p.icon, ...(p.companyId !== undefined ? { companyId: p.companyId, role: p.role } : {}) });
+app.get('/api/lobby/me', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store'); flushCommands();
+  const p = participantSession(req.headers.cookie);
+  res.json({ serverNow: Date.now(), participant: p ? participantView(p) : null });
+});
+app.post('/api/lobby/check', (req, res) => {
+  const bucket = lobbyBucket(req, res); if (!bucket) return;
+  flushCommands();
+  try { const lobby = checkPin(game, req.body?.pin); res.json({ ok: true, taken: lobby.participants.map(p => p.name) }); }
+  catch (e) { if (e instanceof LobbyError && e.code === 'BAD_PIN') bucket.failed++; lobbyFailure(res, e); }
+});
+app.post('/api/lobby/join', (req, res) => {
+  const bucket = lobbyBucket(req, res); if (!bucket) return;
+  flushCommands();
+  const current = participantSession(req.headers.cookie);
+  if (current) return res.json({ ok: true, participant: participantView(current) });
+  try {
+    let participant!: ReturnType<typeof joinLobby>;
+    lobbyChange(() => { participant = joinLobby(game, req.body ?? {}); });
+    const token = randomBytes(32).toString('base64url'), ref: ParticipantRef = { participant: participant.id, lobby: game.lobby!.id };
+    db.prepare('INSERT INTO sessions (token,identity,expires) VALUES (?,?,?)').run(hash(token), JSON.stringify(ref), Date.now() + 12 * 60 * 60 * 1000);
+    res.setHeader('Set-Cookie', `fw_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200`);
+    res.json({ ok: true, participant: participantView(participant) });
+  } catch (e) { if (e instanceof LobbyError && e.code === 'BAD_PIN') bucket.failed++; lobbyFailure(res, e); }
+});
+app.post('/api/lobby/leave', (req, res) => {
+  flushCommands();
+  const p = participantSession(req.headers.cookie); if (!p) return res.status(403).json({ ok: false, code: 'FORBIDDEN', error: 'No estás en la sala.' });
+  try {
+    lobbyChange(() => removeParticipant(game, p.id));
+    const token = req.headers.cookie?.match(/(?:^|;\s*)fw_session=([^;]+)/)?.[1]; if (token) db.prepare('DELETE FROM sessions WHERE token=?').run(hash(token));
+    res.setHeader('Set-Cookie', 'fw_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'); res.json({ ok: true });
+  } catch (e) { lobbyFailure(res, e); }
+});
+const operatorOnly = (req: express.Request, res: express.Response) => { if (session(req.headers.cookie)?.role === 'operator') return true; res.status(403).json({ ok: false, code: 'FORBIDDEN', error: 'Solo el docente administra la sala.' }); return false; };
+app.post('/api/lobby/remove', (req, res) => { if (!operatorOnly(req, res)) return; try { lobbyChange(() => removeParticipant(game, req.body?.id)); res.json({ ok: true }); } catch (e) { lobbyFailure(res, e); } });
+app.post('/api/lobby/form', (req, res) => { if (!operatorOnly(req, res)) return; try { lobbyChange(() => formTeams(game)); res.json({ ok: true }); } catch (e) { lobbyFailure(res, e); } });
+/** Addresses students can type on their phones: physical Wi-Fi/Ethernet first; loopback, VPN tunnels and VM bridges are useless to them. */
+const VIRTUAL = /^(utun|tun|tap|ppp|ipsec|gif|stf|awdl|llw|bridge|br-|docker|veth|vbox|vmnet|vEthernet|zt|tailscale|wg)/i, PHYSICAL = /^(en|eth|wlan|wl|wi-?fi|ethernet)/i;
+app.get('/api/lobby/info', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store'); if (!operatorOnly(req, res)) return;
+  const candidates = Object.entries(networkInterfaces()).flatMap(([name, list]) => (list ?? []).filter(a => a.family === 'IPv4' && !a.internal).map(a => ({ name, address: a.address })));
+  const usable = candidates.filter(c => !VIRTUAL.test(c.name)).sort((a, b) => Number(PHYSICAL.test(b.name)) - Number(PHYSICAL.test(a.name)));
+  res.json({ serverNow: Date.now(), joinUrls: usable.map(c => `http://${c.address}:${port}/unirse`) });
+});
 const aiGateway = new AiGateway();
 const aiPending = new Set<string>();
 const aiAttempts = new Map<string,{at:number;count:number}>();
 app.post('/api/ai', async (req,res) => {
   res.setHeader('Cache-Control','no-store');
   const identity=session(req.headers.cookie);
-  if(!identity)return res.status(403).json({ok:false,code:'FORBIDDEN',error:'Sesión no autorizada.'});
+  // Proposals belong to a company employee; the teacher and auditors have none.
+  if(!identity||identity.companyId===null)return res.status(403).json({ok:false,code:'FORBIDDEN',error:'Sesión no autorizada.'});
   const key=identity.id,now=Date.now();let budget=aiAttempts.get(key);
   if(!budget||now-budget.at>=60000){budget={at:now,count:0};aiAttempts.set(key,budget);}
   if(++budget.count>8)return res.status(429).json({ok:false,code:'AI_RATE_LIMIT',error:'Límite de solicitudes de Claude alcanzado.'});
@@ -174,8 +246,9 @@ app.post('/api/ai/execute',async(req,res)=>{
 });
 app.get('/api/ai/status',(req,res)=>{
  res.setHeader('Cache-Control','no-store');const identity=session(req.headers.cookie);if(!identity)return res.sendStatus(403);
- if(identity.role==='operator')return res.json({provider:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.status():{state:'TEST_PROVIDER'},usage:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.metrics():[],scheduler:aiGateway.scheduler.metrics(),consumption:{companies:game.companies.map(c=>({companyId:c.id,...(c.runtime.aiUsage??{requests:0,inputTokens:0,outputTokens:0,cacheReadTokens:0,cacheWriteTokens:0})})),gameTokenLimit:aiGateway.gameTokenLimit,companyTokenLimit:aiGateway.companyTokenLimit}});
- const attempts=game.companies[identity.companyId!].runtime.aiAttempts?.filter(a=>a.actor===identity.id&&a.role===identity.role&&a.generation===game.generation)??[];
+ if(identity.role==='operator')return res.json({provider:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.status():{state:'TEST_PROVIDER'},usage:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.metrics():[],scheduler:aiGateway.scheduler.metrics(),consumption:{companies:game.companies.map(c=>({companyId:c.id,...(c.runtime.aiUsage??{requests:0,inputTokens:0,outputTokens:0,cacheReadTokens:0,cacheWriteTokens:0})})),room:game.lobby?.aiUsage??{requests:0,inputTokens:0,outputTokens:0,cacheReadTokens:0,cacheWriteTokens:0},gameTokenLimit:aiGateway.gameTokenLimit,companyTokenLimit:aiGateway.companyTokenLimit}});
+ if(identity.companyId===null)return res.json({requests:[]});
+ const attempts=game.companies[identity.companyId].runtime.aiAttempts?.filter(a=>a.actor===identity.id&&a.role===identity.role&&a.generation===game.generation)??[];
  res.json({requests:attempts.map(a=>{const live=aiGateway.scheduler.status(identity.id,a.id)[0];return {...a,...live,state:['QUEUED','RUNNING'].includes(a.state)?live?.state??a.state:a.state,code:a.code??live?.code};})});
 });
 app.post('/api/ai/cancel',(req,res)=>{const identity=session(req.headers.cookie);if(!identity)return res.sendStatus(403);try{const input=req.body;if(typeof input?.id!=='string'||input.id.length>100)return res.sendStatus(400);res.json({ok:aiGateway.scheduler.cancel(identity.id,input.id)});}catch{res.sendStatus(400);}});
@@ -185,6 +258,45 @@ app.post('/api/ai/diagnose',async(req,res)=>{
  if(diagnosticPending)return res.status(429).json({ok:false,code:'AI_BUSY'});diagnosticPending=true;
  try{const result=await aiGateway.interpret('operator-diagnostic',0,{id:crypto.randomUUID(),system:'Diagnóstico de conexión de FLOW WAR. Llamá la herramienta confirmar_conexion. No escribas texto.',tools:[{name:'confirmar_conexion',description:'Confirma que la conexión funciona.',input_schema:{type:'object',properties:{ok:{type:'boolean'}},required:['ok'],additionalProperties:false},strict:true}],content:'Confirmá la conexión.'},{usedByGame:0,usedByCompany:0});res.json({ok:result.calls.some(c=>c.name==='confirmar_conexion'),toolCalling:result.calls.length>0,status:(aiGateway.provider as AnthropicProvider).status()});}
  catch(e){res.status(503).json({ok:false,code:e instanceof AiError?e.code:'PROVIDER_ERROR',status:(aiGateway.provider as AnthropicProvider).status()});}finally{diagnosticPending=false;}
+});
+/**
+ * Claude on the room screen (teacher only): the browser transcribes speech, Claude maps the order to a move or a
+ * swap, and the server resolves the names, revalidates the room and applies the change in one durable write.
+ */
+app.post('/api/lobby/assistant', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store'); if (!operatorOnly(req, res)) return;
+  const key = 'operator-room', now = Date.now(); let budget = aiAttempts.get(key);
+  if (!budget || now - budget.at >= 60000) { budget = { at: now, count: 0 }; aiAttempts.set(key, budget); }
+  if (++budget.count > 12) return res.status(429).json({ ok: false, code: 'AI_RATE_LIMIT', error: 'Límite de órdenes a Claude alcanzado. Esperá un minuto.' });
+  if (aiPending.has(key)) return res.status(429).json({ ok: false, code: 'AI_BUSY', error: 'Claude todavía está procesando la orden anterior.' });
+  aiPending.add(key); flushCommands();
+  const provider = aiGateway.provider.name;
+  try {
+    const input = parseRoomInput(req.body);
+    const lobby = game.lobby;
+    // Checked before any network call: no tokens are spent outside the adjustment window.
+    if (!lobby?.formation) return res.status(409).json({ ok: false, code: 'NO_TEAMS', error: 'Primero hay que formar los equipos.' });
+    if (game.status !== 'LOBBY') return res.status(409).json({ ok: false, code: 'GAME_STARTED', error: 'El juego ya empezó; los equipos quedaron fijos.' });
+    const before = { generation: game.generation, lobby: lobby.id, at: lobby.formation.at };
+    const used = (u?: { inputTokens: number; outputTokens: number }) => (u?.inputTokens ?? 0) + (u?.outputTokens ?? 0);
+    const result = await aiGateway.interpret(key, ROOM_SLOT, roomRequest(game, input), { usedByGame: game.companies.reduce((sum, c) => sum + used(c.runtime.aiUsage), used(lobby.aiUsage)), usedByCompany: used(lobby.aiUsage) });
+    flushCommands();
+    if (session(req.headers.cookie)?.role !== 'operator') throw new AiError('FORBIDDEN', 'La sesión cambió.');
+    const record = () => { const room = game.lobby; if (!room) return; const u = room.aiUsage ??= { requests: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }; u.requests++; u.inputTokens += result.usage.inputTokens; u.outputTokens += result.usage.outputTokens; u.cacheReadTokens += result.usage.cacheReadTokens; u.cacheWriteTokens += result.usage.cacheWriteTokens; };
+    const current = game.lobby;
+    let state: string, message: string;
+    if (game.generation !== before.generation || current?.id !== before.lobby || current.formation?.at !== before.at || game.status !== 'LOBBY') { state = 'REJECTED'; message = 'La sala cambió mientras Claude respondía. No se movió a nadie.'; journal(record); }
+    else {
+      const plan = planRoomCalls(game, input.text, result.calls);
+      if (plan.state !== 'EXECUTE') { state = plan.state; message = plan.message; journal(record); }
+      else try { let changes: ReturnType<typeof applyRoomPlan> = []; lobbyChange(() => { changes = applyRoomPlan(game, plan.operations); record(); }); state = 'EXECUTED'; message = describeChanges(game, changes); }
+      catch (e) { if (!(e instanceof LobbyError)) throw e; state = 'REJECTED'; message = `${e.message} No se movió a nadie.`; journal(record); }
+    }
+    res.json({ ok: true, reply: { id: input.id, state, message, provider, model: result.model } });
+  } catch (e) {
+    const code = e instanceof AiError ? e.code : 'AI_INVALID';
+    res.status(STATUS_CODES[code] ?? 503).json({ ok: false, code, error: e instanceof AiError ? e.message : 'No se pudo procesar la orden.' });
+  } finally { aiPending.delete(key); }
 });
 app.get('/api/health', (_req, res) => res.json({ ok: true, room: 'FW-001' }));
 app.get('/api/snapshot', (req, res) => { res.setHeader('Cache-Control', 'no-store'); res.json(project(game, session(req.headers.cookie))); });
@@ -290,6 +402,8 @@ let iterations = 0;
 const timer = setInterval(() => {
   try {
     flushCommands();
+    // A recovered room that never had a lobby gets one as soon as it waits for players.
+    if (game.status === 'LOBBY' && !game.lobby) journal(() => ensureLobby(game));
     for (let i = 0; i < game.speed; i++) step(game);
     // Deferred to the check phase: commands that arrive meanwhile are answered before the broadcast.
     if (++iterations % 2 === 0) scheduleBroadcast();

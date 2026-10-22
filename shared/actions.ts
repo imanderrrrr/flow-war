@@ -1,4 +1,4 @@
-import type { Graph, Role, ServiceId } from './types.js';
+import type { Graph, Identity, ServiceId } from './types.js';
 
 export const ACTION_VERSION = 1 as const;
 export type ModuleConfiguration =
@@ -35,6 +35,12 @@ export type ActionParameters = {
   'ai.accept': { proposalId: string }; 'ai.reject': { proposalId: string };
   'module.create': { name: string; configuration: ModuleConfiguration; dependencies: string[] };
   'module.revise': { moduleId: string; name: string; configuration: ModuleConfiguration; dependencies: string[] };
+  /** A module drafted in words with Claude. `pending` is chosen by the server (server/design.ts) and verified on apply. */
+  'module.design': { name: string; components: string[]; summary: string; pending: import('./auditor.js').ControlCheck[] };
+  /** External auditor: one prueba de control against a control pendiente of a production module. */
+  'audit.probe': { companyId: number; nodeId: string; check: import('./auditor.js').ControlCheck };
+  /** External auditor: sustains the anomalous traffic of an open finding for a bounded window. */
+  'audit.sustain': { findingId: string };
   'security.prepare': SecurityConfiguration;
   'qa.execute': { changeId: string; scenario: TestScenario; request?: string; threadId?: string };
   'infra.maintenance': { mode: 'OPERATING' | 'ORDERS_PAUSED' | 'FULL_MAINTENANCE' };
@@ -70,7 +76,7 @@ export type SimulatedAction = { [K in ActionType]: {
   changeId?: string; correlationId?: string; requestedAt?: number;
 } }[ActionType];
 export type ActionCategory = 'artifact' | 'preparation' | 'qa' | 'finance' | 'operation' | 'publication' | 'administration';
-const entry = (roles: (Role | 'operator')[], category: ActionCategory) => ({ roles, category, version: ACTION_VERSION });
+const entry = (roles: Identity['role'][], category: ActionCategory) => ({ roles, category, version: ACTION_VERSION });
 /** Shared by the existing UI, structured adapter and future provider. */
 export const ACTION_CATALOG = {
   'ai.confirm': entry(['cto'], 'finance'), 'investment.link': entry(['backend','security'], 'preparation'),
@@ -79,7 +85,8 @@ export const ACTION_CATALOG = {
   'investment.create': entry(['cto'], 'finance'), 'investment.transition': entry(['cto','backend','security'], 'finance'),
   'security.save': entry(['security'], 'preparation'), 'security.configure': entry(['security'], 'preparation'), 'security.submit': entry(['security'], 'preparation'),
   'security.correction': entry(['security'], 'preparation'), 'ai.accept': entry(['backend', 'security','qa'], 'preparation'), 'ai.reject': entry(['backend', 'security','qa','cto'], 'preparation'),
-  'module.create': entry(['backend'], 'artifact'), 'module.revise': entry(['backend'], 'artifact'),
+  'module.create': entry(['backend'], 'artifact'), 'module.revise': entry(['backend'], 'artifact'), 'module.design': entry(['backend'], 'artifact'),
+  'audit.probe': entry(['auditor'], 'operation'), 'audit.sustain': entry(['auditor'], 'operation'),
   'security.prepare': entry(['security'], 'preparation'), 'qa.execute': entry(['qa'], 'qa'),
   'infra.maintenance': entry(['devops'], 'operation'),
   'infra.restart': entry(['devops'], 'operation'), 'infra.restart_all': entry(['devops'], 'operation'),
@@ -100,6 +107,6 @@ export const ACTION_CATALOG = {
   'room.start': entry(['operator'], 'administration'), 'room.pause': entry(['operator'], 'administration'),
   'room.reset': entry(['operator'], 'administration'), 'room.speed': entry(['operator'], 'administration'), 'room.finish': entry(['operator'], 'administration'),
 } as const;
-export function allowedAction(type: string, role: Role | 'operator') {
+export function allowedAction(type: string, role: Identity['role']) {
   return Object.hasOwn(ACTION_CATALOG, type) && (ACTION_CATALOG[type as keyof typeof ACTION_CATALOG].roles as readonly string[]).includes(role);
 }

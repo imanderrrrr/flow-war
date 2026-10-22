@@ -92,8 +92,9 @@ El dominio actual mantiene compras, inventario y pagos; la adaptación a platafo
 
 Backend entrega su funcionalidad a Seguridad, que escribe protecciones libres sobre los mismos bloques.
 QA, CTO y DevOps trabajan con la combinación exacta de versiones. Ambos departamentos pueden preparar
-borradores revisables con Claude. La integración real requiere `ANTHROPIC_API_KEY` y `ANTHROPIC_MODEL`
-en el servidor; no hay sustitución simulada en producción.
+borradores revisables con Claude. La integración real requiere `ANTHROPIC_API_KEY` en el servidor; el
+modelo por defecto es `claude-haiku-5-5` (el ejecutor solo traduce órdenes a herramientas) y se puede
+cambiar con `ANTHROPIC_MODEL`. No hay sustitución simulada en producción.
 
 - [Arquitectura, configuración, migración y límites](docs/17-backend-seguridad-colaborativos-ia.md)
 - [Pruebas y mediciones de 27/32 conexiones](docs/benchmarks/entrega-6/README.md)
@@ -142,3 +143,23 @@ npm run build
 npm run bench:executor -- --speed=20 --model-ms=800 --rounds=4
 npm run verify:anthropic   # requiere ANTHROPIC_API_KEY en .env
 ```
+
+## Sala con PIN y sorteo de equipos
+
+Los estudiantes entran desde el celular a `/unirse` con el PIN que muestra el docente en `/sala`, eligen nombre e
+icono y aparecen en pantalla. **FORMAR EQUIPOS** (con 25 jugadores, o 30 con Producto/UX) sortea al azar la empresa
+y el rol de cada uno con una tragamonedas animada; los que sobran son **Auditores externos**. Entre el sorteo y **EMPEZAR
+JUEGO**, el docente puede ajustar los equipos hablándole o escribiéndole a Claude desde el botón de la pantalla de
+sala ("cambiá a Víctor de VERTEX a EMBER"). **EMPEZAR JUEGO** inicia la partida y cada celular pasa a su espacio de
+trabajo. Detalle, reglas y límites en
+[docs/22-sala-pin-y-sorteo-de-equipos.md](docs/22-sala-pin-y-sorteo-de-equipos.md).
+
+## Auditor externo y módulos redactados con Claude
+
+Los auditores externos eligen una empresa, revisan sus módulos en producción y lanzan pruebas de control: 30 s de
+tráfico anómalo simulado de la categoría del control pendiente, con 60 s de espera entre pruebas; el motor decide qué
+se contiene. Si algo no se contiene queda un **hallazgo**: multa de Q250 y, mientras siga abierto, una fuga que crece
+con el tráfico hasta dejar a la empresa en crisis. El equipo se entera por las quejas de sus clientes, que caen como
+notificaciones sobre su pantalla, y la cierra configurando el control que falta. Backend puede describir un módulo en palabras y Claude redacta un diseño textual breve (sin código); el
+servidor deja a propósito controles pendientes que Seguridad y QA pueden encontrar antes de producción.
+[docs/23-auditor-externo-y-modulos-con-claude.md](docs/23-auditor-externo-y-modulos-con-claude.md).

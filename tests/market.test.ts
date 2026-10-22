@@ -104,7 +104,7 @@ test('M-T14 cooldown suppresses tick oscillation while elimination bypasses it',
 });
 test('M-T15 receiver has more genuine queue pressure after customer growth, at unchanged cost/capacity', () => {
   const control = createGame(), grown = createGame();
-  for (const game of [control, grown]) { game.tick = 1000; game.status = 'RUNNING'; for (const company of game.companies) { company.traffic.lastTick = 1000; company.concurrency.nextAt = 2000; company.servers = 5; company.balancer = true; company.traffic.config.rates.security = 10000; } }
+  for (const game of [control, grown]) { game.tick = 1000; game.status = 'RUNNING'; for (const company of game.companies) { company.traffic.lastTick = 1000; company.concurrency.nextAt = 2000; company.servers = 2; company.balancer = true; company.traffic.config.rates.security = 10000; } }
   for (const id of [...grown.market.members[0]].slice(0, 800)) transfer(grown, grown.market.customers[id], 1);
   advanceGame(control, 20); advanceGame(grown, 20);
   assert.equal(control.companies[1].servers, grown.companies[1].servers); assert.ok(grown.companies[1].traffic.legitimate.generated > control.companies[1].traffic.legitimate.generated);

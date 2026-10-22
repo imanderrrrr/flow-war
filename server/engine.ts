@@ -26,6 +26,8 @@ import { initialTraffic, issueInitialTraffic, generateTraffic, serviceRates, adv
 import { advanceConcurrency, cancelConcurrency, concurrencyParticles, concurrencyReport, createConcurrencyRun, isRunFinished, runConcurrencyFixture } from './requests.js';
 import { initialConcurrency, productionContext, settleConcurrency, stepConcurrency } from './scenarios.js';
 import { route, evaluateSecurity } from './graphs.js';
+import { lobbyView, resetTeams } from './lobby.js';
+import { auditCommand, advanceProbes, auditorView, chargeLeaks, closeProbes, closeSettledFindings, findingsFor, sustainedEffects, suspendsRestock } from './auditor.js';
 export { route, evaluateSecurity } from './graphs.js';
 import { BLOCKS, SUITES, type Company, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
 
@@ -121,6 +123,8 @@ export function applyCommand(g: GameState, identity: Identity | null, command: C
 function executeCommand(g: GameState, identity: Identity, command: Command, receivedAt: number): Result {
   bindMarket(g);
   if (!identity || !allowedAction(command.type, identity.role)) return { ok: false, code: 'FORBIDDEN', error: 'Acción no autorizada para este rol.' };
+  // External auditors act on no company of their own: the target company is part of the validated payload.
+  if (identity.role === 'auditor') return auditCommand(g, identity, command, event);
   if (identity.role === 'operator') {
     if (command.type === 'employee.correct') return correctEmployee(g, command.payload ?? {});
     if (command.type === 'room.dvr') {
@@ -134,6 +138,8 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
     if (command.type === 'room.product') {
       if (g.status !== 'LOBBY') return { ok: false, code: 'PRODUCT_MODE_LOCKED', error: 'Habilita Producto/UX antes de iniciar la partida.' };
       if (typeof command.payload?.enabled !== 'boolean') return { ok: false, error: 'Valor inválido.' };
+      // The draw seated one player per role; a different role set needs a reset and a new draw.
+      if (g.lobby?.formation) return { ok: false, code: 'PRODUCT_MODE_LOCKED', error: 'Los equipos ya se formaron. Restablecé la sala para cambiar Producto/UX.' };
       // One switch for the room: the department is enabled or disabled for the five companies alike.
       g.productEnabled = command.payload.enabled; return { ok: true };
     }
@@ -152,6 +158,9 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       clearBuffer(g); delete g.closure;
       const product = g.productEnabled;
       Object.assign(g, createGame(Number(command.payload?.duration) === 1200 ? 1200 : 1500, 7357, g.generation + 1, g.dvrEnabled)); g.productEnabled = product;
+      // Optional fields createGame does not set would otherwise survive the reset; probes belong to their generation.
+      delete g.auditors;
+      resetTeams(g);
       buffer(g).closed.push(...earlier, closed);
       bindObservability(g, f => slackFact(g, f));
       checkpoint(g, serializeGame, true);
@@ -172,13 +181,13 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
   const p = command.payload ?? {};
   try {
     validateParameters(command.type, p);
-    if(identity.role==='backend'&&['draft.save','change.submit','module.create','module.revise','ai.accept'].includes(command.type))assertBackendEditable(c);
+    if(identity.role==='backend'&&['draft.save','change.submit','module.create','module.revise','module.design','ai.accept'].includes(command.type))assertBackendEditable(c);
     const handled=workflowCommand(g,c,identity,command.type,p);if(handled)return handled;
     const operated=operationsCommand(g,c,identity,command.type,p,event);if(operated)return operated;
     const commercial=productCommand(g,c,identity,command.type,p,event);if(commercial)return commercial;
     // Promotions are published only through Producto → QA → CTO → DevOps.
     if (command.type.startsWith('campaign.')) throw new Error('Las promociones se preparan en el catálogo de Producto y se publican por QA, CTO y DevOps.');
-    if(identity.role==='backend' && ['module.create','module.revise','change.submit'].includes(command.type) && g.changes.some(x=>x.companyId===c.id&&x.status==='DEPLOYING'))throw new Error('Espera a que finalice la publicación en curso.');
+    if(identity.role==='backend' && ['module.create','module.revise','module.design','change.submit'].includes(command.type) && g.changes.some(x=>x.companyId===c.id&&x.status==='DEPLOYING'))throw new Error('Espera a que finalice la publicación en curso.');
     if (command.type.startsWith('campaign.') || command.type === 'product.propose') { const result = businessCommand(g, c, identity, command.type, p); event(g, c.id, command.type === 'campaign.activate' ? 'Campaña activada.' : 'Operación comercial registrada.', 'neutral', 'PRODUCTO'); return result; }
     if (command.type.startsWith('security.') && ['security.save','security.configure','security.submit','security.correction'].includes(command.type)) return securityCommand(g,identity,command.type,p);
     if(command.type==='ai.accept'||command.type==='ai.confirm'){
@@ -201,7 +210,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       if(command.type==='ai.accept'&&(proposal?.kind==='backend.propose'||proposal?.kind==='security.propose'))throw new Error('Claude no prepara diseños ni protecciones. Edita el borrador directamente.');
       return proposalCommand(c,identity,command.type,p);
     }
-    if (['module.create','module.revise','security.prepare'].includes(command.type)) {
+    if (['module.create','module.revise','module.design','security.prepare'].includes(command.type)) {
       const change = prepareArtifact(g, c, identity, command.type, p); if(change.domain==='backend')beginSecurityReview(g,c,change); else bindLegacySecurity(g,c,change); event(g, c.id, `${change.id} preparado. Pendiente de pruebas QA.`, 'neutral', 'PIPELINE'); return { ok: true, refs: [change.id, ...(change.artifactRefs?.map(ref => `${ref.id}@${ref.version}`) ?? [])] };
     }
     if (command.type === 'infra.maintenance') { setMaintenance(g,c,p.mode as import('../shared/observability.js').ServiceMode,identity.id); return {ok:true}; }
@@ -336,9 +345,9 @@ export function step(g: GameState, dt = .1) {
   g.tick = Math.min(g.duration, Math.round((g.tick + dt) * 1000) / 1000);
   jobs(g);
   const second = Math.floor(g.tick) !== previousSecond;
-  const securityIncident = g.tick >= g.duration * .12;
+  const securityIncident = g.tick >= g.duration * .25;
   const concurrencyIncident = g.tick >= g.duration * .24;
-  if (g.tick - dt < g.duration * .12 && securityIncident) event(g, null, 'Tráfico anómalo detectado en las cinco empresas.', 'bad', 'SECURITY');
+  if (g.tick - dt < g.duration * .25 && securityIncident) event(g, null, 'Tráfico anómalo detectado en las cinco empresas.', 'bad', 'SECURITY');
   if (g.tick - dt < g.duration * .24 && concurrencyIncident) event(g, null, 'Ráfagas de compra sobre inventario compartido.', 'bad', 'CONCURRENCIA');
   for (const c of g.companies) {
     if (c.eliminated) continue;
@@ -350,9 +359,12 @@ export function step(g: GameState, dt = .1) {
     const rates = serviceRates(c, deploying);
     const capacity = rates.web;
     generateTraffic(c, g.tick, dt, g.duration);
-    if (second) restockTraffic(c);
+    advanceProbes(g, c, event); closeSettledFindings(g, c, event);
+    // The settlement in traffic.ts reads these off the company, which is all it can see.
+    const audited = sustainedEffects(g, c); if (audited.size) c.runtime.auditEffects = [...audited]; else delete c.runtime.auditEffects;
+    if (second && !suspendsRestock(g, c)) restockTraffic(c);
     const breachesBefore = c.breaches;
-    advanceTraffic(c, g.tick, rates);
+    advanceTraffic(c, g.tick, rates); chargeLeaks(g, c);
     if (c.breaches > breachesBefore && second && previousSecond % 12 === 0) event(g, c.id, `${c.breaches - breachesBefore} accesos indebidos · SECURITY BREACH`, 'bad', 'SECURITY');
     const scenario = stepConcurrency(c, g.tick, capacity > 0);
     if (scenario.started) event(g, c.id, 'SKU LAST-UNIT · 2 compras / 1 unidad.', 'neutral', 'CONCURRENCIA');
@@ -381,7 +393,7 @@ export function step(g: GameState, dt = .1) {
   }
   advanceMarket(g);
   const removed = g.companies.filter(c => !c.eliminated && (c.deadTicks >= 90 || (c.serviceMode.mode === 'FULL_MAINTENANCE' && g.tick-c.serviceMode.since >= MAINTENANCE_POLICY.eliminationSeconds) || c.crisisTicks >= 30 || c.bankruptTicks >= 30));
-  for (const c of removed) { cancelTraffic(c, g.tick, 'COMPANY_ELIMINATED'); if (c.concurrency.run) { cancelConcurrency(c.concurrency.run, g.tick, 'COMPANY_ELIMINATED'); settleConcurrency(c); } c.eliminated = true; advanceCampaigns(c, g.tick); c.eliminatedAt = g.tick; c.active = 0; c.particles = []; event(g, c.id, 'EMPRESA FUERA DEL MERCADO', 'bad', 'COLAPSO'); }
+  for (const c of removed) { closeProbes(g, c.id); cancelTraffic(c, g.tick, 'COMPANY_ELIMINATED'); if (c.concurrency.run) { cancelConcurrency(c.concurrency.run, g.tick, 'COMPANY_ELIMINATED'); settleConcurrency(c); } c.eliminated = true; advanceCampaigns(c, g.tick); c.eliminatedAt = g.tick; c.active = 0; c.particles = []; event(g, c.id, 'EMPRESA FUERA DEL MERCADO', 'bad', 'COLAPSO'); }
   if (removed.length) {
     evacuateEliminated(g);
     for (const c of removed) {
@@ -400,13 +412,13 @@ function finishRequests(g: GameState, reason: 'ROOM_FINISHED' | 'ROOM_INTERRUPTE
     cancelTraffic(company, g.tick, reason);
     if (company.concurrency.run) { cancelConcurrency(company.concurrency.run, g.tick, reason); settleConcurrency(company); }
   }
-  flushMigrations(g); assertMarket(g);
+  closeProbes(g); flushMigrations(g); assertMarket(g);
 }
 export function project(g: GameState, identity: Identity | null, common?: Pick<Snapshot, 'companies'>): Snapshot {
   bindMarket(g);
   const internal = identity?.role === 'operator';
   const particles = (c: Company) => [...trafficParticles(c, g.tick), ...concurrencyParticles(c.concurrency.run, c.color, g.tick, c)].map(p => internal || p.kind !== 'attack' ? p : { ...p, kind: p.finishedAt !== undefined && p.status !== 'COMPLETED' ? 'error' as const : 'success' as const });
-  const ownCompany = identity?.companyId != null ? g.companies[identity.companyId] : undefined;
+  const ownCompany = identity?.companyId != null ? g.companies[identity.companyId] : undefined, lobby = lobbyView(g, identity);
   const { runtime: _runtime, breaches: _breaches, ...ownVisible } = ownCompany ?? {} as Company;
   const privateC = ownCompany ? structuredClone({ ...ownVisible, particles: common?.companies[ownCompany.id].particles ?? particles(ownCompany), traffic: trafficView(ownCompany.traffic, internal) }) : undefined;
   if (privateC) {
@@ -416,8 +428,11 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
     privateC.drafts = ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {};
   }
   return {
-    operations: identity ? { product:ownCompany&&['product','operator'].includes(identity.role)?productView(g,ownCompany,g.tick):undefined, infra:ownCompany&&['devops','cto'].includes(identity.role)?infraView(ownCompany,g.tick):undefined, qaLive:ownCompany&&identity.role==='qa'?qaProgress(g,ownCompany):undefined, ...(ownCompany ? { workflow:workflowView(ownCompany), conversations:ownCompany.runtime.conversations?.filter(t=>t.actor===identity!.id&&t.role===identity!.role&&t.generation===g.generation).map(t=>({...t,messages:t.messages.slice(-20)})), collaboration: collaborationView(ownCompany,identity!) } : {}), modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
+    ...(identity?.role === 'auditor' ? { auditor: auditorView(g, identity) } : {}),
+    // Auditors get the module/control view only: no company operations, people or audit trail.
+    operations: identity && identity.role !== 'auditor' ? { ...(ownCompany && ['security','cto'].includes(identity.role) ? { findings: findingsFor(g, ownCompany.id) } : {}), product:ownCompany&&['product','operator'].includes(identity.role)?productView(g,ownCompany,g.tick):undefined, infra:ownCompany&&['devops','cto'].includes(identity.role)?infraView(ownCompany,g.tick):undefined, qaLive:ownCompany&&identity.role==='qa'?qaProgress(g,ownCompany):undefined, ...(ownCompany ? { workflow:workflowView(ownCompany), conversations:ownCompany.runtime.conversations?.filter(t=>t.actor===identity!.id&&t.role===identity!.role&&t.generation===g.generation).map(t=>({...t,messages:t.messages.slice(-20)})), collaboration: collaborationView(ownCompany,identity!) } : {}), modules: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => Object.values(c.runtime.modules).flat().map(({ defects, profile, graph, ...visible }) => visible)), campaigns: g.companies.filter(c => identity.role === 'operator' || c.id === identity.companyId).flatMap(c => c.runtime.campaigns), employees: Object.values(g.actions.employees).filter(e => identity.role === 'operator' || e.companyId === identity.companyId), audit: g.actions.audit.filter(a => identity.role === 'operator' || a.companyId === identity.companyId).slice(-40), priority: ownCompany?.runtime.priority ?? 'concurrency', proposals: ownCompany?.runtime.proposals ?? [], protection: ownCompany?.runtime.releases[ownCompany.version]?.security } : undefined,
     dvrEnabled: g.dvrEnabled, ...(productEnabled(g) ? { productEnabled: true } : {}), generation: g.generation,
+    ...(lobby ? { lobby } : {}),
     slack: ownCompany ? structuredClone(g.slack.messages.filter(m=>m.companyId===ownCompany.id)) : undefined,
     tick: g.tick, duration: g.duration, status: g.status, speed: g.speed, identity,
     companies: common?.companies ?? g.companies.map(c => {

@@ -26,10 +26,15 @@ export function slackFact(g:GameState,f:Observation){
  if(f.kind==='request.settled'&&f.companyId!==null&&f.data.trafficClass==='legitimate'&&f.data.customerId){
  const r=f.data.result as {status:string;reason:string};if(['ROOM_FINISHED','ROOM_INTERRUPTED','COMPANY_ELIMINATED'].includes(r.reason))return;
  const v=variant(g,f),author=`Cliente ${f.data.customerId}`;
- if(r.reason==='DEADLINE')auto(g,f,'soporte-clientes','timeout',v?'Mi solicitud venció antes de recibir una respuesta.':'Intenté completar mi operación y terminó por tiempo de espera.',author);
- else if(Number(f.data.duplicates)>0)auto(g,f,'soporte-clientes','duplicate','Mi operación aparece registrada más de una vez.',author);
- else if(r.status!=='COMPLETED')auto(g,f,'soporte-clientes',`failure:${r.reason}`,['MAINTENANCE','ORDERS_PAUSED'].includes(r.reason)?'Intenté utilizar el servicio y respondió temporalmente indisponible.':v?'Mi solicitud fue rechazada o falló; no pude completarla.':'No logré completar mi operación en la plataforma.',author);
- else if(Number(f.data.latencyMs)>3000)auto(g,f,'soporte-clientes','slow','Mi operación terminó, pero tardó más de tres segundos.',author);
+ // A billing or confirmation hole does not fail on availability, so its complaint is emitted on its own terms.
+ if(f.data.auditedAs==='uncharged'){auto(g,f,'soporte-clientes','billing',v?'no me recibe el pago':'me descontaron y la compra no aparece',author);return;}
+ if(f.data.auditedAs==='confirmation'){auto(g,f,'soporte-clientes','confirmation',v?'me dice que falló pero ya me cobraron':'¿entonces la tengo o no la tengo?',author);return;}
+ // Customers write like people, and say when it used to work: that contrast is what makes a team look.
+ if(r.reason==='DEADLINE')auto(g,f,'soporte-clientes','timeout',v?'llevo un rato esperando y nunca me respondió':'se queda cargando y al final no pasa nada',author);
+ else if(Number(f.data.duplicates)>0)auto(g,f,'soporte-clientes','duplicate',v?'me aparece cobrada dos veces, ¿pueden revisar?':'hice una sola compra y me figura repetida',author);
+ else if(r.reason==='OUT_OF_STOCK')auto(g,f,'soporte-clientes','failure:OUT_OF_STOCK',v?'no pude completar mi compra y la necesitaba':'hace un rato me dejaba comprar y ahora dice que no hay',author);
+ else if(r.status!=='COMPLETED')auto(g,f,'soporte-clientes',`failure:${r.reason}`,['MAINTENANCE','ORDERS_PAUSED'].includes(r.reason)?'no me deja entrar, ¿están caídos?':v?'me deja a medias y se cae, llevo tres intentos':'¿les pasa algo? no logro terminar la compra',author);
+ else if(Number(f.data.latencyMs)>3000)auto(g,f,'soporte-clientes','slow',v?'tardísimo, casi lo dejo':'antes era instantáneo, ahora se tarda un montón',author);
  }
  if(f.kind==='customer.migrated'&&f.companyId!==null){const to=f.data.to as number|null;auto(g,f,'soporte-clientes','migration',to===null?'Dejé de utilizar esta plataforma.':`Dejé ${g.companies[f.companyId].name} y ahora utilizo ${g.companies[to].name}.`,`Cliente ${f.data.customerId}`);}
  if(f.kind==='maintenance.changed'&&f.companyId!==null){const mode=f.data.to;add(g,{companyId:f.companyId,channel:'alertas-sistema',source:'system',author:'Sistema',cause:f.id,dedup:`fact:${f.id}`,text:mode==='OPERATING'?'[SISTEMA] La recepción de nuevas solicitudes fue restablecida por DevOps.':mode==='FULL_MAINTENANCE'?'[SISTEMA] La plataforma inició mantenimiento total por orden de DevOps.':'[SISTEMA] DevOps suspendió las nuevas operaciones transaccionales.',refs:f.refs});}

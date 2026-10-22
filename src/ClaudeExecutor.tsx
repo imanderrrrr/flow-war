@@ -34,7 +34,7 @@ export default function ClaudeExecutor({ active }: { active: boolean }) {
   const references = [selection.changeId && `cambio ${selection.changeId}`, selection.nodeId && `bloque ${selection.nodeId}`, selection.serverId && `APP-${selection.serverId}`, selection.draftId && `borrador ${selection.draftId}`].filter(Boolean);
   return <section className="panel claude-executor" aria-label="Ejecutor de órdenes con Claude">
     <div className="panel-title"><span>✳ CLAUDE · ÓRDENES DE {ROLE_LABELS[role].toUpperCase()}</span><span className="label-count">EJECUTOR</span></div>
-    <p className="executor-rule">Ejecuta órdenes explícitas de tu departamento. No recomienda, no evalúa y no decide por el equipo.</p>
+    <p className="executor-rule">Ejecuta órdenes explícitas de tu departamento. No recomienda, no evalúa y no decide por el equipo.{role === 'backend' && ' También redacta el diseño textual de un módulo que describas (por ejemplo: "necesito un módulo de inicio de sesión"), sin código.'}</p>
     <div className="conversation-log" ref={log} aria-live="polite">
       {thread?.messages.map(m => <article key={m.id} className={`message-${m.role}`}><b>{m.role === 'user' ? 'TÚ' : `MOTOR${m.state ? ` · ${STATE_LABELS[m.state] ?? m.state}` : ''}`}</b><p>{m.text}</p></article>)}
       {!thread?.messages.length && <p className="muted">Ejemplo de orden: indicá operación, objeto y valores.</p>}

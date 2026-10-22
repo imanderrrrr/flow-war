@@ -63,7 +63,7 @@ function enqueue(company: Company, request: TrafficRequest, service: ServiceId, 
   queue.waiting.push(request.id); queue.offered++;
 }
 
-export function admitTraffic(company: Company, now: number, type: TrafficRequest['type'] = 'browse', trafficClass: TrafficRequest['trafficClass'] = 'legitimate', attackKind?: TrafficRequest['attackKind'], selected?: MarketCustomer, securityContext?: import('../shared/collaboration.js').RequestSecurityContext): TrafficRequest {
+export function admitTraffic(company: Company, now: number, type: TrafficRequest['type'] = 'browse', trafficClass: TrafficRequest['trafficClass'] = 'legitimate', attackKind?: TrafficRequest['attackKind'], selected?: MarketCustomer, securityContext?: import('../shared/collaboration.js').RequestSecurityContext, verdict?: import('./security.js').SecurityVerdict): TrafficRequest {
   if (company.eliminated) throw new Error('Empresa eliminada.');
   const customer = trafficClass === 'legitimate' && company.traffic.scope !== 'qa' ? selected ?? selectCustomer(company) : undefined;
   if (trafficClass === 'legitimate' && company.traffic.scope !== 'qa' && !customer) throw new Error('No hay cliente admisible.');
@@ -77,7 +77,7 @@ export function admitTraffic(company: Company, now: number, type: TrafficRequest
     id, ...(type === 'purchase' ? { intentId: `${id}-intent` } : {}), companyId: company.id,
     ...(trafficClass === 'legitimate' && state.scope === 'qa' ? { customerId: `qa-${company.id}-${ordinal}`, customerSource: 'qa' as const } : {}),
     type, trafficClass, ...(attackKind ? { attackKind } : {}), attempt: 0, commercial: type === 'purchase' && trafficClass === 'legitimate',
-    executor: 'requests-4a', loadDepth: state.services.web.waiting.length + state.services.checkout.waiting.length, execution: executionFor(company), newCustomer: customer ? customer.successfulVisits === 0 : true, couponCount: ordinal % 10 === 0 ? 2 : 1, executionVersion: company.version, path, securityAllowed: blocked ? false : admitSecurity(company, executionFor(company), trafficClass === 'legitimate' ? 'valid' : attackKind ?? 'bot', ordinal - 1, now, `sim-${trafficClass === 'malicious' ? 64 + ordinal % 16 : customer ? customer.cohort % 64 : ordinal % 64}`, customer?.id, type, securityContext),
+    executor: 'requests-4a', loadDepth: state.services.web.waiting.length + state.services.checkout.waiting.length, execution: executionFor(company), newCustomer: customer ? customer.successfulVisits === 0 : true, couponCount: ordinal % 10 === 0 ? 2 : 1, executionVersion: company.version, path, securityAllowed: blocked ? false : admitSecurity(company, executionFor(company), trafficClass === 'legitimate' ? 'valid' : attackKind ?? 'bot', ordinal - 1, now, `sim-${trafficClass === 'malicious' ? 64 + ordinal % 16 : customer ? customer.cohort % 64 : ordinal % 64}`, customer?.id, type, securityContext, verdict),
     arrivalAt: now, nextAt: now, deadline: round(now + state.config.patience[type]), cursor: 1,
     status: 'PENDING', atomic: false, quantity: 1, committed: 0, oversold: 0, paid: false, accounted: false,
     service: 'security', stage: 'entry', phase: 'security', transaction: 'NONE', breach: false, waits: [], trace: [],
@@ -161,6 +161,13 @@ export function settleTraffic(company: Company, now: number) {
     settleReservation(request, state.inventory);
     if (state.operations) releaseResources(request, state.operations);
     const result = request.result;
+    const audited = company.runtime.auditEffects;
+    if (audited && request.trafficClass === 'legitimate') {
+      // An exposed payment module lets a purchase complete without the company ever collecting it.
+      if (audited.includes('uncharged') && result.revenue > 0) { result.lostRevenue += result.revenue; result.capitalDelta -= result.revenue; result.revenue = 0; request.auditedAs = 'uncharged'; }
+      // An exposed response module returns a failure to a customer who was already charged.
+      if (audited.includes('confirmation') && result.status === 'COMPLETED') { result.status = 'FAILED'; result.reason = 'DEADLINE'; request.status = 'FAILED'; request.auditedAs = 'confirmation'; }
+    }
     company.duplicates += request.duplicates ?? 0;
     for (const code of request.effectCodes ?? []) { const counters = (state.operations ??= initialOperations()).counters; counters.activations[code] = (counters.activations[code] ?? 0) + 1; }
     const key = { COMPLETED: 'completed', REJECTED: 'rejected', ABANDONED: 'abandoned', FAILED: 'failed' } as const;
@@ -173,7 +180,7 @@ export function settleTraffic(company: Company, now: number) {
     company.oversold += request.oversold; company.breaches += Number(request.breach);
     if (request.trafficClass === 'legitimate') { recordCustomerExperience(company, request, request.type, request.latencyMs!); recordFunnel(company, request, now); }
     request.accounted = true;
-    observeCompany(company, 'request.settled', { requestId: request.id, customerId: request.customerId, trafficClass: request.trafficClass, type: request.type, version: request.executionVersion, result: request.result, transaction: request.transaction, duplicates: request.duplicates ?? 0, oversold: request.oversold, defects: request.effectCodes ?? [], modules: capturesReceipts(company) ? request.execution?.modules.map(m => ({ id: m.id, version: m.version, defects: m.defects.filter(d => request.effectCodes?.includes(d.code)).map(d => d.code) })) ?? [] : [], latencyMs: request.latencyMs }, [request.id]);
+    observeCompany(company, 'request.settled', { ...(request.auditedAs ? { auditedAs: request.auditedAs } : {}), requestId: request.id, customerId: request.customerId, trafficClass: request.trafficClass, type: request.type, version: request.executionVersion, result: request.result, transaction: request.transaction, duplicates: request.duplicates ?? 0, oversold: request.oversold, defects: request.effectCodes ?? [], modules: capturesReceipts(company) ? request.execution?.modules.map(m => ({ id: m.id, version: m.version, defects: m.defects.filter(d => request.effectCodes?.includes(d.code)).map(d => d.code) })) ?? [] : [], latencyMs: request.latencyMs }, [request.id]);
     if (request.transaction === 'PENDING_RESOLUTION') state.unresolvedCount++;
     state.observations.push({ at: now, legitimate: request.trafficClass === 'legitimate', status: result.status, latency: request.latencyMs!, breach: request.breach, oversold: request.oversold });
     if(capturesReceipts(company)){const receipt=trafficReceipt(request, true);
@@ -245,7 +252,7 @@ function updateTrafficMetrics(company: Company, now: number, dt: number, rates: 
 export function generateTraffic(company: Company, at: number, dt: number, duration: number) {
   if (company.eliminated) return;
   const state = company.traffic;
-  const demand = (5 + 295 * (at / duration) ** 1.25) * company.customers / 5000 * (activeCampaign(company, at)?.configuration.demandMultiplier ?? 1);
+  const demand = (5 + 295 * (at / duration) ** 2.5) * company.customers / 5000 * (activeCampaign(company, at)?.configuration.demandMultiplier ?? 1);
   state.arrivalRemainder = round(state.arrivalRemainder + demand * dt);
   while (state.arrivalRemainder >= 1) {
     state.arrivalRemainder = round(state.arrivalRemainder - 1);
@@ -255,8 +262,10 @@ export function generateTraffic(company: Company, at: number, dt: number, durati
     const customer = selectCustomer(company);
     if (customer) admitTraffic(company, at, (ordinal + offset) % 10 < 7 ? 'browse' : 'purchase', 'legitimate', undefined, customer);
   }
-  if (at >= duration * .12) {
-    state.attackRemainder = round(state.attackRemainder + (2 + 18 * at / duration) * dt);
+  // Anomalous traffic starts a quarter into the game and ramps on the same slow curve as demand,
+  // so a team has time to organize and an auditor's work stands out against the background.
+  if (at >= duration * .25) {
+    state.attackRemainder = round(state.attackRemainder + (2 + 18 * (at / duration) ** 2.5) * dt);
     while (state.attackRemainder >= 1) {
       state.attackRemainder = round(state.attackRemainder - 1);
       admitTraffic(company, at, 'purchase', 'malicious', (['forged', 'injection', 'bot'] as const)[state.attackSequence++ % 3]);
