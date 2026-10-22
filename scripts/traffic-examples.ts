@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import { DatabaseSync } from 'node:sqlite';
-import { createGame, applyCommand, step } from '../server/engine.js';
+import { applyCommand, assembleGame, createGame, step } from '../server/engine.js';
 import { admitTraffic, advanceTraffic } from '../server/traffic.js';
 import { recoverGame } from '../server/persistence.js';
 import { createGameWriter } from '../server/storage.js';
 
 // fifo-eight-1: an intentionally slow Web service, configured before admission.
-const game = createGame(1500, 7357), company = game.companies[0];
+const game = createGame(1500, 7357); assembleGame(game);
+const company = game.companies[0];
 company.traffic.config.rates.web = 1;
 company.traffic.config.patience.browse = 30;
 const requests = Array.from({ length: 8 }, () => admitTraffic(company, 0));
@@ -38,7 +39,8 @@ const archived = (db.prepare('SELECT count(*) AS n FROM request_receipts WHERE c
 assert.equal(archived, unchanged.traffic.totals.completed);
 db.close();
 
-const unavailable = createGame().companies[0]; unavailable.infraBudget = 0;
+const unavailableGame = createGame(); assembleGame(unavailableGame);
+const unavailable = unavailableGame.companies[0]; unavailable.infraBudget = 0;
 const abandoned = admitTraffic(unavailable, 0, 'purchase'); run(unavailable, 11);
 assert.equal(abandoned.status, 'ABANDONED');
 console.log(JSON.stringify({ fixture: 'fifo-eight-1', seed: 7357, snapshot,

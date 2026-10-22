@@ -8,7 +8,7 @@
  *
  * Run: npm run bench:audit
  */
-import { applyCommand, createGame, step } from '../server/engine.js';
+import { applyCommand, assembleGame, createGame, step } from '../server/engine.js';
 import { AUDIT_LEAK } from '../shared/auditor.js';
 import type { GameState, Identity } from '../shared/types.js';
 
@@ -39,7 +39,7 @@ function configureControl(g: GameState, nodeId: string, rules: unknown[]) {
 }
 
 function run(mode: number | null | 'sin auditoría') {
-  const g = createGame();
+  const g = createGame(); assembleGame(g);
   send(g, OPERATOR, 'room.start', {});
   advance(g, 400);                                   // past the point where anomalous traffic begins
   const c = g.companies[0];

@@ -1,4 +1,4 @@
-import { applyCommand, createGame, initialGraph } from '../server/engine.js';
+import { applyCommand, assembleGame, createGame, initialGraph } from '../server/engine.js';
 import type { GameState, Graph, Role } from '../shared/types.js';
 
 export const MARKET_STRATEGIES = ['A-equivalent', 'B-deficient', 'C-receiver', 'D-domino', 'E-recovery', 'F-elimination', 'G-multiple', 'H-empty'] as const;
@@ -10,7 +10,7 @@ function insert(graph: Graph, type: string, before: string, value = 1) {
 }
 /** All production decisions pass the real role/pipeline authorization. No market transfers injected. */
 export function marketScenario(duration = 1200, strategy: MarketStrategy = 'D-domino', seed = 7357, migrations = true) {
-  const game = createGame(duration, seed); let sequence = 0;
+  const game = createGame(duration, seed); assembleGame(game); let sequence = 0;
   if (!migrations) { game.market.config.hazardPerSecond = 0; game.market.config.reentryPerSecond = 0; }
   const command = (role: Role | 'operator', type: string, companyId: number, payload: Record<string, unknown> = {}, changeId?: string) => {
     const result = applyCommand(game, { id: `bench-${role}-${companyId}`, role, companyId: role === 'operator' ? null : companyId }, { id: `market-${++sequence}`, type, companyId, payload, changeId });

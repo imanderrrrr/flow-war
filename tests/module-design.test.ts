@@ -1,18 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyCommand, createGame, project } from '../server/engine.js';
+import { applyCommand, project } from '../server/engine.js';
 import { EXECUTOR_SYSTEM, commandsFor, executorContext, finalReply, outcome, planCalls, systemFor, toolsFor } from '../server/executor.js';
 import { buildRequest } from '../server/executor-service.js';
 import { designPending, sanitizeDesign } from '../server/design.js';
 import { pendingControls } from '../server/auditor.js';
 import { route } from '../server/graphs.js';
 import { DEFAULT_TEST } from '../shared/actions.js';
-import { command, advanceGame } from './helpers.js';
+import { advanceGame, assembledGame, command } from './helpers.js';
 import type { GameState, Identity, Role } from '../shared/types.js';
 import type { ToolCall } from '../shared/executor.js';
 
 const actor = (role: Role, companyId = 0): Identity => ({ id: `${companyId}-${role}`, role, companyId });
-const start = () => { const g = createGame(); assert(command(g, 'operator', 'room.start').ok); return g; };
+const start = () => { const g = assembledGame(); assert(command(g, 'operator', 'room.start').ok); return g; };
 let sequence = 0;
 function run(g: GameState, role: Role, text: string, calls: ToolCall[]) {
   const who = actor(role), ctx = executorContext(g, who, { id: `design-${++sequence}`, text }, []);

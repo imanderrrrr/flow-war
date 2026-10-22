@@ -6,12 +6,12 @@ import {join} from 'node:path';
 import {tmpdir,cpus} from 'node:os';
 import {createHash} from 'node:crypto';
 import {deflateSync} from 'node:zlib';
-import {createGame,applyCommand,step} from '../server/engine.js';
+import { applyCommand, assembleGame, createGame, step } from '../server/engine.js';
 import {createGameWriter} from '../server/storage.js';
 import {decodeReceipt,compactReceipts} from '../server/receipt-storage.js';
 import {adminSchema,storageUsage,exportGeneration,verifyArchive,readArchive} from '../server/history-admin.js';
 import {marketSample} from './market-scenarios.js';
-const dir=mkdtempSync(join(tmpdir(),'flow-storage-bench-')),path=join(dir,'game.sqlite'),db=new DatabaseSync(path);db.exec('PRAGMA journal_mode=WAL;CREATE TABLE commands(identity TEXT,id TEXT,digest TEXT,result TEXT,PRIMARY KEY(identity,id))');const write=createGameWriter(db);adminSchema(db);const g=createGame(60),op={id:'operator',role:'operator',companyId:null}as const,growth:unknown[]=[],economy:unknown[]=[];
+const dir=mkdtempSync(join(tmpdir(),'flow-storage-bench-')),path=join(dir,'game.sqlite'),db=new DatabaseSync(path);db.exec('PRAGMA journal_mode=WAL;CREATE TABLE commands(identity TEXT,id TEXT,digest TEXT,result TEXT,PRIMARY KEY(identity,id))');const write=createGameWriter(db);adminSchema(db);const g=createGame(60),_assembled=assembleGame(g),op={id:'operator',role:'operator',companyId:null}as const,growth:unknown[]=[],economy:unknown[]=[];
 const run=(type:string)=>assert(applyCommand(g,op,{id:crypto.randomUUID(),type}).ok);
 function receiptsDigest(){const hash=createHash('sha256');for(const row of db.prepare('SELECT * FROM request_receipts ORDER BY id').iterate())hash.update(stableDigest(decodeReceipt(db,row as any))+'\n');return hash.digest('hex');}
 try{

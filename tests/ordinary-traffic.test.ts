@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame } from '../server/engine.js';
-import { admitTraffic, advanceTraffic, serviceRates, settleTraffic, trafficParticles } from '../server/traffic.js';
-import { insertBlock } from './helpers.js';
 
-const simulation = () => createGame().companies[0];
+import { admitTraffic, advanceTraffic, serviceRates, settleTraffic, trafficParticles } from '../server/traffic.js';
+import { assembledGame, insertBlock } from './helpers.js';
+
+const simulation = () => assembledGame().companies[0];
 const advance = (company: ReturnType<typeof simulation>, until: number) => { for (let tick = Math.round(company.traffic.lastTick * 10) + 1; tick <= until * 10; tick++) advanceTraffic(company, tick / 10); };
 function conservation(company: ReturnType<typeof simulation>) {
   const state = company.traffic;

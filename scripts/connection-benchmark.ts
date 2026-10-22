@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { DatabaseSync } from 'node:sqlite';
 import { io, type Socket } from '../shared/live-client.js';
-import { createGame } from '../server/engine.js';
+import { assembleGame, createGame } from '../server/engine.js';
 import { admitTraffic } from '../server/traffic.js';
 import { createGameWriter } from '../server/storage.js';
 import type { Identity, Result, Snapshot } from '../shared/types.js';
@@ -16,7 +16,7 @@ const directory = await mkdtemp(join(tmpdir(), 'flow-war-connections-'));
 const probe = createServer(); probe.listen(0, '127.0.0.1'); await once(probe, 'listening');
 const port = (probe.address() as {port:number}).port; await new Promise<void>(resolve=>probe.close(()=>resolve()));
 const base = `http://127.0.0.1:${port}`, sockets: Socket[] = [];
-const game = createGame(); game.status='RUNNING'; game.tick=800;
+const game = createGame(); assembleGame(game); game.status='RUNNING'; game.tick=800;
 for(const company of game.companies){company.traffic.lastTick=800;company.traffic.initialIssued=true;for(let i=0;i<80;i++)admitTraffic(company,800,i%3?'browse':'purchase');}
 const db = new DatabaseSync(join(directory,'game.sqlite'));db.exec('CREATE TABLE commands (identity TEXT,id TEXT,digest TEXT,result TEXT,PRIMARY KEY(identity,id))');createGameWriter(db)(game);db.close();
 const child = spawn(process.execPath,['--import','tsx','server/index.ts'],{env:{...process.env,NODE_ENV:'production',FLOW_PORT:String(port),FLOW_DATA_DIR:directory},stdio:'ignore'});

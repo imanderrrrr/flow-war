@@ -42,6 +42,9 @@ function planGraph(types: PlanPiece[]): Graph {
 }
 /** The chain server/traffic.ts used to walk by hand: what a migrated game and an assembled room start on. */
 export function completePlan(): Graph { return planGraph(['entry', 'security', 'web', 'checkout', 'inventory', 'payment', 'exit']); }
+/** Puts the five companies on the complete plan. A new room starts almost empty on purpose, so a
+ * fixture or benchmark that measures a company serving traffic opens the room already assembled. */
+export function assembleGame(g: GameState) { for (const company of g.companies) company.plan = completePlan(); }
 export function initialGraph(domain: Domain): Graph {
   // Only the entrance and a road to the storefront: the team builds the rest.
   if (domain === 'plan') return planGraph(['entry', 'web']);

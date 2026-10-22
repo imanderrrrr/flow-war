@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGame, applyCommand, initialGraph, project } from '../server/engine.js';
+import { applyCommand, initialGraph, project } from '../server/engine.js';
 import { ensureLobby, formTeams, joinLobby, participantIdentity } from '../server/lobby.js';
 import { pendingControls, auditCompanies, targetService } from '../server/auditor.js';
 import { recoverGame, serializeGame } from '../server/persistence.js';
@@ -11,12 +11,12 @@ import { AUDIT_LEAK, AUDIT_PROBE, CONTROL_CHECKS } from '../shared/auditor.js';
 import { LOBBY_ICONS } from '../shared/lobby.js';
 import type { GameState, GraphNode, Identity } from '../shared/types.js';
 import type { ModuleVersion } from '../shared/simulation.js';
-import { command, advanceGame, insertBlock, reviewForQa } from './helpers.js';
+import { advanceGame, assembledGame, command, insertBlock, reviewForQa } from './helpers.js';
 
 const auditor = (n = 1): Identity => ({ id: `auditor-P${n}`, role: 'auditor', companyId: null });
 let sequence = 0;
 const probe = (g: GameState, who: Identity, payload: Record<string, unknown>) => applyCommand(g, who, { id: `probe-${++sequence}`, type: 'audit.probe', payload });
-const running = () => { const g = createGame(); assert(command(g, 'operator', 'room.start').ok); return g; };
+const running = () => { const g = assembledGame(); assert(command(g, 'operator', 'room.start').ok); return g; };
 const sustain = (g: GameState, who: Identity, payload: Record<string, unknown>) => applyCommand(g, who, { id: `sustain-${++sequence}`, type: 'audit.sustain', payload });
 /** Runs a probe on that module until its finding is open, and returns it. */
 function openFindingOn(g: GameState, companyId: number, nodeId: string, check: string, who = auditor()) {
@@ -61,7 +61,7 @@ function deployBackend(g: GameState, graph: unknown) {
 }
 
 test('players left in the reserve after the draw become external auditors with no company', () => {
-  const g = createGame(); ensureLobby(g, n => n - 1, 0);
+  const g = assembledGame(); ensureLobby(g, n => n - 1, 0);
   for (let i = 0; i < 27; i++) joinLobby(g, { pin: g.lobby!.pin, name: `Jugador ${i}`, icon: LOBBY_ICONS[i % LOBBY_ICONS.length] });
   const before = g.lobby!.participants[0];
   assert.equal(participantIdentity(g, { participant: before.id, lobby: g.lobby!.id }), null, 'nobody has a role before the draw');
@@ -138,7 +138,7 @@ test('duration and cooldown are enforced by the server in game time', () => {
 });
 
 test('probes are validated commands: roles, targets and identities are checked', () => {
-  const g = createGame();
+  const g = assembledGame();
   assert.equal(probe(g, auditor(), { companyId: 0, nodeId: 'backend-read', check: 'auth' }).code, 'ROOM_PAUSED');
   assert(command(g, 'operator', 'room.start').ok);
   assert.equal(probe(g, auditor(), { companyId: 0, nodeId: 'backend-read', check: 'ip_block' }).code, 'INVALID');
@@ -187,7 +187,7 @@ test('probes stop when the target company leaves the game', () => {
 test('history reconstruction replays the probe command at its tick with identical counters', async () => {
   const { DatabaseSync } = await import('node:sqlite'), { createGameWriter } = await import('../server/storage.js'), { reconstruct } = await import('../server/history.js');
   const db = new DatabaseSync(':memory:'); db.exec('CREATE TABLE commands(identity TEXT,id TEXT,digest TEXT,result TEXT)');
-  const write = createGameWriter(db), g = createGame(1200); write(g);
+  const write = createGameWriter(db), g = assembledGame(1200); write(g);
   assert(command(g, 'operator', 'room.start').ok); advanceGame(g, 5); write(g);
   assert(probe(g, auditor(), { companyId: 3, nodeId: 'backend-payment', check: 'bot_detection' }).ok); write(g);
   advanceGame(g, 40); const live = structuredClone(g.auditors!.probes[0]), malicious = { ...g.companies[3].traffic.malicious };
@@ -422,7 +422,7 @@ test('cada módulo golpea el servicio al que pertenece', () => {
 test('calibración: corregir temprano cuesta poco más que la multa; ignorarlo deja a la empresa en crisis', () => {
   const horizon = 600;
   const play = (fix: boolean) => {
-    const g = createGame(horizon); assert(command(g, 'operator', 'room.start').ok);
+    const g = assembledGame(horizon); assert(command(g, 'operator', 'room.start').ok);
     const c = g.companies[0];
     advanceGame(g, horizon * 0.27);
     const finding = openFindingOn(g, 0, 'backend-write', 'waf');

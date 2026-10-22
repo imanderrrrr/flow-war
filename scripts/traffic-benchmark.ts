@@ -20,6 +20,9 @@ for (const duration of [1200, 1500]) for (const strategy of ['baseline', 'scaled
   db.exec('PRAGMA journal_mode=WAL; CREATE TABLE commands (identity TEXT,id TEXT,digest TEXT,result TEXT,PRIMARY KEY(identity,id))');
   const writer = baseArgument ? undefined : createGameWriter(db);
   const game = engine.createGame(duration, 7357);
+  // A new room starts almost empty on purpose; this benchmark measures a company that serves traffic.
+  // A historical baseline engine has no plan at all, so the call is optional.
+  (engine as Partial<typeof current>).assembleGame?.(game);
   let commandSequence = 0;
   const command = (role: 'operator' | 'cto' | 'devops' | 'backend' | 'security' | 'qa', type: string, payload: Record<string,unknown> = {}, companyId = 0) => {
     const result = engine.applyCommand(game, { id: `bench-${role}-${companyId}`, role, companyId: role === 'operator' ? null : companyId }, { id: `bench-${++commandSequence}`, type, companyId, payload });

@@ -1,17 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { applyCommand, createGame, project } from '../server/engine.js';
+import { applyCommand, project } from '../server/engine.js';
 import { admitTraffic } from '../server/traffic.js';
 import { createTestJob, advanceTestJob, testReport, scenarioForSuite } from '../server/qa.js';
 import { productView } from '../server/product.js';
 import { beginExecution } from '../server/executor-service.js';
 import { commandsFor, executorContext, finalReply, outcome, planCalls } from '../server/executor.js';
-import { command, advanceGame, publishPromotion } from './helpers.js';
+import { advanceGame, assembledGame, command, publishPromotion } from './helpers.js';
 import type { GameState, Identity, Role } from '../shared/types.js';
 import type { ToolCall } from '../shared/executor.js';
 
 const actor = (role: Role, companyId = 0): Identity => ({ id: `${companyId}-${role}`, role, companyId });
-const start = (enabled = true) => { const g = createGame(); g.productEnabled = enabled; g.status = 'RUNNING'; return g; };
+const start = (enabled = true) => { const g = assembledGame(); g.productEnabled = enabled; g.status = 'RUNNING'; return g; };
 const promo = (patch: Record<string, unknown> = {}) => ({ catalogId: 'PROMO-01', percent: 10, duration: 60, demandMultiplier: 2, budget: 200, ...patch });
 let n = 0;
 function order(g: GameState, text: string, calls: ToolCall[], previous: string[] = []) {
@@ -20,7 +20,7 @@ function order(g: GameState, text: string, calls: ToolCall[], previous: string[]
 }
 
 test('E8 Producto/UX is off by default and is switched once, before start, for the five companies', () => {
-  const g = createGame();
+  const g = assembledGame();
   assert.equal(command(g, 'operator', 'room.product', { enabled: true }).ok, true); assert.equal(g.productEnabled, true);
   assert.equal(project(g, actor('qa', 3)).productEnabled, true);
   command(g, 'operator', 'room.start');

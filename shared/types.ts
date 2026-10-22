@@ -15,8 +15,8 @@ export type Graph = { nodes: GraphNode[]; edges: GraphEdge[] };
 export type RequestStatus = 'PENDING' | 'RUNNING' | 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'REJECTED' | 'ABANDONED' | 'FAILED';
 export type RequestStage = 'entry' | 'security' | 'web' | 'checkout' | 'inventory' | 'payment' | 'exit';
 export type ServiceId = 'security' | 'web' | 'checkout' | 'inventory' | 'payment';
-export type TerminalReason = 'OK' | 'OUT_OF_STOCK' | 'CONFLICT' | 'SECURITY_REJECTED' | 'UNSUPPORTED_BLOCK' | 'INVALID_FLOW' | 'DEADLINE' | 'QUEUE_FULL' | 'ROOM_FINISHED' | 'ROOM_INTERRUPTED' | 'COMPANY_ELIMINATED' | 'MAINTENANCE' | 'ORDERS_PAUSED';
-export const TERMINAL_LABELS: Record<TerminalReason, string> = { MAINTENANCE: 'Mantenimiento · 503', ORDERS_PAUSED: 'Operaciones suspendidas · 503', OK: 'OK', OUT_OF_STOCK: 'Sin stock', CONFLICT: 'Conflicto', SECURITY_REJECTED: 'Seguridad', UNSUPPORTED_BLOCK: 'No ejecutable', INVALID_FLOW: 'Flujo inválido', DEADLINE: 'Vencida', QUEUE_FULL: 'Cola llena', ROOM_INTERRUPTED: 'Partida interrumpida', ROOM_FINISHED: 'Fin de sala', COMPANY_ELIMINATED: 'Empresa cerrada' };
+export type TerminalReason = 'OK' | 'OUT_OF_STOCK' | 'CONFLICT' | 'SECURITY_REJECTED' | 'UNSUPPORTED_BLOCK' | 'INVALID_FLOW' | 'DEADLINE' | 'QUEUE_FULL' | 'ROOM_FINISHED' | 'ROOM_INTERRUPTED' | 'COMPANY_ELIMINATED' | 'MAINTENANCE' | 'ORDERS_PAUSED' | 'NO_STOREFRONT' | 'NO_INVENTORY' | 'NO_CHECKOUT';
+export const TERMINAL_LABELS: Record<TerminalReason, string> = { NO_STOREFRONT: 'La tienda no responde', NO_INVENTORY: 'No se puede consultar el stock', NO_CHECKOUT: 'Todavía no se puede comprar acá', MAINTENANCE: 'Mantenimiento · 503', ORDERS_PAUSED: 'Operaciones suspendidas · 503', OK: 'OK', OUT_OF_STOCK: 'Sin stock', CONFLICT: 'Conflicto', SECURITY_REJECTED: 'Seguridad', UNSUPPORTED_BLOCK: 'No ejecutable', INVALID_FLOW: 'Flujo inválido', DEADLINE: 'Vencida', QUEUE_FULL: 'Cola llena', ROOM_INTERRUPTED: 'Partida interrumpida', ROOM_FINISHED: 'Fin de sala', COMPANY_ELIMINATED: 'Empresa cerrada' };
 export type RequestResult = { defectLoss?: { amount: number; evidence: string[] }; status: 'COMPLETED' | 'REJECTED' | 'ABANDONED' | 'FAILED'; reason: TerminalReason; at: number; revenue: number; lostRevenue: number; capitalDelta: number; service?: ServiceId; operation?: string };
 export type RequestJourney = { from: RequestStage; to: RequestStage; at: number; duration: number };
 export type PurchaseRequest = {
@@ -64,7 +64,7 @@ export type TrafficMetrics = { legitimateTerminated: number; errors: number; rej
 export type TrafficState = { funnel?: import('./product.js').FunnelState; operations?: OperationRuntime;
   scope?: 'qa'; namespace: string; seed: number; config: TrafficScenario; sequence: number; initialIssued: boolean; initialDebt: number;
   arrivalRemainder: number; attackRemainder: number; attackSequence: number; lastTick: number;
-  inventory: InventoryState; paths: Record<number, GraphNode[]>; services: Record<ServiceId, ServiceQueue>; requests: Record<string, TrafficRequest>;
+  inventory: InventoryState; paths: Record<number, GraphNode[]>; planPaths: Record<number, ServiceId[]>; services: Record<ServiceId, ServiceQueue>; requests: Record<string, TrafficRequest>;
   totals: ScenarioTotals; legitimate: ScenarioTotals; malicious: ScenarioTotals; metrics: TrafficMetrics;
   observations: { at: number; legitimate: boolean; status: RequestResult['status']; latency: number; breach: boolean; oversold: number }[];
   capacityWindow: { at: number; dt: number; utilization: number; unavailable: number }[];

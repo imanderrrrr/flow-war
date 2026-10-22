@@ -49,9 +49,11 @@ export function planServices(plan: Graph): ServiceId[] {
 /** The first service this request type needs and the plan does not have, or `'exit'` when the route
  * never reaches the salida, or `null` when the company can serve it. */
 export function missingFor(plan: Graph, type: TrafficRequest['type']): ServiceId | 'exit' | null {
+  // The salida comes first: with no response to give, no request type gets served, whatever else is placed.
+  if (route(plan).at(-1)?.type !== 'exit') return 'exit';
   const services = planServices(plan);
   for (const service of PLAN_REQUIREMENTS[type]) if (!services.includes(service)) return service;
-  return route(plan).at(-1)?.type === 'exit' ? null : 'exit';
+  return null;
 }
 
 /** A company accepts purchases — and so closes its montaje — exactly when nothing is missing for one. */
