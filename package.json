@@ -22,7 +22,8 @@
     "bench:collaboration": "tsx scripts/collaboration-classroom.ts",
     "bench:ai": "node --import tsx scripts/ai-concurrency-benchmark.ts",
     "bench:executor": "node --import tsx scripts/executor-classroom.ts",
-    "verify:anthropic": "node --env-file-if-exists=.env --import tsx scripts/anthropic-smoke.ts"
+    "verify:anthropic": "node --env-file-if-exists=.env --import tsx scripts/anthropic-smoke.ts",
+    "setup:anthropic": "tsx scripts/set-anthropic-key.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.132.0",
