@@ -115,7 +115,7 @@ escribió el estudiante; ahora descarta reglas cuyos umbrales u orígenes no est
 
 | Rol | Herramientas de ejecución | Datos (`consultar_datos`) |
 | --- | --- | --- |
-| Backend | agregar/quitar bloque, conectar, insertar antes de, desconectar, fijar parámetro, guardar, entregar | borrador, bloques, devoluciones |
+| Backend | agregar/quitar bloque, conectar, insertar antes de, desconectar, fijar parámetro, guardar, entregar; redactar el diseño textual de un módulo descrito por el estudiante ([doc 23](23-auditor-externo-y-modulos-con-claude.md)) | borrador, bloques, devoluciones |
 | Seguridad | agregar/quitar control (Auth, Role Check, WAF, Bot Detection, IP Block, Rate Limit) en un bloque, entregar a QA, observación literal a Backend | revisión, controles |
 | QA | ejecutar suite nombrada, escenario con cantidades explícitas, repetir prueba, aprobar por orden explícita, carta de devolución con textos literales | cambios, pruebas, suites |
 | CTO | decidir cambio, autorizar infraestructura, rechazar solicitud, autorizar rollback, priorizar | finanzas, cambios, decisiones, solicitudes, versiones, incidentes |

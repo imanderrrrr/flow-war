@@ -11,7 +11,7 @@ pantalla de la sala. El docente forma los equipos con un sorteo animado y despu�
 | 2 | Ve a cada jugador aparecer con su icono; puede quitar a alguien antes del sorteo. | Escribe su nombre, elige uno de 30 iconos y espera. Puede salir de la sala. |
 | 3 | **FORMAR EQUIPOS**: se habilita con 25 jugadores (30 si Producto/UX está activo). | Ve "Sorteando equipos…". |
 | 4 | Tragamonedas por empresa, en orden: los rodillos giran con los iconos de los jugadores aún sin equipo, se detienen uno por uno, aparecen los nombres con su rol y "¡USTEDES SON …!". | Cuando su empresa aparece en el proyector, ve "SOS DE NOVA · QA" y a sus compañeros. |
-| 5 | Tablero con las cinco empresas, sus integrantes y la reserva. **EMPEZAR JUEGO**. | Pasa a su espacio de trabajo con ese rol. |
+| 5 | Tablero con las cinco empresas, sus integrantes y los auditores externos. **EMPEZAR JUEGO**. | Pasa a su espacio de trabajo con ese rol (o como Auditor externo). |
 
 El panel de control (`/control`) muestra el PIN, la cantidad de jugadores y si los equipos ya se formaron, con un
 enlace a la pantalla de sala. Las credenciales por rol de `.local/access.json` siguen funcionando igual.
@@ -23,7 +23,7 @@ enlace a la pantalla de sala. Las credenciales por rol de `.local/access.json` s
   determinista no cambia. Una prueba verifica con 2 000 sorteos que cada jugador cae en cada empresa y rol con la
   misma frecuencia.
 - Se sortean exactamente 5 jugadores por empresa (6 con Producto/UX), uno por rol. Los que sobran quedan en
-  **reserva**, sin rol, hasta que se defina su función (tráfico o atacantes, pendiente).
+  **reserva** y son **Auditores externos** ([doc 23](23-auditor-externo-y-modulos-con-claude.md)).
 - Después del sorteo la sala no acepta jugadores nuevos ni cambios, y Producto/UX queda fijo.
 - **RESTABLECER** conserva el PIN y a los jugadores, borra los equipos y permite sortear de nuevo.
 - Los nombres son de 1 a 20 caracteres, únicos en la sala (sin distinguir mayúsculas ni tildes). Los iconos pueden
@@ -76,7 +76,7 @@ la Web Speech API; Claude nunca recibe audio) o la escribe. Ejemplos: "cambiá a
 - `tests/lobby.test.ts`: PIN, validaciones, 25/30 jugadores, un rol por empresa, reserva, economía intacta,
   identidad del jugador sentado, visibilidad del PIN, reinicio, RESTABLECER y uniformidad del sorteo.
 - `tests/lobby-server.test.ts`: servidor real con 26 jugadores por HTTP, cada uno con su cookie; sorteo solo del
-  docente, 25 identidades distintas, comandos por socket con el rol sorteado, reserva sin permisos, reinicio del
+  docente, 25 identidades distintas, comandos por socket con el rol sorteado, reserva como auditor externo sin permisos de empresa, reinicio del
   servidor y RESTABLECER.
 - Navegador: celular (375 px) y proyector; sorteo completo con animación, revelación en el celular y paso
   automático al espacio de trabajo al empezar.
@@ -91,4 +91,4 @@ la Web Speech API; Claude nunca recibe audio) o la escribe. Ejemplos: "cambiá a
 
 - Quien llega después del sorteo no puede entrar; para incluirlo hay que RESTABLECER y sortear de nuevo.
 - Con menos de 25 jugadores no se pueden formar equipos desde la sala; se pueden usar las credenciales por rol.
-- La reserva todavía no tiene rol ni pantalla de juego propia.
+- La reserva juega como Auditor externo; su pantalla y reglas están en el [doc 23](23-auditor-externo-y-modulos-con-claude.md).

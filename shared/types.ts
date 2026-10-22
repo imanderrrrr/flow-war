@@ -4,7 +4,8 @@ import type { LobbyState, LobbyView } from './lobby.js';
 import type { ActionState, TestEvidence, DefectCode, OperationRuntime, CompanyRuntime, ExecutionRelease, ModuleRef, OperationsView, TestJob } from './simulation.js';
 export const ROLES = ['backend', 'security', 'qa', 'cto', 'devops', 'product'] as const;
 export type Role = typeof ROLES[number];
-export type Identity = { id: string; role: Role | 'operator'; companyId: number | null };
+/** `auditor`: a reserve player after the draw. Not a company role: no employee record, no company, no private data. */
+export type Identity = { id: string; role: Role | 'operator' | 'auditor'; companyId: number | null };
 export type Domain = 'backend' | 'security' | 'product';
 export type ChangeStatus = 'SECURITY_PENDING' | 'QA_PENDING' | 'QA_RUNNING' | 'QA_REJECTED' | 'CTO_PENDING' | 'CTO_REJECTED' | 'AUTHORIZED' | 'DEPLOYING' | 'DEPLOYED' | 'DEPLOY_FAILED' | 'EXPIRED' | 'STALE';
 export type GraphNode = { id: string; type: string; position: { x: number; y: number }; data: { label: string; value?: number; module?: ModuleRef; config?: BlockConfiguration } };
@@ -40,6 +41,8 @@ export type ConcurrencyView = { runId?: string; inventory?: ConcurrencyRun['inve
 export type InventoryState = Omit<ConcurrencyRun['inventory'], 'sku'> & { sku: 'REGULAR' | 'LAST-UNIT'; supplied?: number };
 export type QueueVisit = { service: ServiceId; enteredAt: number; exitedAt?: number; position: number; exit?: 'SERVICE' | 'DEADLINE' | 'CANCELLED' };
 export type TrafficRequest = PurchaseRequest & {
+  /** `probe`: id of the external auditor's prueba de control that admitted this request; `probeSettled`: already counted. Never projected. */
+  probe?: string; probeSettled?: boolean;
   companyId: number; customerId?: string; type: 'browse' | 'query' | 'purchase'; trafficClass: 'legitimate' | 'malicious';
   attackKind?: 'forged' | 'injection' | 'bot'; attempt: number; admittedAt?: number; startedAt?: number; finishedAt?: number; latencyMs?: number;
   queueEnteredAt?: number; queueExitedAt?: number; waits: QueueVisit[]; service: ServiceId; stage: RequestStage;
@@ -107,12 +110,12 @@ export type Company = {
 export type PrivateCompany = Omit<Company, 'drafts' | 'traffic' | 'runtime' | 'breaches'> & { breaches?:number; drafts: Company['drafts']; traffic: TrafficView };
 export type PublicCompany = Omit<Company, 'infraBudget' | 'reserved' | 'breaches' | 'runtime' | 'drafts' | 'backend' | 'security' | 'product' | 'migrationRemainder' | 'arrivalRemainder' | 'processedRemainder' | 'crisisTicks' | 'deadTicks' | 'bankruptTicks' | 'concurrencyUntil' | 'concurrency' | 'traffic'> & { infraBudget?:number; reserved?:number; breaches?:number; modules: string[]; pipelineCounts: number[]; concurrency: ConcurrencyView; traffic: TrafficView };
 export type HistoricalClosure = { generation: number; tick: number; previousStatus: string; reason: 'TEACHER_RESET' | 'LEGACY_UNCLOSED'; actor: Identity | null; receivedAt: number | null };
-export type GameState = { lobby?: LobbyState; productEnabled?: boolean; dvrEnabled: boolean; closure?: HistoricalClosure; actions: ActionState; schema: 6; observability: ObservabilityState; slack: SlackState; market: MarketState; generation: number; tick: number; duration: number; status: 'LOBBY' | 'RUNNING' | 'PAUSED' | 'FINISHED' | 'ABORTED'; seed: number; eventSeq: number; companies: Company[]; changes: Change[]; events: GameEvent[]; migrations: Migration[]; unserved: number; speed: number };
-export type Snapshot = { lobby?: LobbyView; productEnabled?: boolean; dvrEnabled?: boolean; generation: number; slack?: SlackMessage[]; operations?: OperationsView; tick: number; duration: number; status: GameState['status']; companies: PublicCompany[]; events: GameEvent[]; migrations: Migration[]; unserved: number; identity: Identity | null; privateCompany?: PrivateCompany; changes: Change[]; speed: number };
+export type GameState = { auditors?: import('./auditor.js').AuditorState; lobby?: LobbyState; productEnabled?: boolean; dvrEnabled: boolean; closure?: HistoricalClosure; actions: ActionState; schema: 6; observability: ObservabilityState; slack: SlackState; market: MarketState; generation: number; tick: number; duration: number; status: 'LOBBY' | 'RUNNING' | 'PAUSED' | 'FINISHED' | 'ABORTED'; seed: number; eventSeq: number; companies: Company[]; changes: Change[]; events: GameEvent[]; migrations: Migration[]; unserved: number; speed: number };
+export type Snapshot = { auditor?: import('./auditor.js').AuditorView; lobby?: LobbyView; productEnabled?: boolean; dvrEnabled?: boolean; generation: number; slack?: SlackMessage[]; operations?: OperationsView; tick: number; duration: number; status: GameState['status']; companies: PublicCompany[]; events: GameEvent[]; migrations: Migration[]; unserved: number; identity: Identity | null; privateCompany?: PrivateCompany; changes: Change[]; speed: number };
 export type Command = { id: string; type: string; companyId?: number; changeId?: string; payload?: Record<string, unknown> };
 export type Result = { refs?: string[]; ok: boolean; error?: string; code?: string };
 
-export const ROLE_LABELS: Record<Role | 'operator', string> = { backend: 'Backend', security: 'Seguridad', qa: 'QA', cto: 'CTO', devops: 'DevOps / SRE', product: 'Producto / UX', operator: 'Control de partida' };
+export const ROLE_LABELS: Record<Identity['role'], string> = { backend: 'Backend', security: 'Seguridad', qa: 'QA', cto: 'CTO', devops: 'DevOps / SRE', product: 'Producto / UX', operator: 'Control de partida', auditor: 'Auditor externo' };
 export const BLOCKS: Record<'backend' | 'security', { type: string; label: string; cost: number; value: number; unit: string }[]> = {
   backend: [
     { type: 'validation', label: 'Stock Validation', cost: 50, value: 1, unit: 'unidades' },

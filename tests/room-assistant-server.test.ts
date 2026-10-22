@@ -46,7 +46,8 @@ test('room screen: Claude moves players over HTTP, phones follow, the change sur
     // Before the draw nothing reaches the provider.
     assert.equal((await ask(operator, 'pasá a Jugador 1 a EMBER')).body.code, 'NO_TEAMS'); assert.equal(received.length, 0);
     assert.equal((await post('/api/lobby/form', {}, operator)).status, 200);
-    const seatOf = async (p: { cookie: string }) => (await get('/api/snapshot', p.cookie)).identity as { id: string; companyId: number } | null;
+    // Seated players act for a company; whoever is in the reserve is an external auditor (no company).
+    const seatOf = async (p: { cookie: string }) => { const identity = (await get('/api/snapshot', p.cookie)).identity as { id: string; role: string; companyId: number | null }; return identity.companyId === null ? null : identity as { id: string; companyId: number }; };
     const seats = await Promise.all(players.map(seatOf));
     const seated = players.find((_, i) => seats[i])!, from = seats[players.indexOf(seated)]!.companyId, target = (from + 1) % 5;
 
@@ -65,6 +66,7 @@ test('room screen: Claude moves players over HTTP, phones follow, the change sur
     assert.equal(entered.body.reply.state, 'EXECUTED'); assert.match(entered.body.reply.message, /entró a NOVA como .* pasó a la reserva\./);
     assert.equal((await seatOf(spare))!.companyId, 0);
     assert.equal((await Promise.all(players.map(seatOf))).filter(s => !s).length, 1);
+    assert.equal((await Promise.all(players.map(async p => (await get('/api/snapshot', p.cookie)).identity.role))).filter(r => r === 'auditor').length, 1, 'the displaced member audits');
     assert.match((await ask(operator, 'pasá a Nadie a NOVA')).body.reply.message, /No encuentro a "Nadie" en la sala\. No se movió a nadie\./);
     assert.equal((await ask(operator, 'contame un chiste')).body.reply.state, 'DECLINED');
 

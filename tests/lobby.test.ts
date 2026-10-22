@@ -61,11 +61,11 @@ test('with Producto/UX each company gets six players and the switch locks after 
   assert.equal(command(g, 'operator', 'room.product', { enabled: false }).code, 'PRODUCT_MODE_LOCKED');
 });
 
-test('a seated participant acts as that company role; reserve and stale rooms have no identity', () => {
+test('a seated participant acts as that company role; the reserve audits and stale rooms have no identity', () => {
   const g = room(26); formTeams(g, sequence(3));
   const seated = g.lobby!.participants.find(p => p.companyId === 2 && p.role === 'devops')!, spare = g.lobby!.participants.find(p => p.companyId === undefined)!;
   assert.deepEqual(participantIdentity(g, { participant: seated.id, lobby: g.lobby!.id }), { id: '2-devops', role: 'devops', companyId: 2 });
-  assert.equal(participantIdentity(g, { participant: spare.id, lobby: g.lobby!.id }), null);
+  assert.deepEqual(participantIdentity(g, { participant: spare.id, lobby: g.lobby!.id }), { id: `auditor-${spare.id}`, role: 'auditor', companyId: null });
   assert.equal(participantIdentity(g, { participant: seated.id, lobby: 'another-room' }), null);
 });
 

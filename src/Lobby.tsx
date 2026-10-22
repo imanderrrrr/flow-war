@@ -102,9 +102,16 @@ function Waiting({ me, offset, onLeft }: { me: Me; offset: number; onLeft: () =>
     {s.status === 'LOBBY' ? <p className="muted">Esperá a que el docente empiece el juego.</p> : null}
     <a className="primary-button" href="/workspace">IR A MI ESPACIO <Icon name="arrow" size={14}/></a>
   </div></main>;
+  // Whoever the draw leaves in the reserve audits the five companies.
+  if (formation || s.identity?.role === 'auditor') return <main className="join-page"><div className="join-card join-me">
+    <div className="seat-card auditor-seat"><span className="me-icon">{me.icon}</span><span className="eyebrow">SOS</span><strong>AUDITOR EXTERNO</strong><b>Probás los controles de las cinco empresas</b></div>
+    <p className="muted">Elegís una empresa, revisás sus módulos en producción y lanzás pruebas de control con tráfico anómalo simulado.</p>
+    {s.status === 'LOBBY' ? <p className="muted">Esperá a que el docente empiece el juego.</p> : null}
+    <a className="primary-button" href="/workspace">IR A MI ESPACIO <Icon name="arrow" size={14}/></a>
+  </div></main>;
   return <main className="join-page"><div className="join-card join-me">
-    <span className="me-icon">{me.icon}</span><h1>Quedaste en reserva</h1>
-    <p className="muted">Tu rol se asigna más adelante. Quedate atento a la pantalla del docente.</p>
+    <span className="me-icon">{me.icon}</span><h1>La partida ya empezó</h1>
+    <p className="muted">Quedate atento a la pantalla del docente.</p>
   </div></main>;
 }
 
@@ -243,7 +250,7 @@ function TeamsBoard({ lobby, companies, waiting, onReplay }: { lobby: LobbyView;
       <div className="team-column-head"><Mascot id={c.id} color={c.color} size={30}/><strong>{c.name}</strong></div>
       <ul>{byRole(t.members).map(m => <li key={m.id}><span className="member-icon">{m.icon}</span><span><strong>{m.name}</strong><small>{ROLE_LABELS[m.role]}</small></span></li>)}</ul>
     </div>; })}</div>
-    {formation.reserve.length > 0 && <div className="reserve-row"><span className="eyebrow">RESERVA · ROL PENDIENTE</span><div className="participant-grid">{formation.reserve.map(m => <span className="participant-chip" key={m.id}><span>{m.icon}</span>{m.name}</span>)}</div></div>}
+    {formation.reserve.length > 0 && <div className="reserve-row"><span className="eyebrow">AUDITORES EXTERNOS</span><div className="participant-grid">{formation.reserve.map(m => <span className="participant-chip" key={m.id}><span>{m.icon}</span>{m.name}</span>)}</div></div>}
   </section>;
 }
 

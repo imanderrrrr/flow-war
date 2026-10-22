@@ -11,7 +11,8 @@ export function initialActionState(): ActionState {
   return { employees, audit: [], receipts: {}, sequence: 0 };
 }
 export function employeeFor(g: GameState, identity: Identity): Employee | undefined {
-  if (identity.role === 'operator') return undefined;
+  // The teacher and external auditors are not company employees.
+  if (identity.role === 'operator' || identity.role === 'auditor') return undefined;
   return g.actions.employees[identity.id] ?? Object.values(g.actions.employees).find(e => e.companyId === identity.companyId && e.role === identity.role);
 }
 export function stableDigest(value: unknown): string {
@@ -47,7 +48,9 @@ export function dispatchCommand(g: GameState, identity: Identity | null, raw: Co
   const employee = employeeFor(g, identity), key = `${employee?.id ?? identity.id}:${command.id}`, digest = stableDigest(command), prior = g.actions.receipts[key];
   if (prior) return prior.digest === digest ? structuredClone(prior.result) : { ok: false, code: 'ID_CONFLICT', error: 'ID de comando ya utilizado.' };
   if (employee?.status === 'EXPELLED') return { ok: false, code: 'EXPELLED', error: 'Empleado expulsado. Puesto vacante.' };
-  if (identity.role !== 'operator' && (!employee || employee.role !== identity.role || employee.companyId !== identity.companyId)) return { ok: false, code: 'FORBIDDEN', error: 'Identidad no válida.' };
+  const staff = identity.role !== 'operator' && identity.role !== 'auditor';
+  if (staff && (!employee || employee.role !== identity.role || employee.companyId !== identity.companyId)) return { ok: false, code: 'FORBIDDEN', error: 'Identidad no válida.' };
+  if (identity.role === 'auditor' && (identity.companyId !== null || !identity.id.startsWith('auditor-'))) return { ok: false, code: 'FORBIDDEN', error: 'Identidad no válida.' };
   if (g.actions.audit.length >= 12000 && command.type !== 'room.reset') return { ok: false, code: 'LIMIT', error: 'Límite de órdenes de la partida alcanzado.' };
   let result: Result;
   const company = identity.companyId == null ? undefined : g.companies[identity.companyId];
@@ -58,18 +61,24 @@ export function dispatchCommand(g: GameState, identity: Identity | null, raw: Co
   else if (!allowedAction(command.type, identity.role)) {
     if (employee) confirmViolation(g, employee, command, 'OUT_OF_ROLE');
     result = { ok: false, code: 'FORBIDDEN', error: 'Acción ajena al rol.' };
-  } else if (identity.role !== 'operator' && command.companyId !== identity.companyId) {
+  } else if (staff && command.companyId !== identity.companyId) {
     if (employee) confirmViolation(g, employee, command, 'CROSS_COMPANY');
     result = { ok: false, code: 'FORBIDDEN', error: 'Empresa no autorizada.' };
   } else {
     try { result = execute(command); }
     catch { result = { ok: false, code: 'TECHNICAL', error: 'No se pudo ejecutar la orden.' }; }
   }
-  const audit: ActionAudit = { id: `A${++g.actions.sequence}`, commandId: command.id, actorId: identity.id, companyId: identity.companyId, role: identity.role, type: command.type, at: g.tick, version: 1, ok: result.ok, code: result.code, category: catalog?.category ?? 'unsupported', source, correlationId, refs: result.refs ?? (command.changeId ? [command.changeId] : typeof command.payload?.changeId === 'string' ? [command.payload.changeId] : []), effects: result.ok ? [command.type] : [] };
+  // An external auditor has no company: its record is scoped to the target company and carries no client free-text.
+  const auditor = identity.role === 'auditor';
+  const target = auditor ? (Number.isInteger(command.payload?.companyId) && (command.payload!.companyId as number) >= 0 && (command.payload!.companyId as number) <= 4 ? command.payload!.companyId as number : null) : identity.companyId;
+  const type = auditor && !catalog ? 'audit.rejected' : command.type;
+  const refs = auditor ? (result.refs ?? []) : (result.refs ?? (command.changeId ? [command.changeId] : typeof command.payload?.changeId === 'string' ? [command.payload.changeId] : []));
+  const audit: ActionAudit = { id: `A${++g.actions.sequence}`, commandId: command.id, actorId: identity.id, companyId: target, role: identity.role, type, at: g.tick, version: 1, ok: result.ok, code: result.code, category: catalog?.category ?? 'unsupported', source, correlationId, refs, effects: result.ok ? [type] : [] };
   if (result.ok && company && before) for (const field of ['capital','servers','reserved','infraBudget','version'] as const) if (company[field] !== before[field]) audit.effects.push(`${field}.delta:${company[field] - before[field]}`);
   if (employee && employee.violations.filter(v => !v.reversed).length > strikesBefore) audit.effects.push(`discipline.confirmed:${strikesBefore + 1}/5`, `employee.status:${employee.status}`);
   if (command.type === 'employee.correct' && result.ok) audit.effects.push(`justification:${String(command.payload?.justification)}`);
-  observe(g,'action.confirmed',command.type==='employee.correct'?(g.actions.employees[String(command.payload?.employeeId)]?.companyId??null):identity.companyId,{type:command.type,actor:identity.id,ok:result.ok,effects:audit.effects},audit.refs);
+  // Auditor commands are observed only when they succeed, scoped to the target company; nothing reaches other companies.
+  if (!auditor || result.ok) observe(g,'action.confirmed',command.type==='employee.correct'?(g.actions.employees[String(command.payload?.employeeId)]?.companyId??null):target,{type,actor:auditor?'auditor':identity.id,ok:result.ok,effects:audit.effects},refs);
   g.actions.audit.push(audit); g.actions.receipts[key] = { digest, result: structuredClone(result) };
   return result;
 }

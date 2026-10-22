@@ -139,10 +139,14 @@ export function participantOf(g: GameState, ref: ParticipantRef): LobbyParticipa
   return g.lobby?.id === ref.lobby ? g.lobby.participants.find(p => p.id === ref.participant) : undefined;
 }
 
-/** A drawn participant acts with the same identity as that company role's credential. */
+/**
+ * A drawn participant acts with the same identity as that company role's credential. Whoever the draw left in the
+ * reserve becomes an external auditor: an identity of its own, tied to no company.
+ */
 export function participantIdentity(g: GameState, ref: ParticipantRef): Identity | null {
   const p = participantOf(g, ref);
-  return p && p.companyId !== undefined && p.role ? { id: `${p.companyId}-${p.role}`, role: p.role, companyId: p.companyId } : null;
+  if (!p || !g.lobby?.formation) return null;
+  return p.companyId !== undefined && p.role ? { id: `${p.companyId}-${p.role}`, role: p.role, companyId: p.companyId } : { id: `auditor-${p.id}`, role: 'auditor', companyId: null };
 }
 
 /** Names, icons and teams are public while the room waits; the PIN and the teams during play are for the teacher. */

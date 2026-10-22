@@ -148,8 +148,16 @@ npm run verify:anthropic   # requiere ANTHROPIC_API_KEY en .env
 
 Los estudiantes entran desde el celular a `/unirse` con el PIN que muestra el docente en `/sala`, eligen nombre e
 icono y aparecen en pantalla. **FORMAR EQUIPOS** (con 25 jugadores, o 30 con Producto/UX) sortea al azar la empresa
-y el rol de cada uno con una tragamonedas animada; los que sobran quedan en reserva. Entre el sorteo y **EMPEZAR
+y el rol de cada uno con una tragamonedas animada; los que sobran son **Auditores externos**. Entre el sorteo y **EMPEZAR
 JUEGO**, el docente puede ajustar los equipos hablándole o escribiéndole a Claude desde el botón de la pantalla de
 sala ("cambiá a Víctor de VERTEX a EMBER"). **EMPEZAR JUEGO** inicia la partida y cada celular pasa a su espacio de
 trabajo. Detalle, reglas y límites en
 [docs/22-sala-pin-y-sorteo-de-equipos.md](docs/22-sala-pin-y-sorteo-de-equipos.md).
+
+## Auditor externo y módulos redactados con Claude
+
+Los auditores externos eligen una empresa, revisan sus módulos en producción y lanzan pruebas de control: 30 s de
+tráfico anómalo simulado de la categoría del control pendiente, con 60 s de espera entre pruebas; el motor decide qué
+se contiene. Backend puede describir un módulo en palabras y Claude redacta un diseño textual breve (sin código); el
+servidor deja a propósito controles pendientes que Seguridad y QA pueden encontrar antes de producción.
+[docs/23-auditor-externo-y-modulos-con-claude.md](docs/23-auditor-externo-y-modulos-con-claude.md).

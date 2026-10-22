@@ -176,7 +176,8 @@ const aiAttempts = new Map<string,{at:number;count:number}>();
 app.post('/api/ai', async (req,res) => {
   res.setHeader('Cache-Control','no-store');
   const identity=session(req.headers.cookie);
-  if(!identity)return res.status(403).json({ok:false,code:'FORBIDDEN',error:'Sesión no autorizada.'});
+  // Proposals belong to a company employee; the teacher and auditors have none.
+  if(!identity||identity.companyId===null)return res.status(403).json({ok:false,code:'FORBIDDEN',error:'Sesión no autorizada.'});
   const key=identity.id,now=Date.now();let budget=aiAttempts.get(key);
   if(!budget||now-budget.at>=60000){budget={at:now,count:0};aiAttempts.set(key,budget);}
   if(++budget.count>8)return res.status(429).json({ok:false,code:'AI_RATE_LIMIT',error:'Límite de solicitudes de Claude alcanzado.'});
@@ -246,7 +247,8 @@ app.post('/api/ai/execute',async(req,res)=>{
 app.get('/api/ai/status',(req,res)=>{
  res.setHeader('Cache-Control','no-store');const identity=session(req.headers.cookie);if(!identity)return res.sendStatus(403);
  if(identity.role==='operator')return res.json({provider:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.status():{state:'TEST_PROVIDER'},usage:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.metrics():[],scheduler:aiGateway.scheduler.metrics(),consumption:{companies:game.companies.map(c=>({companyId:c.id,...(c.runtime.aiUsage??{requests:0,inputTokens:0,outputTokens:0,cacheReadTokens:0,cacheWriteTokens:0})})),room:game.lobby?.aiUsage??{requests:0,inputTokens:0,outputTokens:0,cacheReadTokens:0,cacheWriteTokens:0},gameTokenLimit:aiGateway.gameTokenLimit,companyTokenLimit:aiGateway.companyTokenLimit}});
- const attempts=game.companies[identity.companyId!].runtime.aiAttempts?.filter(a=>a.actor===identity.id&&a.role===identity.role&&a.generation===game.generation)??[];
+ if(identity.companyId===null)return res.json({requests:[]});
+ const attempts=game.companies[identity.companyId].runtime.aiAttempts?.filter(a=>a.actor===identity.id&&a.role===identity.role&&a.generation===game.generation)??[];
  res.json({requests:attempts.map(a=>{const live=aiGateway.scheduler.status(identity.id,a.id)[0];return {...a,...live,state:['QUEUED','RUNNING'].includes(a.state)?live?.state??a.state:a.state,code:a.code??live?.code};})});
 });
 app.post('/api/ai/cancel',(req,res)=>{const identity=session(req.headers.cookie);if(!identity)return res.sendStatus(403);try{const input=req.body;if(typeof input?.id!=='string'||input.id.length>100)return res.sendStatus(400);res.json({ok:aiGateway.scheduler.cancel(identity.id,input.id)});}catch{res.sendStatus(400);}});

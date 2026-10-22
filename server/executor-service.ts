@@ -5,7 +5,7 @@ import { object, keys, string, integer, freeText } from './action-validation.js'
 import { AiError, type AiGateway, type InterpretResult } from './claude.js';
 import { stableDigest } from './discipline.js';
 import { productEnabled } from './product.js';
-import { EXECUTOR_SYSTEM, commandsFor, executorContext, finalReply, modelContext, outcome, planCalls, toolDefinitions, type ExecutorContext } from './executor.js';
+import { systemFor, commandsFor, executorContext, finalReply, modelContext, outcome, planCalls, toolDefinitions, type ExecutorContext } from './executor.js';
 
 export function parseExecutorInput(raw: unknown): ExecutorInput {
   const p = object(raw); keys(p, ['id', 'text', 'threadId', 'selection']);
@@ -67,7 +67,7 @@ export function buildRequest(g: GameState, actor: Identity, input: ExecutorInput
   const threadId = input.threadId ?? `${actor.role}-default`, ctx = executorContext(g, actor, input, previousInstructions(g, actor, threadId, input.id));
   const content = JSON.stringify({ instruccion: input.text, instrucciones_previas_del_estudiante: ctx.sources.previous, contexto_autorizado: modelContext(ctx) });
   if (content.length > 48000) throw new AiError('CONTEXT_LIMIT', 'El contexto seleccionado excede el límite.');
-  return { request: { id: input.id, system: EXECUTOR_SYSTEM, tools: toolDefinitions(actor.role as Role), content }, snapshot: snapshotFor(g, actor) };
+  return { request: { id: input.id, system: systemFor(actor.role), tools: toolDefinitions(actor.role as Role), content }, snapshot: snapshotFor(g, actor) };
 }
 const dedupe = (calls: ToolCall[]) => [...new Map(calls.map(c => [`${c.name}:${JSON.stringify(c.input ?? {})}`, c])).values()];
 /** Applies one engine command through the durable pipeline (ACK after COMMIT). */

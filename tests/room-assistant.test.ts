@@ -61,7 +61,7 @@ test('a reserve player takes a seat and the displaced member goes to the reserve
   const view = lobbyView(g, { id: 'operator', role: 'operator', companyId: null })!;
   assert(view.formation!.teams[4].members.some(m => m.id === spare.id), 'the newcomer is listed with the team');
   assert(view.formation!.reserve.some(m => m.id === displaced.id));
-  assert.equal(participantIdentity(g, { participant: displaced.id, lobby: g.lobby!.id }), null);
+  assert.deepEqual(participantIdentity(g, { participant: displaced.id, lobby: g.lobby!.id }), { id: `auditor-${displaced.id}`, role: 'auditor', companyId: null }, 'the displaced member audits');
   assertSeats(g);
   assert.match(describeChanges(g, changes), /entró a ORBIT como .*pasó a la reserva\./);
   // Swap across companies and inside one company.

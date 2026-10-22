@@ -1,4 +1,5 @@
 import ClaudeStatus from './ClaudeStatus';
+import AuditorConsole from './AuditorConsole';
 import ClaudeExecutor from './ClaudeExecutor';
 import DevOpsConsole from './DevOpsConsole';
 import CtoConsole from './CtoConsole';
@@ -102,6 +103,7 @@ function Workspace() {
   const selectedChange = s?.changes.find(ch=>ch.id===selected)?.id ?? s?.changes[0]?.id, sessionRole = s?.identity?.role;
   // The selected change travels with Claude orders so "este cambio" refers to what the student is looking at.
   useEffect(()=>{ if(sessionRole&&sessionRole!=='backend'&&sessionRole!=='security') useGame.getState().setSelection({changeId:selectedChange}); },[selectedChange,sessionRole]);
+  if(s?.identity?.role === 'auditor') return <AuditorConsole/>;
   if(!s?.identity || !s.privateCompany) return <Login/>;
   const role = s.identity.role, c = s.privateCompany, publicC=s.companies[c.id];
   if(role === 'operator') return <Operator/>;

@@ -51,11 +51,13 @@ test('room over HTTP: PIN join, teacher-only draw, seated sessions act as their 
     assert.equal((await post('/api/lobby/form', {}, operator)).status, 200);
     assert.equal((await (await post('/api/lobby/join', { pin, name: 'Tarde', icon: '🐢' })).json()).code, 'TEAMS_FORMED');
     const seats = await Promise.all(present.map(async p => (await get('/api/snapshot', p.cookie)).identity));
-    const seated = seats.filter(Boolean), ids = new Set(seated.map(s => s.id));
+    const seated = seats.filter(s => s && s.companyId !== null), ids = new Set(seated.map(s => s.id));
     assert.equal(seated.length, 25); assert.equal(ids.size, 25);
     for (let c = 0; c < 5; c++) for (const role of ['backend', 'security', 'qa', 'cto', 'devops']) assert(ids.has(`${c}-${role}`), `${c}-${role}`);
-    const spare = present[seats.findIndex(s => !s)], spareMe = (await get('/api/lobby/me', spare.cookie)).participant;
-    assert.equal(spareMe.companyId, undefined);
+    // The one player left out of the five teams is an external auditor.
+    assert.equal(seats.filter(s => s?.role === 'auditor').length, 1);
+    const spare = present[seats.findIndex(s => s?.role === 'auditor')], spareMe = (await get('/api/lobby/me', spare.cookie)).participant;
+    assert.equal(spareMe.companyId, undefined); assert.deepEqual(seats.find(s => s?.role === 'auditor'), { id: `auditor-${spareMe.id}`, role: 'auditor', companyId: null });
     assert.equal((await get('/api/snapshot', spare.cookie)).lobby.formation.reserve[0].id, spareMe.id);
 
     // A seated player sends commands with the identity the draw gave them.

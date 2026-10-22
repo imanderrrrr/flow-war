@@ -2,9 +2,11 @@ import type { ModuleConfiguration, SecurityConfiguration, CampaignConfiguration,
 import type { Company, ConcurrencyRun, TrafficReceipt, Graph, Identity, PurchaseRequest, Report } from './types.js';
 
 export type DefectCode = 'D01' | 'D02' | 'D03' | 'D04' | 'D05' | 'D06' | 'D07' | 'D08';
-export type SimulatedDefect = { id: string; code: DefectCode; severity: 'medium' | 'high' | 'critical'; profile: 'defects-1'; artifactId: string; version: number };
+/** `design-1`: chosen by the server for a module drafted with Claude (server/design.ts); `defects-1`: seeded draws. */
+export type SimulatedDefect = { id: string; code: DefectCode; severity: 'medium' | 'high' | 'critical'; profile: 'defects-1' | 'design-1'; artifactId: string; version: number };
 export type ModuleRef = { id: string; version: number };
-export type ModuleVersion = ModuleRef & { companyId: number; name: string; configuration: ModuleConfiguration; dependencies: ModuleRef[]; defects: SimulatedDefect[]; profile: 'defects-1'; createdBy: string; createdAt: number; changeId: string; graph: Graph };
+/** `design`: the textual design Claude wrote for a module drafted in words (no code); visible to the company. */
+export type ModuleVersion = ModuleRef & { design?: { components: string[]; summary: string }; companyId: number; name: string; configuration: ModuleConfiguration; dependencies: ModuleRef[]; defects: SimulatedDefect[]; profile: 'defects-1'; createdBy: string; createdAt: number; changeId: string; graph: Graph };
 /** Secret execution bundle, shared by requests of a release; never projected. */
 export type ExecutionRelease = { blockPolicies?: import('./collaboration.js').BlockProtection[]; bundleDigest?: string; modules: ModuleVersion[]; security?: SecurityConfiguration };
 export type Campaign = { changeId?: string; id: string; configuration: CampaignConfiguration; status: 'PROPOSED' | 'AUTHORIZED' | 'ACTIVE' | 'COMPLETED' | 'REJECTED' | 'EXPIRED'; createdBy: string; createdAt: number; reserved: number; expires?: number; activatedAt?: number; endsAt?: number; authorizedBy?: string };

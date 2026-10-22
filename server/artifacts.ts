@@ -1,4 +1,6 @@
-import { generateDefects } from './defects.js';
+import { generateDefects, DEFECT_CATALOG } from './defects.js';
+import { DESIGN_CONFIGURATION, designPending, pendingDefects, sanitizeDesign, samePending } from './design.js';
+import type { ControlCheck } from '../shared/auditor.js';
 import type { Company, GameState, Graph, Identity, Change } from '../shared/types.js';
 import type { CompanyRuntime, ExecutionRelease, ModuleVersion } from '../shared/simulation.js';
 import { moduleConfiguration, securityConfiguration, validateParameters } from './action-validation.js';
@@ -40,14 +42,23 @@ export function prepareArtifact(g: GameState, c: Company, actor: Identity, type:
     const change: Change = { id: changeId, companyId: c.id, domain: 'security', name: 'Controles de seguridad', graph: structuredClone(c.security), status: 'QA_PENDING', cost: 200, reserved: 0, baseVersion: c.version, created: g.tick, reports: [], actorId: actor.id, context };
     g.changes.unshift(change); return change;
   }
-  const configuration = moduleConfiguration(p.configuration), id = type === 'module.revise' ? String(p.moduleId) : `C${c.id}-M${Object.keys(c.runtime.modules).length + 1}`;
+  const designed = type === 'module.design';
+  // A drafted module is text only: the same sanitizer runs for a direct command as for the executor.
+  const clean = designed ? sanitizeDesign({ nombre: p.name, componentes: p.components, descripcion: p.summary }) : undefined;
+  const configuration = designed ? structuredClone(DESIGN_CONFIGURATION) : moduleConfiguration(p.configuration), id = type === 'module.revise' ? String(p.moduleId) : `C${c.id}-M${Object.keys(c.runtime.modules).length + 1}`;
   const versions = c.runtime.modules[id];
   if (type === 'module.revise' && !versions) throw new Error('Módulo no encontrado.');
   if (!versions && Object.keys(c.runtime.modules).length >= 40) throw new Error('Límite de módulos alcanzado.');
   if (versions && versions.at(-1)!.configuration.kind !== configuration.kind) throw new Error('La revisión debe conservar el tipo.');
-  const dependencies = (p.dependencies as string[]).map(dep => { const v = c.runtime.modules[dep]?.at(-1); if (!v || dep === id) throw new Error('Dependencia inválida.'); return { id: v.id, version: v.version }; });
-  const module: ModuleVersion = { id, version: (versions?.length ?? 0) + 1, companyId: c.id, name: String(p.name), configuration, dependencies, defects: [], profile: 'defects-1', createdBy: actor.id, createdAt: g.tick, changeId, graph: { nodes: [], edges: [] } };
-  module.defects = generateDefects(g.seed, module);
+  const dependencies = (designed ? [] : p.dependencies as string[]).map(dep => { const v = c.runtime.modules[dep]?.at(-1); if (!v || dep === id) throw new Error('Dependencia inválida.'); return { id: v.id, version: v.version }; });
+  const design = clean ? { components: clean.components, summary: clean.summary } : versions?.at(-1)?.design;
+  const module: ModuleVersion = { id, version: (versions?.length ?? 0) + 1, ...(design ? { design: structuredClone(design) } : {}), companyId: c.id, name: clean ? clean.name : String(p.name), configuration, dependencies, defects: [], profile: 'defects-1', createdBy: actor.id, createdAt: g.tick, changeId, graph: { nodes: [], edges: [] } };
+  if (designed) {
+    // The server's choice of controles pendientes is recomputed here from the cleaned design; any other choice is refused.
+    const pending = designPending(g.seed, module.name, clean!.components);
+    if (!samePending(pending, p.pending as ControlCheck[])) throw new Error('Los controles pendientes no corresponden a este diseño.');
+    module.defects = pendingDefects(pending).map(code => ({ id: `${id}@${module.version}:${code}`, code, severity: DEFECT_CATALOG[code].severity, profile: 'design-1', artifactId: id, version: module.version }));
+  } else module.defects = generateDefects(g.seed, module);
   const graph = appendModule(c.drafts.backend?.graph??c.backend, module);
   if (graph.nodes.length > 25 || graph.edges.length > 30) throw new Error('Límite de piezas alcanzado.');
   // Resolve the entire candidate before committing the artifact or change.
