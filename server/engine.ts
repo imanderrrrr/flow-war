@@ -111,6 +111,24 @@ export function validateGraph(input: unknown, domain: Domain, complete = true): 
   if (complete && domain === 'backend' && !['read', 'write', 'payment'].every(t => path.some(n => n.type === t))) throw new Error('La ruta debe atravesar inventario y pagos.');
   return graph;
 }
+/** Each role moves only its own pieces: the rest of the plan is visible and not grabbable. */
+export function assertPlanOwnership(previous: Graph, next: Graph, role: Identity['role']) {
+  const tally = (graph: Graph) => graph.nodes.reduce((count, node) => { count[node.type] = (count[node.type] ?? 0) + 1; return count; }, {} as Record<string, number>);
+  const before = tally(previous), after = tally(next);
+  for (const type of new Set([...Object.keys(before), ...Object.keys(after)])) {
+    if ((before[type] ?? 0) === (after[type] ?? 0)) continue;
+    if (!isPlanPiece(type)) throw new Error('Esa pieza no existe en el catálogo del plano.');
+    const piece = PLAN_PIECES[type];
+    if (piece.owner !== role) throw new Error(`${piece.label} no es una pieza de tu rol.`);
+  }
+  return after;
+}
+/** Q100 per publication plus the pieces this one adds, so building in small steps is not punished. */
+export function planPublicationCost(previous: Graph, next: Graph) {
+  const tally = (graph: Graph) => graph.nodes.reduce((count, node) => { count[node.type] = (count[node.type] ?? 0) + 1; return count; }, {} as Record<string, number>);
+  const before = tally(previous), after = tally(next);
+  return Object.entries(after).reduce((sum, [type, count]) => sum + Math.max(0, count - (before[type] ?? 0)) * (isPlanPiece(type) ? PLAN_PIECES[type].cost : 0), 100);
+}
 export function inventoryBatch(graph: Graph, demand: number, stock: number): { completed: number; oversold: number; duplicates: number; remaining: number } {
   const p = route(graph).map(n => n.type), write = p.indexOf('write'), payment = p.indexOf('payment');
   const atomic = p.indexOf('atomic') >= 0 && p.indexOf('atomic') < write;
@@ -248,6 +266,25 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       if (command.type.startsWith('infra.restart')) restart(c, g.tick, Number(p.duration), command.type === 'infra.restart' ? Number(p.serverId) : undefined);
       else setService(c, p.service as import('../shared/types.js').ServiceId, command.type === 'infra.stop');
       event(g, c.id, command.type.startsWith('infra.restart') ? 'Reinicio iniciado.' : command.type === 'infra.stop' ? 'Servicio detenido.' : 'Servicio recuperado.', 'neutral', 'DEVOPS'); return { ok: true };
+    }
+    if (command.type === 'plan.save' || command.type === 'plan.publish') {
+      const current = c.drafts.plan?.revision ?? 0;
+      if (Number(p.revision) !== current) throw new Error('La revisión cambió. Recarga el plano.');
+      const graph = validateGraph(p.graph, 'plan', false);
+      assertPlanOwnership(c.plan, graph, identity.role);
+      if (command.type === 'plan.publish') {
+        // While a company cannot sell there is nothing to break, so Backend, Seguridad and DevOps
+        // publish straight to production. From the first sale on, every change takes the full cycle.
+        if (!c.assembly.active) return { ok: false, code: 'PIPELINE_REQUIRED', error: 'La empresa ya acepta compras: el plano se cambia por el ciclo completo, no directo.' };
+        const cost = planPublicationCost(c.plan, graph);
+        if (c.capital - c.reserved - c.infraBudget < cost) throw new Error('Saldo disponible insuficiente.');
+        c.plan = structuredClone(graph); c.capital -= cost;
+        // A new production version, so a request already walking the previous plan finishes on it.
+        c.version++; c.runtime.releases[c.version] ??= releaseFor(c); staleOthers(g, c);
+        event(g, c.id, `Plano publicado · v${c.version} · Q${cost}.`, 'neutral', 'PIPELINE');
+      }
+      c.drafts.plan = { graph, revision: current + 1 };
+      return { ok: true };
     }
     if (command.type === 'draft.save' || command.type === 'change.submit') {
       const domain = identity.role as 'backend' | 'security';
@@ -453,7 +490,10 @@ export function project(g: GameState, identity: Identity | null, common?: Pick<S
     if (privateC.concurrency.run) delete privateC.concurrency.run.operationsState;
     if (privateC.concurrency.run && !internal) privateC.concurrency.run.requests = privateC.concurrency.run.requests.map(r => visibleRequest(r)) as unknown as typeof privateC.concurrency.run.requests;
     const ownDraft = identity?.role === 'backend' || identity?.role === 'security' ? identity.role : null;
-    privateC.drafts = ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {};
+    // The plan draft is shared by the three roles that own pieces on the board, and the plan itself
+    // is public anyway, so it travels with every one of them.
+    const planDraft = privateC.drafts.plan && ['backend', 'security', 'devops'].includes(identity!.role) ? { plan: privateC.drafts.plan } : {};
+    privateC.drafts = { ...(ownDraft && privateC.drafts[ownDraft] ? { [ownDraft]: privateC.drafts[ownDraft] } : {}), ...planDraft };
   }
   return {
     ...(identity?.role === 'auditor' ? { auditor: auditorView(g, identity) } : {}),
