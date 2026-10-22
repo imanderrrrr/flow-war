@@ -277,3 +277,43 @@ test('el hallazgo llega a Seguridad y al CTO de su empresa, y a nadie más', () 
   assert.equal(project(g, { id: '0-backend', role: 'backend', companyId: 0 }).operations!.findings, undefined);
   assert.equal(project(g, { id: '1-security', role: 'security', companyId: 1 }).operations!.findings?.length ?? 0, 0);
 });
+
+/** Opens a finding just before `target` seconds and measures the leak over the next 60 s of game time. */
+function leakWindow(target: number) {
+  const g = running(), c = g.companies[0];
+  c.capital = 1_000_000; c.infraBudget = 1_000_000;
+  advanceGame(g, target - 35);
+  assert(probe(g, auditor(), { companyId: 0, nodeId: 'backend-write', check: 'waf' }).ok);
+  advanceUntilFinding(g);
+  const f = g.auditors!.findings[0], before = { lost: f.lost, n: f.uncontained, reputation: c.reputation };
+  advanceGame(g, 60);
+  return { lost: f.lost - before.lost, n: f.uncontained - before.n, drop: before.reputation - c.reputation, eliminated: c.eliminated };
+}
+
+test('un hallazgo abierto sangra, y el daño por minuto crece con el tráfico', () => {
+  const early = leakWindow(420), late = leakWindow(1200);
+  assert(early.n > 0, 'se atribuyen las solicitudes no contenidas');
+  assert(early.lost > 0, 'pierde dinero');
+  assert(early.drop > 0, 'pierde reputación');
+  assert(!late.eliminated, 'la empresa sigue en juego para poder medir');
+  assert(late.n > early.n * 2, `no contenidas: temprano ${early.n}, tarde ${late.n}`);
+  assert(late.lost > early.lost * 2, `pérdida: temprano ${early.lost}, tarde ${late.lost}`);
+});
+
+test('el sangrado no lleva el capital por debajo de cero ni sigue tras cerrar el hallazgo', () => {
+  const g = running(), c = g.companies[0];
+  advanceGame(g, 390);
+  assert(probe(g, auditor(), { companyId: 0, nodeId: 'backend-write', check: 'waf' }).ok);
+  advanceUntilFinding(g);
+  const finding = g.auditors!.findings[0];
+  // Con el capital casi agotado el cobro se detiene en cero, aunque la empresa siga facturando en paralelo.
+  c.capital = 5;
+  for (let i = 0; i < 300; i++) { advanceGame(g, 0.1); assert(c.capital >= 0, `capital ${c.capital}`); }
+  assert(finding.lost > 0, 'el sangrado sí cobró');
+  c.capital = 10000; c.bankruptTicks = 0;
+  deployWithControls(g, 'backend-write', [{ kind: 'input' }]);
+  advanceGame(g, 1);
+  assert(finding.closedAt !== undefined, 'el hallazgo quedó cerrado');
+  const frozen = finding.uncontained; advanceGame(g, 60);
+  assert.equal(finding.uncontained, frozen, 'un hallazgo cerrado deja de sangrar');
+});

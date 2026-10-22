@@ -43,6 +43,8 @@ export type QueueVisit = { service: ServiceId; enteredAt: number; exitedAt?: num
 export type TrafficRequest = PurchaseRequest & {
   /** `probe`: id of the external auditor's prueba de control that admitted this request; `probeSettled`: already counted. Never projected. */
   probe?: string; probeSettled?: boolean;
+  /** Already counted against an open audit finding, so the leak never charges one request twice. */
+  leakCharged?: boolean;
   companyId: number; customerId?: string; type: 'browse' | 'query' | 'purchase'; trafficClass: 'legitimate' | 'malicious';
   attackKind?: 'forged' | 'injection' | 'bot'; attempt: number; admittedAt?: number; startedAt?: number; finishedAt?: number; latencyMs?: number;
   queueEnteredAt?: number; queueExitedAt?: number; waits: QueueVisit[]; service: ServiceId; stage: RequestStage;

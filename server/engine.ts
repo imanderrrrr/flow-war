@@ -27,7 +27,7 @@ import { advanceConcurrency, cancelConcurrency, concurrencyParticles, concurrenc
 import { initialConcurrency, productionContext, settleConcurrency, stepConcurrency } from './scenarios.js';
 import { route, evaluateSecurity } from './graphs.js';
 import { lobbyView, resetTeams } from './lobby.js';
-import { auditCommand, advanceProbes, auditorView, closeProbes, closeSettledFindings, findingsFor } from './auditor.js';
+import { auditCommand, advanceProbes, auditorView, chargeLeaks, closeProbes, closeSettledFindings, findingsFor } from './auditor.js';
 export { route, evaluateSecurity } from './graphs.js';
 import { BLOCKS, SUITES, type Company, type GameState, type Graph, type Identity, type Command, type Result, type Snapshot, type Change, type Report } from '../shared/types.js';
 
@@ -362,7 +362,7 @@ export function step(g: GameState, dt = .1) {
     advanceProbes(g, c, event); closeSettledFindings(g, c, event);
     if (second) restockTraffic(c);
     const breachesBefore = c.breaches;
-    advanceTraffic(c, g.tick, rates);
+    advanceTraffic(c, g.tick, rates); chargeLeaks(g, c);
     if (c.breaches > breachesBefore && second && previousSecond % 12 === 0) event(g, c.id, `${c.breaches - breachesBefore} accesos indebidos · SECURITY BREACH`, 'bad', 'SECURITY');
     const scenario = stepConcurrency(c, g.tick, capacity > 0);
     if (scenario.started) event(g, c.id, 'SKU LAST-UNIT · 2 compras / 1 unidad.', 'neutral', 'CONCURRENCIA');

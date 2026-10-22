@@ -218,12 +218,34 @@ export function openFinding(g: GameState, probe: AuditProbe, emit: Emit): AuditF
   const finding: AuditFinding = { id: `AF-${state.findings.length + 1}`, companyId: probe.companyId, nodeId: probe.nodeId, module: probe.module,
     check: probe.check, category: probe.category, openedAt: g.tick, fine: AUDIT_LEAK.fine, uncontained: 0, lost: 0 };
   state.findings.push(finding);
+  // What the probe itself proved is paid for by the fine; the leak charges only traffic from here on.
+  for (const r of Object.values(c.traffic.requests)) if (r.result) r.leakCharged = true;
   c.capital = Math.max(0, c.capital - finding.fine);
   emit(g, c.id, `Hallazgo de auditoría externa en ${finding.module}: falta ${control}. Multa de Q${finding.fine}.`, 'bad', 'SECURITY');
   addSlackMessage(g, { companyId: c.id, channel: 'alertas-sistema', source: 'system', author: 'Sistema', cause: 0, dedup: `finding:${finding.id}`,
     text: `[CRITICAL] Auditoría externa: ${CONTROL_CHECK_INFO[probe.check].pending} Control pendiente: ${control} en ${finding.module}.`, refs: [finding.id] });
   return finding;
 }
+/**
+ * The leak. Every anomalous request that the controls did not contain and that matches an open finding costs the
+ * company a little money and a little reputation. The charge is per request, by absolute count and not by
+ * proportion, so the damage starts imperceptible and grows on its own as the game's traffic grows.
+ */
+export function chargeLeaks(g: GameState, c: Company) {
+  const findings = (g.auditors?.findings ?? []).filter(f => f.closedAt === undefined && f.companyId === c.id);
+  if (!findings.length) return;
+  for (const r of Object.values(c.traffic.requests)) {
+    if (!r.result || r.leakCharged || r.trafficClass !== 'malicious' || !r.securityAllowed || !r.attackKind) continue;
+    r.leakCharged = true;
+    const finding = findings.find(f => f.category === r.attackKind);
+    if (!finding) continue;
+    finding.uncontained++;
+    const cost = Math.min(AUDIT_LEAK.costPerRequest, c.capital);
+    finding.lost += cost; c.capital -= cost;
+    c.reputation = Math.min(100, Math.max(0, c.reputation - AUDIT_LEAK.reputationPerRequest));
+  }
+}
+
 /** A finding closes by itself when its control stops being pending in production: Seguridad configured it. */
 export function closeSettledFindings(g: GameState, c: Company, emit: Emit) {
   for (const f of g.auditors?.findings ?? []) {
