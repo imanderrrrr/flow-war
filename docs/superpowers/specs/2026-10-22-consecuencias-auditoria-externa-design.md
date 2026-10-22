@@ -178,8 +178,12 @@ que anotarlo en la documentación.
   docente para no revelar los defectos que el motor genera por su cuenta.
 - La lista de controles pendientes se sigue calculando solo con controles configurados y diseño público.
 - Las órdenes del auditor se registran acotadas a la empresa objetivo, con tipo fijo y sin texto del cliente.
-- **No letal**: los topes de la sección 4 impiden que la capacidad llegue a cero, que es la única vía por la que el
-  motor elimina a una empresa por falta de servicio. El inventario en cero no reduce la capacidad.
+- **El golpe agudo no es letal**: los topes de la sección 4 impiden que la capacidad llegue a cero, que es la única
+  vía por la que el motor elimina a una empresa por falta de servicio. El inventario en cero no reduce la capacidad,
+  así que una prueba sostenida, por sí sola, nunca saca a nadie de la partida.
+- **El sangrado crónico sí puede ser letal, y es deliberado.** Un hallazgo ignorado toda la partida debe terminar en
+  crisis: clientes que se van, capital que se agota. La diferencia es que **nunca pasa de golpe y siempre hay una
+  salida**: configurar el control. Lo que mata no es el auditor, es no arreglar el hueco.
 
 ## 10. Pruebas
 
