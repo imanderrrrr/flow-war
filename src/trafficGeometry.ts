@@ -1,13 +1,17 @@
+import { PLAN_SLOTS, type PlanPiece } from '../shared/plan';
 import type { FlowParticle } from '../shared/types';
 
 export type Point = readonly [number, number];
 export type Path = readonly Point[];
 export const MAP_WIDTH = 1120;
 export const MAP_HEIGHT = 570;
-export const SERVICES = {
-  ENTRY: [70, 295], GATE: [240, 295], WEB: [425, 295], AUTH: [425, 115],
-  CHECK: [635, 295], STOCK: [825, 150], PAY: [825, 435], OUT: [1040, 295],
-} as const;
+/** One source for the board and the projector: the editor's solares are these very points, so a
+ * piece a team drags sits exactly where the class sees it. AUTH belongs to the drawing alone. */
+const at = (piece: PlanPiece): Point => [PLAN_SLOTS[piece].x, PLAN_SLOTS[piece].y];
+export const SERVICES: Record<'ENTRY' | 'GATE' | 'WEB' | 'AUTH' | 'CHECK' | 'STOCK' | 'PAY' | 'OUT', Point> = {
+  ENTRY: at('entry'), GATE: at('security'), WEB: at('web'), AUTH: [425, 115],
+  CHECK: at('checkout'), STOCK: at('inventory'), PAY: at('payment'), OUT: at('exit'),
+};
 
 const { ENTRY, GATE, WEB, AUTH, CHECK, STOCK, PAY, OUT } = SERVICES;
 export const TRAFFIC_PATHS = {

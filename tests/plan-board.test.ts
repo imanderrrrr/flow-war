@@ -61,3 +61,17 @@ test('un solar ya ocupado no acepta una segunda pieza', () => {
   const plan = addPiece(initialGraph('plan'), 'exit');
   assert.deepEqual(addPiece(plan, 'exit'), plan);
 });
+
+test('el proyector y el editor comparten las siete posiciones', async () => {
+  const { SERVICES } = await import('../src/trafficGeometry.js');
+  for (const [piece, key] of [['entry','ENTRY'],['security','GATE'],['web','WEB'],['checkout','CHECK'],['inventory','STOCK'],['payment','PAY'],['exit','OUT']] as const)
+    assert.deepEqual([PLAN_SLOTS[piece].x, PLAN_SLOTS[piece].y], [...SERVICES[key]]);
+});
+
+test('derivar las posiciones del catálogo no mueve los caminos del proyector', async () => {
+  const { SERVICES, TRAFFIC_PATHS } = await import('../src/trafficGeometry.js');
+  // The polylines are built from the very same tuples, so a sprite still finds its stop by identity.
+  assert.equal(TRAFFIC_PATHS.purchase.indexOf(SERVICES.WEB), 2);
+  assert.equal(TRAFFIC_PATHS.purchase.at(-1), SERVICES.OUT);
+  assert.deepEqual([...TRAFFIC_PATHS.browse[0]], [70, 295]);
+});
