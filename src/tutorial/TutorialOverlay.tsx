@@ -26,6 +26,12 @@ function useAcknowledge(stepId: string) {
   };
 }
 
+/** The way out of a state the student cannot undo: a fresh practice copy at the start of this same step. */
+function restartStep() {
+  if (!window.confirm('¿Empezar este paso de nuevo? Tu práctica vuelve a como estaba al comenzarlo.')) return;
+  socket.timeout(8000).emit('tutorial:restart', {}, (err: Error | null, result?: { ok: boolean }) => { if (err || !result?.ok) useGame.getState().notify('No se pudo reiniciar el paso. Probá de nuevo en unos segundos.', true); });
+}
+
 /** Where the card goes: next to the spotlight when it fits, as a bottom sheet on a phone or over a large target. */
 function cardPosition(target: Box | undefined, card: { width: number; height: number }, moved: boolean): CSSProperties {
   const w = window.innerWidth;
@@ -133,7 +139,8 @@ export default function TutorialOverlay() {
       {view.waiting && <p className="tutorial-waiting" role="status"><span className="loading-pixel"/>{view.waiting}</p>}
       {meta.kind === 'read'
         ? <button className="primary-button small" disabled={!view.ready} onClick={acknowledge} autoFocus>ENTENDIDO</button>
-        : <p className="tutorial-hint">{meta.kind === 'action' ? 'Este paso se completa cuando el servidor confirma tu acción.' : 'Este paso se completa cuando lo hacés.'}</p>}
+        : <><p className="tutorial-hint">{meta.kind === 'action' ? 'Este paso se completa cuando el servidor confirma tu acción.' : 'Este paso se completa cuando lo hacés.'}</p>
+          <button type="button" className="text-button tutorial-restart" onClick={restartStep}>↺ EMPEZAR ESTE PASO DE NUEVO</button></>}
       <div className="tutorial-dots" aria-hidden="true">{role.steps.map((st, i) => <i key={st.id} className={i < view.step ? 'done' : i === view.step ? 'current' : ''}/>)}</div>
     </div>
   </div>, document.body);

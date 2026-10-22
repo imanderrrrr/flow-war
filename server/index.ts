@@ -32,7 +32,7 @@ import { LobbyError, checkPin, ensureLobby, formTeams, isParticipantRef, joinLob
 import { networkInterfaces } from 'node:os';
 import { ROOM_SLOT } from './ai-scheduler.js';
 import { applyRoomPlan, describeChanges, parseRoomInput, planRoomCalls, roomRequest } from './room-assistant.js';
-import { acknowledge, createPractice, enterTutorial, entryFor, pendingPlayers, practiceCommand, practiceExpired, practiceFinished, practiceSnapshot, setStep, settle, tickPractice, tutorialBoard, tutorialPending, type Practice, type Subject } from './tutorial.js';
+import { acknowledge, createPractice, enterTutorial, entryFor, startsTutorial, pendingPlayers, practiceCommand, practiceExpired, practiceFinished, practiceSnapshot, setStep, settle, tickPractice, tutorialBoard, tutorialPending, type Practice, type Subject } from './tutorial.js';
 
 const directory = resolve(process.env.FLOW_DATA_DIR ?? '.local');
 mkdirSync(directory, { recursive: true, mode: 0o700 });
@@ -90,16 +90,22 @@ function subjectOf(cookie?: string): Subject | null {
 }
 /** One practice copy per player still in its tutorial; never persisted, rebuilt at the saved step when missing. */
 const practices = new Map<string, { subject: Subject; practice: Practice }>();
+/** A copy that failed to build is not retried on every broadcast; the player sees TUTORIAL_UNAVAILABLE meanwhile. */
+const practiceFailures = new Map<string, number>(), practiceCopies = new Map<string, number>();
+/** Workspace connections per player: a practice clock runs only while its player has the workspace open. */
+const workspaces = new Map<string, number>();
 let practiceGeneration = -1;
 function practiceFor(subject: Subject): Practice | undefined {
-  if (practiceGeneration !== game.generation) { practices.clear(); practiceGeneration = game.generation; }
+  if (practiceGeneration !== game.generation) { practices.clear(); practiceCopies.clear(); practiceGeneration = game.generation; }
   const held = practices.get(subject.key);
   if (held && held.subject.identity.id === subject.identity.id && !practiceExpired(held.practice)) return held.practice;
+  if (Date.now() - (practiceFailures.get(subject.key) ?? 0) < 5000) return undefined;
   try {
-    const practice = createPractice(game, subject, entryFor(game, subject)?.step ?? 0);
-    practices.set(subject.key, { subject, practice });
+    const practice = createPractice(game, subject, entryFor(game, subject)?.step ?? 0, (practiceCopies.get(subject.key) ?? 0) + 1);
+    practiceCopies.set(subject.key, practice.copy);
+    practices.set(subject.key, { subject, practice }); practiceFailures.delete(subject.key);
     return practice;
-  } catch (e) { console.error('No se pudo preparar la práctica:', e); return undefined; }
+  } catch (e) { practiceFailures.set(subject.key, Date.now()); console.error('No se pudo preparar la práctica:', e); return undefined; }
 }
 /** The step a practice reached is written to the room before anything else depends on it. */
 function syncProgress(subject: Subject, practice: Practice) {
@@ -110,6 +116,8 @@ function syncProgress(subject: Subject, practice: Practice) {
 function connectedKeys() { const keys = new Set<string>(); for (const socket of io.sockets.sockets.values()) { const key = subjectOf(socket.request.headers.cookie)?.key; if (key) keys.add(key); } return keys; }
 /** The practice a request belongs to, when its player is still in the tutorial. */
 function practiceOf(cookie?: string) { const subject = subjectOf(cookie); return subject && tutorialPending(game, subject) ? practiceFor(subject) : undefined; }
+/** Whether the caller still owes its tutorial, whether or not its practice copy could be built. */
+function owesTutorial(cookie?: string) { const subject = subjectOf(cookie); return !!subject && tutorialPending(game, subject); }
 const TUTORIAL_PENDING = { ok: false, code: 'TUTORIAL_PENDING', error: 'Primero terminá el tutorial de tu rol en MI ESPACIO.' };
 const app = express();
 app.disable('x-powered-by');
@@ -211,7 +219,7 @@ app.post('/api/ai', async (req,res) => {
   const identity=session(req.headers.cookie);
   // Proposals belong to a company employee; the teacher and auditors have none.
   if(!identity||identity.companyId===null)return res.status(403).json({ok:false,code:'FORBIDDEN',error:'Sesión no autorizada.'});
-  if(practiceOf(req.headers.cookie))return res.status(403).json(TUTORIAL_PENDING);
+  if(owesTutorial(req.headers.cookie))return res.status(403).json(TUTORIAL_PENDING);
   const key=identity.id,now=Date.now();let budget=aiAttempts.get(key);
   if(!budget||now-budget.at>=60000){budget={at:now,count:0};aiAttempts.set(key,budget);}
   if(++budget.count>8)return res.status(429).json({ok:false,code:'AI_RATE_LIMIT',error:'Límite de solicitudes de Claude alcanzado.'});
@@ -248,7 +256,7 @@ app.post('/api/ai/execute',async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   const identity=session(req.headers.cookie);
   if(!identity||identity.role==='operator'||identity.companyId===null)return res.status(403).json({ok:false,code:'FORBIDDEN',error:'Sesión no autorizada.'});
-  if(practiceOf(req.headers.cookie))return res.status(403).json(TUTORIAL_PENDING);
+  if(owesTutorial(req.headers.cookie))return res.status(403).json(TUTORIAL_PENDING);
   const key=identity.id,now=Date.now();let budget=aiAttempts.get(key);
   if(!budget||now-budget.at>=60000){budget={at:now,count:0};aiAttempts.set(key,budget);}
   if(++budget.count>8)return res.status(429).json({ok:false,code:'AI_RATE_LIMIT',error:'Límite de solicitudes de Claude alcanzado.'});
@@ -282,7 +290,7 @@ app.post('/api/ai/execute',async(req,res)=>{
 app.get('/api/ai/status',(req,res)=>{
  res.setHeader('Cache-Control','no-store');const identity=session(req.headers.cookie);if(!identity)return res.sendStatus(403);
  if(identity.role==='operator')return res.json({provider:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.status():{state:'TEST_PROVIDER'},usage:aiGateway.provider instanceof AnthropicProvider?aiGateway.provider.metrics():[],scheduler:aiGateway.scheduler.metrics(),consumption:{companies:game.companies.map(c=>({companyId:c.id,...(c.runtime.aiUsage??{requests:0,inputTokens:0,outputTokens:0,cacheReadTokens:0,cacheWriteTokens:0})})),room:game.lobby?.aiUsage??{requests:0,inputTokens:0,outputTokens:0,cacheReadTokens:0,cacheWriteTokens:0},gameTokenLimit:aiGateway.gameTokenLimit,companyTokenLimit:aiGateway.companyTokenLimit}});
- if(identity.companyId===null||practiceOf(req.headers.cookie))return res.json({requests:[]});
+ if(identity.companyId===null||owesTutorial(req.headers.cookie))return res.json({requests:[]});
  const attempts=game.companies[identity.companyId].runtime.aiAttempts?.filter(a=>a.actor===identity.id&&a.role===identity.role&&a.generation===game.generation)??[];
  res.json({requests:attempts.map(a=>{const live=aiGateway.scheduler.status(identity.id,a.id)[0];return {...a,...live,state:['QUEUED','RUNNING'].includes(a.state)?live?.state??a.state:a.state,code:a.code??live?.code};})});
 });
@@ -407,9 +415,15 @@ io.on('connection', socket => {
   socket.data.view = typeof socket.handshake.auth?.view === 'string' ? socket.handshake.auth.view.slice(0, 40) : '';
   const sync = new SnapshotSync(socket); synchronizers.set(socket.id, sync);
   // The first entry into the workspace starts the tutorial: for a credential login, this is what makes it owed.
-  if (socket.data.view === '/workspace') { const subject = subjectOf(socket.request.headers.cookie); if (subject && !entryFor(game, subject) && (subject.participantId ? tutorialPending(game, subject) : true)) journal(() => enterTutorial(game, subject, Date.now())); }
+  if (socket.data.view === '/workspace') {
+    const subject = subjectOf(socket.request.headers.cookie);
+    if (subject) {
+      if (startsTutorial(game, subject)) journal(() => enterTutorial(game, subject, Date.now()));
+      socket.data.tutorialKey = subject.key; workspaces.set(subject.key, (workspaces.get(subject.key) ?? 0) + 1);
+    }
+  }
   sync.send(() => snapshotFor(socket));
-  socket.on('disconnect', () => synchronizers.delete(socket.id));
+  socket.on('disconnect', () => { synchronizers.delete(socket.id); const key = socket.data.tutorialKey as string | undefined; if (key) { const left = (workspaces.get(key) ?? 1) - 1; if (left > 0) workspaces.set(key, left); else workspaces.delete(key); } });
   let resyncAt = 0;
   socket.on('state:resync', () => { if (Date.now()-resyncAt<250) return; resyncAt=Date.now(); sync.resync(); sync.send(() => snapshotFor(socket)); });
   let count = 0, at = Date.now();
@@ -425,8 +439,10 @@ io.on('connection', socket => {
     if (subject && tutorialPending(game, subject)) {
       if (socket.data.view !== '/workspace') return ack(TUTORIAL_PENDING);
       const practice = practiceFor(subject); if (!practice) return ack({ ok: false, code: 'TUTORIAL_UNAVAILABLE', error: 'La práctica no está disponible. Recargá la página.' });
-      const result = practiceCommand(practice, command);
-      settle(practice); syncProgress(subject, practice); ack(result); scheduleBroadcast(); return;
+      let result: unknown;
+      try { result = practiceCommand(practice, command); settle(practice); syncProgress(subject, practice); }
+      catch (e) { console.error('Orden de práctica fallida:', e); result = { ok: false, code: 'TECHNICAL', error: 'No se pudo ejecutar la orden de práctica.' }; }
+      ack(result); scheduleBroadcast(); return;
     }
     // EMPEZAR JUEGO waits for every connected player to finish its tutorial (docs/25).
     if (identity.role === 'operator' && command.type === 'room.start' && game.status === 'LOBBY') {
@@ -441,9 +457,22 @@ io.on('connection', socket => {
     const subject = subjectOf(socket.request.headers.cookie);
     if (!subject || !tutorialPending(game, subject) || socket.data.view !== '/workspace' || typeof payload?.step !== 'string') return ack({ ok: false });
     const practice = practiceFor(subject); if (!practice) return ack({ ok: false });
-    const ok = acknowledge(practice, payload.step);
-    if (ok) { settle(practice); syncProgress(subject, practice); scheduleBroadcast(); }
+    let ok = false;
+    try { ok = acknowledge(practice, payload.step); if (ok) { settle(practice); syncProgress(subject, practice); scheduleBroadcast(); } }
+    catch (e) { console.error('Paso de práctica fallido:', e); }
     ack({ ok });
+  });
+  // ↺ EMPEZAR ESTE PASO DE NUEVO: a fresh copy at the saved step, rebuilt from the canonical earlier steps.
+  // Nothing is skipped; it is the way out of any state the student cannot undo in the copy.
+  let restartedAt = 0;
+  socket.on('tutorial:restart', (_payload: unknown, ack: (result: unknown) => void) => {
+    if (typeof ack !== 'function') return;
+    const subject = subjectOf(socket.request.headers.cookie);
+    if (!subject || !tutorialPending(game, subject) || socket.data.view !== '/workspace' || Date.now() - restartedAt < 3000) return ack({ ok: false });
+    restartedAt = Date.now(); practices.delete(subject.key); practiceFailures.delete(subject.key);
+    // The new copy carries a new snapshot generation, so every open workspace remounts on it.
+    const practice = practiceFor(subject);
+    scheduleBroadcast(); ack({ ok: !!practice });
   });
 });
 /** What one connection sees: the practice copy while its player is in the tutorial, the room otherwise. */
@@ -500,6 +529,8 @@ function advancePractices() {
     const current = subject.participantId && game.lobby ? participantIdentity(game, { participant: subject.participantId, lobby: game.lobby.id }) : subject.identity;
     if (!current || current.id !== subject.identity.id || !tutorialPending(game, subject)) { practices.delete(key); continue; }
     if (practiceExpired(practice)) { practices.delete(key); continue; }
+    // Time in the copy passes only while its player has the workspace open: nothing lapses while they listen.
+    if (!workspaces.has(key)) continue;
     try { if (tickPractice(practice)) syncProgress(subject, practice); } catch (e) { console.error('Práctica detenida por un error:', e); practices.delete(key); }
   }
 }

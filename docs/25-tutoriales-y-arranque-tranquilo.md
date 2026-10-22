@@ -68,6 +68,10 @@ Tres clases de paso (`shared/tutorial.ts`):
 Si una recarga cerró el panel donde trabaja el paso, el resaltado cae a un elemento desde donde se puede volver a
 abrirlo y la tarjeta lo dice ("Primero tocá Inventario y ABRIR SU LÓGICA INTERNA").
 
+**↺ EMPEZAR ESTE PASO DE NUEVO** (en los pasos que no son de lectura) arma una copia de práctica nueva al comienzo
+del mismo paso: los pasos anteriores quedan resueltos y la pantalla se vuelve a montar limpia. No saltea nada; es la
+salida de cualquier estado que el estudiante no pueda deshacer en su copia.
+
 ## 4. Dónde: una copia de práctica por jugador
 
 Cada jugador practica en **su propia copia del motor** (`createPractice`): un `GameState` en memoria, nunca
@@ -83,6 +87,9 @@ determinismo de la sala quedan intactos (hay una prueba que compara la sala real
 - La copia corre en la fase tranquila para siempre (sin ráfagas ni tráfico anómalo de fondo) pero permite pruebas de
   control, y su reloj va 4× más rápido mientras el motor trabaja en algo que el estudiante espera (una prueba de QA, un
   despliegue, una prueba de control).
+- El reloj de la copia **solo corre mientras el jugador tiene su espacio de trabajo abierto**: si se queda escuchando
+  al docente con la pestaña cerrada, nada vence. Con la pestaña abierta, lo que vence se renueva solo (el alcance de
+  DevOps y la autorización del CTO).
 - Mientras dura el tutorial, el espacio de trabajo muestra "MODO PRÁCTICA" y el reloj "RELOJ DE PRÁCTICA". La evidencia
   de QA, los recibos de solicitudes y FlowSlack se leen de la copia.
 - Si el servidor se reinicia, la copia se reconstruye en el paso guardado: el guion vuelve a aplicar la acción canónica
@@ -92,7 +99,7 @@ determinismo de la sala quedan intactos (hay una prueba que compara la sala real
 
 | Rol | Pasos (lo que el estudiante hace de verdad) |
 | --- | --- |
-| **Backend** (9) | Lee su trabajo · coloca Salida, Checkout, Inventario y Pagos · dibuja Tienda web → Checkout → Inventario → Pagos → Salida · publica · mira una venta doble sobre la última unidad (el motor la produce en la copia) · abre la lógica de Inventario · pone Atomic Update entre Read Stock y Write Stock · lo envía a Seguridad · ve dónde llegan las devoluciones. Si envía el cambio sin la corrección, QA guionado se lo devuelve con el motivo. |
+| **Backend** (9) | Lee su trabajo · coloca Salida, Checkout, Inventario y Pagos · dibuja Tienda web → Checkout → Inventario → Pagos → Salida · publica (cualquier recorrido que pueda vender cierra el montaje para siempre, así que también completa el paso) · mira una venta doble sobre la última unidad (el motor la produce en la copia) · abre la lógica de Inventario · pone Atomic Update entre Read Stock y Write Stock · lo envía a Seguridad · ve dónde llegan las devoluciones. Si envía el cambio sin la corrección, QA guionado se lo devuelve con el motivo. |
 | **Seguridad** (7) | Lee su trabajo · coloca el perímetro · conecta Entrada → Seguridad → Tienda web y publica antes de la primera venta · abre el módulo **Inicio de sesión** que entregó Backend (su verificación de sesión se puede saltear) · activa Auth, Role Check, WAF y Bot Detection y guarda · entrega a QA · lee qué pasa con lo que no protege. |
 | **QA** (8) | Lee su trabajo · abre la configuración del caso · corre 2 compras simultáneas con stock 1 (concurrency, SOLICITUDES 2, STOCK 1, SIMULTÁNEAS 2) · lee completadas, rechazadas y sobreventas · marca la corrida como evidencia · escribe su evaluación y aprueba · abre la carta formal de devolución · lee para qué sirve. |
 | **CTO** (5) | Lee su trabajo · autoriza el alcance de DevOps (monto, duración, máximo de servidores, ESCALAR y BALANCEADOR) · abre el panel de decisión · autoriza el cambio con un motivo escrito · lee qué implica autorizar. |
@@ -121,7 +128,8 @@ multiplica las fuentes que ya existían.
   con el cronograma con el que se jugó, y las partidas guardadas antes de este cambio siguen con el cronograma anterior
   bit a bit (todos los factores valen exactamente 1).
 - `FLOW_CALM_START=0` crea las partidas nuevas con el cronograma anterior. Sirve para ensayos y benchmarks que deben
-  compararse con partidas viejas; las pruebas que miden el motor a presión completa lo usan explícitamente.
+  compararse con partidas viejas: los scripts `npm run bench:*` lo usan por defecto (para medir el arranque tranquilo,
+  `FLOW_CALM_START=1 npm run bench:…`), y las pruebas que miden el motor a presión completa lo fijan explícitamente.
 - Con la partida de 20 minutos los números son los mismos: 15 tranquilos, 3 de rampa y 2 de presión completa.
 
 ## 7. Relación con los arreglos de la PR #8
@@ -141,7 +149,8 @@ fusione primero:
 ## 8. Verificación
 
 - `tests/tutorial.test.ts`: cada rol completa su tutorial haciendo cada acción real; cada rol se reconstruye en cada
-  paso (como tras un reinicio) y termina; un paso de acción no se cierra con tiempo ni con ENTENDIDO; una lectura no se
+  paso (como tras un reinicio) y termina; publicar un recorrido que vende en otro orden no traba al Backend; DevOps no
+  se traba si tarda 16 minutos; empezar un paso de nuevo vuelve al inicio de ese paso; un paso de acción no se cierra con tiempo ni con ENTENDIDO; una lectura no se
   cierra antes de que el motor produzca su resultado; un cambio sin la corrección vuelve con una carta; las órdenes de
   práctica se validan como las reales; la práctica no toca la sala real; quién debe el tutorial; progreso por jugador,
   por asiento y por generación; la regla de inicio con conectados y ausentes.

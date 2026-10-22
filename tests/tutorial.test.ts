@@ -168,3 +168,30 @@ test('EMPEZAR JUEGO espera solo a los jugadores conectados que no terminaron', (
   assert.equal(board.rows.find(r => r.key === seated[0].key)!.finished, true);
   assert.equal(board.rows.filter(r => r.role === 'auditor').length, 1, 'la reserva hace el tutorial de auditor');
 });
+
+test('publicar un recorrido que vende en otro orden no deja al Backend sin salida', () => {
+  const p = playThrough('backend', 3);
+  const s = practiceSnapshot(p, 0), plan = s.privateCompany!.plan;
+  // Tienda web → Inventario → Checkout → Pagos → Salida: can sell, so the montaje closes for good.
+  const id = (t: string) => `plan-${t}`, pieces = ['checkout', 'inventory', 'payment', 'exit'];
+  const graph = { nodes: [...plan.nodes, ...pieces.map(t => ({ id: id(t), type: t, position: { x: 0, y: 0 }, data: { label: t } }))],
+    edges: [...plan.edges, ...[['web', 'inventory'], ['inventory', 'checkout'], ['checkout', 'payment'], ['payment', 'exit']].map(([a, b]) => ({ id: `${a}-${b}`, source: id(a), target: id(b) }))] };
+  assert.equal(practiceCommand(p, { id: 'other-order', type: 'plan.publish', companyId: 2, payload: { graph, revision: s.privateCompany!.planDrafts?.backend?.revision ?? 0 } }).ok, true);
+  for (let i = 0; i < 3; i++) tickPractice(p);
+  assert.equal(meta(p).id, 'backend-sobreventa');
+  while (!practiceFinished(p)) play(p);
+});
+
+test('DevOps no queda bloqueado si tarda: el CTO guionado renueva el alcance vencido', () => {
+  for (const upTo of [1, 2, 3]) {
+    const p = playThrough('devops', upTo);
+    for (let i = 0; i < 16 * 60 * 10; i++) tickPractice(p);
+    while (!practiceFinished(p)) play(p);
+  }
+});
+
+test('empezar un paso de nuevo reconstruye la copia al inicio de ese mismo paso', () => {
+  const p = playThrough('backend', 3), fresh = createPractice({ seed: 7357, generation: 0 }, subjectFor('backend'), p.step);
+  assert.equal(fresh.step, 3); assert.equal(meta(fresh).id, 'backend-publicar');
+  assert.equal(fresh.game.companies[2].assembly.active, true, 'el plano vuelve a estar en montaje');
+});

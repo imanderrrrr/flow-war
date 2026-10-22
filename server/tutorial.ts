@@ -3,7 +3,7 @@ import { completePlan, planGraph, type PlanPiece } from '../shared/plan.js';
 import { issueInitialTraffic } from './traffic.js';
 import { startConcurrency } from './scenarios.js';
 import { isRunFinished } from './requests.js';
-import { route } from './graphs.js';
+import { route, sellCapable } from './graphs.js';
 import { activeScope } from './operations.js';
 import { designPending } from './design.js';
 import { productState } from './product.js';
@@ -31,7 +31,9 @@ export const PRACTICE_SPEED = { working: 1, waiting: 4 } as const;
 export const PRACTICE_GENERATION = 1_000_000;
 
 export type Subject = { key: string; identity: Identity; participantId?: string };
-export type Practice = { key: string; identity: Identity; game: GameState; step: number; seq: number; notes: string[] };
+/** `copy`: which build of this player's practice it is; a rebuilt copy is a new snapshot generation, so the
+ * workspace remounts with no local state left over from the previous copy. */
+export type Practice = { key: string; identity: Identity; game: GameState; step: number; seq: number; notes: string[]; copy: number };
 type Context = { p: Practice; g: GameState; c: Company; identity: Identity };
 type StepScript = {
   /** Scripted counterparts act when the step begins. */
@@ -72,11 +74,16 @@ export function owesTutorial(g: GameState, subject: Subject): boolean {
   return !!entryFor(g, subject);
 }
 export const tutorialPending = (g: GameState, subject: Subject) => owesTutorial(g, subject) && entryFor(g, subject)?.finishedAt === undefined;
-/** Creates the entry on the first entry into the workspace. Returns true when the room state changed. */
-export function enterTutorial(g: GameState, subject: Subject, now = g.tick): boolean {
+/** True when entering the workspace now would start this player's tutorial (nothing is written). */
+export function startsTutorial(g: GameState, subject: Subject): boolean {
   const role = roleOf(subject.identity);
   if (!role || entryFor(g, subject) || (role === 'product' && g.productEnabled !== true)) return false;
-  if (subject.participantId && !g.lobby?.formation) return false;
+  return !subject.participantId || !!g.lobby?.formation;
+}
+/** Creates the entry on the first entry into the workspace. Returns true when the room state changed. */
+export function enterTutorial(g: GameState, subject: Subject, now = g.tick): boolean {
+  if (!startsTutorial(g, subject)) return false;
+  const role = roleOf(subject.identity)!;
   tutorialState(g).players[subject.key] = { role, companyId: subject.identity.companyId, step: 0, startedAt: now, ...(subject.participantId ? { participantId: subject.participantId } : {}) };
   return true;
 }
@@ -125,7 +132,6 @@ function script(p: Practice, identity: Identity, type: string, payload: Record<s
 }
 function fastForward(g: GameState, until: () => boolean, seconds = 120) { for (let i = 0; i < seconds * 10 && !until() && g.status === 'RUNNING'; i++) step(g); }
 const types = (graph: Graph) => route(graph).map(n => n.type);
-const inOrder = (graph: Graph, wanted: string[]) => { const t = types(graph).filter(x => wanted.includes(x)); return t.length === wanted.length && t.every((x, i) => x === wanted[i]); };
 const atomicBetween = (graph: Graph) => { const t = types(graph), r = t.indexOf('read'), a = t.indexOf('atomic'), w = t.indexOf('write'); return r >= 0 && a > r && w > a; };
 /** The purchase-flow graph with Atomic Update between Read Stock and Write Stock (what backend-enviar asks for). */
 export function withAtomic(graph: Graph): Graph {
@@ -177,14 +183,18 @@ function approveChange(x: Context) {
 }
 /** The scope this CTO authorized, not the minimum one every company starts with. */
 const ctoScope = (x: Context) => { const scope = activeScope(x.c, x.g.tick); return scope?.kind === 'cto' && scope.authorizedBy === x.identity.id ? scope : undefined; };
+/** The CTO guionado renews DevOps's scope when it lapses, so a student who took a while is never locked out. */
+function keepScope(x: Context) { const scope = activeScope(x.c, x.g.tick); if (!scope || !scope.operations.includes('scale') || !scope.operations.includes('balancer')) script(x.p, as('cto', x.c.id), 'cto.infra_authorize', DEVOPS_SCOPE); }
 const DEVOPS_SCOPE = { amount: 300, durationSeconds: 900, maxServers: 3, operations: ['scale', 'balancer'] };
 const ack = () => null;
 
 const SCRIPTS: Record<TutorialRole, RoleScript> = {
   backend: { steps: {
     'backend-publicar': {
-      done: x => !x.c.assembly.active && inOrder(x.c.plan, ['entry', 'web', 'checkout', 'inventory', 'payment', 'exit']),
-      facts: x => x.c.version > 1 && !inOrder(x.c.plan, ['entry', 'web', 'checkout', 'inventory', 'payment', 'exit']) ? ['El plano publicado todavía no lleva la compra de la Tienda web a la Salida por Checkout, Inventario y Pagos. Revisá los caminos y publicá otra vez.'] : [],
+      // Any route that can take a purchase closes the montaje for good, so any such route completes the step:
+      // asking for the drawn order after that would leave the student with nothing left to publish.
+      done: x => !x.c.assembly.active && sellCapable(x.c.plan),
+      facts: x => x.c.version > 1 && x.c.assembly.active ? ['El plano publicado todavía no lleva la compra de la Tienda web a la Salida por Checkout, Inventario y Pagos. Revisá los caminos y publicá otra vez.'] : [],
       solve: (s, me) => ({ type: 'plan.publish', companyId: me.companyId!, payload: { graph: extendPlan(s.privateCompany!.plan, ['web', 'checkout', 'inventory', 'payment', 'exit']), revision: s.privateCompany!.planDrafts?.backend?.revision ?? 0 } }),
     },
     'backend-sobreventa': {
@@ -269,12 +279,12 @@ const SCRIPTS: Record<TutorialRole, RoleScript> = {
     },
   } },
   devops: { setup: x => { deliverChange(x); approveChange(x); script(x.p, as('cto', x.c.id), 'cto.infra_authorize', DEVOPS_SCOPE); }, steps: {
-    'devops-servidor': { done: x => x.c.servers >= 2, solve: s => ({ type: 'infra.scale', companyId: s.identity!.companyId!, payload: { delta: 1 } }) },
-    'devops-balanceador': { done: x => x.c.balancer, solve: s => ({ type: 'infra.balancer', companyId: s.identity!.companyId!, payload: { enabled: true } }) },
+    'devops-servidor': { enter: keepScope, sustain: keepScope, done: x => x.c.servers >= 2, solve: s => ({ type: 'infra.scale', companyId: s.identity!.companyId!, payload: { delta: 1 } }) },
+    'devops-balanceador': { enter: keepScope, sustain: keepScope, done: x => x.c.balancer, solve: s => ({ type: 'infra.balancer', companyId: s.identity!.companyId!, payload: { enabled: true } }) },
     'devops-deploy': {
       // The CTO authorizes when DevOps gets here: an authorization lasts 60 s and expires if nobody deploys.
       enter: x => { const ch = practiceChange(x); if (ch && ['CTO_PENDING', 'EXPIRED'].includes(ch.status)) script(x.p, as('cto', x.c.id), 'cto.decide', { changeId: ch.id, decision: 'authorize', reason: 'Autorizado para la práctica de despliegue.', confirmed: true }); },
-      sustain: x => { const ch = practiceChange(x); if (ch?.status === 'EXPIRED') script(x.p, as('cto', x.c.id), 'cto.decide', { changeId: ch.id, decision: 'authorize', reason: 'La autorización anterior venció; se renueva.', confirmed: true }); },
+      sustain: x => { keepScope(x); const ch = practiceChange(x); if (ch?.status === 'EXPIRED') script(x.p, as('cto', x.c.id), 'cto.decide', { changeId: ch.id, decision: 'authorize', reason: 'La autorización anterior venció; se renueva.', confirmed: true }); },
       done: x => practiceChange(x)?.status === 'DEPLOYED',
       waiting: x => practiceChange(x)?.status === 'DEPLOYING' ? `Desplegando con ${practiceChange(x)!.strategy === 'rolling' ? 'ROLLING' : 'RESTART REPLACE'}…` : undefined,
       solve: s => { const ch = s.changes.find(c => c.status === 'AUTHORIZED'); return ch ? { type: 'deploy.start', companyId: s.identity!.companyId!, changeId: ch.id, payload: { strategy: 'rolling' } } : null; },
@@ -316,11 +326,11 @@ const context = (p: Practice): Context => {
 const scriptFor = (p: Practice, index = p.step): StepScript | undefined => { const s = stepsOf(p.identity)[index]; return s && SCRIPTS[roleOf(p.identity)!].steps[s.id]; };
 
 /** A fresh practice copy at `stepIndex`: the counterparts set the scene, then every earlier step is solved again. */
-export function createPractice(real: Pick<GameState, 'seed' | 'generation'>, subject: Subject, stepIndex = 0): Practice {
+export function createPractice(real: Pick<GameState, 'seed' | 'generation'>, subject: Subject, stepIndex = 0, copy = 0): Practice {
   const g = createGame(PRACTICE_DURATION, real.seed, real.generation, false, PRACTICE_PACING);
   g.practice = true; g.status = 'RUNNING';
   for (const company of g.companies) issueInitialTraffic(company, g.tick);
-  const p: Practice = { key: subject.key, identity: subject.identity, game: g, step: 0, seq: 0, notes: [] };
+  const p: Practice = { key: subject.key, identity: subject.identity, game: g, step: 0, seq: 0, notes: [], copy };
   const x = context(p);
   SCRIPTS[roleOf(subject.identity)!].setup?.(x);
   scriptFor(p)?.enter?.(x);
@@ -333,17 +343,19 @@ export function createPractice(real: Pick<GameState, 'seed' | 'generation'>, sub
   return p;
 }
 
+/** A script that throws is a bug in the guion: it is logged and the step simply does not move. */
+function guarded<T>(fallback: T, run: () => T): T { try { return run(); } catch (e) { console.error('Guion de práctica:', e); return fallback; } }
 /** Action steps are complete when the copy shows the confirmed result; read and UI steps only by acknowledgement. */
 function isComplete(p: Practice): boolean {
   const meta = stepsOf(p.identity)[p.step], s = scriptFor(p);
   if (!meta) return true;
-  if (meta.kind === 'action') return !!s?.done?.(context(p));
-  return !s?.ready || s.ready(context(p));
+  if (meta.kind === 'action') return guarded(false, () => !!s?.done?.(context(p)));
+  return guarded(false, () => !s?.ready || s.ready(context(p)));
 }
 function advance(p: Practice): boolean {
   if (p.step >= stepsOf(p.identity).length) return false;
   p.step++; p.notes = [];
-  try { scriptFor(p)?.enter?.(context(p)); } catch (e) { console.error('Guion de práctica:', e); }
+  guarded(undefined, () => scriptFor(p)?.enter?.(context(p)));
   return true;
 }
 /** After a practice command or tick: moves on as many action steps as the copy already satisfies. */
@@ -367,7 +379,7 @@ export function acknowledge(p: Practice, stepId: string): boolean {
 export function tickPractice(p: Practice): boolean {
   const s = scriptFor(p), x = context(p), speed = s?.waiting?.(x) ? PRACTICE_SPEED.waiting : PRACTICE_SPEED.working;
   for (let i = 0; i < speed && p.game.status === 'RUNNING'; i++) step(p.game);
-  try { s?.sustain?.(x); } catch (e) { console.error('Guion de práctica:', e); }
+  guarded(undefined, () => s?.sustain?.(x));
   return settle(p);
 }
 export const practiceExpired = (p: Practice) => p.game.status !== 'RUNNING';
@@ -375,12 +387,13 @@ export const practiceFinished = (p: Practice) => p.step >= stepsOf(p.identity).l
 
 export function tutorialView(p: Practice): TutorialView {
   const steps = stepsOf(p.identity), meta = steps[Math.min(p.step, steps.length - 1)], s = scriptFor(p), x = context(p);
-  return { role: roleOf(p.identity)!, step: p.step, total: steps.length, stepId: meta.id, ready: isComplete(p), facts: s?.facts?.(x) ?? [], ...(s?.waiting?.(x) ? { waiting: s.waiting(x) } : {}) };
+  const waiting = guarded(undefined, () => s?.waiting?.(x));
+  return { role: roleOf(p.identity)!, step: p.step, total: steps.length, stepId: meta.id, ready: isComplete(p), facts: guarded([], () => s?.facts?.(x) ?? []), ...(waiting ? { waiting } : {}) };
 }
 const practiceProjection = (p: Practice) => project(p.game, p.identity);
 /** What the student's workspace receives while practicing: the copy as the real UI expects it, plus the step. */
 export function practiceSnapshot(p: Practice, realGeneration: number): Snapshot {
-  return { ...practiceProjection(p), generation: PRACTICE_GENERATION + realGeneration, tutorial: tutorialView(p) };
+  return { ...practiceProjection(p), generation: PRACTICE_GENERATION + realGeneration * 1000 + p.copy % 1000, tutorial: tutorialView(p) };
 }
 /** The canonical action for the current step, for tests and for rebuilding a copy. `null` means acknowledge it. */
 export function solutionFor(snapshot: Snapshot): Omit<Command, 'id'> | null {
