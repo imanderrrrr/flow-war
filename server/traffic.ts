@@ -39,6 +39,13 @@ export function initialTraffic(stock = 100, seed = 7357, namespace = 'g0', tick 
   };
 }
 
+/** Services that have capacity at all: the ones the team placed on its plan. Inside a QA fixture
+ * every service answers, because staging is a complete system — a suite grades the change under
+ * test, not what the company happens to have deployed. */
+function servedServices(company: Company): ServiceId[] {
+  return company.traffic.scope === 'qa' ? SERVICE_IDS : planServices(company.plan);
+}
+
 export function serviceRates(company: Company, deployment?: { strategy?: string }): Record<ServiceId, number> {
   const config = company.traffic.config;
   const paid = company.infraBudget > 0 && company.capital > 0 && !company.eliminated;
@@ -47,6 +54,9 @@ export function serviceRates(company: Company, deployment?: { strategy?: string 
   else if (deployment) servers *= company.servers === 1 ? .12 : (company.servers - 1) / company.servers;
   const available = servers > 0;
   const rates = { security: available ? config.rates.security : 0, web: config.rates.web * servers, checkout: config.rates.checkout * servers, inventory: available ? config.rates.inventory : 0, payment: available ? config.rates.payment : 0 };
+  // A service that is not on the plan yet and one DevOps stopped are the same calculation: no rate.
+  const served = servedServices(company);
+  for (const service of SERVICE_IDS) if (!served.includes(service)) rates[service] = 0;
   for (const service of company.infrastructure?.stoppedServices ?? []) rates[service] = 0;
   return rates;
 }
@@ -222,7 +232,7 @@ export function settleTraffic(company: Company, now: number) {
 }
 
 export function advanceTraffic(company: Company, now: number, rates = serviceRates(company)) {
-  const state = company.traffic;
+  const state = company.traffic, served = servedServices(company);
   if (now <= state.lastTick) { settleTraffic(company, now); return; }
   const dt = round(now - state.lastTick); const prune = Math.floor(now) !== Math.floor(state.lastTick); state.lastTick = now;
   if (prune && state.operations) pruneOperations(state.operations, now);
@@ -242,7 +252,8 @@ export function advanceTraffic(company: Company, now: number, rates = serviceRat
     queue.processing = queue.processing.filter(key => state.requests[key].status === 'PROCESSING' && state.requests[key].service === id && !completed.includes(key));
     queue.waiting = queue.waiting.filter(key => !state.requests[key].result && state.requests[key].status === 'QUEUED' && state.requests[key].service === id);
     queue.rate = rate;
-    queue.capacity = state.config.queues[id] * (id === 'web' || id === 'checkout' ? company.balancer ? company.servers : 1 : 1);
+    // A solar nobody filled has no waiting room either, so nothing queues for a service that is not there.
+    queue.capacity = served.includes(id) ? state.config.queues[id] * (id === 'web' || id === 'checkout' ? company.balancer ? company.servers : 1 : 1) : 0;
     queue.credit = rate > 0 ? Math.min(Math.max(1, rate * dt) + 1, round(queue.credit + rate * dt)) : 0;
     while (queue.credit >= 1 && queue.waiting.length) {
       const key = queue.waiting.shift()!, request = state.requests[key];

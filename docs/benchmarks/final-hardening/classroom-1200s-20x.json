@@ -1,0 +1,625 @@
+{
+  "sha": "0dfdd4e2114185cf4dbde9de684cb2ec75db388c",
+  "sourceDigest": "7f91a95e240466ff497f9621601f8faa650ce14bac86410c576ad117a3972805",
+  "sourceFiles": [
+    "scripts/audit-classroom-load.ts",
+    "scripts/audit-classroom-probe.cjs",
+    "scripts/market-scenarios.ts",
+    "server/action-validation.ts",
+    "server/agents.ts",
+    "server/ai-scheduler.ts",
+    "server/ai-service.ts",
+    "server/artifacts.ts",
+    "server/auditor.ts",
+    "server/blocks.ts",
+    "server/business.ts",
+    "server/chat.ts",
+    "server/claude.ts",
+    "server/collaboration.ts",
+    "server/command-pipeline.ts",
+    "server/crisis.ts",
+    "server/defects.ts",
+    "server/design.ts",
+    "server/discipline.ts",
+    "server/dvr-pool.ts",
+    "server/dvr-query.ts",
+    "server/dvr-worker.mjs",
+    "server/dvr-worker.ts",
+    "server/dvr.ts",
+    "server/engine.ts",
+    "server/executor-service.ts",
+    "server/executor.ts",
+    "server/flowslack.ts",
+    "server/graphs.ts",
+    "server/grounding.ts",
+    "server/history-admin.ts",
+    "server/history.ts",
+    "server/index.ts",
+    "server/infrastructure.ts",
+    "server/load.ts",
+    "server/lobby.ts",
+    "server/maintenance.ts",
+    "server/market.ts",
+    "server/module-execution.ts",
+    "server/observability.ts",
+    "server/operations.ts",
+    "server/persistence.ts",
+    "server/postmortem.ts",
+    "server/product.ts",
+    "server/projections.ts",
+    "server/qa.ts",
+    "server/receipt-storage.ts",
+    "server/requests.ts",
+    "server/room-assistant.ts",
+    "server/scenarios.ts",
+    "server/security.ts",
+    "server/snapshot-sync.ts",
+    "server/socket-encoder.ts",
+    "server/storage-lease.ts",
+    "server/storage.ts",
+    "server/traffic.ts",
+    "server/workflow.ts",
+    "shared/actions.ts",
+    "shared/agents.ts",
+    "shared/auditor.ts",
+    "shared/blocks.ts",
+    "shared/collaboration.ts",
+    "shared/crisis.ts",
+    "shared/executor.ts",
+    "shared/live-client.ts",
+    "shared/lobby.ts",
+    "shared/observability.ts",
+    "shared/operations.ts",
+    "shared/plan.ts",
+    "shared/product.ts",
+    "shared/simulation.ts",
+    "shared/snapshot-codec.ts",
+    "shared/sync.ts",
+    "shared/types.ts",
+    "shared/workflow.ts"
+  ],
+  "sourceDirty": "",
+  "date": "2026-10-22T19:10:05.355Z",
+  "node": "v25.9.0",
+  "os": "darwin 27.0.0",
+  "cpu": "Apple M5",
+  "cores": 10,
+  "totalRamBytes": 17179869184,
+  "freeRamBytes": 1032142848,
+  "workers": 2,
+  "parameters": {
+    "duration": 1200,
+    "speed": 20,
+    "historyDuration": 1200,
+    "seed": 8,
+    "population": 5000,
+    "initialReputation": 34,
+    "oneXWarmupSeconds": 10,
+    "dvrConcurrency": 2
+  },
+  "clients": 27,
+  "students": 25,
+  "authenticatedSessions": 26,
+  "publicConnections": 1,
+  "scenarios": {
+    "preparation": {
+      "wallMs": 24376.38725,
+      "historicalTicks": 12000,
+      "historicalStatus": "FINISHED",
+      "archiveDigest": "7c008ed1be7a01c9ef478f91322e0055e3afd40b17eafa3b6d55a482476aa70c",
+      "archiveBytes": 279195648,
+      "expectedFrames": 8
+    },
+    "A": {
+      "connections": 27,
+      "uniqueAuthenticatedIdentities": 26,
+      "rolesPerCompany": [
+        "backend",
+        "security",
+        "qa",
+        "cto",
+        "devops"
+      ],
+      "lobbyCoherent": true,
+      "initialPopulation": 5000,
+      "initialCustomersPerCompany": [
+        1000,
+        1000,
+        1000,
+        1000,
+        1000
+      ],
+      "firstTrafficGenerated": true
+    },
+    "oneXWarmup": {
+      "wallMs": 10002.178042,
+      "simulatedSeconds": 9.9,
+      "speed": 1
+    }
+  },
+  "commands": [
+    {
+      "identity": "0-backend",
+      "type": "room.reset",
+      "id": "e4dff43e-ea79-42e4-94bf-7ac18a93e4ee",
+      "atTick": 0,
+      "purpose": "expected-denial",
+      "ok": false,
+      "code": "FORBIDDEN",
+      "error": "Acción ajena al rol.",
+      "ms": 28.23866700000508
+    },
+    {
+      "identity": "public",
+      "type": "room.start",
+      "id": "54834374-26ec-46a6-b66f-aae5d888d340",
+      "atTick": 0,
+      "purpose": "expected-denial",
+      "ok": false,
+      "code": "FORBIDDEN",
+      "error": "Sesión o comando no autorizado.",
+      "ms": 7.93212499999936
+    },
+    {
+      "identity": "operator",
+      "type": "room.start",
+      "id": "3d933bad-f311-469a-a22f-29d5de509882",
+      "atTick": 0,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 13.610708000000159
+    },
+    {
+      "identity": "operator",
+      "type": "room.speed",
+      "id": "fae35c09-0881-494e-ad09-3c0a03d1c7bd",
+      "atTick": 9.9,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 43.930915999997524
+    },
+    {
+      "identity": "0-backend",
+      "type": "change.submit",
+      "id": "7c630849-4c81-4d50-a8fa-4d813b7de1f3",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 26.308083000003535
+    },
+    {
+      "identity": "2-backend",
+      "type": "change.submit",
+      "id": "32dc580e-dd32-420d-a711-bd712af6957d",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 44.83675000000221
+    },
+    {
+      "identity": "1-backend",
+      "type": "change.submit",
+      "id": "0ac43a6e-229f-4730-9c08-70e695749ad5",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 45.101792000001296
+    },
+    {
+      "identity": "3-backend",
+      "type": "change.submit",
+      "id": "09ee2845-6903-41fa-a1b9-061986412c15",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 67.63137500000448
+    },
+    {
+      "identity": "4-backend",
+      "type": "change.submit",
+      "id": "91298491-e685-4f04-b598-59ff13528848",
+      "atTick": 10,
+      "purpose": "work",
+      "ok": true,
+      "code": null,
+      "error": null,
+      "ms": 81.34545800000342
+    },
+    {
+      "identity": "0-qa",
+      "type": "qa.run",
+      "id": "3b61e658-e897-452d-9d70-61bac04dcb1d",
+      "atTick": 12,
+      "purpose": "work",
+      "ok": false,
+      "code": null,
+      "error": "La combinación revisada no coincide.",
+      "ms": 62.43733300000167
+    }
+  ],
+  "dvr": [],
+  "security": {
+    "secondServerDenied": true,
+    "liveMaintenanceDenied": true,
+    "authorizedIndependentArchiveReadable": true,
+    "independentReadAndQueryWhileActive": true,
+    "studentArchiveDenied": true,
+    "studentDeletionDenied": true,
+    "studentAccessDenied": true,
+    "foreignReceiptDenied": true,
+    "foreignDvrDenied": true,
+    "unauthenticatedDvrDenied": true,
+    "localSecretsNotServed": true
+  },
+  "errors": [
+    "AssertionError [ERR_ASSERTION]: La combinación revisada no coincide.\n    at requireOk (/Users/anderson/Documents/proyecto aseguramiento/.claude/worktrees/arquitectura-construible-f584e1/scripts/audit-classroom-load.ts:58:30)\n    at pipeline (/Users/anderson/Documents/proyecto aseguramiento/.claude/worktrees/arquitectura-construible-f584e1/scripts/audit-classroom-load.ts:68:2)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async Promise.all (index 0)\n    at async <anonymous> (/Users/anderson/Documents/proyecto aseguramiento/.claude/worktrees/arquitectura-construible-f584e1/scripts/audit-classroom-load.ts:122:2)"
+  ],
+  "segments": [
+    {
+      "segment": 1,
+      "exitCode": 0,
+      "signal": null,
+      "hookedStep": true,
+      "hookedQueue": true,
+      "ticks": 120,
+      "idleSteps": 155,
+      "snapshots": 3162,
+      "snapshotBytes": 58433368,
+      "maxSnapshotBytes": 40057,
+      "maxConnections": 27,
+      "connections": 0,
+      "disconnects": 27,
+      "writes": 267,
+      "commits": 36,
+      "rollbacks": 1,
+      "checkpoints": 0,
+      "workersCreated": 0,
+      "workersExited": 0,
+      "workerErrors": 0,
+      "workerInjectedFailures": 0,
+      "workerTerminations": 0,
+      "workerReplies": 0,
+      "maxWorkers": 0,
+      "maxWorkersBusy": 0,
+      "maxQueued": 0,
+      "lastControl": null,
+      "elapsedMs": 26189.652374999998,
+      "final": true,
+      "eventLoop": {
+        "p50": 11.354111,
+        "p95": 12.550143,
+        "p99": 25.018367,
+        "max": 47.579135
+      },
+      "broadcastMs": {
+        "n": 132,
+        "total": 1283.8972120000183,
+        "mean": 9.726494030303169,
+        "p50": 7.598374999999805,
+        "p95": 17.296125000000757,
+        "p99": 17.956834000000526,
+        "max": 19.592666000000463
+      },
+      "commandHandlerMs": {
+        "n": 14,
+        "total": 0.6014999999915744,
+        "mean": 0.04296428571368389,
+        "p50": 0.01770799999940209,
+        "p95": 0.26512499999807915,
+        "p99": 0.26512499999807915,
+        "max": 0.26512499999807915
+      },
+      "tickMs": {
+        "n": 120,
+        "total": 135.89203699999962,
+        "mean": 1.1324336416666634,
+        "p50": 0.5923340000008466,
+        "p95": 5.133333000001585,
+        "p99": 7.733832999998413,
+        "max": 9.724165999999968
+      },
+      "engineIntervalMs": {
+        "n": 256,
+        "total": 25838.396416000018,
+        "mean": 100.93123600000007,
+        "p50": 100.77420799999982,
+        "p95": 102.29349999999977,
+        "p99": 102.9072079999969,
+        "max": 114.8447500000002
+      },
+      "engineCallbackMs": {
+        "n": 256,
+        "total": 488.2632930000345,
+        "mean": 1.9072784882813847,
+        "p50": 0.052957999999989624,
+        "p95": 16.006791999999905,
+        "p99": 25.99433300000237,
+        "max": 28.427832999997918
+      },
+      "persistenceMs": {
+        "n": 36,
+        "total": 448.1645829999982,
+        "mean": 12.449016194444393,
+        "p50": 9.760834000000614,
+        "p95": 27.066249999999854,
+        "p99": 27.75970800000141,
+        "max": 27.75970800000141
+      },
+      "workerTaskMs": {
+        "n": 0,
+        "total": 0,
+        "mean": null,
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null
+      },
+      "activeWorkers": 0,
+      "busyWorkers": 0,
+      "memory": [
+        {
+          "atMs": 1002.378458,
+          "heapUsed": 26834760,
+          "rss": 143818752,
+          "external": 6283957
+        },
+        {
+          "atMs": 2002.3970830000003,
+          "heapUsed": 34977224,
+          "rss": 150913024,
+          "external": 6919351
+        },
+        {
+          "atMs": 3001.77925,
+          "heapUsed": 29989472,
+          "rss": 153026560,
+          "external": 6818773
+        },
+        {
+          "atMs": 4003.444375,
+          "heapUsed": 31195160,
+          "rss": 155222016,
+          "external": 7115444
+        },
+        {
+          "atMs": 5005.730875,
+          "heapUsed": 35830280,
+          "rss": 155779072,
+          "external": 7708454
+        },
+        {
+          "atMs": 6007.850292,
+          "heapUsed": 29853336,
+          "rss": 175407104,
+          "external": 7651420
+        },
+        {
+          "atMs": 7007.988917,
+          "heapUsed": 53643920,
+          "rss": 186138624,
+          "external": 10371334
+        },
+        {
+          "atMs": 8008.4177500000005,
+          "heapUsed": 49238744,
+          "rss": 192397312,
+          "external": 9896220
+        },
+        {
+          "atMs": 9009.531667,
+          "heapUsed": 43226240,
+          "rss": 190873600,
+          "external": 9429241
+        },
+        {
+          "atMs": 10012.24875,
+          "heapUsed": 38976872,
+          "rss": 191053824,
+          "external": 9076941
+        },
+        {
+          "atMs": 11014.1205,
+          "heapUsed": 34672808,
+          "rss": 191217664,
+          "external": 8618275
+        },
+        {
+          "atMs": 12014.44975,
+          "heapUsed": 30405800,
+          "rss": 191283200,
+          "external": 8102082
+        },
+        {
+          "atMs": 13015.670583000001,
+          "heapUsed": 53862888,
+          "rss": 193069056,
+          "external": 10797740
+        },
+        {
+          "atMs": 14016.479208,
+          "heapUsed": 49590600,
+          "rss": 193118208,
+          "external": 10379850
+        },
+        {
+          "atMs": 15016.877375,
+          "heapUsed": 43474320,
+          "rss": 191545344,
+          "external": 9871848
+        },
+        {
+          "atMs": 16017.411792,
+          "heapUsed": 59424688,
+          "rss": 201998336,
+          "external": 11859471
+        },
+        {
+          "atMs": 17017.479292,
+          "heapUsed": 57480864,
+          "rss": 198590464,
+          "external": 9324566
+        },
+        {
+          "atMs": 18031.228375,
+          "heapUsed": 54298048,
+          "rss": 202915840,
+          "external": 9409073
+        },
+        {
+          "atMs": 19041.415083,
+          "heapUsed": 55442072,
+          "rss": 203620352,
+          "external": 9736137
+        },
+        {
+          "atMs": 20045.289041999997,
+          "heapUsed": 55496152,
+          "rss": 203898880,
+          "external": 9957699
+        },
+        {
+          "atMs": 21051.857417,
+          "heapUsed": 56042016,
+          "rss": 205307904,
+          "external": 10259613
+        },
+        {
+          "atMs": 22067.424333,
+          "heapUsed": 57128384,
+          "rss": 207470592,
+          "external": 10474844
+        },
+        {
+          "atMs": 23073.546333,
+          "heapUsed": 56331568,
+          "rss": 209764352,
+          "external": 10468789
+        },
+        {
+          "atMs": 24084.003917,
+          "heapUsed": 56511152,
+          "rss": 209928192,
+          "external": 10608293
+        },
+        {
+          "atMs": 25093.528208,
+          "heapUsed": 56582008,
+          "rss": 210223104,
+          "external": 10764201
+        },
+        {
+          "atMs": 26098.278082999997,
+          "heapUsed": 44970480,
+          "rss": 213237760,
+          "external": 9267340
+        }
+      ],
+      "workerMemory": [],
+      "sampling": {
+        "peakMs": 20,
+        "trendMs": 1000,
+        "workerHeapMs": 1000
+      },
+      "heapMaxBytes": 69809488,
+      "rssMaxBytes": 220299264
+    }
+  ],
+  "limitations": [
+    "Local loopback; Node Socket.IO clients do not render 27 browser UIs.",
+    "The 34-point reputation is an explicit pre-start scenario condition for all five companies. No live engine state is mutated.",
+    "Total process RSS includes worker memory; worker heap samples are not additive RSS.",
+    "SIGKILL telemetry is explicitly flushed immediately before killing; crash tail may omit the last sampling interval."
+  ],
+  "visual": {
+    "calls": 50000,
+    "totalMs": 33.43454200000269,
+    "economyUnchanged": true,
+    "scope": "Pure derived visual function, not browser FPS; server does not run paper animation."
+  },
+  "result": "failed",
+  "exitCode": 1,
+  "wallMs": 50793.102666,
+  "socket": {
+    "snapshots": 3138,
+    "sizeBytes": {
+      "n": 3138,
+      "p50": 19946,
+      "p95": 27328,
+      "p99": 28271,
+      "max": 35352
+    },
+    "deliveryMs": {
+      "n": 3138,
+      "p50": 6.07373046875,
+      "p95": 14.634033203125,
+      "p99": 16.888671875,
+      "max": 67.985107421875
+    },
+    "cadenceMs": {
+      "n": 3111,
+      "p50": 202.28087500000402,
+      "p95": 215.1054159999985,
+      "p99": 221.3075420000023,
+      "max": 222.825791999996
+    },
+    "maximumConnections": 27,
+    "disconnects": 27,
+    "reconnects": 0,
+    "timeouts": 4,
+    "nonChatCommandAckMs": {
+      "n": 10,
+      "p50": 43.930915999997524,
+      "p95": 81.34545800000342,
+      "p99": 81.34545800000342,
+      "max": 81.34545800000342
+    },
+    "commandAckMs": {
+      "n": 10,
+      "p50": 43.930915999997524,
+      "p95": 81.34545800000342,
+      "p99": 81.34545800000342,
+      "max": 81.34545800000342
+    }
+  },
+  "flowSlack": {
+    "sent": 0,
+    "authorizedDeliveries": 0,
+    "ackMs": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "max": null
+    },
+    "deliveryMs": {
+      "n": 0,
+      "p50": null,
+      "p95": null,
+      "p99": null,
+      "max": null
+    },
+    "crossCompanyDeliveries": 0,
+    "confirmedMessageLoss": null,
+    "duplicateApplications": null
+  },
+  "explicitCheckpoints": 0,
+  "budgets": {
+    "eventLoopP99Below150": true,
+    "engineIntervalP95Below200": true,
+    "nonChatCommandAckP95Below150": true,
+    "allCommandAckP95Below150": true,
+    "scope": "Investigative budgets on local loopback; crossing one is reported, never hidden or relaxed."
+  }
+}
