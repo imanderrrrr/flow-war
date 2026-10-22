@@ -13,7 +13,7 @@ import { initialOperations } from './artifacts.js';
 import { executionFor } from './artifacts.js';
 import { effectiveServers } from './infrastructure.js';
 import { attachCustomer, customerColor, recordCustomerExperience, selectCustomer } from './market.js';
-import type { MarketCustomer, ServiceQueue, Company, FlowParticle, InventoryState, RequestResult, ScenarioTotals, ServiceId, TerminalReason, TrafficMetrics, TrafficReceipt, TrafficRequest, TrafficScenario, TrafficState, TrafficView } from '../shared/types.js';
+import type { Graph, MarketCustomer, ServiceQueue, Company, FlowParticle, InventoryState, RequestResult, ScenarioTotals, ServiceId, TerminalReason, TrafficMetrics, TrafficReceipt, TrafficRequest, TrafficScenario, TrafficState, TrafficView } from '../shared/types.js';
 import { isPlanReason } from '../shared/plan.js';
 import { evaluateSecurity, missingFor, planServices, route } from './graphs.js';
 import { executePurchaseOperation, finishRequest, moveRequest } from './requests.js';
@@ -43,8 +43,12 @@ export function initialTraffic(stock = 100, seed = 7357, namespace = 'g0', tick 
 /** Services that have capacity at all: the ones the team placed on its plan. Inside a QA fixture
  * every service answers, because staging is a complete system — a suite grades the change under
  * test, not what the company happens to have deployed. */
+const servedByPlan = new WeakMap<Graph, ServiceId[]>();
 function servedServices(company: Company): ServiceId[] {
-  return company.traffic.scope === 'qa' ? SERVICE_IDS : planServices(company.plan);
+  if (company.traffic.scope === 'qa') return SERVICE_IDS;
+  let served = servedByPlan.get(company.plan);
+  if (!served) servedByPlan.set(company.plan, served = planServices(company.plan));
+  return served;
 }
 
 export function serviceRates(company: Company, deployment?: { strategy?: string }): Record<ServiceId, number> {
@@ -77,10 +81,17 @@ type CoarseStop = Exclude<TrafficRequest['phase'], 'backend'>;
 const COARSE_SERVICES: ServiceId[] = ['security', 'web', 'checkout'];
 const isCoarse = (service: ServiceId): service is CoarseStop => COARSE_SERVICES.includes(service);
 /** The coarse itinerary this request type takes through the plan the team drew, in the drawn order.
- * Navigation is answered by the storefront, so it never goes past the tienda web. */
+ * Navigation is answered by the storefront, so it never goes past the tienda web.
+ * Memoized on the frozen route array of each production version — every request of a version walks
+ * the same itinerary, and this runs on each phase transition of every request in the room. */
+const itineraries = new WeakMap<ServiceId[], Partial<Record<TrafficRequest['type'], CoarseStop[]>>>();
 function coarseStops(services: ServiceId[], type: TrafficRequest['type']): CoarseStop[] {
+  let byType = itineraries.get(services);
+  if (!byType) itineraries.set(services, byType = {});
+  const cached = byType[type];
+  if (cached) return cached;
   const stops = services.filter(isCoarse);
-  return type === 'browse' ? stops.slice(0, stops.indexOf('web') + 1) : stops;
+  return byType[type] = type === 'browse' ? stops.slice(0, stops.indexOf('web') + 1) : stops;
 }
 /** The plan route frozen for a production version: a request in flight finishes on its own plan. */
 function planRouteFor(company: Company, version: number): ServiceId[] {
