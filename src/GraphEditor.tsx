@@ -3,6 +3,7 @@ import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant, Controls, 
 import { BLOCKS, ROLE_LABELS, STATUS_LABELS, type Graph, type PrivateCompany, type Role } from '../shared/types';
 import { PLAN_PIECES, PLAN_PIECE_TYPES, planPublicationCost, type PlanPiece } from '../shared/plan';
 import { PLAN_NODE_WIDTH, addPiece, boardPoint, boardSlots, connect, editableBoard, removePiece } from './planBoard';
+import { LOGIC_BLOCKS, hasBlock, insertBlock, logicPath, removeBlock, submissionCost, type LogicPiece } from './logicBlocks';
 import type { BlockConfiguration } from '../shared/blocks';
 import { send, money, useGame } from './store';
 import { Icon } from './icons';
@@ -65,7 +66,7 @@ function PlanEditor({ company:c, role, active }: { company: PrivateCompany; role
   const cycle=!c.assembly.active;
   const inCycle=(useGame(s=>s.snapshot?.changes)??[]).filter(ch=>ch.domain==='plan'&&IN_CYCLE.includes(ch.status));
   // The block editor keeps honouring the workflow's backend lock, as it did when App.tsx opened it.
-  const backendLocked=useGame(s=>Boolean(s.snapshot?.operations?.workflow?.backendLock));
+  const lockedBy=useGame(s=>s.snapshot?.operations?.workflow?.backendLock?.changeId),backendLocked=Boolean(lockedBy);
   const revision=useRef(draft?.revision??0);
   const reload=useCallback(()=>{const next=editableBoard(c.plan,draft?.graph,role);setPlan(structuredClone(next));revision.current=draft?.revision??0;setDirty(false);setSelected(null);},[draft,c.plan,role]);
   // A plan published by another role (or by Claude) never overwrites unsaved local work.
@@ -116,10 +117,11 @@ function PlanEditor({ company:c, role, active }: { company: PrivateCompany; role
         <h3>{PLAN_PIECES[piece].label}</h3><span className="inspector-id">{piece.toUpperCase()}</span>
         <p className="piece-text">{PLAN_PIECES[piece].text}</p>
         <div className="inspector-cost"><span>INCORPORACIÓN</span><b>{money(PLAN_PIECES[piece].cost)}</b></div>
-        {(piece==='inventory'||piece==='payment')&&<button className="secondary-button" onClick={()=>setOpenPiece(piece)}>ABRIR SU LÓGICA INTERNA<Icon name="arrow" size={14}/></button>}
+        {(piece==='inventory'||piece==='payment')&&<p className="muted">Su lógica está debajo del plano: tocá un bloque para ponerlo o quitarlo.</p>}
         {PLAN_PIECES[piece].owner===role&&piece!=='entry'&&<button className="secondary-button danger" disabled={!active} onClick={()=>{setPlan(current=>removePiece(current,node!.id));setSelected(null);setDirty(true);}}>QUITAR PIEZA</button>}</>
       :<div className="inspector-empty"><Icon name="chip" size={34}/><span>SIN SELECCIÓN</span><p className="muted">Tocá un solar vacío para colocar tu pieza, o una pieza puesta para ver qué hace.</p></div>}
     </aside></div>
+    {(piece==='inventory'||piece==='payment')&&role==='backend'&&<PlanLogic key={piece} company={c} piece={piece} active={active} lockedBy={lockedBy} onOpen={()=>setOpenPiece(piece)}/>}
     <div className="editor-bottom"><span><i className={dirty?'yellow-dot':'green-dot'}/>{dirty?'CAMBIOS LOCALES':'PLANO SINCRONIZADO'}</span>
       {cycle&&<span className="plan-cycle-note">{inCycle.length?inCycle.map(ch=>`${ch.id} · ${STATUS_LABELS[ch.status]}`).join(' · '):'Tu cambio pasa por QA → CTO → DevOps: el CTO autoriza su costo y DevOps lo despliega.'}</span>}
       <div className="button-row"><button className="secondary-button" disabled={!active||busy} onClick={()=>void save()}>GUARDAR</button>
@@ -127,6 +129,35 @@ function PlanEditor({ company:c, role, active }: { company: PrivateCompany; role
         :<button className="primary-button small" disabled={!active||busy} onClick={()=>void save('plan.publish')}>{busy?'PUBLICANDO…':`PUBLICAR · ${money(cost)}`}<Icon name="arrow" size={15}/></button>}</div></div>
     {openPiece&&<div className="plan-inner-editor"><div className="panel-title"><span>LÓGICA INTERNA DE {PLAN_PIECES[openPiece].label.toUpperCase()}</span><button className="text-button" onClick={()=>setOpenPiece(null)}>VOLVER AL PLANO</button></div><GraphEditor company={c} domain="backend" active={active&&!backendLocked}/></div>}
   </section>;
+}
+/** Inventario and Pagos carry the purchase-flow blocks: one tap puts a block where the engine reads it,
+ * saved as Backend's draft, and the inner canvas stays one click away for wiring by hand. */
+function PlanLogic({ company:c, piece, active, lockedBy, onOpen }: { company: PrivateCompany; piece: LogicPiece; active: boolean; lockedBy?: string; onOpen: ()=>void }) {
+  const draft=c.drafts.backend;
+  const [graph,setGraph]=useState<Graph>(()=>structuredClone(draft?.graph??c.backend)),[busy,setBusy]=useState(false);
+  const revision=useRef(draft?.revision??0);
+  // A revision saved elsewhere (the inner canvas, Claude, a QA return) replaces what the panel shows.
+  useEffect(()=>{if((draft?.revision??0)>=revision.current){setGraph(structuredClone(draft?.graph??c.backend));revision.current=draft?.revision??0;}},[draft?.revision,c.version]);
+  const editable=active&&!lockedBy&&!busy,unchanged=logicPath(graph).join()===logicPath(c.backend).join();
+  async function toggle(type:string) {
+    const next=hasBlock(graph,type)?removeBlock(graph,type):insertBlock(graph,type);
+    setBusy(true);
+    if(await send('draft.save',{companyId:c.id,payload:{graph:next,revision:revision.current}})){revision.current++;setGraph(next);}
+    setBusy(false);
+  }
+  async function submit() {
+    setBusy(true);
+    if(await send('change.submit',{companyId:c.id,payload:{graph,revision:revision.current}}))revision.current++;
+    setBusy(false);
+  }
+  return <div className="plan-logic"><div className="panel-title"><span>LÓGICA DE {PLAN_PIECES[piece].label.toUpperCase()}</span><button className="text-button" onClick={onOpen}>CABLEAR A MANO (AVANZADO)<Icon name="arrow" size={12}/></button></div>
+    <p className="plan-logic-path">{logicPath(graph).join(' → ')}</p>
+    <div className="plan-logic-blocks">{LOGIC_BLOCKS[piece].map(b=>{const block=BLOCKS.backend.find(x=>x.type===b.type)!,on=hasBlock(graph,b.type);
+      return <article key={b.type} className={on?'on':''}><div><strong>{block.label}</strong><small>{on?'PUESTO':money(block.cost)}</small></div><p>{b.text}</p>
+        <button className={on?'secondary-button danger':'secondary-button'} disabled={!editable} onClick={()=>void toggle(b.type)}>{on?'QUITAR':'PONER'}</button></article>;})}</div>
+    <div className="plan-logic-bottom"><span className="muted">{lockedBy?`Tu lógica está en revisión (${lockedBy}): se desbloquea si QA te la devuelve.`:unchanged?'Igual que producción.':'Cambio guardado en tu borrador. Ningún cambio llega a producción sin pasar por Seguridad → QA → CTO → DevOps.'}</span>
+      <button className="primary-button small" disabled={!editable||unchanged} onClick={()=>void submit()}>{busy?'ENVIANDO…':`ENVIAR A SEGURIDAD · ${money(submissionCost(graph.nodes))}`}<Icon name="arrow" size={14}/></button></div>
+  </div>;
 }
 /** A read-only graph. A plan change is drawn on the plan board, with each piece labelled by its owner. */
 export function GraphViewer({ graph, plan=false }: { graph: Graph; plan?: boolean }) {
@@ -154,7 +185,7 @@ function Editor({ company:c,domain,active }: { company: PrivateCompany; domain:'
   useEffect(()=>{if(draft&&draft.revision>revision.current){if(dirty)setServerAhead(true);else reload();}},[draft?.revision]);
   useEffect(()=>{useGame.getState().setSelection({nodeId:selected??undefined});},[selected]);
   const node=nodes.find(n=>n.id===selected),block=blocks.find(b=>b.type===node?.type);
-  const cost=100+nodes.reduce((sum,n)=>sum+(blocks.find(b=>b.type===n.type)?.cost??0),0);
+  const cost=domain==='backend'?submissionCost(nodes):100+nodes.reduce((sum,n)=>sum+(blocks.find(b=>b.type===n.type)?.cost??0),0);
   return <section className="node-editor panel" style={{'--team':c.color} as CSSProperties}><div className="editor-topbar"><span><Icon name={domain==='backend'?'code':'shield'} size={17}/> {domain==='backend'?'ARQUITECTURA DE LÓGICA':'PERÍMETRO DE SEGURIDAD'}</span><span className="eyebrow">purchase-flow · BORRADOR <b>r{revision.current}</b> <i/> BASE v{c.version}.0</span></div><div className="editor-body"><aside className="block-palette"><div className="palette-heading"><span className="eyebrow">PIEZAS DISPONIBLES</span><b>{blocks.length.toString().padStart(2,'0')}</b></div>{blocks.map(b=><button draggable={active} disabled={!active} onDragStart={e=>{e.dataTransfer.setData('application/flow-war',b.type);e.dataTransfer.effectAllowed='move';}} onClick={()=>add(b.type)} key={b.type} className="palette-block"><span className="block-grip">⠿</span><Icon name={domain==='security'?'shield':'chip'} size={15}/><span>{b.label}<small>{money(b.cost)}</small></span><Icon name="plus" size={12}/></button>)}<div className="palette-total"><span>PUBLICACIÓN</span><b>{money(cost)}</b></div></aside><div className="editor-flow" onDragOver={e=>{e.preventDefault();e.dataTransfer.dropEffect='move';}} onDrop={e=>{e.preventDefault();add(e.dataTransfer.getData('application/flow-war'),screenToFlowPosition({x:e.clientX,y:e.clientY}));}}><ReactFlow nodes={nodes} edges={edges} onNodesChange={active?onNodesChange:undefined} onEdgesChange={active?onEdgesChange:undefined} onConnect={active?onConnect:undefined} onNodeClick={(_,n)=>setSelected(n.id)} onPaneClick={()=>setSelected(null)} nodeTypes={flowNodeTypes} defaultEdgeOptions={defaultEdgeOptions} fitView fitViewOptions={{padding:.2}} minZoom={.25} maxZoom={1.5} nodesDraggable={active} nodesConnectable={active} deleteKeyCode={active?['Backspace','Delete']:null} colorMode="dark"><Background variant={BackgroundVariant.Dots} color="#344052" gap={20} size={1}/><Controls showInteractive={false}/></ReactFlow><div className="canvas-caption">{nodes.length} NODOS <i/> {edges.length} CONEXIONES</div></div><aside className="node-inspector"><span className="eyebrow">INSPECTOR DE PIEZA</span>{node?<><div className="inspector-icon"><Icon name={domain==='security'?'shield':'chip'} size={30}/></div><h3>{String(node.data.label)}</h3><span className="inspector-id">{node.type?.toUpperCase()}</span>{node.type&&defaults(node.type,Number(node.data.value??1))&&<BlockInspector key={`${node.id}-${refresh}`} node={node} active={active} onChange={config=>{setNodes(ns=>ns.map(n=>n.id===node.id?{...n,data:{...n.data,config}}:n));setDirty(true);}}/>}{block&&<>{node.type==='atomic'&&<><label htmlFor="node-value">{block.unit.toUpperCase()}</label><input id="node-value" type="number" min={1} max={120} value={Number(node.data.value??block.value)} disabled={!active} onChange={e=>{setNodes(ns=>ns.map(n=>n.id===node.id?{...n,data:{...n.data,value:Number(e.target.value)}}:n));setDirty(true);}}/></>}<div className="inspector-cost"><span>INCORPORACIÓN</span><b>{money(block.cost)}</b></div><button className="secondary-button danger" disabled={!active} onClick={()=>{setNodes(ns=>ns.filter(n=>n.id!==node.id));setEdges(es=>es.filter(e=>e.source!==node.id&&e.target!==node.id));setSelected(null);setDirty(true);}}>ELIMINAR PIEZA</button></>}</>:<div className="inspector-empty"><Icon name="chip" size={34}/><span>SIN SELECCIÓN</span></div>}</aside></div><div className="editor-bottom"><span><i className={dirty?'yellow-dot':'green-dot'}/>{dirty?'CAMBIOS LOCALES':'BORRADOR SINCRONIZADO'}{serverAhead&&<> · <b>EL SERVIDOR TIENE LA REVISIÓN r{draft?.revision}</b> <button className="text-button" onClick={reload}>CARGAR REVISIÓN GUARDADA</button></>}</span><div className="button-row"><button className="secondary-button" disabled={!active||busy} onClick={()=>void save()}>GUARDAR</button><button className="primary-button small" disabled={!active||busy} onClick={()=>void save(true)}>{busy?'CONFIRMANDO…':'ENVIAR A SEGURIDAD'}<Icon name="arrow" size={15}/></button></div></div>{snapshot?.operations?.collaboration&&<div className="backend-observations">{Object.entries(snapshot.operations.collaboration.reviews).flatMap(([id,r])=>r.observations.map((o,i)=><p key={`${id}-${i}`}><b>{id} · {o.nodeId}</b> {o.text}</p>))}</div>}</section>;
 }
 export default function GraphEditor(props:{company:PrivateCompany;domain:'backend'|'security'|'plan';active:boolean;role?:Role}) {

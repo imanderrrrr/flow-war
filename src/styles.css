@@ -266,3 +266,18 @@ button.plan-node { text-align: left; font-family: inherit; cursor: pointer; }
 .cto-decision-open { display: grid; gap: 12px; padding: 0 18px 18px; }
 .cto-decision-open > .panel-title { margin: 0 -18px; }
 .cto-manual > .state-banner { margin: 14px 18px 0; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+/* The purchase-flow blocks of Inventario and Pagos, one tap each, under the plan. */
+.plan-logic { border-top: 2px solid #28374b; }
+.plan-logic > .panel-title { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.plan-logic-path { margin: 12px 20px 0; font-size: 10px; color: #a9b6c7; letter-spacing: .04em; line-height: 1.5; }
+.plan-logic-blocks { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; padding: 12px 20px; }
+.plan-logic-blocks article { display: grid; gap: 8px; align-content: start; padding: 12px; border: 1px solid #3a4757; background: #121a26; }
+.plan-logic-blocks article.on { border-color: var(--team, #8e9aaf); }
+.plan-logic-blocks article > div { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.plan-logic-blocks strong { font-size: 11px; letter-spacing: .04em; }
+.plan-logic-blocks small { font-size: 9px; color: #8e9aaf; letter-spacing: .08em; }
+.plan-logic-blocks article.on small { color: var(--green); }
+.plan-logic-blocks p { margin: 0; font-size: 10px; color: #a9b6c7; line-height: 1.4; }
+.plan-logic-bottom { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; padding: 0 20px 16px; }
+.plan-logic-bottom .muted { flex: 1; min-width: 220px; line-height: 1.5; }
