@@ -15,6 +15,7 @@ import { effectiveServers } from './infrastructure.js';
 import { attachCustomer, customerColor, recordCustomerExperience, selectCustomer } from './market.js';
 import type { Graph, MarketCustomer, ServiceQueue, Company, FlowParticle, InventoryState, RequestResult, ScenarioTotals, ServiceId, TerminalReason, TrafficMetrics, TrafficReceipt, TrafficRequest, TrafficScenario, TrafficState, TrafficView } from '../shared/types.js';
 import { isPlanReason } from '../shared/plan.js';
+import { FULL, type Intensity } from '../shared/pacing.js';
 import { evaluateSecurity, missingFor, planServices, route } from './graphs.js';
 import { executePurchaseOperation, finishRequest, moveRequest } from './requests.js';
 
@@ -311,10 +312,11 @@ function updateTrafficMetrics(company: Company, now: number, dt: number, rates: 
 }
 
 /** Arrival streams depend on seed/ordinal, never on visual sampling or other companies. */
-export function generateTraffic(company: Company, at: number, dt: number, duration: number) {
+/** `pace` scales the curves by the phase of the calm start (shared/pacing.ts); FULL leaves them exactly as they were. */
+export function generateTraffic(company: Company, at: number, dt: number, duration: number, pace: Intensity = FULL) {
   if (company.eliminated) return;
   const state = company.traffic;
-  const demand = (5 + 295 * (at / duration) ** 2.5) * company.customers / 5000 * (activeCampaign(company, at)?.configuration.demandMultiplier ?? 1);
+  const demand = (5 + 295 * (at / duration) ** 2.5) * company.customers / 5000 * (activeCampaign(company, at)?.configuration.demandMultiplier ?? 1) * pace.demand;
   state.arrivalRemainder = round(state.arrivalRemainder + demand * dt);
   while (state.arrivalRemainder >= 1) {
     state.arrivalRemainder = round(state.arrivalRemainder - 1);
@@ -324,10 +326,11 @@ export function generateTraffic(company: Company, at: number, dt: number, durati
     const customer = selectCustomer(company);
     if (customer) admitTraffic(company, at, (ordinal + offset) % 10 < 7 ? 'browse' : 'purchase', 'legitimate', undefined, customer);
   }
-  // Anomalous traffic starts a quarter into the game and ramps on the same slow curve as demand,
-  // so a team has time to organize and an auditor's work stands out against the background.
-  if (at >= duration * .25) {
-    state.attackRemainder = round(state.attackRemainder + (2 + 18 * (at / duration) ** 2.5) * dt);
+  // Anomalous traffic ramps on the same slow curve as demand, so a team has time to organize and an
+  // auditor's work stands out against the background. A game with a calm start has none until the calm
+  // phase ends; one without (recorded before the schedule existed) starts a quarter into the game.
+  if (pace === FULL ? at >= duration * .25 : pace.anomalous > 0) {
+    state.attackRemainder = round(state.attackRemainder + (2 + 18 * (at / duration) ** 2.5) * dt * pace.anomalous);
     while (state.attackRemainder >= 1) {
       state.attackRemainder = round(state.attackRemainder - 1);
       admitTraffic(company, at, 'purchase', 'malicious', (['forged', 'injection', 'bot'] as const)[state.attackSequence++ % 3]);
