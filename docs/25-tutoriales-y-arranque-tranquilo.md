@@ -62,11 +62,11 @@ Tres clases de paso (`shared/tutorial.ts`):
 | Clase | Se completa cuando… |
 | --- | --- |
 | `read` (lectura) | El estudiante toca **ENTENDIDO**. Es la única excepción a "hacer la acción real", y si el paso habla de un resultado, ENTENDIDO se habilita recién cuando el motor lo produjo. |
-| `ui` | La pantalla llega al estado pedido (por ejemplo, el panel de lógica abierto o Atomic Update conectado entre Read Stock y Write Stock), verificado en `src/tutorial/checks.ts`. |
+| `ui` | La pantalla llega al estado pedido (por ejemplo, la lógica de Inventario a la vista o Atomic Update entre Read Stock y Write Stock en el borrador), verificado en `src/tutorial/checks.ts`. |
 | `action` | El **servidor confirma el comando real** sobre la copia de práctica (`server/tutorial.ts`, `done`). Ni el tiempo ni ENTENDIDO lo cierran. |
 
 Si una recarga cerró el panel donde trabaja el paso, el resaltado cae a un elemento desde donde se puede volver a
-abrirlo y la tarjeta lo dice ("Primero tocá Inventario y ABRIR SU LÓGICA INTERNA").
+abrirlo y la tarjeta lo dice ("Primero tocá la pieza Inventario").
 
 **↺ EMPEZAR ESTE PASO DE NUEVO** (en los pasos que no son de lectura) arma una copia de práctica nueva al comienzo
 del mismo paso: los pasos anteriores quedan resueltos y la pantalla se vuelve a montar limpia. No saltea nada; es la
@@ -99,10 +99,10 @@ determinismo de la sala quedan intactos (hay una prueba que compara la sala real
 
 | Rol | Pasos (lo que el estudiante hace de verdad) |
 | --- | --- |
-| **Backend** (9) | Lee su trabajo · coloca Salida, Checkout, Inventario y Pagos · dibuja Tienda web → Checkout → Inventario → Pagos → Salida · publica (cualquier recorrido que pueda vender cierra el montaje para siempre, así que también completa el paso) · mira una venta doble sobre la última unidad (el motor la produce en la copia) · abre la lógica de Inventario · pone Atomic Update entre Read Stock y Write Stock · lo envía a Seguridad · ve dónde llegan las devoluciones. Si envía el cambio sin la corrección, QA guionado se lo devuelve con el motivo. |
+| **Backend** (9) | Lee su trabajo · coloca Salida, Checkout, Inventario y Pagos · dibuja Tienda web → Checkout → Inventario → Pagos → Salida · publica (cualquier recorrido que pueda vender cierra el montaje para siempre, así que también completa el paso) · mira una venta doble sobre la última unidad (el motor la produce en la copia) · toca Inventario · toca PONER en Atomic Update, que cae entre Read Stock y Write Stock (docs/26) · lo envía a Seguridad · ve dónde llegan las devoluciones. Si envía el cambio sin la corrección, QA guionado se lo devuelve con el motivo. |
 | **Seguridad** (7) | Lee su trabajo · coloca el perímetro · conecta Entrada → Seguridad → Tienda web y publica antes de la primera venta · abre el módulo **Inicio de sesión** que entregó Backend (su verificación de sesión se puede saltear) · activa Auth, Role Check, WAF y Bot Detection y guarda · entrega a QA · lee qué pasa con lo que no protege. |
-| **QA** (8) | Lee su trabajo · abre la configuración del caso · corre 2 compras simultáneas con stock 1 (concurrency, SOLICITUDES 2, STOCK 1, SIMULTÁNEAS 2) · lee completadas, rechazadas y sobreventas · marca la corrida como evidencia · escribe su evaluación y aprueba · abre la carta formal de devolución · lee para qué sirve. |
-| **CTO** (5) | Lee su trabajo · autoriza el alcance de DevOps (monto, duración, máximo de servidores, ESCALAR y BALANCEADOR) · abre el panel de decisión · autoriza el cambio con un motivo escrito · lee qué implica autorizar. |
+| **QA** (6) | Lee su trabajo · elige Concurrencia · toca PROBAR (Seguridad guionada entregó el cambio con un control, así la prueba corre en staging y queda como evidencia) · lee completadas, rechazadas y sobreventas, con la prueba ya marcada · toca APROBAR (el comentario es opcional) · lee cómo se devuelve un cambio con DEVOLVER. |
+| **CTO** (5) | Lee su trabajo · autoriza el alcance de DevOps (monto, duración, máximo de servidores, ESCALAR y BALANCEADOR) · lee el cambio que aprobó QA (costo, saldo y comentario de QA) · toca AUTORIZAR (el motivo es opcional) · lee qué implica autorizar. |
 | **DevOps** (5) | Lee su trabajo · agrega un servidor · activa el balanceador · despliega el cambio autorizado eligiendo ROLLING o RESTART REPLACE (la tarjeta explica la diferencia) · ve dónde vive el rollback. |
 | **Producto/UX** (4) | Lee su trabajo · prepara una promoción del catálogo · la envía a QA · lee el resto del ciclo. |
 | **Auditor externo** (6) | Lee su trabajo · elige una empresa · abre un módulo · lee sus controles pendientes · lanza una prueba de control · lee contenidas y no contenidas. |

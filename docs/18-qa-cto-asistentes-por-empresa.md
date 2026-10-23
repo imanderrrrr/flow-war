@@ -30,7 +30,7 @@ Los eventos y solicitudes completos se guardan una vez en los reportes persisten
 
 `purchase-flow` es actualmente la única funcionalidad ejecutable. `backendLock` identifica esa funcionalidad y el cambio congelado; el contrato permite ampliar el mapa de funcionalidades en otra entrega. El servidor rechaza `draft.save`, `change.submit`, `module.create`, `module.revise`, aceptación de IA y preparación de nuevas propuestas Backend mientras exista el bloqueo. Esto incluye conexiones, parámetros y módulos enlazados. Seguridad no puede modificar lógica Backend.
 
-La carta `qa.return` es redactada por el estudiante. Se exigen destinatario, asunto, problema, pasos, observado, esperado y gravedad. Se conservan exactamente sus textos. Autor, momento, empresa y versiones proceden del servidor. Las referencias adjuntas se comprueban contra pruebas reales terminadas de la combinación correspondiente; se pueden adjuntar observaciones previas de Seguridad. La plataforma no escribe conclusiones o cartas mediante IA.
+La carta `qa.return` es redactada por el estudiante (desde docs/26, la devolución rápida pide solo qué falló y qué esperaba, y copia pasos y observado de las pruebas adjuntas; la carta completa sigue disponible). Se exigen destinatario, asunto, problema, pasos, observado, esperado y gravedad. Se conservan exactamente sus textos. Autor, momento, empresa y versiones proceden del servidor. Las referencias adjuntas se comprueban contra pruebas reales terminadas de la combinación correspondiente; se pueden adjuntar observaciones previas de Seguridad. La plataforma no escribe conclusiones o cartas mediante IA.
 
 | Transición | Estado y permisos resultantes |
 | --- | --- |
