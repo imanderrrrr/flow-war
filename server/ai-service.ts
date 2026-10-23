@@ -20,16 +20,16 @@ export function aiContext(g:GameState,actor:Identity,input:AiInput) {
 function digestFor(g:GameState,actor:Identity,input:AiInput,ctx:ReturnType<typeof aiContext>){return stableDigest({input,generation:g.generation,actor,revision:ctx.revision,graph:ctx.graph,change:input.changeId?g.changes.find(ch=>ch.id===input.changeId)?.implementation?.bundleDigest:undefined});}
 /** Words that state each control without a number; a compiled rule of that kind needs one of them in the text. */
 const RULE_WORDS:Record<'authenticated'|'owner'|'input'|'bot',RegExp>={
-  authenticated:/\b(auth\w*|autentic\w*|sesion\w*|login|logue\w*|credencial\w*|identific\w*|usuarios? registrados?)\b/,
-  owner:/\b(propi\w*|duen\w*|pertenec\w*|role check|rol|roles|suy[oa]s?|ajen[oa]s?|titular\w*)\b/,
-  input:/\b(inyecc\w*|inyect\w*|malicios\w*|entradas?|waf|sanitiz\w*|caracter\w*|scripts?|sql|datos invalidos)\b/,
-  bot:/\b(bots?|automatiz\w*|robots?|automatic\w*)\b/,
+  authenticated:/\b(auth\w*|autentic\w*|sesion\w*|login|logue\w*|credencial\w*|identific\w*|token\w*|cuentas?|usuarios? (registrados?|con cuenta|logueados?))\b/,
+  owner:/\b(propi\w*|duen\w*|pertenec\w*|rolecheck|role check|rol|roles|suy[oa]s?|ajen[oa]s?|titular\w*|permisos?|sus? pedidos?)\b/,
+  input:/\b(inyecc\w*|inyect\w*|xss|sql|scripts?|malicios\w*|entradas?|formularios?|waf|sanitiz\w*|caracter\w*|datos invalidos)\b/,
+  bot:/\b(bots?|crawlers?|scrapers?|automatiz\w*|robots?|automatic\w*)\b/,
 };
-/** Every compiled rule must be written in the student's protection text: its control, and its thresholds and origins. */
-export function rulesGrounded(rules:ProtectionRule[],text:string){
+/** The compiled rules the student's protection text states: its control, and its thresholds and origins. Each rule stands alone. */
+export function groundedRules(rules:ProtectionRule[],text:string){
   const source=[normalize(text)];
-  try{for(const r of rules){if(r.kind==='rate'){groundNumber('limit',r.limit,source);groundNumber('window',r.windowSeconds,source,'seconds');}else if(r.kind==='origin'){if(!mentionsId(r.origin,source))return false;}else if(!RULE_WORDS[r.kind].test(source[0]))return false;}return true;}
-  catch(e){if(e instanceof GroundingError)return false;throw e;}
+  return rules.filter(r=>{try{if(r.kind==='rate'){groundNumber('limit',r.limit,source);groundNumber('window',r.windowSeconds,source,'seconds');return true;}if(r.kind==='origin')return mentionsId(r.origin,source);return RULE_WORDS[r.kind].test(source[0]);}
+    catch(e){if(e instanceof GroundingError)return false;throw e;}});
 }
 export async function prepareAi(g:GameState,actor:Identity,raw:unknown,gateway:AiGateway):Promise<AiProposal> {
   const input=parseAiInput(raw),context=aiContext(g,actor,input),state=collaboration(context.c),digest=digestFor(g,actor,input,context);
@@ -37,9 +37,9 @@ export async function prepareAi(g:GameState,actor:Identity,raw:unknown,gateway:A
   if(prior){if(prior.inputDigest!==digest)throw new AiError('ID_CONFLICT','ID de solicitud ya utilizado.');return structuredClone(prior);}
   if(state.proposals.length>=240)throw new AiError('AI_LIMIT','Límite de interpretaciones de la partida alcanzado.');
   if(JSON.stringify(context.context).length>48000)throw new AiError('CONTEXT_LIMIT','El contexto seleccionado excede el límite.');
-  const output=await gateway.generate(actor.id,input,structuredClone(context.graph),context.c.id,structuredClone(context.context));
-  // Out of scope (another company, a change of rules, an unrelated request) or ungrounded: nothing compiles.
-  if(output.rules?.length&&(screenInstruction(g,context.c.id,[input.text])||!rulesGrounded(output.rules,input.text))){output.rules=[];output.executable=false;}
+  // Out of scope (another company, a change of rules, an unrelated request): nothing compiles and nothing is sent.
+  const output=screenInstruction(g,context.c.id,input.text)?{rules:[],executable:false}:await gateway.generate(actor.id,input,structuredClone(context.graph),context.c.id,structuredClone(context.context));
+  if(output.rules?.length){output.rules=groundedRules(output.rules,input.text);if(!output.rules.length)output.executable=false;}
   return {id:input.id,actor:actor.id,companyId:context.c.id,generation:g.generation,kind:input.kind,inputDigest:digest,changeId:input.changeId,nodeId:input.nodeId,sourceText:input.text,requestText:input.text,threadId:input.threadId??`${actor.role}-default`,output,provider:gateway.provider.name,model:gateway.provider.model,status:'PENDING',at:g.tick,draftRevision:context.revision};
 }
 /** Recheck after network I/O: reset, logout, expulsion and edits cannot race a reply. */

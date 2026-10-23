@@ -6,7 +6,6 @@ import { AiError, type AiGateway, type InterpretResult } from './claude.js';
 import { stableDigest } from './discipline.js';
 import { productEnabled } from './product.js';
 import { systemFor, commandsFor, executorContext, finalReply, modelContext, outcome, planCalls, toolDefinitions, type ExecutorContext } from './executor.js';
-import { sourceTexts } from './grounding.js';
 import { screenInstruction } from './scope.js';
 
 export function parseExecutorInput(raw: unknown): ExecutorInput {
@@ -25,9 +24,13 @@ export function parseExecutorInput(raw: unknown): ExecutorInput {
   return { id: String(p.id), text, ...(p.threadId ? { threadId: String(p.threadId) } : {}), ...(selection ? { selection } : {}) };
 }
 const threadOf = (g: GameState, actor: Identity, threadId: string) => g.companies[actor.companyId!].runtime.conversations?.find(t => t.id === threadId && t.actor === actor.id && t.role === actor.role && t.generation === g.generation);
-/** Earlier instructions of the same student in the same thread: the only other source of stated values. */
+/**
+ * Earlier instructions of the same student in the same thread: the only other source of stated values. A message the
+ * scope screen refuses never comes back, neither to the model's context nor to the grounding sources, so it can
+ * neither leak through a later "lo que te dije" nor spoil the valid messages around it.
+ */
 export function previousInstructions(g: GameState, actor: Identity, threadId: string, requestId: string) {
-  return (threadOf(g, actor, threadId)?.messages ?? []).filter(m => m.role === 'user' && m.requestId !== requestId).slice(-6).map(m => m.text);
+  return (threadOf(g, actor, threadId)?.messages ?? []).filter(m => m.role === 'user' && m.requestId !== requestId && !screenInstruction(g, actor.companyId!, m.text)).slice(-6).map(m => m.text);
 }
 export function usageOf(g: GameState, companyId: number): AiUsage { return g.companies[companyId].runtime.aiUsage ??= { requests: 0, inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }; }
 export function tokenBudget(g: GameState, companyId: number) {
@@ -121,10 +124,10 @@ export function replyFor(input: ExecutorInput, result: { state: ExecutorReply['s
 /** Stop reason of an instruction the scope screen refused before any provider call (server/scope.ts). */
 export const SCREENED = 'screened';
 export async function interpret(gateway: AiGateway, g: GameState, actor: Identity, input: ExecutorInput) {
-  const { request, snapshot } = buildRequest(g, actor, input), threadId = input.threadId ?? `${actor.role}-default`;
-  // Out of scope on the student's words alone: nothing is sent, and planCalls composes the refusal from no calls.
-  if (screenInstruction(g, actor.companyId!, sourceTexts({ instruction: input.text, previous: previousInstructions(g, actor, threadId, input.id) })))
-    return { result: { calls: [], usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }, model: gateway.provider.model, stopReason: SCREENED, fallback: false } as InterpretResult, snapshot };
+  // Out of scope on the student's words alone: nothing is built or sent, and planCalls composes the refusal from no calls.
+  if (screenInstruction(g, actor.companyId!, input.text))
+    return { result: { calls: [], usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }, model: gateway.provider.model, stopReason: SCREENED, fallback: false } as InterpretResult, snapshot: snapshotFor(g, actor) };
+  const { request, snapshot } = buildRequest(g, actor, input);
   const result = await gateway.interpret(actor.id, actor.companyId!, request, tokenBudget(g, actor.companyId!));
   return { result, snapshot };
 }

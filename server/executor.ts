@@ -12,8 +12,8 @@ import { activeScope, operations } from './operations.js';
 import { productState, productView } from './product.js';
 import { PRODUCT_CATALOG, PROMOTION_PARAMETERS } from '../shared/product.js';
 import { employeeFor } from './discipline.js';
-import { DesignError, designPending, sanitizeDesign, storeModule, summaryInScope } from './design.js';
-import { checkQuotes, groundChoice, groundNumber, groundIntent, labeledText, firstPosition, mentionsId, normalize, sourceTexts, GroundingError, type Sources } from './grounding.js';
+import { DesignError, designPending, sanitizeDesign, storeModule, designInScope } from './design.js';
+import { checkQuotes, groundChoice, groundNumber, groundIntent, labeledText, firstPosition, mentionsId, normalize, GroundingError, type Sources } from './grounding.js';
 import { aboutTheGame, screenInstruction } from './scope.js';
 
 /**
@@ -276,10 +276,10 @@ function backendTools(): ToolSpec[] {
         const significant = normalize(design.name).split(' ').filter(w => w.length >= 4);
         if (!significant.some(w => instruction.split(' ').some(i => i.replace(/[.,:]+$/, '') === w))) return needs(this.name, ['modulo']);
         // The design is the only model prose a student reads: it stays inside the store's software and the game's words.
-        const off = screenInstruction(ctx.g, ctx.c.id, [[design.name, ...design.components, design.summary].join(' ')]);
+        const off = screenInstruction(ctx.g, ctx.c.id, [design.name, ...design.components, design.summary].join(' '));
         if (off) return { kind: 'decline', reason: off };
         if (!storeModule(design)) return { kind: 'decline', reason: 'FUERA_DEL_JUEGO' };
-        if (!summaryInScope(design, ctx.sources.instruction)) return restriction('La descripción del diseño usó palabras ajenas a tu pedido y al juego.');
+        if (!designInScope(design, ctx.sources.instruction)) return restriction('La descripción del diseño usó palabras ajenas a tu pedido y al juego.');
         const pending = designPending(ctx.g.seed, design.name, design.components);
         return commands({ type: 'module.design', payload: { name: design.name, components: design.components, summary: design.summary, pending }, describe: r => r.ok
           ? `Diseño de «${design.name}» · componentes: ${design.components.join(', ')}.\n${design.summary}\nMódulo ${(r.refs?.[1] ?? '').replace(/@\d+$/, '')} agregado al borrador y enviado a Seguridad (${r.refs?.[0] ?? ''}). Sus controles se revisan en Seguridad y QA.`
@@ -673,8 +673,9 @@ export type ExecutionPlan = { state: ExecutorState; message: string; commands: P
 export function planCalls(calls: ToolCall[], ctx: ExecutorContext): ExecutionPlan {
   const role = ctx.actor.role as Role, tools = toolsFor(role);
   const declined = (reason: DeclineReason): ExecutionPlan => ({ state: 'DECLINED', message: DECLINE_MESSAGES[reason](role), commands: [], information: [], tools: calls.map(c => c.name) });
-  // The scope is decided on the student's words before any call is looked at (server/scope.ts).
-  const screened = screenInstruction(ctx.g, ctx.c.id, sourceTexts(ctx.sources));
+  // The scope is decided on the student's words before any call is looked at (server/scope.ts). Earlier messages
+  // need no screen here: previousInstructions already left out every one the screen refused.
+  const screened = screenInstruction(ctx.g, ctx.c.id, ctx.sources.instruction);
   if (screened) return declined(screened);
   if (!calls.length) return aboutTheGame(ctx.sources.instruction) ? { state: 'NO_OPERATION', message: 'No identifiqué una operación concreta. Indicá qué operación querés ejecutar.', commands: [], information: [], tools: [] } : declined('FUERA_DEL_JUEGO');
   // Identical repeated calls collapse into one: a duplicated call can never execute an order twice.
@@ -708,8 +709,9 @@ export function planCalls(calls: ToolCall[], ctx: ExecutorContext): ExecutionPla
   const needed = plans.flatMap(p => p.plan.kind === 'needs' ? [p] : []);
   const restrictions = plans.flatMap(p => p.plan.kind === 'restriction' ? [p.plan.message] : []);
   const planned = plans.flatMap(p => p.plan.kind === 'commands' ? p.plan.commands : []);
-  // Without a single word of the game, whatever does not execute is refused for that reason, not for the model's.
-  if ((declines.length || needed.length || restrictions.length || !planned.length) && !aboutTheGame(ctx.sources.instruction)) return declined('FUERA_DEL_JUEGO');
+  // Without a single word of the game, "no tool for that" means "not about the game"; data, questions back and every
+  // other refusal keep their own reply.
+  if (plans.every(p => p.plan.kind === 'decline' && p.plan.reason === 'NO_DISPONIBLE') && !aboutTheGame(ctx.sources.instruction)) return declined('FUERA_DEL_JUEGO');
   if (declines.length) {
     const reason = DECLINE_REASONS.find(r => declines.includes(r))!;
     const message = [DECLINE_MESSAGES[reason](role), ...(reason === 'CONSEJO' && info.length ? ['Datos registrados:', ...info] : [])].join('\n');

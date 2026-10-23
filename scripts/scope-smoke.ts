@@ -75,7 +75,7 @@ for (const model of models) {
       const passed = stateOk && changed === !!item.expect.changes && !JSON.stringify(reply).includes(key);
       results.push({ name: item.name, role: item.role, instruction: item.text, expected: item.expect, state: reply.state, message: reply.message, passed,
         modelTools: result.calls.map(c => c.name), modelReason: declinedBy ?? null, modelReasonMatches: item.expect.reason ? declinedBy === item.expect.reason : undefined, finalReason, finalReasonMatches: item.expect.reason ? finalReason === item.expect.reason : undefined,
-        serverScreen: screenInstruction(g, 0, [item.text]) ?? null, stateChanged: changed, latencyMs: Math.round(performance.now() - started), stopReason: result.stopReason, servedModel: result.model,
+        serverScreen: screenInstruction(g, 0, item.text) ?? null, stateChanged: changed, latencyMs: Math.round(performance.now() - started), stopReason: result.stopReason, servedModel: result.model,
         inputTokens: result.usage.inputTokens, outputTokens: result.usage.outputTokens, cacheReadTokens: result.usage.cacheReadTokens, cacheWriteTokens: result.usage.cacheWriteTokens } as never);
     } catch (e) { results.push({ name: item.name, role: item.role, instruction: item.text, passed: false, code: (e as { code?: string }).code ?? 'ERROR', latencyMs: Math.round(performance.now() - started), inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 } as never); }
   }

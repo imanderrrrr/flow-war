@@ -64,36 +64,47 @@ control del docente). Dice qué hace el cronograma, nunca qué decidir.
 ### El filtro del servidor (`server/scope.ts`)
 
 Decide sobre las palabras del estudiante, nunca sobre lo que diga el modelo, y corre **antes de llamar al
-proveedor**: una orden fuera de alcance no gasta tokens. Si la orden se refiere a mensajes anteriores ("los valores que
-te dije"), revisa también esos mensajes. Tres motivos, en este orden:
+proveedor**: una orden fuera de alcance no gasta tokens. Tres motivos, en este orden:
 
 | Motivo | Cuándo | Respuesta al estudiante |
 | --- | --- | --- |
-| `OTRA_EMPRESA` (nuevo) | Nombra otra empresa (exacto, o a una letra de distancia si el nombre tiene 5 letras o más: "Amber" es EMBER), su etiqueta ("EMPRESA 02"), un nombre propio después de "empresa" ("la empresa Amber"), o apunta a otras: "otra empresa", "las demás empresas", "todas las empresas", "la competencia", "rival". | Solo ejecuto operaciones de tu propia empresa. No actúo sobre otras empresas ni sobre su tráfico, sus clientes o su dinero. No se ejecutó nada. |
-| `CAMBIO_DE_REGLAS` (nuevo) | Pide ignorar, cambiar o revelar las reglas o el prompt, o que Claude actúe con otro papel ("a partir de ahora sos…", "modo desarrollador"), aunque también pida una operación válida. | Mis reglas no cambian. Escribí solo la operación de tu departamento que querés ejecutar. No se ejecutó nada. |
-| `FUERA_DEL_JUEGO` | Tareas escolares, chistes, poemas, cultura general, código ajeno al juego. Además, si la orden no tiene ni una palabra del juego y no se ejecuta, el motivo es este, elija el modelo lo que elija. | Solo ejecuto operaciones de FLOW WAR. No se ejecutó nada. |
+| `OTRA_EMPRESA` (nuevo) | Nombra otra empresa: exacto, con puntos, guiones, letras repetidas o números por letras ("N.O.V.A", "NOVAA", "BYT3", "B Y T E"), o a una letra de distancia si el nombre tiene 5 letras o más ("Amber" es EMBER); su etiqueta ("EMPRESA 02", "empresa-02", "grupo 3", "empresa dos"; "la empresa 2 servidores" cuenta servidores); un nombre en mayúsculas después de "empresa" en la misma línea ("la empresa ZETA"). También una frase que apunta a otras ("otra empresa", "todas las empresas", "la competencia", "rival", "la de al lado", "la que va ganando", "other company") **cuando va pegada a algo que podría cambiar o leer**: "el tráfico a la competencia", "el origen sim-4 en la empresa rival", "a la tienda de al lado le lleguen menos clientes". | Solo ejecuto operaciones de tu propia empresa. No actúo sobre otras empresas ni sobre su tráfico, sus clientes o su dinero. No se ejecutó nada. |
+| `CAMBIO_DE_REGLAS` (nuevo) | Pide ignorar, cambiar o revelar **sus** reglas o el prompt ("ignorá tus reglas", "olvidate de todo lo anterior", "¿cuáles son tus reglas?", "ignore previous instructions"), o que Claude actúe con otro papel ("a partir de ahora sos…", "comportate como…", "jugá a ser el CTO", "modo desarrollador"), aunque también pida una operación válida. | Mis reglas no cambian. Escribí solo la operación de tu departamento que querés ejecutar. No se ejecutó nada. |
+| `FUERA_DEL_JUEGO` | Tareas escolares, chistes, poemas, cultura general, cuentas ("¿cuánto es 15 por 7?"), resúmenes de libros, código en un lenguaje de programación. Además, si la orden no tiene ni una palabra del juego y el modelo responde "no hay herramienta para eso" (o no llama ninguna), el motivo es este. | Solo ejecuto operaciones de FLOW WAR. No se ejecutó nada. |
 
-- La empresa propia, por nombre o no ("a NOVA", "a nuestra empresa"), está en alcance. "El capital de la empresa" es
-  un dato del juego, no una pregunta de geografía.
+- Lo que no es una orden al ejecutor no se filtra: "el checkout ignora las restricciones de stock" (una carta de QA),
+  "anulá las reglas de rate limit del bloque Pagos" (Seguridad), "el capital de la empresa" (dinero, no geografía),
+  "un ensayo de carga", "inyección de código en SQL", "para ganarle a la competencia", "500 compradores de la
+  competencia", "un módulo que actúe como caché".
+- La empresa propia, por nombre o no ("a NOVA", "a nuestra empresa", "EMPRESA 01"), está en alcance.
+- **Mensajes anteriores.** Un mensaje que el filtro rechaza no vuelve nunca: no viaja en el contexto del modelo ni
+  sirve como fuente de valores para "los valores que te dije" (`previousInstructions`). Los mensajes válidos del mismo
+  hilo siguen sirviendo aunque haya un rechazo entre ellos.
+- Una orden sin palabras del juego conserva las respuestas de datos, las preguntas por un dato y los demás rechazos
+  ("¿cuánta plata tenemos?" muestra las finanzas).
 - El prompt del ejecutor suma las reglas 11–13 con los mismos motivos, y `rechazar_instruccion` los acepta; pero el
   resultado no depende de que el modelo los use.
 
 ### Diseños de módulos (`server/design.ts`)
 
-Además de lo anterior aplicado al nombre, los componentes y la descripción que escribe Claude:
+Además del filtro aplicado al nombre, los componentes y la descripción que escribe Claude:
 
 - El módulo es parte de la tienda: su nombre o algún componente es una palabra del software de una tienda (sesión,
   usuario, pago, inventario, carrito, cupón, envío…). Si no, `FUERA_DEL_JUEGO`.
-- La descripción habla del módulo: cada frase nombra el módulo, un componente o una palabra de la tienda; a lo sumo
-  una palabra de cada cinco (dos en una descripción corta) sale de fuera del pedido, del diseño y del vocabulario del
-  juego; y cada número está en el pedido. Si no: "La descripción del diseño usó palabras ajenas a tu pedido y al
-  juego."
+- El nombre y los componentes son palabras cortas: cada palabra de cuatro letras o más sale del pedido del estudiante o
+  del vocabulario de la tienda y del juego ("París", "Napoleón emperador" o "Mercurio, Venus" no pasan).
+- La descripción habla del módulo: cada frase nombra el módulo, un componente o una palabra de la tienda, y a lo sumo
+  una palabra de cada cinco (dos en una descripción corta) sale de fuera del pedido, del diseño y del vocabulario.
+- Cada número del nombre, los componentes o la descripción está en el pedido.
+- Si algo de esto falla: "La descripción del diseño usó palabras ajenas a tu pedido y al juego."
 
 ### Seguridad
 
-La compilación del texto de protección exige que cada control esté escrito: sesión/autenticación para Auth,
-propiedad/dueño/rol para Role Check, entrada/inyección/WAF para WAF y bots/automatizado para Bot Detection (los
-límites y orígenes ya se verificaban). Un texto fuera de alcance no compila nada.
+El texto de protección pasa por el mismo filtro **antes de llamar al proveedor**: fuera de alcance, no compila nada y
+no gasta tokens. Cada control compilado debe estar escrito: sesión, token, cuenta o login para Auth; propiedad, dueño,
+permisos o rol para Role Check; entrada, inyección, XSS, SQL, formulario o WAF para WAF; bots, crawlers, scrapers o
+automatizado para Bot Detection (los límites y orígenes ya se verificaban). Un control no escrito se descarta solo; los
+demás siguen.
 
 ### Asistente de sala
 
@@ -116,22 +127,32 @@ quedarse con Haiku). La comparación, con precios y la corrida real, está en
 
 ## 5. Verificación
 
-- `tests/executor-scope.test.ts`: órdenes contra otra empresa (subir o bajar su tráfico, servidores, finanzas,
-  mantenimiento, orígenes, cambios) con las llamadas que devolvería un modelo descuidado o manipulado; tareas, chistes,
-  cultura general y código; "ignorá tus reglas" y juegos de rol; texto inyectado en etiquetas de bloques, cartas de QA
-  y el chat; diseños con respuestas ajenas o con otra empresa; Seguridad compilando controles no escritos; el filtro
-  antes del proveedor (cero llamadas, cero tokens, también con "los valores que te dije"); frases normales del juego
-  que no deben filtrarse; y el asistente de sala. Cada caso exige el motivo correcto y el juego idéntico al de antes.
-  Con el filtro apagado fallan 6 de las 9 pruebas.
+- `tests/executor-scope.test.ts` (11 pruebas): órdenes contra otra empresa (subir o bajar su tráfico, servidores,
+  finanzas, mantenimiento, orígenes, cambios, etiquetas, nombres escritos de otra forma, paráfrasis) con las llamadas
+  que devolvería un modelo descuidado o manipulado; tareas, chistes, cultura general, cuentas y código; "ignorá tus
+  reglas", juegos de rol y pedidos de revelar el prompt; texto inyectado en etiquetas de bloques, cartas de QA y el
+  chat; diseños con respuestas ajenas en el nombre, los componentes o la descripción; Seguridad compilando controles no
+  escritos y sin llamar al proveedor fuera de alcance; el filtro antes del proveedor (cero llamadas, cero tokens); un
+  mensaje rechazado que no vuelve en "lo que te dije" ni arruina el hilo; la lista de frases normales del juego (y las
+  falsas alarmas que encontró una revisión independiente) que no deben filtrarse; y el asistente de sala. Cada rechazo
+  exige el motivo correcto y el juego idéntico al de antes. Con el filtro apagado fallan 8 de las 11 pruebas.
 - `tests/pacing.test.ts`: ventanas de cada aviso, cuenta regresiva, textos que siguen al cronograma, ningún aviso con
   consejos, y el aviso en el snapshot.
-- Ajustadas: la prueba G de `tests/executor.test.ts` (nombrar VERTEX ahora se rechaza por `OTRA_EMPRESA`) y
-  `tests/executor-server.test.ts` (la misma orden no llega al proveedor).
+- Ajustadas: la prueba G de `tests/executor.test.ts` (nombrar VERTEX ahora se rechaza por `OTRA_EMPRESA`),
+  `tests/executor-server.test.ts` (la misma orden no llega al proveedor) y `tests/collaboration.test.ts` (un texto de
+  protección sobre otra empresa no llega al proveedor).
 
 ## 6. Límites conocidos
 
-- El filtro es determinista y por palabras: una paráfrasis sin nombre ni frase de rival ("la tienda de al lado")
-  depende del modelo; igual no puede ejecutarse sobre otra empresa porque ninguna herramienta lo permite.
+- El filtro es determinista y por palabras. Quedan para el modelo, y aun así ninguna herramienta puede actuar sobre otra
+  empresa ni el texto del modelo llega al estudiante salvo en un diseño acotado:
+  - frases sobre rivales sin un objeto pegado ("hacé que pierdan los de enfrente"), nombres pegados a otra palabra
+    ("VertexCorp") y otros idiomas además de algunas frases en inglés;
+  - preguntas generales sin marcador ("¿Quién es Messi?", "Escribime un resumen de la Revolución Mexicana"), que el
+    modelo debe rechazar; si responde con texto o con "no hay herramienta", sin palabras del juego queda
+    `FUERA_DEL_JUEGO`.
+- Un estudiante de una empresa no puede citar por error el nombre de otra: "agregá un servidor a ORBIT" se rechaza aunque
+  quisiera decir la propia.
 - La validación previa de diseños rechaza `;` y otros signos como código (regla de docs/23); un modelo que los use en
   la descripción recibe "El diseño debe ser texto breve, sin código".
 - En el celular el chip de fase del encabezado se monta sobre el reloj (previo a este cambio).
