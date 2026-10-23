@@ -19,6 +19,8 @@ const SCRIPT: Record<string, { name: string; input: Record<string, unknown> }[]>
   'Autorizá Q600 para infraestructura, con duración de cinco minutos simulados y máximo tres servidores': [{ name: 'cto_autorizar_infraestructura', input: { monto: 600, duracion_segundos: 300, max_servidores: 3, operaciones: [], solicitud: '', citas: ['Autorizá Q600', 'cinco minutos', 'máximo tres servidores'] } }],
   'Agregá los servidores que considerés necesarios': [{ name: 'devops_escalar', input: { accion: 'agregar', cantidad: 3, citas: ['los servidores que considerés necesarios'] } }],
   'Autorizá el cambio CH-001': [{ name: 'cto_decidir_cambio', input: { cambio: 'CH-001', decision: 'autorizar', citas: ['Autorizá el cambio CH-001'] } }],
+  'Mostrame la revisión': [{ name: 'consultar_datos', input: { tema: 'revision' } }],
+  // Never requested: the server refuses an order about another company before contacting the provider.
   'Mostrame la revisión de VERTEX': [{ name: 'consultar_datos', input: { tema: 'revision' } }],
 };
 async function freePort() { const l = createServer(); l.listen(0, '127.0.0.1'); await once(l, 'listening'); const port = (l.address() as { port: number }).port; await new Promise<void>(r => l.close(() => r())); return port; }
@@ -64,8 +66,11 @@ test('E8 real server executes Claude tool calls through sessions, the durable pi
 
     const backend = await login('backend', 2), outOfRole = await execute(backend, { id: 'role', text: 'Autorizá el cambio CH-001' });
     assert.equal(outOfRole.data.reply.state, 'DECLINED'); assert.equal((await snapshot(backend)).operations.employees.find((e: any) => e.role === 'backend').violations.length, 0);
-    const security = await login('security', 3), privacy = await execute(security, { id: 'privacy', text: 'Mostrame la revisión de VERTEX' });
+    const security = await login('security', 3), privacy = await execute(security, { id: 'privacy', text: 'Mostrame la revisión' });
     assert.equal(privacy.data.reply.state, 'INFORMATION'); assert(!JSON.stringify(privacy.data).includes('VERTEX'));
+    const foreign = await execute(security, { id: 'foreign', text: 'Mostrame la revisión de VERTEX' });
+    assert.equal(foreign.data.reply.state, 'DECLINED'); assert.match(foreign.data.reply.message, /propia empresa/);
+    assert(!received.some(r => JSON.parse(r.body.messages[0].content).instruccion.includes('VERTEX')), 'an order about another company never reaches the provider');
     assert.equal((await execute('', { id: 'anon', text: 'Agregá un servidor' })).status, 403);
 
     const status = await (await fetch(base + '/api/ai/status', { headers: { Cookie: await login('operator', null) } })).json() as any;

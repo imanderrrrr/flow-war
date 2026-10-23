@@ -36,7 +36,7 @@ Abrir [http://localhost:4173](http://localhost:4173). Las credenciales locales s
 - Flujo obligatorio: **Backend / Seguridad → QA → CTO → DevOps → producción**. Producto seguirá el mismo flujo cuando se habilite.
 - Un bloque solo afecta las solicitudes que pasan por él. Sus conexiones y configuración tienen efectos funcionales.
 - Los 5,000 clientes se conservan entre propietarios y el pool sin servicio; visitas reales determinan fidelidad y color persistente.
-- La interfaz muestra datos, eventos, resultados de pruebas y consecuencias. No incluye ayudas, recomendaciones ni evaluación del plan.
+- La interfaz muestra datos, eventos, resultados de pruebas y consecuencias. No incluye ayudas, recomendaciones ni evaluación del plan. La única excepción es el tutorial obligatorio de cada rol, guionado y en una copia de práctica, antes de jugar ([doc 25](docs/25-tutoriales-y-arranque-tranquilo.md)).
 
 ## Cobertura de la solicitud
 
@@ -93,8 +93,8 @@ El dominio actual mantiene compras, inventario y pagos; la adaptación a platafo
 Backend entrega su funcionalidad a Seguridad, que escribe protecciones libres sobre los mismos bloques.
 QA, CTO y DevOps trabajan con la combinación exacta de versiones. Ambos departamentos pueden preparar
 borradores revisables con Claude. La integración real requiere `ANTHROPIC_API_KEY` en el servidor; el
-modelo por defecto es `claude-haiku-5-5` (el ejecutor solo traduce órdenes a herramientas) y se puede
-cambiar con `ANTHROPIC_MODEL`. No hay sustitución simulada en producción.
+modelo por defecto es `claude-sonnet-5-5` (elegido por el docente; [comparación con Haiku 5.5](docs/benchmarks/sonnet-vs-haiku/README.md))
+y se puede cambiar con `ANTHROPIC_MODEL`. No hay sustitución simulada en producción.
 
 - [Arquitectura, configuración, migración y límites](docs/17-backend-seguridad-colaborativos-ia.md)
 - [Pruebas y mediciones de 27/32 conexiones](docs/benchmarks/entrega-6/README.md)
@@ -163,3 +163,23 @@ con el tráfico hasta dejar a la empresa en crisis. El equipo se entera por las 
 notificaciones sobre su pantalla, y la cierra configurando el control que falta. Backend puede describir un módulo en palabras y Claude redacta un diseño textual breve (sin código); el
 servidor deja a propósito controles pendientes que Seguridad y QA pueden encontrar antes de producción.
 [docs/23-auditor-externo-y-modulos-con-claude.md](docs/23-auditor-externo-y-modulos-con-claude.md).
+
+## Tutoriales obligatorios y arranque tranquilo
+
+Después del sorteo, cada jugador hace el tutorial de su rol antes de jugar: un recorrido sobre su espacio de trabajo
+real que resalta el elemento exacto, dice qué hacer y por qué, y avanza solo cuando el estudiante hace la acción de
+verdad. No se puede saltar. Corre en una copia de práctica propia, con compañeros guionados, así que nadie espera a
+otro rol y la empresa real queda intacta. **EMPEZAR JUEGO** se habilita cuando todos los jugadores conectados
+terminaron; quien no está conectado no frena la sala, pero hace el tutorial al volver.
+
+La partida empieza tranquila: 15 minutos con demanda liviana y sin ráfagas, tráfico anómalo ni pruebas de control;
+entre el minuto 15 y el 18 la demanda sube fuerte, y desde el 18 hay presión completa. Los números están en
+`shared/pacing.ts` (`CALM_START`). Detalle, reglas y verificación en
+[docs/25-tutoriales-y-arranque-tranquilo.md](docs/25-tutoriales-y-arranque-tranquilo.md).
+
+## Avisos de fase y Claude acotado
+
+Un cartel neutral anuncia el arranque tranquilo al empezar y un minuto antes de cada cambio de fase. El Claude del juego
+solo actúa sobre la empresa y el rol de la sesión: el servidor rechaza, sin llamar al proveedor, las órdenes sobre otra
+empresa, los intentos de cambiar sus reglas y lo ajeno al juego. El modelo por defecto es Sonnet 5.5.
+[docs/27-inicio-avisado-y-claude-acotado.md](docs/27-inicio-avisado-y-claude-acotado.md).

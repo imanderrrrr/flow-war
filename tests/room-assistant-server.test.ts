@@ -61,10 +61,13 @@ test('room screen: Claude moves players over HTTP, phones follow, the change sur
     assert.equal(after.filter(s => s?.companyId === from).length, after.filter(s => s?.companyId === target).length);
 
     // The reserve player takes a seat; the displaced member goes to the reserve and loses the seat identity.
-    const spare = players[after.findIndex(s => !s)];
-    const entered = await ask(operator, `pasá a ${spare.name} a NOVA`);
-    assert.equal(entered.body.reply.state, 'EXECUTED'); assert.match(entered.body.reply.message, /entró a NOVA como .* pasó a la reserva\./);
-    assert.equal((await seatOf(spare))!.companyId, 0);
+    // The server displaces a random member of the destination, so the spare goes to a company other than the one
+    // `seated` just joined: otherwise, about one run in 27, the draw sends `seated` to the reserve.
+    const spare = players[after.findIndex(s => !s)], spareTarget = target === 0 ? 1 : 0;
+    const entered = await ask(operator, `pasá a ${spare.name} a ${NAMES[spareTarget]}`);
+    assert.equal(entered.body.reply.state, 'EXECUTED'); assert.match(entered.body.reply.message, new RegExp(`entró a ${NAMES[spareTarget]} como .* pasó a la reserva\\.`));
+    assert.equal((await seatOf(spare))!.companyId, spareTarget);
+    assert.equal((await seatOf(seated))!.companyId, target, 'the second move leaves the first one untouched');
     assert.equal((await Promise.all(players.map(seatOf))).filter(s => !s).length, 1);
     assert.equal((await Promise.all(players.map(async p => (await get('/api/snapshot', p.cookie)).identity.role))).filter(r => r === 'auditor').length, 1, 'the displaced member audits');
     assert.match((await ask(operator, 'pasá a Nadie a NOVA')).body.reply.message, /No encuentro a "Nadie" en la sala\. No se movió a nadie\./);
@@ -79,9 +82,9 @@ test('room screen: Claude moves players over HTTP, phones follow, the change sur
 
     // Durable: the move survives a restart.
     await stop(); await launch();
-    assert.equal((await seatOf(seated))!.companyId, target); assert.equal((await seatOf(spare))!.companyId, 0);
+    assert.equal((await seatOf(seated))!.companyId, target); assert.equal((await seatOf(spare))!.companyId, spareTarget);
     const swapped = await ask(operator, `intercambiá a ${seated.name} con ${spare.name}`);
-    assert.equal(swapped.body.reply.state, 'EXECUTED'); assert.equal((await seatOf(seated))!.companyId, 0); assert.equal((await seatOf(spare))!.companyId, target);
+    assert.equal(swapped.body.reply.state, 'EXECUTED'); assert.equal((await seatOf(seated))!.companyId, spareTarget); assert.equal((await seatOf(spare))!.companyId, target);
 
     // EMPEZAR JUEGO freezes the teams; no more provider calls.
     const socket = io(base, { forceNew: true, transports: ['websocket'], extraHeaders: { Cookie: operator } }); sockets.push(socket);

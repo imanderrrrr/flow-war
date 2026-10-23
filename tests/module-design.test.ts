@@ -10,6 +10,8 @@ import { DEFAULT_TEST } from '../shared/actions.js';
 import { advanceGame, assembledGame, command } from './helpers.js';
 import type { GameState, Identity, Role } from '../shared/types.js';
 import type { ToolCall } from '../shared/executor.js';
+// These tests measure the engine at full pressure; the calm start has its own (tests/pacing.test.ts).
+process.env.FLOW_CALM_START = '0';
 
 const actor = (role: Role, companyId = 0): Identity => ({ id: `${companyId}-${role}`, role, companyId });
 const start = () => { const g = assembledGame(); assert(command(g, 'operator', 'room.start').ok); return g; };

@@ -56,8 +56,11 @@ test('E8 SDK tool calling sends strict role tools, auto choice, low effort and c
   // Opus 5.5 opts into the server-side refusal fallback through the beta endpoint.
   const opus = new AnthropicProvider('k', 'claude-opus-5-5', transport); await opus.interpret(request);
   assert.match(url, /^https:\/\/api\.anthropic\.com\/v1\/messages/); assert.equal(body.fallbacks, 'default'); assert.equal(body.betas, undefined); assert.match(headers!.get('anthropic-beta') ?? '', /server-side-fallback-2026-07-01/);
-  // Haiku 5.5 is the default for every call; it has no server-side fallback, so the plain endpoint is used.
-  assert.equal(DEFAULT_MODEL, 'claude-haiku-5-5');
+  // Sonnet 5.5 is the default for every call and opts into the fallback too.
+  assert.equal(DEFAULT_MODEL, 'claude-sonnet-5-5');
+  const sonnet = new AnthropicProvider('k', DEFAULT_MODEL, transport); await sonnet.interpret(request);
+  assert.equal(body.model, 'claude-sonnet-5-5'); assert.equal(body.fallbacks, 'default'); assert.match(headers!.get('anthropic-beta') ?? '', /server-side-fallback-2026-07-01/); assert.equal(body.output_config.effort, 'low'); assert.equal(body.thinking, undefined);
+  // Haiku 5.5 has no server-side fallback, so the plain endpoint is used.
   const haiku = new AnthropicProvider('k', 'claude-haiku-5-5', transport); await haiku.interpret(request);
   assert.equal(body.model, 'claude-haiku-5-5'); assert.equal(body.fallbacks, undefined); assert.equal(headers!.get('anthropic-beta'), null); assert.equal(body.output_config.effort, 'low'); assert.equal(body.thinking, undefined);
   const refused = new AnthropicProvider('k', 'm', async () => json({ ...toolMessage([]), stop_reason: 'refusal', content: [] }));

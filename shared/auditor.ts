@@ -74,6 +74,7 @@ export type AuditCompany = { companyId: number; name: string; color: string; ver
 export type AuditProbeView = Omit<AuditProbe, 'auditorId'> & { summary: string[] };
 /** Everything an auditor sees: production modules with their pending controls and the auditor's own probes. */
 export type AuditorView = {
-  companies: AuditCompany[]; probes: AuditProbeView[]; nextAt: number;
+  /** `opensAt`: end of the calm start, while pruebas de control are not yet allowed (shared/pacing.ts). */
+  companies: AuditCompany[]; probes: AuditProbeView[]; nextAt: number; opensAt?: number;
   limits: { durationSeconds: number; cooldownSeconds: number; requests: number };
 };

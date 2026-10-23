@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { applyCommand, createGame, project } from '../server/engine.js';
-import { commandsFor, executorContext, finalReply, modelContext, outcome, planCalls, toolDefinitions, toolsFor } from '../server/executor.js';
+import { DECLINE_MESSAGES, commandsFor, executorContext, finalReply, modelContext, outcome, planCalls, toolDefinitions, toolsFor } from '../server/executor.js';
 import { mentions, normalize } from '../server/grounding.js';
 import { command, advanceGame, insertBlock, reviewForQa, authorizeInfra } from './helpers.js';
 import type { GameState, Identity, Role } from '../shared/types.js';
@@ -108,9 +108,12 @@ test('E8 Test G: another company configuration is never resolved or disclosed th
   const g = start();
   assert(command(g, 'backend', 'change.submit', { graph: insertBlock('atomic'), revision: 0 }, undefined, 1).ok);
   const foreign = g.changes[0];
-  const reply = run(g, 'qa', `Mostrame y probá el cambio ${foreign.id} de VERTEX`, [{ name: 'qa_ejecutar_suite', input: { cambio: foreign.id, suite: 'carga', citas: [foreign.id] } }]);
+  const reply = run(g, 'qa', `Mostrame y probá el cambio ${foreign.id}`, [{ name: 'qa_ejecutar_suite', input: { cambio: foreign.id, suite: 'carga', citas: [foreign.id] } }]);
   const missing = run(g, 'qa', 'Probá el cambio CH-999', [{ name: 'qa_ejecutar_suite', input: { cambio: 'CH-999', suite: 'carga', citas: ['CH-999'] } }]);
   assert.equal(reply.message, missing.message.replace('CH-999', foreign.id).replace(foreign.id, foreign.id));
+  // Naming the other company is refused for that reason alone, with a reply that says nothing about its changes.
+  const named = run(g, 'qa', `Probá el cambio ${foreign.id} de VERTEX`, [{ name: 'qa_ejecutar_suite', input: { cambio: foreign.id, suite: 'carga', citas: [foreign.id] } }]);
+  assert.equal(named.state, 'DECLINED'); assert.equal(named.message, DECLINE_MESSAGES.OTRA_EMPRESA('qa')); assert(!named.message.includes(foreign.id));
   assert.equal(foreign.status, 'SECURITY_PENDING');
   const context = JSON.stringify(modelContext(executorContext(g, actor('qa'), { id: 'ctx', text: 'Estado' }, [])));
   assert(!context.includes('VERTEX')); assert(!context.includes(foreign.id)); assert(!context.includes('defects')); assert(!context.includes('D0'));

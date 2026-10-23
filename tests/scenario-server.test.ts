@@ -13,6 +13,8 @@ import { createGame } from '../server/engine.js';
 import { advanceConcurrency } from '../server/requests.js';
 import { startConcurrency } from '../server/scenarios.js';
 import { insertBlock } from './helpers.js';
+// These tests measure the engine at full pressure; the calm start has its own (tests/pacing.test.ts).
+process.env.FLOW_CALM_START = '0';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 async function unusedPort() {

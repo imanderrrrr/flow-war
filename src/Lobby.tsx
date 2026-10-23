@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { LOBBY_COMPANIES, LOBBY_ICONS, NAME_MAX, REVEAL, companyStart, namesShownAt, reelStop, revealEnd, type LobbyMember, type LobbyView } from '../shared/lobby';
 import { ROLES, ROLE_LABELS, type PublicCompany, type Role } from '../shared/types';
+import type { TutorialBoard, TutorialBoardRow } from '../shared/tutorial';
 import { useGame, send, socket } from './store';
 import { Icon, Mascot } from './icons';
 
@@ -76,8 +77,26 @@ function JoinForm({ onJoined, open, signedIn }: { onJoined: (me: Me) => void; op
   </form></main>;
 }
 
+/** Whether this player still owes the tutorial of its role (docs/25); refreshed while the room waits. */
+function useOwnTutorial(active: boolean) {
+  const [state, setState] = useState<{ pending: boolean; finished: boolean }>();
+  useEffect(() => {
+    if (!active) return;
+    let alive = true;
+    const load = () => void fetch('/api/tutorial').then(r => r.json()).then(d => { if (alive) setState(d); }).catch(() => undefined);
+    load(); const timer = setInterval(load, 4000);
+    return () => { alive = false; clearInterval(timer); };
+  }, [active]);
+  return state;
+}
+function TutorialCall({ tutorial, waiting }: { tutorial?: { pending: boolean; finished: boolean }; waiting: boolean }) {
+  if (tutorial?.pending) return <><p className="muted">Antes de jugar hacé el tutorial de tu rol: te muestra qué hacer y cómo. El docente empieza cuando todos terminen.</p><a className="primary-button" href="/workspace">HACER EL TUTORIAL <Icon name="arrow" size={14}/></a></>;
+  return <>{tutorial?.finished && <p className="tutorial-progress done">✓ TUTORIAL COMPLETO</p>}{waiting ? <p className="muted">Esperá a que el docente empiece el juego.</p> : null}<a className="primary-button" href="/workspace">IR A MI ESPACIO <Icon name="arrow" size={14}/></a></>;
+}
+
 function Waiting({ me, offset, onLeft }: { me: Me; offset: number; onLeft: () => void }) {
   const s = useGame(s => s.snapshot)!, lobby = s.lobby, formation = lobby?.formation;
+  const tutorial = useOwnTutorial(!!formation || !!s.identity);
   const team = formation?.teams.find(t => t.members.some(m => m.id === me.id));
   const elapsed = useNow(!!formation) + offset - (formation?.at ?? 0);
   const shown = !formation || elapsed >= (team ? namesShownAt(team.companyId, lobby!.teamSize) : revealEnd());
@@ -99,15 +118,13 @@ function Waiting({ me, offset, onLeft }: { me: Me; offset: number; onLeft: () =>
       <Mascot id={company.id} color={company.color} size={54}/><span className="eyebrow">SOS DE</span><strong>{company.name}</strong><b>{ROLE_LABELS[seat.role]}</b>
     </div>
     {team && <ul className="seat-team">{byRole(team.members).map(m => <li key={m.id}><span>{m.icon}</span>{m.name}<small>{ROLE_LABELS[m.role]}</small></li>)}</ul>}
-    {s.status === 'LOBBY' ? <p className="muted">Esperá a que el docente empiece el juego.</p> : null}
-    <a className="primary-button" href="/workspace">IR A MI ESPACIO <Icon name="arrow" size={14}/></a>
+    <TutorialCall tutorial={tutorial} waiting={s.status === 'LOBBY'}/>
   </div></main>;
   // Whoever the draw leaves in the reserve audits the five companies.
   if (formation || s.identity?.role === 'auditor') return <main className="join-page"><div className="join-card join-me">
     <div className="seat-card auditor-seat"><span className="me-icon">{me.icon}</span><span className="eyebrow">SOS</span><strong>AUDITOR EXTERNO</strong><b>Probás los controles de las cinco empresas</b></div>
     <p className="muted">Elegís una empresa, revisás sus módulos en producción y lanzás pruebas de control con tráfico anómalo simulado.</p>
-    {s.status === 'LOBBY' ? <p className="muted">Esperá a que el docente empiece el juego.</p> : null}
-    <a className="primary-button" href="/workspace">IR A MI ESPACIO <Icon name="arrow" size={14}/></a>
+    <TutorialCall tutorial={tutorial} waiting={s.status === 'LOBBY'}/>
   </div></main>;
   return <main className="join-page"><div className="join-card join-me">
     <span className="me-icon">{me.icon}</span><h1>La partida ya empezó</h1>
@@ -132,7 +149,7 @@ export function RoomScreen() {
   return <main className="room-screen">
     {!lobby.formation ? <Gathering lobby={lobby} joinUrls={info?.joinUrls.length ? info.joinUrls : [`${location.origin}/unirse`]} busy={busy} onForm={() => void act('/api/lobby/form')} onRemove={id => void act('/api/lobby/remove', { id })}/>
       : elapsed < revealEnd() ? <SlotShow lobby={lobby} elapsed={elapsed} companies={s.companies} onSkip={() => setReplay(now - revealEnd())}/>
-      : <TeamsBoard lobby={lobby} companies={s.companies} waiting={s.status === 'LOBBY'} onReplay={() => setReplay(now)}/>}
+      : <TeamsBoard lobby={lobby} companies={s.companies} waiting={s.status === 'LOBBY'} tutorials={s.tutorials} onReplay={() => setReplay(now)}/>}
     <RoomAssistant available={!!lobby.formation && s.status === 'LOBBY'}/>
   </main>;
 }
@@ -241,24 +258,32 @@ function Reel({ icon, strip, stopAt, phase }: { icon: string; strip: string[]; s
   return <div className={`slot-reel ${stopped ? 'stopped' : 'spinning'}`}><div className="slot-strip" ref={ref}>{still ? <span className="slot-cell">{stopped ? icon : '?'}</span> : strip.map((c, i) => <span className="slot-cell" key={i}>{c}</span>)}</div></div>;
 }
 
-function TeamsBoard({ lobby, companies, waiting, onReplay }: { lobby: LobbyView; companies: PublicCompany[]; waiting: boolean; onReplay: () => void }) {
-  const formation = lobby.formation!;
+/** Each player's tutorial on the projector: the step, done, or away (an absent player does not hold the start). */
+function Progress({ row }: { row?: TutorialBoardRow }) {
+  if (!row) return null;
+  if (row.finished) return <small className="tutorial-progress done">✓ TUTORIAL LISTO</small>;
+  return <small className={`tutorial-progress ${row.connected ? '' : 'away'}`}>{row.connected ? `TUTORIAL ${row.step}/${row.total}` : `SIN CONEXIÓN · ${row.step}/${row.total}`}</small>;
+}
+function TeamsBoard({ lobby, companies, waiting, tutorials, onReplay }: { lobby: LobbyView; companies: PublicCompany[]; waiting: boolean; tutorials?: TutorialBoard; onReplay: () => void }) {
+  const formation = lobby.formation!, rows = new Map(tutorials?.rows.filter(r => r.participantId).map(r => [r.participantId!, r]));
+  const pending = waiting ? tutorials?.pending ?? 0 : 0;
   return <section className="teams-board">
     <div className="teams-heading"><div><span className="eyebrow">EQUIPOS FORMADOS AL AZAR</span><h1>{waiting ? '¡Listos para jugar!' : 'Partida en curso'}</h1></div>
-      <div className="button-row"><button className="secondary-button" onClick={onReplay}>VER SORTEO OTRA VEZ</button>{waiting ? <button className="primary-button" onClick={() => void send('room.start')}><Icon name="play"/>EMPEZAR JUEGO</button> : <a className="primary-button" href="/">ABRIR ARENA <Icon name="arrow" size={14}/></a>}</div></div>
+      <div className="button-row"><button className="secondary-button" onClick={onReplay}>VER SORTEO OTRA VEZ</button>{waiting ? <button className="primary-button" disabled={pending > 0} title={pending > 0 ? 'Se habilita cuando todos los jugadores conectados terminen su tutorial.' : undefined} onClick={() => void send('room.start')}><Icon name="play"/>{pending > 0 ? `FALTAN ${pending} TUTORIALES` : 'EMPEZAR JUEGO'}</button> : <a className="primary-button" href="/">ABRIR ARENA <Icon name="arrow" size={14}/></a>}</div></div>
     <div className="teams-grid">{formation.teams.map(t => { const c = companies[t.companyId]; return <div className="team-column" key={t.companyId} style={{ '--team': c.color } as CSSProperties}>
       <div className="team-column-head"><Mascot id={c.id} color={c.color} size={30}/><strong>{c.name}</strong></div>
-      <ul>{byRole(t.members).map(m => <li key={m.id}><span className="member-icon">{m.icon}</span><span><strong>{m.name}</strong><small>{ROLE_LABELS[m.role]}</small></span></li>)}</ul>
+      <ul>{byRole(t.members).map(m => <li key={m.id}><span className="member-icon">{m.icon}</span><span><strong>{m.name}</strong><small>{ROLE_LABELS[m.role]}</small>{waiting && <Progress row={rows.get(m.id)}/>}</span></li>)}</ul>
     </div>; })}</div>
-    {formation.reserve.length > 0 && <div className="reserve-row"><span className="eyebrow">AUDITORES EXTERNOS</span><div className="participant-grid">{formation.reserve.map(m => <span className="participant-chip" key={m.id}><span>{m.icon}</span>{m.name}</span>)}</div></div>}
+    {formation.reserve.length > 0 && <div className="reserve-row"><span className="eyebrow">AUDITORES EXTERNOS</span><div className="participant-grid">{formation.reserve.map(m => <span className="participant-chip" key={m.id}><span>{m.icon}</span>{m.name}{waiting && <Progress row={rows.get(m.id)}/>}</span>)}</div></div>}
   </section>;
 }
 
 /** Summary on the teacher console; the projector screen lives at /sala. */
 export function LobbyPanel() {
-  const lobby = useGame(s => s.snapshot?.lobby);
+  const lobby = useGame(s => s.snapshot?.lobby), tutorials = useGame(s => s.snapshot?.tutorials);
   if (!lobby) return null;
   return <section className="panel lobby-panel"><div className="panel-title"><span>SALA DE JUGADORES</span><a className="text-button" href="/sala">ABRIR PANTALLA DE SALA <Icon name="arrow" size={12}/></a></div>
-    <div className="lobby-panel-body"><div><span className="eyebrow">PIN</span><strong>{pinText(lobby.pin)}</strong></div><div><span className="eyebrow">JUGADORES</span><strong>{lobby.participants.length} / {lobby.required}</strong></div><div><span className="eyebrow">EQUIPOS</span><strong>{lobby.formation ? 'FORMADOS' : 'SIN SORTEAR'}</strong></div></div>
+    <div className="lobby-panel-body"><div><span className="eyebrow">PIN</span><strong>{pinText(lobby.pin)}</strong></div><div><span className="eyebrow">JUGADORES</span><strong>{lobby.participants.length} / {lobby.required}</strong></div><div><span className="eyebrow">EQUIPOS</span><strong>{lobby.formation ? 'FORMADOS' : 'SIN SORTEAR'}</strong></div>{tutorials && <div><span className="eyebrow">TUTORIALES</span><strong>{tutorials.finished} / {tutorials.rows.length}</strong></div>}</div>
+    {tutorials && tutorials.rows.some(r => !r.finished) && <div className="lobby-tutorials"><span className="eyebrow">FALTAN TERMINAR EL TUTORIAL · LOS DESCONECTADOS NO FRENAN EL INICIO</span><ul>{tutorials.rows.filter(r => !r.finished).map(r => <li key={r.key}>{r.name} · {r.step}/{r.total}{r.connected ? '' : ' · sin conexión'}</li>)}</ul></div>}
   </section>;
 }

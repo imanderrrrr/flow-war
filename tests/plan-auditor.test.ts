@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { applyCommand, createGame, project } from '../server/engine.js';
 import { advanceGame, command, planWith } from './helpers.js';
 import type { Identity } from '../shared/types.js';
+// These tests measure the engine at full pressure; the calm start has its own (tests/pacing.test.ts).
+process.env.FLOW_CALM_START = '0';
 
 const auditorIdentity: Identity = { id: 'auditor-P1', role: 'auditor', companyId: null };
 const started = () => { const game = createGame(); command(game, 'operator', 'room.start'); return game; };

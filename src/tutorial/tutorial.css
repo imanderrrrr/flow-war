@@ -1,0 +1,52 @@
+/* Mandatory tutorial (docs/25): the spotlight keeps the real element usable and the rest of the page out of reach.
+   Below the toasts (z-index 1000), so the server's confirmations and errors stay readable. */
+.tutorial-layer{position:fixed;inset:0;z-index:900;pointer-events:none}
+.tutorial-shield{position:fixed;background:#050914c7;pointer-events:auto;cursor:not-allowed}
+.tutorial-ring{position:fixed;border:2px solid var(--yellow);box-shadow:0 0 0 3px #f5d45c33,0 0 28px #f5d45c55;pointer-events:none;animation:tutorial-pulse 1.6s ease-in-out infinite}
+@keyframes tutorial-pulse{50%{box-shadow:0 0 0 6px #f5d45c22,0 0 36px #f5d45c77}}
+.tutorial-card{position:fixed;z-index:950;width:min(380px,calc(100vw - 24px));pointer-events:auto;background:#131c2a;border:1px solid var(--yellow);box-shadow:5px 5px #070a12;padding:16px 18px 14px;display:flex;flex-direction:column;gap:10px;color:#dce1e9}
+.tutorial-card-head{display:flex;justify-content:space-between;gap:10px;font-size:8px;letter-spacing:.8px;color:var(--yellow)}
+.tutorial-card-head>b{font-weight:400;color:#98a8be;margin-left:auto}
+.tutorial-move{font-size:7px}
+.tutorial-restart{align-self:flex-start;font-size:7px}
+.tutorial-job{margin:0;font-size:9px;line-height:1.6;color:#8a9ab1;border-left:2px solid #3b475a;padding-left:9px}
+.tutorial-card h3{margin:2px 0 0;font-family:'Press Start 2P',monospace;font-size:11px;line-height:1.6;color:#fff}
+.tutorial-text{margin:0;font-size:12px;line-height:1.65}
+.tutorial-fact{margin:0;font-size:11px;line-height:1.6;padding:8px 10px;border:1px solid #3b5470;background:#16253a;color:#bcd3f0}
+.tutorial-waiting{margin:0;display:flex;align-items:center;gap:9px;font-size:10px;color:#d3c388}
+.tutorial-hint{margin:0;font-size:8px;letter-spacing:.4px;color:#7d8ca3}
+.tutorial-card>.primary-button{align-self:flex-start}
+.tutorial-dots{display:flex;gap:5px;flex-wrap:wrap}
+.tutorial-dots>i{width:14px;height:4px;background:#2b3647}
+.tutorial-dots>i.done{background:#68dca2}
+.tutorial-dots>i.current{background:var(--yellow)}
+.tutorial-banner{border-color:#5b5330;background:#2b2818;color:#f0dc8c}
+body.tutorial-active .customer-notices,body.tutorial-active .notices-muted{display:none}
+@media(max-width:720px){.tutorial-card{width:auto;max-height:46vh;overflow:auto}.tutorial-text{font-size:11px}}
+@media(prefers-reduced-motion:reduce){.tutorial-ring{animation:none}}
+
+/* The calm-start phase next to the clock (shared/pacing.ts). */
+.phase-chip{display:inline-flex;align-items:center;gap:6px;font-size:7px;letter-spacing:.6px;padding:5px 8px;border:1px solid #3b475a;color:#9fb0c6;white-space:nowrap}
+.phase-chip.calm{border-color:#3f6b56;color:#8fdcb4}
+.phase-chip.ramp{border-color:#6b5b2f;color:#f5d45c}
+.phase-chip.full{border-color:#6e3c43;color:#f27e79}
+/* Its notices (src/PhaseNotice.tsx): under the header, above the page, never over the tutorial. */
+.phase-notice{position:fixed;top:92px;left:50%;transform:translateX(-50%);z-index:55;width:min(620px,calc(100vw - 32px));display:flex;align-items:flex-start;gap:12px;padding:13px 15px;background:#17202f;border:1px solid #3b475a;border-left:3px solid #8fdcb4;box-shadow:5px 5px #070c15;color:#dce1e9;animation:phase-in .25s steps(3)}
+@keyframes phase-in{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translate(-50%,0)}}
+.phase-notice>svg{flex:none;margin-top:1px;color:#8fdcb4}
+.phase-notice>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.phase-notice strong{font-size:9px;letter-spacing:.8px;color:#fff}
+.phase-notice strong>span{color:#9fb0c6}
+.phase-notice p{margin:0;font-size:12px;line-height:1.55;color:#c8d1de}
+.phase-notice>button{flex:none;align-self:center;border:1px solid #3b475a;padding:7px 9px}
+.phase-notice.ramp{border-left-color:#f5d45c}.phase-notice.ramp>svg{color:#f5d45c}
+.phase-notice.full{border-left-color:#f27e79}.phase-notice.full>svg{color:#f27e79}
+@media(max-width:760px){.phase-notice{top:85px;flex-wrap:wrap}.phase-notice p{font-size:11px}.phase-notice>button{margin-left:auto}}
+@media(prefers-reduced-motion:reduce){.phase-notice{animation:none}}
+
+/* Tutorial progress on the projector and the teacher's console. */
+.tutorial-progress{display:block;margin-top:3px;font-size:7px;letter-spacing:.5px;color:#d3c388}
+.tutorial-progress.done{color:#68dca2}
+.tutorial-progress.away{color:#7d8ca3}
+.lobby-tutorials{display:flex;flex-direction:column;gap:6px;padding:12px 16px;border-top:1px solid var(--line);font-size:9px}
+.lobby-tutorials>ul{display:flex;flex-wrap:wrap;gap:6px 14px;list-style:none;margin:0;padding:0;color:#9fb0c6}
