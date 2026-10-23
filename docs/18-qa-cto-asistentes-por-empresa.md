@@ -44,10 +44,11 @@ La carta `qa.return` es redactada por el estudiante. Se exigen destinatario, asu
 | QA devuelve a Backend | original conservado; desbloquea borrador copiado y enlaza la siguiente revisión |
 | QA devuelve a Seguridad | original conservado; crea cambio sucesor con igual versión Backend y nueva revisión de protección; Backend sigue bloqueado |
 | QA cancela formalmente | transición terminal auditada con motivo y confirmación; libera la entrega y su reserva |
-| Despliegue | cobra una vez al completarse; la funcionalidad sigue congelada hasta nueva devolución QA |
+| Despliegue | cobra una vez al completarse y libera el bloqueo: Backend vuelve a editar sobre la versión publicada; antes seguía congelada hasta una devolución QA |
+| Despliegue fallido u obsoleto | `DEPLOY_FAILED` por saldo, o `STALE` porque otra publicación cambió la base o la empresa quedó eliminada; el cambio sale del ciclo y libera el bloqueo |
 | Fin/reinicio de partida | libera compromisos y termina la generación; la nueva generación empieza sin hilos ni bloqueos heredados |
 
-Una observación de Seguridad no desbloquea Backend. Una orden de inversión tampoco lo desbloquea. Una devolución repetida del mismo cambio se rechaza. Las gráficas y los reportes originales permanecen disponibles para auditoría.
+El bloqueo dura lo que su cambio esté en el ciclo (`SECURITY_PENDING` a `DEPLOYING`, más `EXPIRED`, que el CTO puede reevaluar). El motor lo libera al final de cada paso de simulación en que el cambio sale, y al cargar una partida guardada con un bloqueo sobre un cambio cerrado. Una observación de Seguridad no desbloquea Backend. Una orden de inversión tampoco lo desbloquea. Una devolución repetida del mismo cambio se rechaza. Las gráficas y los reportes originales permanecen disponibles para auditoría.
 
 Las acciones históricas `qa.approve` y `cto.authorize` siguen funcionando como decisiones manuales explícitas para compatibilidad con clientes anteriores; generan registro de decisión y referencias a resultados reales. La nueva interfaz usa evaluación escrita y confirmación del CTO. `qa.reject` ya no sustituye una carta cuando existe implementación compartida.
 

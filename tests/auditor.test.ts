@@ -39,17 +39,9 @@ function deployWithControls(g: GameState, nodeId: string, rules: unknown[]) {
   assert.equal(ch.status, 'DEPLOYED');
 }
 
-/** QA's formal return letter: the only way Backend gets the flow back after a publication. */
-function returnToBackend(g: GameState) {
-  const lock = g.companies[0].runtime.workflow?.backendLock; if (!lock) return;
-  assert(command(g, 'qa', 'qa.return', { changeId: lock.changeId, recipient: 'backend', subject: 'Nueva revisión del flujo',
-    description: 'Solicito revisar el flujo publicado.', steps: 'Repetir la prueba registrada.', observed: 'Resultado registrado.',
-    expected: 'Reevaluación del comportamiento.', severity: 'medium', evidenceIds: [], observationRefs: [] }).ok);
-}
 /** Backend → Seguridad → QA → CTO → DevOps for one whole backend graph of company 0. */
 function deployBackend(g: GameState, graph: unknown) {
   const c = g.companies[0];
-  returnToBackend(g);
   const submitted = command(g, 'backend', 'change.submit', { graph, revision: c.drafts.backend?.revision ?? 0 });
   assert(submitted.ok, submitted.error);
   const ch = g.changes.find(x => x.id === submitted.refs![0])!;

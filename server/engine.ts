@@ -1,4 +1,4 @@
-import { assertBackendEditable, workflowCommand, startQa, completeQa, workflowView, expireInvestments, settleInvestment, workflow } from './workflow.js';
+import { assertBackendEditable, workflowCommand, startQa, completeQa, workflowView, expireInvestments, settleInvestment, workflow, releaseBackendLock } from './workflow.js';
 import { beginSecurityReview, bindLegacySecurity, securityCommand, assertBundle, collaborationView, proposalCommand } from './collaboration.js';
 import { visibleRequest } from './projections.js';
 import { setMaintenance, MAINTENANCE_POLICY } from './maintenance.js';
@@ -491,6 +491,8 @@ export function step(g: GameState, dt = .1) {
   }
   if (g.tick >= g.duration || g.companies.every(c => c.eliminated)) { finishRequests(g); g.status = 'FINISHED'; event(g, null, 'PARTIDA FINALIZADA', 'neutral', 'SISTEMA'); }
   g.migrations = g.migrations.filter(m => g.tick - m.at < 20).slice(-30);
+  // Publications, failed deploys, rollbacks and eliminations above may have closed a frozen change.
+  for (const c of g.companies) releaseBackendLock(g, c);
   updateCrisis(g); sampleTelemetry(g); sampleHistory(g); checkpoint(g, serializeGame, g.status === 'FINISHED');
 }
 function finishRequests(g: GameState, reason: 'ROOM_FINISHED' | 'ROOM_INTERRUPTED' = 'ROOM_FINISHED') {
