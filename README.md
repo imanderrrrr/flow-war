@@ -93,8 +93,8 @@ El dominio actual mantiene compras, inventario y pagos; la adaptación a platafo
 Backend entrega su funcionalidad a Seguridad, que escribe protecciones libres sobre los mismos bloques.
 QA, CTO y DevOps trabajan con la combinación exacta de versiones. Ambos departamentos pueden preparar
 borradores revisables con Claude. La integración real requiere `ANTHROPIC_API_KEY` en el servidor; el
-modelo por defecto es `claude-haiku-5-5` (el ejecutor solo traduce órdenes a herramientas) y se puede
-cambiar con `ANTHROPIC_MODEL`. No hay sustitución simulada en producción.
+modelo por defecto es `claude-sonnet-5-5` (elegido por el docente; [comparación con Haiku 5.5](docs/benchmarks/sonnet-vs-haiku/README.md))
+y se puede cambiar con `ANTHROPIC_MODEL`. No hay sustitución simulada en producción.
 
 - [Arquitectura, configuración, migración y límites](docs/17-backend-seguridad-colaborativos-ia.md)
 - [Pruebas y mediciones de 27/32 conexiones](docs/benchmarks/entrega-6/README.md)
@@ -176,3 +176,10 @@ La partida empieza tranquila: 15 minutos con demanda liviana y sin ráfagas, tr�
 entre el minuto 15 y el 18 la demanda sube fuerte, y desde el 18 hay presión completa. Los números están en
 `shared/pacing.ts` (`CALM_START`). Detalle, reglas y verificación en
 [docs/25-tutoriales-y-arranque-tranquilo.md](docs/25-tutoriales-y-arranque-tranquilo.md).
+
+## Avisos de fase y Claude acotado
+
+Un cartel neutral anuncia el arranque tranquilo al empezar y un minuto antes de cada cambio de fase. El Claude del juego
+solo actúa sobre la empresa y el rol de la sesión: el servidor rechaza, sin llamar al proveedor, las órdenes sobre otra
+empresa, los intentos de cambiar sus reglas y lo ajeno al juego. El modelo por defecto es Sonnet 5.5.
+[docs/27-inicio-avisado-y-claude-acotado.md](docs/27-inicio-avisado-y-claude-acotado.md).

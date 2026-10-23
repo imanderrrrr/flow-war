@@ -91,7 +91,7 @@ escribió el estudiante; ahora descarta reglas cuyos umbrales u orígenes no est
 | Variable | Defecto | Uso |
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` | — | Solo en el entorno del servidor. Nunca llega a logs, respuestas, snapshots ni frontend. |
-| `ANTHROPIC_MODEL` | `claude-haiku-5-5` | Modelo con *tool calling* estricto. Haiku por defecto: el ejecutor solo mapea una orden a una herramienta ([comparación](benchmarks/haiku/README.md)). || `ANTHROPIC_WORKSPACE_ID` | — | Cabecera de workspace si la credencial lo requiere. |
+| `ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Modelo con *tool calling* estricto. Sonnet 5.5 por defecto desde docs/27, elegido por el docente; Haiku 5.5 cuesta unas 20 veces menos por token ([comparación](benchmarks/sonnet-vs-haiku/README.md), [Haiku](benchmarks/haiku/README.md)). || `ANTHROPIC_WORKSPACE_ID` | — | Cabecera de workspace si la credencial lo requiere. |
 | `FLOW_AI_EFFORT` | `low` | Esfuerzo del razonamiento adaptativo (las órdenes son cortas). |
 | `FLOW_AI_MAX_TOKENS` | 4096 | Límite por respuesta. |
 | `FLOW_AI_CONCURRENCY` / `FLOW_AI_COMPANY_CONCURRENCY` | 5 / 2 | Llamadas simultáneas totales y por empresa, con cola round-robin. |

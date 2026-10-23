@@ -122,7 +122,8 @@ multiplica las fuentes que ya existían.
   (90 s a pleno, unos 6 minutos en la fase tranquila).
 - La clase lo escucha: al minuto 15 aparece "Termina la fase tranquila: la demanda sube durante 3 minutos" junto a los
   avisos de ráfagas y tráfico anómalo, y al 18 "Presión completa". El reloj muestra la fase y cuánto falta para la
-  siguiente; la consola del auditor cuenta hacia el minuto 15.
+  siguiente; la consola del auditor cuenta hacia el minuto 15. Un cartel neutral lo anuncia al empezar y un minuto antes
+  de cada cambio ([docs/27](27-inicio-avisado-y-claude-acotado.md)).
 - **Cambiar los números**: editar `CALM_START` en `shared/pacing.ts` (`calmUntil`, `rampUntil`, `calmDemand`,
   `calmPenalty`). Cada partida nueva congela una copia en su estado, así que una partida grabada siempre se reproduce
   con el cronograma con el que se jugó, y las partidas guardadas antes de este cambio siguen con el cronograma anterior
