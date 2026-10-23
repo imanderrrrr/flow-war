@@ -82,7 +82,7 @@ test('E6 combined bundle passes QA, CTO and DevOps and remains immutable across 
  const g=pending(),ch=g.changes[0];await compile(g,'Autenticar.',[{kind:'authenticated'}]);reviewForQa(g);
  assert(command(g,'qa','qa.execute',{changeId:ch.id,scenario:DEFAULT_TEST}).ok);advanceGame(g,1);assert(command(g,'qa','qa.approve',{},ch.id).ok);assert(command(g,'cto','cto.authorize',{},ch.id).ok);assert(command(g,'devops','deploy.start',{strategy:'rolling'},ch.id).ok);advanceGame(g,7);
  const c=g.companies[0],release=structuredClone(c.runtime.releases[c.version]);assert.equal(ch.status,'DEPLOYED');assert.equal(release.bundleDigest,ch.implementation!.bundleDigest);
- assert.equal(command(g,'backend','draft.save',{graph:ch.graph,revision:1}).ok,false);assert.deepEqual(c.runtime.releases[c.version],release);
+ const graph=structuredClone(ch.graph);assert(command(g,'backend','draft.save',{graph:insertBlock('retry','write',2,ch.graph),revision:1}).ok);assert.deepEqual(c.runtime.releases[c.version],release);assert.deepEqual(ch.graph,graph);
  const frozen=structuredClone(ch);frozen.context!.backend.nodes[0].position.x++;assert.throws(()=>assertBundle(frozen));
 });
 test('E7 new Backend revision requires a formal QA return and preserves the previous implementation',()=>{

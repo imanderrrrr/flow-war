@@ -11,6 +11,10 @@ export const available=(c:Company)=>Math.max(0,Math.round((c.capital-c.infraBudg
 export function assertBackendEditable(c:Company) { if(c.runtime.workflow?.backendLock)throw new Error('purchase-flow bloqueada. Se requiere devolución formal de QA.'); }
 export function workflowView(c:Company):WorkflowView {const s=c.runtime.workflow??{letters:[],runs:[],decisions:[],investments:[]};return {backendLock:structuredClone(s.backendLock),letters:structuredClone(s.letters),decisions:structuredClone(s.decisions),investments:structuredClone(s.investments),runs:s.runs.map(({report,...r})=>structuredClone(r)),available:available(c)};}
 export function lockBackend(c:Company,ch:Change,at:number){assertBackendEditable(c);workflow(c).backendLock={featureId:'purchase-flow',changeId:ch.id,at};}
+/** A delivered implementation is still in Seguridad → QA → CTO → DevOps; an expired authorization can be decided again. */
+export const inCycle=(ch:Change)=>['SECURITY_PENDING','QA_PENDING','QA_RUNNING','CTO_PENDING','AUTHORIZED','DEPLOYING','EXPIRED'].includes(ch.status);
+/** The freeze lasts as long as its change is in the cycle: once it is published, failed or stale, Backend edits again. */
+export function releaseBackendLock(g:Pick<GameState,'changes'>,c:Company){const s=c.runtime.workflow;if(s?.backendLock&&!g.changes.some(ch=>ch.id===s.backendLock!.changeId&&ch.companyId===c.id&&inCycle(ch)))delete s.backendLock;}
 export function startQa(g:GameState,c:Company,ch:Change,actor:Identity,scenario:TestScenario,request='Solicitud manual',repeat?:QaRun) {
   if(!repeat&&ch.status!=='QA_PENDING')throw new Error('QA requiere un cambio pendiente.');assertBundle(ch);
   const state=workflow(c);if(state.runs.length>=160)throw new Error('Límite de pruebas de la partida alcanzado.');
