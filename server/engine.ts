@@ -65,6 +65,8 @@ export function createGame(duration = 1500, seed = 7357, generation = 0, dvrEnab
 }
 /** Event texts say a number the way a person reads it: "1 acceso indebido", "3 accesos indebidos". */
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+/** A manual case carries the scenario's suite id; the lab's suites already have their Spanish name. */
+const SUITE_NAMES: Record<string, string> = { unit: 'Unitarias', integration: 'Integración', concurrency: 'Concurrencia', load: 'Carga', security: 'Seguridad', regression: 'Regresión' };
 export function event(g: GameState, companyId: number | null, text: string, tone: 'good' | 'bad' | 'neutral' = 'neutral', category = 'SISTEMA') {
   observe(g, category.toLowerCase(), companyId, { text, tone });
   g.events.unshift({ id: ++g.eventSeq, at: g.tick, companyId, text, tone, category });
@@ -404,7 +406,7 @@ function jobs(g: GameState) {
         delete ch.qaScenario; delete ch.qaLoad; delete ch.testJob;
         ch.status = restore??'QA_PENDING';
         auditCompletion(g, c.id, 'qa.completed', [ch.id], [`requests.executed:${ch.reports.at(-1)!.requests}`, 'reports.added:1']);
-        event(g, c.id, `${ch.id}: terminó la prueba ${ch.runningSuite}.`, 'neutral', 'QA');
+        event(g, c.id, `${ch.id}: terminó la prueba ${SUITE_NAMES[ch.runningSuite ?? ''] ?? ch.runningSuite}.`, 'neutral', 'QA');
       }
     }
     if (ch.status === 'DEPLOYING' && g.tick >= (ch.due ?? Infinity)) {

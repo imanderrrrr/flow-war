@@ -294,3 +294,4 @@ button.plan-node { text-align: left; font-family: inherit; cursor: pointer; }
 .qa-return textarea { min-height: 64px; }
 .qa-return p { margin: 0; }
 .cto-not-pending { padding: 18px; margin: 0; }
+.qa-return .primary-button { width: auto; justify-self: start; margin-top: 0; }
