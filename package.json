@@ -23,6 +23,7 @@
     "bench:ai": "export FLOW_CALM_START=${FLOW_CALM_START:-0} && node --import tsx scripts/ai-concurrency-benchmark.ts",
     "bench:executor": "export FLOW_CALM_START=${FLOW_CALM_START:-0} && node --import tsx scripts/executor-classroom.ts",
     "verify:anthropic": "node --env-file-if-exists=.env --import tsx scripts/anthropic-smoke.ts",
+    "verify:scope": "node --env-file-if-exists=.env --import tsx scripts/scope-smoke.ts",
     "setup:anthropic": "tsx scripts/set-anthropic-key.ts"
   },
   "dependencies": {
