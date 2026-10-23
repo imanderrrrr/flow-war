@@ -281,3 +281,16 @@ button.plan-node { text-align: left; font-family: inherit; cursor: pointer; }
 .plan-logic-blocks p { margin: 0; font-size: 10px; color: #a9b6c7; line-height: 1.4; }
 .plan-logic-bottom { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; padding: 0 20px 16px; }
 .plan-logic-bottom .muted { flex: 1; min-width: 220px; line-height: 1.5; }
+
+/* QA in three taps: pick a test, PROBAR, then APROBAR or DEVOLVER with two lines. */
+.qa-suites { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; padding: 18px 18px 14px; }
+.qa-suites .suite-button { display: grid; gap: 6px; text-align: left; font-family: inherit; cursor: pointer; }
+.qa-suites .suite-button b { font-size: 10px; letter-spacing: .06em; }
+.qa-suites .suite-button small { font-size: 9px; color: #8e9aaf; line-height: 1.4; letter-spacing: 0; }
+.qa-test .action-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 0 18px 18px; }
+.qa-decision > .muted { margin: 0 18px 12px; }
+.qa-return { display: grid; gap: 10px; padding: 0 18px 18px; }
+.qa-return label { display: grid; gap: 6px; font-size: 9px; letter-spacing: .06em; }
+.qa-return textarea { min-height: 64px; }
+.qa-return p { margin: 0; }
+.cto-not-pending { padding: 18px; margin: 0; }

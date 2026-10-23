@@ -354,9 +354,10 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       if (p.suite === 'Carga') ch.qaLoad = createLoadRun(c, ch.context ?? productionContext(c), g.tick);
       if (p.suite === 'Concurrencia') ch.qaScenario = createConcurrencyRun(`${ch.id}-QA${ch.reports.length + 1}`, ch.context ?? productionContext(c), g.tick);
     } else if (command.type === 'qa.approve') {
-      if(ch.implementation&&c.runtime.workflow?.runs.some(r=>r.changeId===ch.id&&r.report))return workflowCommand(g,c,identity,'qa.review',{changeId:ch.id,risks:'Aprobación manual explícita; revisar todas las pruebas adjuntas.',evidenceIds:c.runtime.workflow?.runs.filter(r=>r.changeId===ch.id&&r.report).map(r=>r.id)??[]})!;
+      const risks=String(p.risks??'').trim();
+      if(ch.implementation&&c.runtime.workflow?.runs.some(r=>r.changeId===ch.id&&r.report))return workflowCommand(g,c,identity,'qa.review',{changeId:ch.id,risks:risks||'Aprobación manual explícita; revisar todas las pruebas adjuntas.',evidenceIds:c.runtime.workflow?.runs.filter(r=>r.changeId===ch.id&&r.report).map(r=>r.id)??[]})!;
       if (ch.status !== 'QA_PENDING' || !ch.reports.some(report => !report.obsolete)) throw new Error('Se requiere una prueba terminada.');
-      if(ch.implementation){const state=workflow(c);state.decisions.push({id:`D${state.decisions.length+1}`,changeId:ch.id,actor:identity.id,at:g.tick,kind:'qa.approve',reason:'Aprobación manual explícita; sin observaciones escritas.',evidenceIds:ch.reports.map((r,i)=>`${ch.id}:report:${i}`),failedIds:ch.reports.flatMap((r,i)=>r.testEvidence?.passed===false||r.oversold>0||r.duplicates>0?[`${ch.id}:report:${i}`]:[])});}
+      if(ch.implementation){const state=workflow(c);state.decisions.push({id:`D${state.decisions.length+1}`,changeId:ch.id,actor:identity.id,at:g.tick,kind:'qa.approve',reason:risks||'Aprobación manual explícita; sin observaciones escritas.',evidenceIds:ch.reports.map((r,i)=>`${ch.id}:report:${i}`),failedIds:ch.reports.flatMap((r,i)=>r.testEvidence?.passed===false||r.oversold>0||r.duplicates>0?[`${ch.id}:report:${i}`]:[])});}
       ch.status = 'CTO_PENDING'; event(g, c.id, `${ch.id} aprobado por QA.`, 'neutral', 'PIPELINE');
     } else if (command.type === 'qa.reject') {
       if(ch.implementation)throw new Error('Redacta una carta formal para devolver esta implementación.');

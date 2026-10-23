@@ -169,11 +169,14 @@ const loginChange = (x: Context) => x.g.changes.find(ch => ch.companyId === x.c.
 const loginNode = (graph: Graph) => graph.nodes.find(n => n.type === 'module');
 
 /** QA, the CTO and DevOps start from an assembled company with a change already through Backend and Seguridad. */
-function deliverChange(x: Context) {
+/** `control`: Seguridad reviews with WAF on Write Stock, so the lab's Concurrencia runs in staging and leaves a test
+ * QA can mark (without modules or controls it runs the historical fixture, which only reports). */
+function deliverChange(x: Context, control = false) {
   assemble(x.g);
   script(x.p, as('backend', x.c.id), 'change.submit', { graph: withAtomic(x.c.backend), revision: x.c.drafts.backend?.revision ?? 0 });
-  const ch = practiceChange(x)!;
-  script(x.p, as('security', x.c.id), 'security.submit', { changeId: ch.id, revision: x.c.runtime.collaboration!.reviews[ch.id].revision });
+  const ch = practiceChange(x)!, review = () => x.c.runtime.collaboration!.reviews[ch.id];
+  if (control) script(x.p, as('security', x.c.id), 'security.configure', { changeId: ch.id, nodeId: ch.graph.nodes.find(n => n.type === 'write')!.id, revision: review().revision, rules: [{ kind: 'input' }] });
+  script(x.p, as('security', x.c.id), 'security.submit', { changeId: ch.id, revision: review().revision });
 }
 function approveChange(x: Context) {
   const ch = practiceChange(x)!;
@@ -249,15 +252,15 @@ const SCRIPTS: Record<TutorialRole, RoleScript> = {
       solve: (s, me) => { const ch = s.changes.find(c => c.artifactRefs?.length && c.status === 'SECURITY_PENDING')!; return { type: 'security.submit', companyId: me.companyId!, payload: { changeId: ch.id, revision: s.operations!.collaboration!.reviews[ch.id].revision } }; },
     },
   } },
-  qa: { setup: deliverChange, steps: {
+  qa: { setup: x => deliverChange(x, true), steps: {
     'qa-ejecutar': {
       done: x => !!caseRun(x),
       waiting: x => practiceChange(x)?.status === 'QA_RUNNING' ? 'La prueba está corriendo en staging…' : undefined,
-      facts: x => { const ch = practiceChange(x), runs = x.c.runtime.workflow?.runs.filter(r => r.changeId === ch?.id && r.report) ?? []; return runs.length && !caseRun(x) ? ['Esa corrida no es el caso pedido: SUITE concurrency, SOLICITUDES 2, STOCK 1 y SIMULTÁNEAS 2.'] : []; },
-      solve: s => ({ type: 'qa.execute', companyId: s.identity!.companyId!, payload: { changeId: s.changes.find(c => c.implementation && c.status === 'QA_PENDING')!.id, scenario: CONCURRENCY_CASE } }),
+      facts: x => { const ch = practiceChange(x), runs = x.c.runtime.workflow?.runs.filter(r => r.changeId === ch?.id && r.report) ?? []; return runs.length && !caseRun(x) ? ['Esa prueba no fue Concurrencia: tocá Concurrencia y después PROBAR.'] : []; },
+      solve: s => ({ type: 'qa.run', companyId: s.identity!.companyId!, changeId: s.changes.find(c => c.implementation && c.status === 'QA_PENDING')!.id, payload: { suite: 'Concurrencia' } }),
     },
     'qa-leer': {
-      facts: x => { const r = caseRun(x)?.report; return r ? [`${plural(r.completed, 'compra completada', 'compras completadas')} · ${plural(r.rejected, 'rechazada', 'rechazadas')} · ${plural(r.oversold, 'sobreventa', 'sobreventas')}.`, r.oversold ? 'Hay sobreventa: este cambio no protege la última unidad.' : 'Con Atomic Update una compra se completa y la otra se rechaza por falta de stock: no hay sobreventa.'] : []; },
+      facts: x => { const r = caseRun(x)?.report; return r ? [`${plural(r.completed, 'compra completada', 'compras completadas')} · ${plural(r.rejected, 'rechazada', 'rechazadas')} · ${plural(r.oversold, 'sobreventa', 'sobreventas')}.`, r.oversold ? 'Hay sobreventa: este cambio no protege la última unidad.' : 'Con Atomic Update solo una compra se cobra y las demás se rechazan por falta de stock: no hay sobreventa.'] : []; },
     },
     'qa-aprobar': {
       done: x => { const ch = practiceChange(x); return !!ch && x.c.runtime.workflow?.decisions.some(d => d.changeId === ch.id && d.kind === 'qa.approve' && d.actor === x.identity.id) === true; },
@@ -272,7 +275,7 @@ const SCRIPTS: Record<TutorialRole, RoleScript> = {
     },
     'cto-decision': {
       done: x => { const ch = practiceChange(x); return !!ch && x.c.runtime.workflow?.decisions.some(d => d.changeId === ch.id && d.kind === 'cto.authorize' && d.actor === x.identity.id) === true; },
-      facts: x => { const ch = practiceChange(x), last = ch && x.c.runtime.workflow?.decisions.filter(d => d.changeId === ch.id && d.actor === x.identity.id).at(-1); return last && last.kind !== 'cto.authorize' ? ['Registraste otra decisión y el cambio volvió a QA. Para este paso elegí Autorizar publicación.'] : []; },
+      facts: x => { const ch = practiceChange(x), last = ch && x.c.runtime.workflow?.decisions.filter(d => d.changeId === ch.id && d.actor === x.identity.id).at(-1); return last && last.kind !== 'cto.authorize' ? ['Registraste otra decisión y el cambio volvió a QA. Para este paso tocá AUTORIZAR.'] : []; },
       // A request for evidence or a rejection sends the change back to QA; the scripted QA brings it again.
       sustain: x => { const ch = practiceChange(x); if (ch?.status === 'QA_PENDING' && x.c.runtime.workflow?.decisions.some(d => d.changeId === ch.id && d.actor === x.identity.id)) script(x.p, as('qa', x.c.id), 'qa.review', { changeId: ch.id, risks: 'Repetí la revisión con la misma evidencia.', evidenceIds: [caseRun(x)!.id] }); },
       solve: s => ({ type: 'cto.decide', companyId: s.identity!.companyId!, payload: { changeId: s.changes.find(c => c.implementation && c.status === 'CTO_PENDING')!.id, decision: 'authorize', reason: 'QA probó la última unidad sin sobreventa.', confirmed: true } }),

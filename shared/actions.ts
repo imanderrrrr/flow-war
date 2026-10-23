@@ -63,7 +63,7 @@ export type ActionParameters = {
   'plan.submit': { graph: Graph; revision: number };
   'change.submit': { graph: Graph; revision: number };
   'qa.run': { suite: string };
-  'qa.approve': Record<string, never>; 'qa.reject': Record<string, never>;
+  'qa.approve': { risks?: string }; 'qa.reject': Record<string, never>;
   'cto.authorize': Record<string, never>; 'cto.reject': Record<string, never>;
   'cto.budget': { amount: number }; 'cto.prioritize': { incident: 'security' | 'concurrency' };
   'infra.scale': { delta: 1 | -1 } | { target: number }; 'infra.balancer': { enabled: boolean };

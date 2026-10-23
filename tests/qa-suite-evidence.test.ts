@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { workflow } from '../server/workflow.js';
-import { advanceGame, assembledGame, command } from './helpers.js';
+import { advanceGame, assembledGame, command, reviewForQa } from './helpers.js';
 
 /** A Backend change that Seguridad reviewed with one control, so every quick suite runs in staging. */
 function reviewed() {
@@ -59,4 +59,31 @@ test('las suites de un cambio de plano también quedan como evidencia', () => {
   command(game, 'qa', 'qa.run', { suite: 'Concurrencia' }, submitted.refs![0]); advanceGame(game, 6);
   const runs = workflow(company).runs.filter(r => r.changeId === submitted.refs![0] && r.report);
   assert.equal(runs.length, 1);
+});
+
+test('aprobar con solo un reporte histórico guarda el comentario de QA, y sin comentario lo dice', () => {
+  for (const risks of ['La última unidad no se sobrevendió.', undefined]) {
+    const game = assembledGame(); game.status = 'RUNNING';
+    assert.equal(command(game, 'backend', 'change.submit', { graph: game.companies[0].backend, revision: 0 }).ok, true);
+    const change = game.changes[0];
+    reviewForQa(game);
+    // Without modules or controls Concurrencia runs the historical fixture: a report, never a markable run.
+    assert.equal(command(game, 'qa', 'qa.run', { suite: 'Concurrencia' }, change.id).ok, true); advanceGame(game, 6);
+    assert.equal(workflow(game.companies[0]).runs.filter(r => r.changeId === change.id).length, 0);
+    const approved = command(game, 'qa', 'qa.approve', risks ? { risks } : {}, change.id);
+    assert.equal(approved.ok, true, approved.error);
+    const decision = workflow(game.companies[0]).decisions.find(d => d.changeId === change.id && d.kind === 'qa.approve')!;
+    assert.equal(decision.reason, risks ?? 'Aprobación manual explícita; sin observaciones escritas.');
+    assert.equal(change.status, 'CTO_PENDING');
+  }
+});
+
+test('el comentario de una aprobación directa pasa la validación de texto', () => {
+  const { game, change } = reviewed();
+  command(game, 'qa', 'qa.run', { suite: 'Unitarias' }, change.id); advanceGame(game, 2);
+  assert.equal(command(game, 'qa', 'qa.approve', { risks: 'x'.repeat(4001) }, change.id).ok, false);
+  assert.equal(command(game, 'qa', 'qa.approve', { otro: 1 }, change.id).ok, false, 'solo admite el comentario');
+  const approved = command(game, 'qa', 'qa.approve', { risks: 'Probé la compra simple.' }, change.id);
+  assert.equal(approved.ok, true, approved.error);
+  assert.equal(workflow(game.companies[0]).decisions.at(-1)!.reason, 'Probé la compra simple.', 'con corridas también conserva el comentario');
 });

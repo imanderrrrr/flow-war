@@ -24,10 +24,6 @@ export const CHECKS: Record<string, (ctx: CheckContext) => boolean> = {
     return id('atomic').some(a => roads.has(`Edge from ${read} to ${a}`) && roads.has(`Edge from ${a} to ${write}`));
   },
   'security-module-selected': ({ snapshot, selection }) => snapshot.changes.flatMap(c => c.graph.nodes).find(n => n.id === selection.nodeId)?.type === 'module',
-  'qa-manual-open': () => exists('.editor-history fieldset > details[open]'),
-  'qa-evidence-checked': () => exists('.evidence-selector input[type=checkbox]:checked'),
-  'qa-letter-open': () => exists('.qa-letter > details[open]'),
-  // Once the decision panel is no longer a collapsed <details>, the step is already satisfied.
-  'cto-decision-open': () => exists('.cto-manual') && !exists('.cto-manual details:not([open])'),
+  'qa-suite-picked': () => exists('.qa-test .suite-button[aria-pressed="true"]'),
   'auditor-module-open': () => exists('.auditor-modules button[aria-pressed="true"]'),
 };

@@ -86,7 +86,9 @@ export function validateParameters(type: string, input: unknown) {
     case 'employee.correct': keys(p, ['employeeId','justification']); string(p.employeeId); string(p.justification, 1000); break;
     case 'plan.save': case 'plan.publish': case 'plan.submit': case 'draft.save': case 'change.submit': keys(p, ['graph','revision']); integer(p.revision, 0, 100000); object(p.graph); break;
     case 'qa.run': keys(p, ['suite']); oneOf(p.suite, ['Concurrencia','Regresión','Carga','Seguridad','Integración','Unitarias']); break;
-    case 'qa.approve': case 'qa.reject': case 'cto.authorize': case 'cto.reject': keys(p, []); break;
+    // QA's comment is optional: the one-tap approval sends it when the student wrote one.
+    case 'qa.approve': keys(p, ['risks']); if (p.risks !== undefined) freeText(p.risks); break;
+    case 'qa.reject': case 'cto.authorize': case 'cto.reject': keys(p, []); break;
     case 'cto.budget': keys(p, ['amount']); if (![250,500,1000].includes(integer(p.amount, 250, 1000))) throw new ActionError('INVALID', 'Importe no soportado.'); break;
     case 'cto.prioritize': keys(p, ['incident']); oneOf(p.incident, ['security','concurrency']); break;
     case 'infra.scale': if ('target' in p) { keys(p, ['target']); integer(p.target, 1, 8); } else { keys(p, ['delta']); if (![1,-1].includes(integer(p.delta, -1, 1))) throw new ActionError('INVALID', 'Delta inválido.'); } break;
