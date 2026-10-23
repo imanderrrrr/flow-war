@@ -54,6 +54,12 @@ botones sobre el cambio que espera: **AUTORIZAR Q…**, **PEDIR MÁS PRUEBAS** y
   pruebas.", "Rechazado por el CTO."), nunca un porqué inventado.
 - El panel muestra costo, saldo disponible, reservado y el comentario de QA con sus pruebas.
 - Se quitaron los botones repetidos de aprobar y autorizar debajo del detalle del cambio: cada rol decide en un lugar.
+- PEDIR MÁS PRUEBAS y RECHAZAR devuelven el cambio a QA, también para cambios del plano y promociones (antes, el
+  RECHAZAR del detalle cerraba un cambio del plano). El panel lo dice debajo de los botones.
+- Cada aprobación de QA y cada decisión del CTO deja su línea en EVENTOS, mande el comando el botón que lo mande, y el
+  post-mortem del docente las cuenta desde las decisiones registradas (`server/postmortem.ts`), no desde el tipo de
+  comando: `qa.review` y `cto.decide` también cuentan, y los históricos `qa.approve`, `cto.authorize` y `cto.reject`
+  registran su decisión aunque el cambio no tenga implementación.
 
 ## 4. Textos más cortos
 
@@ -77,3 +83,6 @@ Update, ROLLING) se conservan.
 Backend, QA y CTO enseñan los recorridos nuevos (`shared/tutorial.ts`, `server/tutorial.ts`,
 `src/tutorial/checks.ts`). En la práctica de QA, Seguridad guionada entrega el cambio con WAF en Write Stock para que
 Concurrencia corra en staging y deje una prueba marcable.
+Si la práctica de Backend se reconstruye pasado el paso de PONER (un reinicio o EMPEZAR ESTE PASO DE NUEVO), el
+guion vuelve a poner Atomic Update en el borrador; si el estudiante llega a ENVIAR sin el bloque, la tarjeta dice qué
+falta.

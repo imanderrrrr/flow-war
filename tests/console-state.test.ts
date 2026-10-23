@@ -76,3 +76,12 @@ test('la carta cita las pruebas marcadas, o los reportes históricos si no hay n
   assert.deepEqual(evidenceLines([run], reports, ['R1']), [{ scenario: 'R1 · Suite Concurrencia · 200 solicitudes · stock 1 · 200 a la vez · semilla 9', observed: '1 completadas · 199 rechazadas · 0 sobreventas · 0 cobros duplicados · 0 accesos indebidos' }]);
   assert.deepEqual(evidenceLines([run], reports, []).map(e => e.scenario), ['Carga (prueba histórica)'], 'sin marcar, los históricos vigentes');
 });
+
+test('la carta de devolución cabe en el límite del servidor aunque adjunte muchas pruebas largas', () => {
+  const long = 'x'.repeat(4000), runs = Array.from({ length: 60 }, (_, i) => ({ id: `R${i}`, request: long, seed: i, scenario: { requests: 1, stock: 1, concurrency: 1 } }));
+  const reports = runs.map(r => ({ suite: 'Unitarias', completed: 1, rejected: 0, oversold: 0, duplicates: 0, breaches: 0, testEvidence: { runId: r.id } }));
+  const lines = evidenceLines(runs, reports, runs.map(r => r.id));
+  assert.ok(lines[0].scenario.length < 200, 'el pedido de cada prueba se recorta');
+  const letter = qaReturn(pending, 'backend', 'Falla', 'Algo', lines, runs.map(r => r.id))!;
+  assert.ok(String(letter.payload.steps).length <= 4000 && String(letter.payload.observed).length <= 4000);
+});

@@ -3,7 +3,7 @@ import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant, Controls, 
 import { BLOCKS, ROLE_LABELS, STATUS_LABELS, type Graph, type PrivateCompany, type Role } from '../shared/types';
 import { PLAN_PIECES, PLAN_PIECE_TYPES, planPublicationCost, type PlanPiece } from '../shared/plan';
 import { PLAN_NODE_WIDTH, addPiece, boardPoint, boardSlots, connect, editableBoard, removePiece } from './planBoard';
-import { LOGIC_BLOCKS, hasBlock, insertBlock, logicPath, removeBlock, submissionCost, type LogicPiece } from './logicBlocks';
+import { LOGIC_BLOCKS, hasBlock, insertBlock, logicPath, removeBlock, sameLogic, submissionCost, type LogicPiece } from './logicBlocks';
 import type { BlockConfiguration } from '../shared/blocks';
 import { send, money, useGame } from './store';
 import { Icon } from './icons';
@@ -117,7 +117,7 @@ function PlanEditor({ company:c, role, active }: { company: PrivateCompany; role
         <h3>{PLAN_PIECES[piece].label}</h3><span className="inspector-id">{piece.toUpperCase()}</span>
         <p className="piece-text">{PLAN_PIECES[piece].text}</p>
         <div className="inspector-cost"><span>INCORPORACIÓN</span><b>{money(PLAN_PIECES[piece].cost)}</b></div>
-        {(piece==='inventory'||piece==='payment')&&<p className="muted">Su lógica está debajo del plano: tocá un bloque para ponerlo o quitarlo.</p>}
+        {(piece==='inventory'||piece==='payment')&&role==='backend'&&<p className="muted">Su lógica está debajo del plano: tocá un bloque para ponerlo o quitarlo.</p>}
         {PLAN_PIECES[piece].owner===role&&piece!=='entry'&&<button className="secondary-button danger" disabled={!active} onClick={()=>{setPlan(current=>removePiece(current,node!.id));setSelected(null);setDirty(true);}}>QUITAR PIEZA</button>}</>
       :<div className="inspector-empty"><Icon name="chip" size={34}/><span>SIN SELECCIÓN</span><p className="muted">Tocá un solar vacío para colocar tu pieza, o una pieza puesta para ver qué hace.</p></div>}
     </aside></div>
@@ -138,16 +138,17 @@ function PlanLogic({ company:c, piece, active, lockedBy, onOpen }: { company: Pr
   const revision=useRef(draft?.revision??0);
   // A revision saved elsewhere (the inner canvas, Claude, a QA return) replaces what the panel shows.
   useEffect(()=>{if((draft?.revision??0)>=revision.current){setGraph(structuredClone(draft?.graph??c.backend));revision.current=draft?.revision??0;}},[draft?.revision,c.version]);
-  const editable=active&&!lockedBy&&!busy,unchanged=logicPath(graph).join()===logicPath(c.backend).join();
+  const editable=active&&!lockedBy&&!busy,unchanged=sameLogic(graph,c.backend);
   async function toggle(type:string) {
     const next=hasBlock(graph,type)?removeBlock(graph,type):insertBlock(graph,type);
-    setBusy(true);
-    if(await send('draft.save',{companyId:c.id,payload:{graph:next,revision:revision.current}})){revision.current++;setGraph(next);}
+    // The snapshot may land before the ack and set the revision already: the next one is sent+1, never more.
+    const sent=revision.current;setBusy(true);
+    if(await send('draft.save',{companyId:c.id,payload:{graph:next,revision:sent}})){revision.current=Math.max(revision.current,sent+1);setGraph(next);}
     setBusy(false);
   }
   async function submit() {
-    setBusy(true);
-    if(await send('change.submit',{companyId:c.id,payload:{graph,revision:revision.current}}))revision.current++;
+    const sent=revision.current;setBusy(true);
+    if(await send('change.submit',{companyId:c.id,payload:{graph,revision:sent}}))revision.current=Math.max(revision.current,sent+1);
     setBusy(false);
   }
   return <div className="plan-logic"><div className="panel-title"><span>LÓGICA DE {PLAN_PIECES[piece].label.toUpperCase()}</span><button className="text-button" onClick={onOpen}>CABLEAR A MANO (AVANZADO)<Icon name="arrow" size={12}/></button></div>

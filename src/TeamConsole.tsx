@@ -64,7 +64,7 @@ function CtoDecision({change,active,onSelect}:{change?:Change;active:boolean;onS
    <p>Costo {money(change.cost)} · disponible {money(w?.available??0)} · reservado {money(s.privateCompany?.reserved??0)}{change.status==='EXPIRED'?' · la autorización anterior venció':''}</p>
    {review&&<p className="muted">QA: {review.reason.slice(0,280)} · pruebas {review.evidenceIds.join(', ')||'—'}{review.failedIds.length?` · con diferencias: ${review.failedIds.join(', ')}`:''}</p>}
    <label>MOTIVO (OPCIONAL)<textarea maxLength={4000} value={reason} disabled={!active} onChange={e=>setReason(e.target.value)}/></label>
-   <div className="decision-actions">{choices.map(([decision,label,className])=><button key={decision} className={className} disabled={!active||busy} onClick={()=>void decide(decision)}>{label}{decision==='authorize'&&<Icon name="arrow" size={13}/>}</button>)}</div></div>
+   <div className="decision-actions">{choices.map(([decision,label,className])=><button key={decision} className={className} disabled={!active||busy} onClick={()=>void decide(decision)}>{label}{decision==='authorize'&&<Icon name="arrow" size={13}/>}</button>)}</div><p className="muted">PEDIR MÁS PRUEBAS y RECHAZAR devuelven el cambio a QA.</p></div>
    :<p className="muted cto-not-pending">{change.id} · {STATUS_LABELS[change.status]}: no espera tu decisión.</p>}</section>;
 }
 export default function TeamConsole({active,change,onSelect}:{active:boolean;change?:Change;onSelect:(id:string)=>void}){const s=useGame(v=>v.snapshot)!,role=s.identity!.role,[attached,setAttached]=useState({selected:[] as string[],known:[] as string[]});

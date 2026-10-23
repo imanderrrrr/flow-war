@@ -70,7 +70,8 @@ export function qaReturn(change: Returnable, recipient: 'backend' | 'security', 
   if (!description || !wanted) return null;
   return { type: 'qa.return', payload: {
     changeId: change.id, recipient: change.domain === 'product' ? 'product' : recipient, subject: description.slice(0, 120), description,
-    steps: evidence.map(e => e.scenario).join(' · ') || 'Revisión sin prueba adjunta.', observed: evidence.map(e => e.observed).join(' · ') || 'Sin prueba adjunta.',
+    // Each field stays under the server's 4000-character limit for free text, however many tests are attached.
+    steps: (evidence.map(e => e.scenario).join(' · ') || 'Revisión sin prueba adjunta.').slice(0, 4000), observed: (evidence.map(e => e.observed).join(' · ') || 'Sin prueba adjunta.').slice(0, 4000),
     expected: wanted, severity: 'medium', evidenceIds: selected, observationRefs: [],
   } };
 }
@@ -85,11 +86,13 @@ export function ctoDecision(changeId: string, decision: CtoChoice, reason: strin
 
 type RunFacts = { id: string; request: string; seed: number; scenario: { requests: number; stock: number; concurrency: number } };
 type ReportFacts = Pick<Report, 'suite' | 'obsolete' | 'completed' | 'rejected' | 'oversold' | 'duplicates' | 'breaches'> & { testEvidence?: { runId?: string } };
+/** A test's request can be a student's whole order to Claude; the letter quotes its start. */
+const clip = (text: string) => text.length > 80 ? `${text.slice(0, 79)}…` : text;
 /** The tests a return letter quotes: the marked ones, or the historical reports when none can be marked. */
 export function evidenceLines(runs: RunFacts[], reports: ReportFacts[], selected: string[]): EvidenceLine[] {
   if (selected.length) return selected.flatMap(id => {
     const run = runs.find(r => r.id === id), report = reports.find(r => r.testEvidence?.runId === id);
-    return run && report ? [{ scenario: `${run.id} · ${run.request} · ${run.scenario.requests} solicitudes · stock ${run.scenario.stock} · ${run.scenario.concurrency} a la vez · semilla ${run.seed}`, observed: reportLine(report) }] : [];
+    return run && report ? [{ scenario: `${run.id} · ${clip(run.request)} · ${run.scenario.requests} solicitudes · stock ${run.scenario.stock} · ${run.scenario.concurrency} a la vez · semilla ${run.seed}`, observed: reportLine(report) }] : [];
   });
   return reports.filter(r => !r.obsolete && !r.testEvidence?.runId).map(r => ({ scenario: `${r.suite} (prueba histórica)`, observed: reportLine(r) }));
 }

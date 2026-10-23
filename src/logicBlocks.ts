@@ -34,7 +34,9 @@ export function insertBlock(graph: Graph, type: string): Graph {
   const ids = new Set(graph.nodes.map(node => node.id));
   let n = 1; while (ids.has(`logic-${type}-${n}`)) n++;
   const id = `logic-${type}-${n}`, incoming = graph.edges.find(edge => edge.target === anchor.id);
-  const nodes = [...structuredClone(graph.nodes), { id, type, position: { x: anchor.position.x - 95, y: anchor.position.y + 140 }, data: { label: block.label, value: block.value } }];
+  // Blocks put in one tap fan out under their operation, so the inner canvas never stacks two on one spot.
+  const placed = graph.nodes.filter(node => node.id.startsWith('logic-')).length;
+  const nodes = [...structuredClone(graph.nodes), { id, type, position: { x: anchor.position.x - 95 + placed * 40, y: anchor.position.y + 140 + placed * 70 }, data: { label: block.label, value: block.value } }];
   const edges = [...structuredClone(graph.edges.filter(edge => edge !== incoming)),
     ...(incoming ? [{ id: `${incoming.source}->${id}`, source: incoming.source, target: id }] : []), { id: `${id}->${anchor.id}`, source: id, target: anchor.id }];
   return { nodes, edges };
@@ -62,6 +64,14 @@ export function logicPath(graph: Graph): string[] {
     node = graph.nodes.find(n => n.id === edge?.target);
   }
   return labels;
+}
+
+/** Same logic: the same blocks in the same order with the same parameters, whatever their ids or positions. */
+export function sameLogic(a: Graph, b: Graph) {
+  const walk = (graph: Graph) => { const out: unknown[] = [], seen = new Set<string>(); let node = graph.nodes.find(n => n.type === 'entry');
+    while (node && !seen.has(node.id)) { seen.add(node.id); out.push([node.type, node.data.value ?? null, node.data.config ?? null, node.data.module ?? null]); const edge = graph.edges.find(e => e.source === node!.id); node = graph.nodes.find(n => n.id === edge?.target); }
+    return JSON.stringify([out, graph.nodes.length]); };
+  return walk(a) === walk(b);
 }
 
 /** What change.submit charges (server/engine.ts): Q100 plus each block on the graph. */

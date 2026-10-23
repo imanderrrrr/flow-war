@@ -133,6 +133,8 @@ function script(p: Practice, identity: Identity, type: string, payload: Record<s
 function fastForward(g: GameState, until: () => boolean, seconds = 120) { for (let i = 0; i < seconds * 10 && !until() && g.status === 'RUNNING'; i++) step(g); }
 const types = (graph: Graph) => route(graph).map(n => n.type);
 const atomicBetween = (graph: Graph) => { const t = types(graph), r = t.indexOf('read'), a = t.indexOf('atomic'), w = t.indexOf('write'); return r >= 0 && a > r && w > a; };
+/** The draft as backend-enviar sends it: with Atomic Update between Read Stock and Write Stock, added only if missing. */
+const fixed = (graph: Graph) => atomicBetween(graph) ? graph : withAtomic(graph);
 /** The purchase-flow graph with Atomic Update between Read Stock and Write Stock (what backend-enviar asks for). */
 export function withAtomic(graph: Graph): Graph {
   const copy = structuredClone(graph), write = copy.nodes.find(n => n.type === 'write')!, edge = copy.edges.find(e => e.target === write.id)!;
@@ -207,6 +209,11 @@ const SCRIPTS: Record<TutorialRole, RoleScript> = {
       waiting: x => x.c.concurrency.run && isRunFinished(x.c.concurrency.run) ? undefined : 'Llegan dos compras a la vez por la última unidad…',
       facts: x => { const r = x.c.concurrency.run; if (!r || !isRunFinished(r)) return []; const done = r.requests.filter(q => q.result?.status === 'COMPLETED').length; return [`Última unidad: ${plural(done, 'compra completada', 'compras completadas')} sobre ${plural(r.inventory.initialStock, 'unidad', 'unidades')} · ${plural(r.inventory.oversold, 'sobreventa', 'sobreventas')}.`]; },
     },
+    'backend-atomic': {
+      // A practice rebuilt past this step (a restart, EMPEZAR DE NUEVO) gets the block the student put with PONER.
+      solve: (s, me) => { const draft = s.privateCompany!.drafts.backend; const graph = draft?.graph ?? s.privateCompany!.backend;
+        return atomicBetween(graph) ? null : { type: 'draft.save', companyId: me.companyId!, payload: { graph: withAtomic(graph), revision: draft?.revision ?? 0 } }; },
+    },
     'backend-enviar': {
       done: x => x.g.changes.some(ch => ch.companyId === x.c.id && ch.domain === 'backend' && ch.actorId === x.identity.id && !['STALE', 'QA_REJECTED'].includes(ch.status) && atomicBetween(ch.graph)),
       // A change without the fix would lock the student's logic until QA returns it: the scripted QA does so at once.
@@ -216,8 +223,8 @@ const SCRIPTS: Record<TutorialRole, RoleScript> = {
         script(x.p, as('qa', x.c.id), 'change.cancel', { changeId: ch.id, reason: 'Práctica: falta Atomic Update entre Read Stock y Write Stock.', confirmed: true });
         x.p.notes = ['QA te devolvió el cambio: falta Atomic Update entre Read Stock y Write Stock. Corregilo y enviá otra vez.'];
       },
-      facts: x => x.p.notes,
-      solve: (s, me) => ({ type: 'change.submit', companyId: me.companyId!, payload: { graph: withAtomic(s.privateCompany!.drafts.backend?.graph ?? s.privateCompany!.backend), revision: s.privateCompany!.drafts.backend?.revision ?? 0 } }),
+      facts: x => x.p.notes.length ? x.p.notes : atomicBetween(x.c.drafts.backend?.graph ?? x.c.backend) ? [] : ['Tu borrador todavía no tiene Atomic Update: tocá la pieza Inventario y PONER en Atomic Update.'],
+      solve: (s, me) => ({ type: 'change.submit', companyId: me.companyId!, payload: { graph: fixed(s.privateCompany!.drafts.backend?.graph ?? s.privateCompany!.backend), revision: s.privateCompany!.drafts.backend?.revision ?? 0 } }),
     },
   } },
   security: { steps: {

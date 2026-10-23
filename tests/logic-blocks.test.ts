@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { initialGraph, inventoryBatch, validateGraph } from '../server/engine.js';
 import { route } from '../server/graphs.js';
-import { LOGIC_BLOCKS, hasBlock, insertBlock, logicPath, removeBlock, submissionCost } from '../src/logicBlocks.js';
+import { LOGIC_BLOCKS, hasBlock, insertBlock, logicPath, removeBlock, sameLogic, submissionCost } from '../src/logicBlocks.js';
 
 const types = (graph: ReturnType<typeof initialGraph>) => route(graph).map(n => n.type);
 
@@ -71,4 +71,19 @@ test('la lógica se lee como un recorrido de etiquetas', () => {
 test('el costo de envío es el que cobra el servidor: Q100 más los bloques', () => {
   assert.equal(submissionCost(initialGraph('backend').nodes), 100);
   assert.equal(submissionCost(insertBlock(insertBlock(initialGraph('backend'), 'atomic'), 'idempotency').nodes), 100 + 180 + 150);
+});
+
+test('la misma lógica se reconoce aunque cambien ids y posiciones, y un parámetro distinto la distingue', () => {
+  const base = initialGraph('backend'), withAtomic = insertBlock(base, 'atomic');
+  assert.equal(sameLogic(base, structuredClone(base)), true);
+  assert.equal(sameLogic(removeBlock(withAtomic, 'atomic'), base), true, 'poner y quitar vuelve a producción');
+  assert.equal(sameLogic(withAtomic, base), false);
+  const tuned = structuredClone(withAtomic); tuned.nodes.find(n => n.type === 'atomic')!.data.value = 2;
+  assert.equal(sameLogic(tuned, withAtomic), false, 'cambiar solo la cantidad también es un cambio');
+});
+
+test('los bloques de un toque no quedan uno encima del otro en el lienzo interno', () => {
+  const graph = insertBlock(insertBlock(insertBlock(initialGraph('backend'), 'lock'), 'queue'), 'cache');
+  const spots = graph.nodes.filter(n => n.id.startsWith('logic-')).map(n => `${n.position.x},${n.position.y}`);
+  assert.equal(new Set(spots).size, 3);
 });

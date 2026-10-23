@@ -88,7 +88,8 @@ test('una lectura que habla de un resultado no se cierra hasta que el motor lo p
 test('un cambio sin la corrección vuelve a Backend con una carta y el paso espera el correcto', () => {
   const p = playThrough('backend', 7);
   assert.equal(meta(p).id, 'backend-enviar');
-  const s = practiceSnapshot(p, 0), graph = s.privateCompany!.drafts.backend?.graph ?? s.privateCompany!.backend;
+  // The rebuilt practice already has the block PONER put; the production graph is the one without it.
+  const s = practiceSnapshot(p, 0), graph = s.privateCompany!.backend;
   assert.equal(practiceCommand(p, { id: 'no-fix', type: 'change.submit', companyId: 2, payload: { graph, revision: s.privateCompany!.drafts.backend?.revision ?? 0 } }).ok, true);
   for (let i = 0; i < 5; i++) tickPractice(p);
   assert.equal(meta(p).id, 'backend-enviar', 'sin Atomic Update no avanza');
@@ -194,4 +195,17 @@ test('empezar un paso de nuevo reconstruye la copia al inicio de ese mismo paso'
   const p = playThrough('backend', 3), fresh = createPractice({ seed: 7357, generation: 0 }, subjectFor('backend'), p.step);
   assert.equal(fresh.step, 3); assert.equal(meta(fresh).id, 'backend-publicar');
   assert.equal(fresh.game.companies[2].assembly.active, true, 'el plano vuelve a estar en montaje');
+});
+
+test('retomar Backend en "Enviá el cambio" deja el borrador con Atomic Update, y sin él la tarjeta dice qué falta', () => {
+  // Rebuilt at the step (a restart, EMPEZAR DE NUEVO): the PONER of the previous step is applied again.
+  const rebuilt = createPractice({ seed: 7357, generation: 0 }, subjectFor('backend'), 7);
+  assert.equal(meta(rebuilt).id, 'backend-enviar');
+  const s = practiceSnapshot(rebuilt, 0);
+  assert.ok((s.privateCompany!.drafts.backend?.graph.nodes ?? []).some(n => n.type === 'atomic'), 'el paso anterior se rehízo con PONER');
+  assert.deepEqual(s.tutorial!.facts, []);
+  // Reached without the block (QUITAR, or a UI step closed some other way): the card says what is missing.
+  const bare = playThrough('backend', 7);
+  assert.match(practiceSnapshot(bare, 0).tutorial!.facts.join(' '), /todavía no tiene Atomic Update/);
+  while (!practiceFinished(rebuilt)) play(rebuilt);
 });

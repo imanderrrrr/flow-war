@@ -65,6 +65,18 @@ export function createGame(duration = 1500, seed = 7357, generation = 0, dvrEnab
 }
 /** Event texts say a number the way a person reads it: "1 acceso indebido", "3 accesos indebidos". */
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+/** The line a QA or CTO decision leaves in the team's events, whichever console or order sent it. */
+function decisionEvent(g: GameState, c: Company, type: string, p: Record<string, unknown>) {
+  const ch = g.changes.find(x => x.id === p.changeId && x.companyId === c.id);
+  if (!ch) return;
+  if (type === 'qa.review') event(g, c.id, `${ch.id} aprobado por QA.`, 'neutral', 'PIPELINE');
+  if (type === 'cto.decide') event(g, c.id, p.decision === 'authorize' ? `${ch.id}: el CTO lo autorizó y apartó Q${ch.reserved}.` : p.decision === 'evidence' ? `${ch.id}: el CTO pidió más pruebas, vuelve a QA.` : `${ch.id}: el CTO lo rechazó, vuelve a QA.`, 'neutral', 'CTO');
+}
+/** The historical cto.authorize / cto.reject on a change without implementation record a decision like cto.decide. */
+function legacyDecision(c: Company, ch: Change, identity: Identity, at: number, kind: 'cto.authorize' | 'cto.reject', reason: string) {
+  const state = workflow(c), runs = state.runs.filter(r => r.changeId === ch.id && r.report);
+  state.decisions.push({ id: `D${state.decisions.length + 1}`, changeId: ch.id, actor: identity.id, at, kind, reason, evidenceIds: runs.map(r => r.id), failedIds: runs.filter(r => r.report?.testEvidence?.passed === false).map(r => r.id), cost: ch.cost });
+}
 /** A manual case carries the scenario's suite id; the lab's suites already have their Spanish name. */
 const SUITE_NAMES: Record<string, string> = { unit: 'Unitarias', integration: 'Integración', concurrency: 'Concurrencia', load: 'Carga', security: 'Seguridad', regression: 'Regresión' };
 export function event(g: GameState, companyId: number | null, text: string, tone: 'good' | 'bad' | 'neutral' = 'neutral', category = 'SISTEMA') {
@@ -219,7 +231,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
   try {
     validateParameters(command.type, p);
     if(identity.role==='backend'&&['draft.save','change.submit','module.create','module.revise','module.design','ai.accept'].includes(command.type))assertBackendEditable(c);
-    const handled=workflowCommand(g,c,identity,command.type,p);if(handled)return handled;
+    const handled=workflowCommand(g,c,identity,command.type,p);if(handled){if(handled.ok)decisionEvent(g,c,command.type,p);return handled;}
     const operated=operationsCommand(g,c,identity,command.type,p,event);if(operated)return operated;
     const commercial=productCommand(g,c,identity,command.type,p,event);if(commercial)return commercial;
     // Promotions are published only through Producto → QA → CTO → DevOps.
@@ -361,7 +373,8 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       const risks=String(p.risks??'').trim();
       if(ch.implementation&&c.runtime.workflow?.runs.some(r=>r.changeId===ch.id&&r.report))return workflowCommand(g,c,identity,'qa.review',{changeId:ch.id,risks:risks||'Aprobación manual explícita; revisar todas las pruebas adjuntas.',evidenceIds:c.runtime.workflow?.runs.filter(r=>r.changeId===ch.id&&r.report).map(r=>r.id)??[]})!;
       if (ch.status !== 'QA_PENDING' || !ch.reports.some(report => !report.obsolete)) throw new Error('Se requiere una prueba terminada.');
-      if(ch.implementation){const state=workflow(c);state.decisions.push({id:`D${state.decisions.length+1}`,changeId:ch.id,actor:identity.id,at:g.tick,kind:'qa.approve',reason:risks||'Aprobación manual explícita; sin observaciones escritas.',evidenceIds:ch.reports.map((r,i)=>`${ch.id}:report:${i}`),failedIds:ch.reports.flatMap((r,i)=>r.testEvidence?.passed===false||r.oversold>0||r.duplicates>0?[`${ch.id}:report:${i}`]:[])});}
+      // Every approval is a decision, implementation or not: the post-mortem counts decisions, not buttons.
+      {const state=workflow(c);state.decisions.push({id:`D${state.decisions.length+1}`,changeId:ch.id,actor:identity.id,at:g.tick,kind:'qa.approve',reason:risks||'Aprobación manual explícita; sin observaciones escritas.',evidenceIds:ch.reports.map((r,i)=>`${ch.id}:report:${i}`),failedIds:ch.reports.flatMap((r,i)=>r.testEvidence?.passed===false||r.oversold>0||r.duplicates>0?[`${ch.id}:report:${i}`]:[])});}
       ch.status = 'CTO_PENDING'; event(g, c.id, `${ch.id} aprobado por QA.`, 'neutral', 'PIPELINE');
     } else if (command.type === 'qa.reject') {
       if(ch.implementation)throw new Error('Redacta una carta formal para devolver esta implementación.');
@@ -371,10 +384,12 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       if (ch.status !== 'CTO_PENDING') throw new Error('Falta aprobación de QA.');
       if (c.capital - c.reserved - c.infraBudget < ch.cost) throw new Error('Saldo disponible insuficiente.');
       c.reserved += ch.cost; ch.reserved = ch.cost; ch.status = 'AUTHORIZED'; ch.expires = g.tick + 60;
+      legacyDecision(c, ch, identity, g.tick, 'cto.authorize', 'Autorización manual explícita del CTO.');
       event(g, c.id, `${ch.id}: el CTO lo autorizó y apartó Q${ch.cost}.`, 'neutral', 'CTO');
     } else if (command.type === 'cto.reject') {
       if(ch.implementation)return workflowCommand(g,c,identity,'cto.decide',{changeId:ch.id,decision:'reject',reason:'Rechazo manual explícito del CTO. Se solicita revisión QA.',confirmed:true})!;
       if (ch.status !== 'CTO_PENDING') throw new Error('Estado de cambio inválido.'); ch.status = 'CTO_REJECTED';
+      legacyDecision(c, ch, identity, g.tick, 'cto.reject', 'Rechazo manual explícito del CTO.');
     } else if (command.type === 'deploy.start') {
       if(c.capital-c.infraBudget<c.reserved)throw new Error('Saldo reservado insuficiente. Solicita evaluación del CTO.');
       if (ch.status !== 'AUTHORIZED' || g.tick > (ch.expires ?? 0)) throw new Error('No existe autorización vigente.');
