@@ -6,6 +6,8 @@ import { AiError, type AiGateway, type InterpretResult } from './claude.js';
 import { stableDigest } from './discipline.js';
 import { productEnabled } from './product.js';
 import { systemFor, commandsFor, executorContext, finalReply, modelContext, outcome, planCalls, toolDefinitions, type ExecutorContext } from './executor.js';
+import { sourceTexts } from './grounding.js';
+import { screenInstruction } from './scope.js';
 
 export function parseExecutorInput(raw: unknown): ExecutorInput {
   const p = object(raw); keys(p, ['id', 'text', 'threadId', 'selection']);
@@ -109,15 +111,20 @@ export async function executeCalls(current: () => { g: GameState; actor: Identit
 export function finishExecution(g: GameState, actor: Identity, input: ExecutorInput, reply: { state: string; message: string; refs: string[] }, state: string, code?: string, interpretation?: InterpretResult) {
   const c = g.companies[actor.companyId!], attempt = c.runtime.aiAttempts?.find(a => a.actor === actor.id && a.id === input.id && a.generation === g.generation);
   if (attempt) { attempt.state = state; attempt.finishedAt = g.tick; attempt.code = code; attempt.reply = { state: reply.state, message: reply.message, refs: reply.refs }; }
-  if (interpretation) { const u = usageOf(g, c.id); u.requests++; u.inputTokens += interpretation.usage.inputTokens; u.outputTokens += interpretation.usage.outputTokens; u.cacheReadTokens += interpretation.usage.cacheReadTokens; u.cacheWriteTokens += interpretation.usage.cacheWriteTokens; }
+  if (interpretation && interpretation.stopReason !== SCREENED) { const u = usageOf(g, c.id); u.requests++; u.inputTokens += interpretation.usage.inputTokens; u.outputTokens += interpretation.usage.outputTokens; u.cacheReadTokens += interpretation.usage.cacheReadTokens; u.cacheWriteTokens += interpretation.usage.cacheWriteTokens; }
   const thread = threadOf(g, actor, attempt?.threadId ?? input.threadId ?? `${actor.role}-default`);
   if (thread && !thread.messages.some(m => m.id === `${input.id}-assistant`)) thread.messages.push({ id: `${input.id}-assistant`, requestId: input.id, role: 'assistant', text: reply.message, at: g.tick, refs: reply.refs, state: reply.state });
 }
 export function replyFor(input: ExecutorInput, result: { state: ExecutorReply['state']; message: string; outcomes: OperationOutcome[] }, provider: string, model: string): ExecutorReply {
   return { id: input.id, state: result.state, message: result.message, operations: result.outcomes, refs: [...new Set(result.outcomes.flatMap(o => o.refs))], provider, model };
 }
+/** Stop reason of an instruction the scope screen refused before any provider call (server/scope.ts). */
+export const SCREENED = 'screened';
 export async function interpret(gateway: AiGateway, g: GameState, actor: Identity, input: ExecutorInput) {
-  const { request, snapshot } = buildRequest(g, actor, input);
+  const { request, snapshot } = buildRequest(g, actor, input), threadId = input.threadId ?? `${actor.role}-default`;
+  // Out of scope on the student's words alone: nothing is sent, and planCalls composes the refusal from no calls.
+  if (screenInstruction(g, actor.companyId!, sourceTexts({ instruction: input.text, previous: previousInstructions(g, actor, threadId, input.id) })))
+    return { result: { calls: [], usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 }, model: gateway.provider.model, stopReason: SCREENED, fallback: false } as InterpretResult, snapshot };
   const result = await gateway.interpret(actor.id, actor.companyId!, request, tokenBudget(g, actor.companyId!));
   return { result, snapshot };
 }
