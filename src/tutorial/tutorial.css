@@ -30,6 +30,19 @@ body.tutorial-active .customer-notices,body.tutorial-active .notices-muted{displ
 .phase-chip.calm{border-color:#3f6b56;color:#8fdcb4}
 .phase-chip.ramp{border-color:#6b5b2f;color:#f5d45c}
 .phase-chip.full{border-color:#6e3c43;color:#f27e79}
+/* Its notices (src/PhaseNotice.tsx): under the header, above the page, never over the tutorial. */
+.phase-notice{position:fixed;top:92px;left:50%;transform:translateX(-50%);z-index:55;width:min(620px,calc(100vw - 32px));display:flex;align-items:flex-start;gap:12px;padding:13px 15px;background:#17202f;border:1px solid #3b475a;border-left:3px solid #8fdcb4;box-shadow:5px 5px #070c15;color:#dce1e9;animation:phase-in .25s steps(3)}
+@keyframes phase-in{from{opacity:0;transform:translate(-50%,-8px)}to{opacity:1;transform:translate(-50%,0)}}
+.phase-notice>svg{flex:none;margin-top:1px;color:#8fdcb4}
+.phase-notice>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.phase-notice strong{font-size:9px;letter-spacing:.8px;color:#fff}
+.phase-notice strong>span{color:#9fb0c6}
+.phase-notice p{margin:0;font-size:12px;line-height:1.55;color:#c8d1de}
+.phase-notice>button{flex:none;align-self:center;border:1px solid #3b475a;padding:7px 9px}
+.phase-notice.ramp{border-left-color:#f5d45c}.phase-notice.ramp>svg{color:#f5d45c}
+.phase-notice.full{border-left-color:#f27e79}.phase-notice.full>svg{color:#f27e79}
+@media(max-width:760px){.phase-notice{top:85px;flex-wrap:wrap}.phase-notice p{font-size:11px}.phase-notice>button{margin-left:auto}}
+@media(prefers-reduced-motion:reduce){.phase-notice{animation:none}}
 
 /* Tutorial progress on the projector and the teacher's console. */
 .tutorial-progress{display:block;margin-top:3px;font-size:7px;letter-spacing:.5px;color:#d3c388}

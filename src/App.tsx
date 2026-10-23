@@ -1,6 +1,7 @@
 import ClaudeStatus from './ClaudeStatus';
 import AuditorConsole from './AuditorConsole';
 import CustomerNotices from './CustomerNotices';
+import PhaseNotice from './PhaseNotice';
 import ClaudeExecutor from './ClaudeExecutor';
 import DevOpsConsole from './DevOpsConsole';
 import CtoConsole from './CtoConsole';
@@ -147,5 +148,5 @@ function Operator() {
 export default function App() {
   const { snapshot:s,notice }=useGame();
   const path=window.location.pathname;
-  return <><Header/>{!s?<main className="loading-screen"><span className="loading-pixel"/><span>CONECTANDO CON EL MERCADO…</span></main>:path==='/login'?<Login/>:path==='/unirse'?<JoinPage/>:path==='/sala'?<RoomScreen/>:path==='/dvr'?<Dvr/>:path==='/control'?<Operator/>:path==='/workspace'?<Workspace/>:<Arena/>}<TutorialOverlay/>{notice&&<div role="status" className={`toast ${notice.error?'error':''}`}><Icon name={notice.error?'shield':'chip'} size={16}/>{notice.text}</div>}</>;
+  return <><Header/><PhaseNotice/>{!s?<main className="loading-screen"><span className="loading-pixel"/><span>CONECTANDO CON EL MERCADO…</span></main>:path==='/login'?<Login/>:path==='/unirse'?<JoinPage/>:path==='/sala'?<RoomScreen/>:path==='/dvr'?<Dvr/>:path==='/control'?<Operator/>:path==='/workspace'?<Workspace/>:<Arena/>}<TutorialOverlay/>{notice&&<div role="status" className={`toast ${notice.error?'error':''}`}><Icon name={notice.error?'shield':'chip'} size={16}/>{notice.text}</div>}</>;
 }

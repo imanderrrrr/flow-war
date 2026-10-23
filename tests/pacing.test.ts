@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CALM_START, FULL, intensity, phaseView } from '../shared/pacing.js';
+import { CALM_START, FULL, NOTICE_SECONDS, intensity, phaseNotice, phaseView } from '../shared/pacing.js';
 import { applyCommand, assembleGame, createGame, defaultPacing, project } from '../server/engine.js';
 import { generateTraffic } from '../server/traffic.js';
 import { advanceGame } from './helpers.js';
@@ -84,4 +84,24 @@ test('en la fase tranquila un error cuesta menos: presión, reputación y el rel
   assert.equal(legacy.eliminated, true, 'sin cronograma, 90 s sin servicio eliminan');
   assert.equal(calm.eliminated, false, 'en la fase tranquila el reloj corre a un cuarto');
   assert(calm.deadTicks > 20 && calm.deadTicks < 30, String(calm.deadTicks));
+});
+
+test('avisos de fase: al empezar y un minuto antes de cada cambio, solo con hechos del cronograma', () => {
+  const at = (tick: number) => phaseNotice(CALM_START, tick)?.key;
+  assert.deepEqual([0, 39.9, 40, 300, 839.9].map(at), ['start', 'start', undefined, undefined, undefined]);
+  assert.deepEqual([840, 899.9, 900, 919.9, 920, 1019.9].map(at), ['calm-ends', 'calm-ends', 'ramp', 'ramp', undefined, undefined]);
+  assert.deepEqual([1020, 1079.9, 1080, 1099.9, 1100, 1499].map(at), ['full-soon', 'full-soon', 'full', 'full', undefined, undefined]);
+  assert.equal(NOTICE_SECONDS.warning, 60);
+  // The warnings count down to the change itself; the texts follow the frozen schedule.
+  assert.equal(phaseNotice(CALM_START, 850)!.countdownTo, 900); assert.equal(phaseNotice(CALM_START, 1030)!.countdownTo, 1080);
+  assert.match(phaseNotice(CALM_START, 0)!.text, /primeros 15 minutos la demanda es el 50 % .* el 25 % de lo normal/);
+  assert.match(phaseNotice(CALM_START, 850)!.text, /sube durante 3 minutos/);
+  const short = { ...CALM_START, calmUntil: 600, rampUntil: 840, calmDemand: .4 };
+  assert.match(phaseNotice(short, 5)!.text, /primeros 10 minutos la demanda es el 40 %/); assert.match(phaseNotice(short, 545)!.text, /durante 4 minutos/);
+  // Facts only: no notice ever tells a team what to do.
+  for (let t = 0; t < 1500; t += 5) { const n = phaseNotice(CALM_START, t); if (n) assert.doesNotMatch(`${n.title} ${n.text}`, /deber|convien|recomend|te sugier|tenés que|tienen que|prepar|asegur/i, n.key); }
+  assert.equal(phaseNotice(undefined, 0), undefined, 'a game without a schedule shows none');
+  // The snapshot carries the notice of the moment, and nothing outside its window.
+  const g = started(createGame()), view = (tick: number) => { g.tick = tick; return project(g, null).phase; };
+  assert.equal(view(10)!.notice!.key, 'start'); assert.equal(view(120)!.notice, undefined); assert.equal(view(870)!.notice!.title, 'TERMINA LA FASE TRANQUILA');
 });
