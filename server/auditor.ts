@@ -109,7 +109,7 @@ function summaryFor(g: GameState, p: AuditProbe): string[] {
   if (p.notContained) {
     lines.push(`${plural(p.notContained, 'pasa los controles y entra', 'pasan los controles y entran')} al sistema de ${c.name}${p.reach ? `, hasta ${REACH_TEXT[p.reach]}` : ''}.`);
     const parts: string[] = [];
-    if (p.breached) parts.push(`${plural(p.breached, 'provoca un acceso indebido', 'provocan accesos indebidos')} en Write Stock (${c.name} registra SECURITY BREACH y pierde reputación)`);
+    if (p.breached) parts.push(`${plural(p.breached, 'provoca un acceso indebido', 'provocan accesos indebidos')} en Write Stock (${c.name} pierde reputación)`);
     if (p.served) parts.push(`${plural(p.served, 'completa una compra', 'completan compras')} como si fueran clientes`);
     if (p.rejectedLater) parts.push(`${plural(p.rejectedLater, 'se rechaza', 'se rechazan')} más adelante (sin stock o cola llena)`);
     if (p.abandoned) parts.push(`${plural(p.abandoned, 'se abandona', 'se abandonan')} por tiempo de espera`);
@@ -318,7 +318,7 @@ export function openFinding(g: GameState, probe: AuditProbe, emit: Emit): AuditF
   c.capital = Math.max(0, c.capital - finding.fine);
   emit(g, c.id, `Hallazgo de auditoría externa en ${finding.module}: falta ${control}. Multa de Q${finding.fine}.`, 'bad', 'SECURITY');
   addSlackMessage(g, { companyId: c.id, channel: 'alertas-sistema', source: 'system', author: 'Sistema', cause: 0, dedup: `finding:${finding.id}`,
-    text: `[CRITICAL] Auditoría externa: ${CONTROL_CHECK_INFO[probe.check].pending} Control pendiente: ${control} en ${finding.module}.`, refs: [finding.id] });
+    text: `[CRÍTICO] Auditoría externa: ${CONTROL_CHECK_INFO[probe.check].pending} Control pendiente: ${control} en ${finding.module}.`, refs: [finding.id] });
   return finding;
 }
 /**

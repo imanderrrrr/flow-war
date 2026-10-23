@@ -46,7 +46,7 @@ export function productCommand(g: GameState, c: Company, actor: Identity, type: 
   const change: Change = { id: `CH-${String(g.changes.length + 1).padStart(3, '0')}`, companyId: c.id, domain: 'product', name: `${item.name} · ${draft.id}`, graph: structuredClone(c.product), status: 'QA_PENDING', cost: PUBLICATION_BASE_COST + draft.configuration.budget, reserved: 0, baseVersion: c.version, created: g.tick, reports: [], actorId: actor.id,
     context: { backend: structuredClone(c.backend), security: structuredClone(c.security), executionVersion: c.version, execution: releaseFor(c) }, product: { draftId: draft.id, catalogId: item.id, configuration: structuredClone(draft.configuration) } };
   g.changes.unshift(change); draft.status = 'SUBMITTED'; draft.changeId = change.id;
-  event(g, c.id, `${change.id} (${draft.id}) enviado a QA.`, 'neutral', 'PRODUCTO');
+  event(g, c.id, `${change.id}: promoción ${draft.id} enviada a QA.`, 'neutral', 'PRODUCTO');
   return { ok: true, refs: [change.id, draft.id] };
 }
 /** A published product change starts its promotion; the cost was charged by the deployment. */
@@ -55,7 +55,7 @@ export function activateProduct(g: GameState, c: Company, ch: Change, event: Eve
   const configuration = ch.product.configuration, id = `C${c.id}-CAM${c.runtime.campaigns.length + 1}`;
   c.runtime.campaigns.push({ id, configuration: structuredClone(configuration), status: 'ACTIVE', createdBy: ch.actorId, createdAt: ch.created, reserved: 0, activatedAt: g.tick, endsAt: g.tick + configuration.duration, authorizedBy: 'pipeline', changeId: ch.id });
   const draft = productState(c).drafts.find(d => d.id === ch.product!.draftId); if (draft) draft.status = 'PUBLISHED';
-  event(g, c.id, `${ch.product.catalogId} activa · ${configuration.duration} s.`, 'neutral', 'PRODUCTO');
+  event(g, c.id, `Promoción ${ch.product.catalogId} activa por ${configuration.duration} s.`, 'neutral', 'PRODUCTO');
 }
 export function returnProduct(c: Company, ch: Change) { const draft = ch.product && productState(c).drafts.find(d => d.id === ch.product!.draftId); if (draft) draft.status = 'RETURNED'; }
 export function productView(g: GameState, c: Company, now: number): ProductView {

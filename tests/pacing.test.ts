@@ -48,7 +48,7 @@ test('antes del minuto 15 no hay ráfagas, ni tráfico anómalo, ni pruebas de c
   }
   assert.equal(probe(g, 'p1').code, 'CALM_PHASE');
   assert.equal(project(g, { id: 'auditor-P1', role: 'auditor', companyId: null }).auditor!.opensAt, 900);
-  assert(!g.events.some(e => /Ráfagas|anómalo detectado/.test(e.text)));
+  assert(!g.events.some(e => /muchas compras juntas|tráfico anómalo simulado/.test(e.text)));
   // Minute 15: the bursts and the anomalous traffic arrive, and the class hears it.
   advanceGame(g, 2);
   assert(g.companies.some(c => c.concurrency.totals.generated > 0), 'la primera ráfaga llega en el minuto 15');

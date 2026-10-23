@@ -63,6 +63,8 @@ export function createGame(duration = 1500, seed = 7357, generation = 0, dvrEnab
   for (const company of companies) company.runtime.infra = initialOperationsState(company, duration);
   bindMarket(game); bindObservability(game, f=>slackFact(game,f)); assertMarket(game); checkpoint(game, serializeGame, true); return game;
 }
+/** Event texts say a number the way a person reads it: "1 acceso indebido", "3 accesos indebidos". */
+const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 export function event(g: GameState, companyId: number | null, text: string, tone: 'good' | 'bad' | 'neutral' = 'neutral', category = 'SISTEMA') {
   observe(g, category.toLowerCase(), companyId, { text, tone });
   g.events.unshift({ id: ++g.eventSeq, at: g.tick, companyId, text, tone, category });
@@ -199,9 +201,9 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       checkpoint(g, serializeGame, true);
       return { ok: true };
     }
-    if (command.type === 'room.start') { if (g.status === 'FINISHED') return { ok: false, error: 'La partida ha finalizado.' }; if (g.status === 'LOBBY') for (const company of g.companies) issueInitialTraffic(company, g.tick); g.status = 'RUNNING'; event(g, null, 'SIMULACIÓN EN CURSO', 'good'); }
-    if (command.type === 'room.pause' && g.status === 'RUNNING') { g.status = 'PAUSED'; event(g, null, 'Simulación pausada.'); }
-    if (command.type === 'room.finish') { finishRequests(g); g.status = 'FINISHED'; event(g, null, 'PARTIDA FINALIZADA'); }
+    if (command.type === 'room.start') { if (g.status === 'FINISHED') return { ok: false, error: 'La partida ha finalizado.' }; if (g.status === 'LOBBY') for (const company of g.companies) issueInitialTraffic(company, g.tick); g.status = 'RUNNING'; event(g, null, 'Partida en curso.', 'good'); }
+    if (command.type === 'room.pause' && g.status === 'RUNNING') { g.status = 'PAUSED'; event(g, null, 'Partida en pausa.'); }
+    if (command.type === 'room.finish') { finishRequests(g); g.status = 'FINISHED'; event(g, null, 'La partida terminó.'); }
     if (command.type === 'room.speed') g.speed = [1, 5, 20].includes(Number(command.payload?.speed)) ? Number(command.payload?.speed) : 1;
     return { ok: true };
   }
@@ -244,14 +246,14 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       return proposalCommand(c,identity,command.type,p);
     }
     if (['module.create','module.revise','module.design','security.prepare'].includes(command.type)) {
-      const change = prepareArtifact(g, c, identity, command.type, p); if(change.domain==='backend')beginSecurityReview(g,c,change); else bindLegacySecurity(g,c,change); event(g, c.id, `${change.id} preparado. Pendiente de pruebas QA.`, 'neutral', 'PIPELINE'); return { ok: true, refs: [change.id, ...(change.artifactRefs?.map(ref => `${ref.id}@${ref.version}`) ?? [])] };
+      const change = prepareArtifact(g, c, identity, command.type, p); if(change.domain==='backend')beginSecurityReview(g,c,change); else bindLegacySecurity(g,c,change); event(g, c.id, `${change.id}: listo, espera las pruebas de QA.`, 'neutral', 'PIPELINE'); return { ok: true, refs: [change.id, ...(change.artifactRefs?.map(ref => `${ref.id}@${ref.version}`) ?? [])] };
     }
     if (command.type === 'infra.maintenance') { setMaintenance(g,c,p.mode as import('../shared/observability.js').ServiceMode,identity.id); return {ok:true}; }
     if (command.type === 'infra.server_stop' || command.type === 'infra.server_start') {
       const instance = syncInfrastructure(c).instances.find(i => i.id === Number(p.serverId)); if (!instance) throw new Error('Servidor no encontrado.');
       if (command.type === 'infra.server_stop') { if (instance.status !== 'UP') throw new Error(`APP-${instance.id} no está en línea.`); instance.status = 'STOPPED'; delete instance.readyAt; }
       else { if (instance.status !== 'STOPPED') throw new Error(`APP-${instance.id} no está detenido.`); instance.status = 'RESTARTING'; instance.readyAt = g.tick + RESTART_SECONDS.server; }
-      event(g, c.id, command.type === 'infra.server_stop' ? `APP-${instance.id} detenido. Sigue aprovisionado.` : `APP-${instance.id} en arranque · ${RESTART_SECONDS.server} s.`, 'neutral', 'DEVOPS'); return { ok: true, refs: [`APP-${instance.id}`] };
+      event(g, c.id, command.type === 'infra.server_stop' ? `APP-${instance.id} detenido: no atiende tráfico, pero sigue contratado.` : `APP-${instance.id} arrancando: listo en ${RESTART_SECONDS.server} s.`, 'neutral', 'DEVOPS'); return { ok: true, refs: [`APP-${instance.id}`] };
     }
     if (['infra.restart','infra.restart_all','infra.stop','infra.recover'].includes(command.type)) {
       validateParameters(command.type, p);
@@ -279,7 +281,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
         // inside them, so the production release is carried forward exactly as it stood.
         const execution = structuredClone(c.runtime.releases[c.version] ?? releaseFor(c));
         c.version++; c.runtime.releases[c.version] = execution; staleOthers(g, c);
-        event(g, c.id, `Plano publicado · v${c.version} · Q${cost}.`, 'neutral', 'PIPELINE');
+        event(g, c.id, `Plano publicado: versión ${c.version}, costó Q${cost}.`, 'neutral', 'PIPELINE');
       }
       if (command.type === 'plan.submit') {
         // Spec §5: from the first sale on, a plan change takes the same cycle as any other change —
@@ -294,7 +296,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
         const execution = structuredClone(c.runtime.releases[c.version] ?? releaseFor(c));
         const change: Change = { id: `CH-${String(g.changes.length + 1).padStart(3, '0')}`, companyId: c.id, domain: 'plan', name: `Plano · ${ROLE_LABELS[identity.role]} · revisión ${current + 1}`, graph: structuredClone(graph), status: 'QA_PENDING', cost: planPublicationCost(c.plan, graph), reserved: 0, baseVersion: c.version, created: g.tick, reports: [], actorId: identity.id, context: { backend: structuredClone(c.backend), security: structuredClone(c.security), executionVersion: c.version, execution } };
         g.changes.unshift(change); c.planDrafts[identity.role] = { graph, revision: current + 1 };
-        event(g, c.id, `${change.id} (plano) enviado a QA.`, 'neutral', 'PIPELINE');
+        event(g, c.id, `${change.id}: cambio del plano enviado a QA.`, 'neutral', 'PIPELINE');
         return { ok: true, refs: [change.id] };
       }
       c.planDrafts[identity.role] = { graph, revision: current + 1 };
@@ -321,16 +323,16 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       const amount = Number(p.amount);
       if (![250, 500, 1000].includes(amount) || c.capital - c.reserved - c.infraBudget < amount) throw new Error('Saldo disponible insuficiente.');
       operationsCommand(g, c, identity, 'cto.infra_authorize', { amount, durationSeconds: Math.max(10, Math.min(1500, Math.ceil(g.duration - g.tick))), maxServers: 8, operations: ['scale', 'balancer'] }, () => {});
-      event(g, c.id, `Q${amount} de operación autorizados.`, 'neutral', 'CTO'); return { ok: true };
+      event(g, c.id, `El CTO autorizó Q${amount} para operar.`, 'neutral', 'CTO'); return { ok: true };
     }
-    if (command.type === 'cto.prioritize') { validateParameters(command.type, p); c.runtime.priority = p.incident as 'security' | 'concurrency'; event(g, c.id, `Prioridad: ${p.incident === 'security' ? 'seguridad' : 'concurrencia'}.`, 'neutral', 'CTO'); return { ok: true }; }
+    if (command.type === 'cto.prioritize') { validateParameters(command.type, p); c.runtime.priority = p.incident as 'security' | 'concurrency'; event(g, c.id, `El CTO marcó como prioridad: ${p.incident === 'security' ? 'seguridad' : 'concurrencia'}.`, 'neutral', 'CTO'); return { ok: true }; }
     if (command.type === 'infra.scale') {
       const target = 'target' in p ? Number(p.target) : c.servers + Number(p.delta), delta = target - c.servers;
       if (!Number.isInteger(target) || target < 1 || target > 8) throw new Error('Rango de servidores: 1–8.');
       if (delta === 0) throw new Error(`Ya hay ${c.servers} servidor${c.servers === 1 ? '' : 'es'} en servicio.`);
       assertScope(c, g.tick, 'scale', target);
       if (delta > 0 && c.infraBudget < target * 30) throw new Error('Presupuesto operativo insuficiente.');
-      c.servers = target; syncInfrastructure(c); event(g, c.id, `${delta > 0 ? `+${delta}` : delta} SERVER · ${c.servers} en servicio.`, 'neutral', 'DEVOPS'); return { ok: true };
+      c.servers = target; syncInfrastructure(c); event(g, c.id, `${count(Math.abs(delta), delta > 0 ? 'servidor agregado' : 'servidor quitado', delta > 0 ? 'servidores agregados' : 'servidores quitados')}: ${c.servers} en servicio.`, 'neutral', 'DEVOPS'); return { ok: true };
     }
     if (command.type === 'infra.balancer') { assertScope(c, g.tick, 'balancer'); c.balancer = Boolean(p.enabled); event(g, c.id, `Balanceador ${c.balancer ? 'activo' : 'desactivado'}.`, 'neutral', 'DEVOPS'); return { ok: true }; }
     if (!ch) throw new Error('Cambio no encontrado.');
@@ -367,7 +369,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       if (ch.status !== 'CTO_PENDING') throw new Error('Falta aprobación de QA.');
       if (c.capital - c.reserved - c.infraBudget < ch.cost) throw new Error('Saldo disponible insuficiente.');
       c.reserved += ch.cost; ch.reserved = ch.cost; ch.status = 'AUTHORIZED'; ch.expires = g.tick + 60;
-      event(g, c.id, `${ch.id} autorizado · Q${ch.cost}.`, 'neutral', 'CTO');
+      event(g, c.id, `${ch.id}: el CTO lo autorizó y apartó Q${ch.cost}.`, 'neutral', 'CTO');
     } else if (command.type === 'cto.reject') {
       if(ch.implementation)return workflowCommand(g,c,identity,'cto.decide',{changeId:ch.id,decision:'reject',reason:'Rechazo manual explícito del CTO. Se solicita revisión QA.',confirmed:true})!;
       if (ch.status !== 'CTO_PENDING') throw new Error('Estado de cambio inválido.'); ch.status = 'CTO_REJECTED';
@@ -378,7 +380,7 @@ function executeCommand(g: GameState, identity: Identity, command: Command, rece
       if (!['rolling', 'restart'].includes(String(p.strategy))) throw new Error('Estrategia no disponible.');
       if (ch.product && c.runtime.campaigns.some(cam => cam.status === 'ACTIVE')) throw new Error('Ya existe una promoción activa.');
       ch.status = 'DEPLOYING'; ch.strategy = String(p.strategy); ch.due = g.tick + (p.strategy === 'rolling' ? 6 : 3);
-      event(g, c.id, `${ch.id} · DEPLOY INICIADO`, 'neutral', 'DEVOPS');
+      event(g, c.id, `${ch.id}: DevOps empezó a desplegarlo.`, 'neutral', 'DEVOPS');
     }
     return { ok: true };
   } catch (e) { return { ok: false, error: e instanceof Error ? e.message : 'Comando inválido.' }; }
@@ -402,15 +404,15 @@ function jobs(g: GameState) {
         delete ch.qaScenario; delete ch.qaLoad; delete ch.testJob;
         ch.status = restore??'QA_PENDING';
         auditCompletion(g, c.id, 'qa.completed', [ch.id], [`requests.executed:${ch.reports.at(-1)!.requests}`, 'reports.added:1']);
-        event(g, c.id, `${ch.id} · ${ch.runningSuite} completada.`, 'neutral', 'QA');
+        event(g, c.id, `${ch.id}: terminó la prueba ${ch.runningSuite}.`, 'neutral', 'QA');
       }
     }
     if (ch.status === 'DEPLOYING' && g.tick >= (ch.due ?? Infinity)) {
-      if(c.capital<ch.cost||c.capital-c.infraBudget<c.reserved){ch.status='DEPLOY_FAILED';releaseReservation(c,ch);event(g,c.id,`${ch.id} · publicación cancelada por saldo insuficiente.`, 'neutral','CTO');continue;}
+      if(c.capital<ch.cost||c.capital-c.infraBudget<c.reserved){ch.status='DEPLOY_FAILED';releaseReservation(c,ch);event(g,c.id,`${ch.id}: no se publicó porque no alcanza el saldo.`, 'neutral','CTO');continue;}
       assertBundle(ch);
       if(ch.implementation){c.backend=structuredClone(ch.context!.backend);c.security=structuredClone(ch.context!.security);}else c[ch.domain] = structuredClone(ch.graph); c.version++; c.runtime.releases[c.version] = structuredClone(ch.context?.execution ?? releaseFor(c)); c.deployments++; c.capital -= ch.cost;settleInvestment(c,ch); releaseReservation(c, ch); ch.status = 'DEPLOYED'; ch.releasedVersion = c.version; recordRelease(g, c, ch.id, 'deploy'); activateProduct(g, c, ch, event);
       auditCompletion(g, c.id, 'deploy.completed', [ch.id, ...(ch.artifactRefs?.map(ref=>`${ref.id}@${ref.version}`) ?? [])], [`production.version:${c.version}`, `capital.delta:${-ch.cost}`]);
-      event(g, c.id, `${ch.id} EN PRODUCCIÓN · v${c.version}`, 'good', 'DEPLOY');
+      event(g, c.id, `${ch.id} ya está en producción (versión ${c.version}).`, 'good', 'DEPLOY');
       staleOthers(g, c, ch);
     }
   }
@@ -428,15 +430,15 @@ export function step(g: GameState, dt = .1) {
     // The calm start announces its own end, so the class hears when the pressure begins.
     if (crossed(g.pacing.calmUntil)) {
       event(g, null, `Termina la fase tranquila: la demanda sube durante ${Math.round((g.pacing.rampUntil - g.pacing.calmUntil) / 60)} minutos.`, 'bad', 'SISTEMA');
-      event(g, null, 'Ráfagas de compra sobre inventario compartido.', 'bad', 'CONCURRENCIA');
-      event(g, null, 'Tráfico anómalo detectado en las cinco empresas.', 'bad', 'SECURITY');
+      event(g, null, 'Llegan muchas compras juntas por el mismo stock.', 'bad', 'CONCURRENCIA');
+      event(g, null, 'Empieza tráfico anómalo simulado en las cinco empresas.', 'bad', 'SECURITY');
     }
     if (crossed(g.pacing.rampUntil)) event(g, null, 'Presión completa: el mercado ya no da respiro.', 'bad', 'SISTEMA');
   } else {
     const securityIncident = g.tick >= g.duration * .25;
     const concurrencyIncident = g.tick >= g.duration * .24;
-    if (g.tick - dt < g.duration * .25 && securityIncident) event(g, null, 'Tráfico anómalo detectado en las cinco empresas.', 'bad', 'SECURITY');
-    if (g.tick - dt < g.duration * .24 && concurrencyIncident) event(g, null, 'Ráfagas de compra sobre inventario compartido.', 'bad', 'CONCURRENCIA');
+    if (g.tick - dt < g.duration * .25 && securityIncident) event(g, null, 'Empieza tráfico anómalo simulado en las cinco empresas.', 'bad', 'SECURITY');
+    if (g.tick - dt < g.duration * .24 && concurrencyIncident) event(g, null, 'Llegan muchas compras juntas por el mismo stock.', 'bad', 'CONCURRENCIA');
   }
   for (const c of g.companies) {
     if (c.eliminated) continue;
@@ -459,13 +461,13 @@ export function step(g: GameState, dt = .1) {
     if (second && !suspendsRestock(g, c)) restockTraffic(c);
     const breachesBefore = c.breaches;
     advanceTraffic(c, g.tick, rates); chargeLeaks(g, c);
-    if (c.breaches > breachesBefore && second && previousSecond % 12 === 0) event(g, c.id, `${c.breaches - breachesBefore} accesos indebidos · SECURITY BREACH`, 'bad', 'SECURITY');
+    if (c.breaches > breachesBefore && second && previousSecond % 12 === 0) event(g, c.id, `${count(c.breaches - breachesBefore, 'acceso indebido: alguien entró sin permiso', 'accesos indebidos: entraron sin permiso')}.`, 'bad', 'SECURITY');
     const scenario = stepConcurrency(c, g.tick, capacity > 0, pace.bursts);
-    if (scenario.started) event(g, c.id, 'SKU LAST-UNIT · 2 compras / 1 unidad.', 'neutral', 'CONCURRENCIA');
+    if (scenario.started) event(g, c.id, 'Dos clientes quieren la última unidad al mismo tiempo.', 'neutral', 'CONCURRENCIA');
     if (scenario.oversold) c.concurrencyUntil = g.tick + 20;
     if (scenario.finished) {
       const report = concurrencyReport(c.concurrency.run!, g.tick);
-      event(g, c.id, `LAST-UNIT · ${report.completed} completadas / ${report.rejected} rechazadas / ${report.abandoned} abandonadas / ${report.oversold} sobreventas.`, report.oversold ? 'bad' : 'neutral', 'CONCURRENCIA');
+      event(g, c.id, `Última unidad: ${count(report.completed, 'compra completada', 'compras completadas')}, ${count(report.rejected, 'rechazada', 'rechazadas')}, ${count(report.abandoned ?? 0, 'abandonada', 'abandonadas')} y ${count(report.oversold, 'sobreventa', 'sobreventas')}.`, report.oversold ? 'bad' : 'neutral', 'CONCURRENCIA');
     }
     c.active += c.concurrency.run?.requests.filter(request => !request.result).length ?? 0;
     if (second && previousSecond % 10 === 0) { c.history.push(c.customers / 50); c.history = c.history.slice(-24); }
@@ -490,7 +492,7 @@ export function step(g: GameState, dt = .1) {
   }
   advanceMarket(g);
   const removed = g.companies.filter(c => !c.eliminated && (c.deadTicks >= 90 || (c.serviceMode.mode === 'FULL_MAINTENANCE' && g.tick-c.serviceMode.since >= MAINTENANCE_POLICY.eliminationSeconds) || c.crisisTicks >= 30 || c.bankruptTicks >= 30));
-  for (const c of removed) { closeProbes(g, c.id); cancelTraffic(c, g.tick, 'COMPANY_ELIMINATED'); if (c.concurrency.run) { cancelConcurrency(c.concurrency.run, g.tick, 'COMPANY_ELIMINATED'); settleConcurrency(c); } c.eliminated = true; advanceCampaigns(c, g.tick); c.eliminatedAt = g.tick; c.active = 0; c.particles = []; event(g, c.id, 'EMPRESA FUERA DEL MERCADO', 'bad', 'COLAPSO'); }
+  for (const c of removed) { closeProbes(g, c.id); cancelTraffic(c, g.tick, 'COMPANY_ELIMINATED'); if (c.concurrency.run) { cancelConcurrency(c.concurrency.run, g.tick, 'COMPANY_ELIMINATED'); settleConcurrency(c); } c.eliminated = true; advanceCampaigns(c, g.tick); c.eliminatedAt = g.tick; c.active = 0; c.particles = []; event(g, c.id, `${c.name} quedó fuera del mercado.`, 'bad', 'COLAPSO'); }
   if (removed.length) {
     evacuateEliminated(g);
     for (const c of removed) {
@@ -498,7 +500,7 @@ export function step(g: GameState, dt = .1) {
       c.infraBudget = 0;
     }
   }
-  if (g.tick >= g.duration || g.companies.every(c => c.eliminated)) { finishRequests(g); g.status = 'FINISHED'; event(g, null, 'PARTIDA FINALIZADA', 'neutral', 'SISTEMA'); }
+  if (g.tick >= g.duration || g.companies.every(c => c.eliminated)) { finishRequests(g); g.status = 'FINISHED'; event(g, null, 'La partida terminó.', 'neutral', 'SISTEMA'); }
   g.migrations = g.migrations.filter(m => g.tick - m.at < 20).slice(-30);
   updateCrisis(g); sampleTelemetry(g); sampleHistory(g); checkpoint(g, serializeGame, g.status === 'FINISHED');
 }

@@ -230,7 +230,7 @@ export function advanceMarket(game: GameState) {
   flushMigrations(game); assertMarket(game);
   const moved = market.totals.migrations - before;
   if (moved && epoch % 10 === 0) {
-    game.events.unshift({ id: ++game.eventSeq, at: game.tick, companyId: null, text: `${moved} transferencias de clientes confirmadas.`, tone: 'neutral', category: 'MERCADO' });
+    game.events.unshift({ id: ++game.eventSeq, at: game.tick, companyId: null, text: `${moved} ${moved === 1 ? 'cliente se cambió' : 'clientes se cambiaron'} de empresa.`, tone: 'neutral', category: 'MERCADO' });
     game.events.length = Math.min(60, game.events.length);
   }
 }

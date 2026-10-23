@@ -76,7 +76,7 @@ test('real room: the draw, tutorials that hold EMPEZAR JUEGO, a restart, and a c
       assert.equal(c.traffic.malicious!.generated, 0, `${c.name}: sin tráfico anómalo antes del minuto 15`);
       assert(c.traffic.legitimate!.generated > 0, `${c.name}: atiende clientes`);
     }
-    assert(!snapshot.events.some(e => /Ráfagas|anómalo detectado/.test(e.text)));
+    assert(!snapshot.events.some(e => /muchas compras juntas|tráfico anómalo simulado/.test(e.text)));
     await until(async () => { snapshot = await get('/api/snapshot', operator); return snapshot.tick >= 905; }, 30000);
     assert.equal(snapshot.phase?.phase, 'ramp');
     assert(snapshot.companies.some(c => c.concurrency.totals.generated > 0), 'la presión empieza en el minuto 15');

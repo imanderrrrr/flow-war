@@ -222,7 +222,7 @@ test('the probe narrates what happens to the company: traffic enters, reaches Wr
   assert(p.breached >= 25, `breaches ${p.breached}`); assert.equal(p.reach, 'write');
   const v = viewOf(g).probes.find(x => x.id === p.id)!;
   assert(v.summary.some(l => /pasan los controles y entran al sistema de NOVA, hasta Write Stock/.test(l)));
-  assert(v.summary.some(l => /SECURITY BREACH y pierde reputación/.test(l)));
+  assert(v.summary.some(l => /provoca(n)? (un )?acceso(s)? indebido(s)? en Write Stock \(.+ pierde reputación\)/.test(l)));
   assert(v.summary.some(l => /Resultado: NOVA sufre .* accesos indebidos/.test(l)));
 });
 

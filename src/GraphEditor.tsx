@@ -12,8 +12,8 @@ function PixelNode({ data, selected, type }: NodeProps) {
   const fixed=['entry','exit','read','write','payment'].includes(type??'');
   return <div className={`pixel-flow-node ${selected?'selected':''} ${fixed?'fixed':''}`}>
     {type!=='entry'&&<Handle type="target" position={Position.Left}/>}
-    <div className="node-type"><Icon name={type==='entry'||type==='exit'?'arrow':type==='auth'||type==='waf'?'shield':'chip'} size={13}/>{fixed?'SERVICE':'MODULE'}</div>
-    <strong>{String(data.label)}</strong><span>{data.config?'CONFIGURADO':data.value!=null?`CONFIG · ${data.value}`:type==='entry'?'INBOUND REQUEST':type==='exit'?'HTTP RESPONSE':'PRODUCTION SERVICE'}</span>
+    <div className="node-type"><Icon name={type==='entry'||type==='exit'?'arrow':type==='auth'||type==='waf'?'shield':'chip'} size={13}/>{fixed?'SERVICIO':'BLOQUE'}</div>
+    <strong>{String(data.label)}</strong><span>{data.config?'CONFIGURADO':data.value!=null?`CONFIG · ${data.value}`:type==='entry'?'ENTRA LA SOLICITUD':type==='exit'?'SALE LA RESPUESTA':'EN PRODUCCIÓN'}</span>
     {type!=='exit'&&<Handle type="source" position={Position.Right}/>}
   </div>;
 }
