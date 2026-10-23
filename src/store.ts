@@ -2,7 +2,8 @@ import { create } from 'zustand';
 import { io } from '../shared/live-client';
 import type { Command, Result, Snapshot } from '../shared/types';
 
-export const socket = io({ reconnection: true });
+// The page travels with the handshake: only the workspace receives the practice copy of a pending tutorial.
+export const socket = io({ reconnection: true, auth: { view: window.location.pathname } });
 export type Selection = { changeId?: string; nodeId?: string; serverId?: number; draftId?: string };
 type Store = { snapshot: Snapshot | null; connected: boolean; selected: number; notice: { text: string; error: boolean } | null; sound: boolean; selection: Selection; select: (id: number) => void; setSelection: (patch: Selection) => void; notify: (text: string, error?: boolean) => void; toggleSound: () => void };
 let noticeTimer: ReturnType<typeof setTimeout>;

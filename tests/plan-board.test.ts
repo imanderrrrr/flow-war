@@ -75,3 +75,47 @@ test('derivar las posiciones del catálogo no mueve los caminos del proyector', 
   assert.equal(TRAFFIC_PATHS.purchase.at(-1), SERVICES.OUT);
   assert.deepEqual([...TRAFFIC_PATHS.browse[0]], [70, 295]);
 });
+
+test('los puntos de conexión de piezas vecinas quedan a un arrastre de distancia', async () => {
+  const { PLAN_NODE_WIDTH, boardPoint } = await import('../src/planBoard.js');
+  // The roads a team draws, left to right. Each piece is centred on its board point.
+  const roads = [['entry', 'security'], ['security', 'web'], ['web', 'checkout'], ['checkout', 'inventory'], ['checkout', 'payment'], ['inventory', 'exit'], ['payment', 'exit']] as const;
+  for (const [from, to] of roads) {
+    const gap = (boardPoint(to).x - PLAN_NODE_WIDTH / 2) - (boardPoint(from).x + PLAN_NODE_WIDTH / 2);
+    assert.ok(gap >= PLAN_NODE_WIDTH / 2, `${from} → ${to}: solo ${gap} unidades entre el punto de salida y el de entrada`);
+  }
+});
+
+test('el editor estira el mapa del proyector sin reordenarlo', async () => {
+  const { boardPoint } = await import('../src/planBoard.js');
+  const pieces = ['entry', 'security', 'web', 'checkout', 'inventory', 'payment', 'exit', 'server'] as const;
+  for (const a of pieces) {
+    assert.equal(boardPoint(a).y, PLAN_SLOTS[a].y, `${a} conserva su fila del proyector`);
+    for (const b of pieces) if (PLAN_SLOTS[a].x < PLAN_SLOTS[b].x) assert.ok(boardPoint(a).x < boardPoint(b).x, `${a} sigue a la izquierda de ${b}`);
+  }
+  assert.deepEqual(boardSlots(initialGraph('plan'), 'backend').find(s => s.piece === 'checkout')!.position, boardPoint('checkout'), 'el solar vacío se dibuja donde caerá la pieza');
+});
+
+test('un borrador dibujado sobre un plano viejo toma de producción lo que publicaron los demás roles', async () => {
+  const { editableBoard } = await import('../src/planBoard.js');
+  const { assertPlanOwnership } = await import('../shared/plan.js');
+  const { planGraph } = await import('../shared/plan.js');
+  // Backend saved a reordering before Seguridad's perímetro reached production.
+  const stale = planGraph(['entry', 'web', 'checkout', 'payment', 'inventory', 'exit']);
+  const production = planGraph(['entry', 'security', 'web', 'checkout', 'inventory', 'payment', 'exit']);
+  const board = editableBoard(production, stale, 'backend');
+  const type = new Map(board.nodes.map(n => [n.id, n.type]));
+  const roads = board.edges.map(e => `${type.get(e.source)}>${type.get(e.target)}`).sort();
+  assert.deepEqual(roads, ['checkout>payment', 'entry>security', 'inventory>exit', 'payment>inventory', 'security>web', 'web>checkout'],
+    'el perímetro y su camino vienen de producción; el orden propio de Backend se conserva');
+  assert.doesNotThrow(() => assertPlanOwnership(production, board, 'backend'), 'el borrador resultante se puede enviar');
+});
+
+test('un borrador al día se edita tal como se guardó', async () => {
+  const { editableBoard } = await import('../src/planBoard.js');
+  const { planGraph } = await import('../shared/plan.js');
+  const production = planGraph(['entry', 'web', 'checkout', 'inventory', 'payment', 'exit']);
+  const draft = planGraph(['entry', 'security', 'web', 'checkout', 'inventory', 'payment', 'exit']);
+  assert.equal(editableBoard(production, draft, 'security'), draft);
+  assert.equal(editableBoard(production, undefined, 'security'), production);
+});

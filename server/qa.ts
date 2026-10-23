@@ -8,10 +8,15 @@ import { admitTraffic, advanceTraffic, initialTraffic } from './traffic.js';
 import type { RequestSecurityContext } from '../shared/collaboration.js';
 import { admitSecurity } from './security.js';
 import { settleReservation } from './module-execution.js';
+import { planServices } from './graphs.js';
 
 export function createTestJob(c: Company, ch: Change, scenario: TestScenario, seed=c.traffic.seed): TestJob {
   const context = structuredClone(ch.context!), staging = structuredClone(c);
   staging.backend = context.backend; staging.security = context.security; staging.version = context.executionVersion;
+  // A plan change is graded on the plan it proposes. Production only filters where the plan routes
+  // through the perímetro (server/traffic.ts), so staging does the same for that plan.
+  if (ch.domain === 'plan') staging.plan = structuredClone(ch.graph);
+  const unfiltered = ch.domain === 'plan' && !planServices(ch.graph).includes('security');
   staging.capital = 10000; staging.infraBudget = 10000; staging.eliminated = false; staging.servers = 1; staging.balancer = false;
   staging.infrastructure = { instances: [{ id: 1, status: 'UP' }], stoppedServices: [] };
   staging.runtime = { ...initialRuntime(), modules: structuredClone(c.runtime.modules), releases: { [context.executionVersion]: context.execution ?? releaseFor(c, context.backend) } };
@@ -28,7 +33,7 @@ export function createTestJob(c: Company, ch: Change, scenario: TestScenario, se
     r.customerId=`qa-${index}`;r.customerSource='qa';r.arrivalAt = at; r.nextAt = at + .5; r.deadline = at + 16; r.journey.at = at;
     r.transportFailures = scenario.retries; r.newCustomer = scenario.newCustomer; r.couponCount = scenario.coupons; r.invalidInput = scenario.invalidInput;
     if (promotion) r.promotion = { percent: promotion.percent, audience: promotion.audience };
-    r.securityAllowed = admitSecurity(staging, r.execution ?? { modules: [] }, scenario.attack === 'none' ? 'valid' : scenario.attack, index, at, 'sim-1', `qa-${index}`, 'purchase',securityContext(scenario,index));
+    r.securityAllowed = unfiltered || admitSecurity(staging, r.execution ?? { modules: [] }, scenario.attack === 'none' ? 'valid' : scenario.attack, index, at, 'sim-1', `qa-${index}`, 'purchase',securityContext(scenario,index));
     return r;
   });
   return { ...(promotion ? { promotion } : {}), finished: [], scenario: structuredClone(scenario), staging, elapsed: 0, next: 0, requests: scenario.suite === 'load' ? [] : template.requests, run: scenario.suite === 'load' ? undefined : template, reports: [] };

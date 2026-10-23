@@ -4,3 +4,24 @@ test('D09,D20,D21 mitigation and silence never fabricate MTTR or definitive repa
 test('D22 negative ledger amounts require recorded activations and are counted once for joint defects',()=>{const{db,g,write}=setup();observe(g,'request.settled',0,{requestId:'with-defect',defects:['D02','D03'],result:{capitalDelta:-8}});observe(g,'request.settled',0,{requestId:'unattributed',defects:[],result:{capitalDelta:-500}});write(g);const m=postmortem(db,0,0,g);assert.equal(m.badQuality.directNegativeLedgerWithActivation,8);assert.equal(m.badQuality.requestsWithDirectLoss,1);db.close();});
 test('D22 double coupon records the exact contractual price loss without changing the economic result',async()=>{const{defectFixture}=await import('./defect-fixtures.js');const{createConcurrencyRun,advanceConcurrency,isRunFinished}=await import('../server/requests.js');const g=defectFixture('coupon','D02'),run=createConcurrencyRun('contract-loss',g.changes[0].context!,0);run.requests=run.requests.slice(0,1);run.requests[0].couponCount=2;let at=0;while(!isRunFinished(run)){at+=.1;advanceConcurrency(run,Math.round(at*10)/10);}const r=run.requests[0];assert.equal(r.result?.revenue,28.8);assert.equal(r.result?.defectLoss?.amount,7.2);assert(r.result?.defectLoss?.evidence.some(e=>e.startsWith('D02:')));});
 test('post-mortem reconciles actual operating cost and reports effective modeled capacity',async()=>{const{command,advanceGame}=await import('./helpers.js');const{db,g,write}=setup();command(g,'operator','room.start');command(g,'cto','cto.infra_authorize',{amount:0,durationSeconds:120,maxServers:2,operations:['scale']});command(g,'devops','infra.scale',{delta:1});advanceGame(g,10);write(g);const m=postmortem(db,0,0,g);assert.equal(m.cto.operatingCostInCapturedInterval,10);assert.equal(m.cto.finalWebCapacityPerSecond,g.companies[0].traffic.services.web.rate);assert.deepEqual(m.pipeline.escapedDefectArtifactVersions,[]);db.close();});
+
+test('el post-mortem cuenta las decisiones de QA y del CTO, las mande el botón que las mande', async () => {
+  const { command, advanceGame, assembledGame, reviewForQa } = await import('./helpers.js');
+  const db = new DatabaseSync(':memory:'); db.exec('CREATE TABLE commands(identity TEXT,id TEXT,digest TEXT,result TEXT)');
+  const g = assembledGame(), write = createGameWriter(db); write(g);
+  command(g, 'operator', 'room.start');
+  assert.equal(command(g, 'backend', 'change.submit', { graph: g.companies[0].backend, revision: 0 }).ok, true);
+  const ch = g.changes[0]; reviewForQa(g);
+  assert.equal(command(g, 'qa', 'qa.run', { suite: 'Unitarias' }, ch.id).ok, true); advanceGame(g, 2);
+  const run = g.companies[0].runtime.workflow!.runs.find(r => r.changeId === ch.id && r.report)!;
+  // The one-tap consoles: qa.review with the marked test, cto.decide with the default reason.
+  assert.equal(command(g, 'qa', 'qa.review', { changeId: ch.id, risks: 'Aprobado por QA sin comentario escrito.', evidenceIds: [run.id] }).ok, true);
+  assert.equal(command(g, 'cto', 'cto.decide', { changeId: ch.id, decision: 'authorize', reason: 'Autorizado por el CTO.', confirmed: true }).ok, true);
+  assert.ok(g.events.some(e => e.text === `${ch.id} aprobado por QA.`), 'la aprobación queda en los eventos');
+  assert.ok(g.events.some(e => e.text.startsWith(`${ch.id}: el CTO lo autorizó`)), 'la autorización queda en los eventos');
+  write(g);
+  const m = postmortem(db, g.generation, 0, g);
+  assert.equal(m.pipeline.approvedByQa, 1);
+  assert.equal(m.pipeline.authorized, 1);
+  db.close();
+});

@@ -4,6 +4,8 @@ import { completePlan, createGame } from '../server/engine.js';
 import { admitTraffic, advanceTraffic } from '../server/traffic.js';
 import type { Graph, MarketCustomer, TrafficRequest } from '../shared/types.js';
 import { advanceGame, command, planWith, publishPlan } from './helpers.js';
+// These tests measure the engine at full pressure; the calm start has its own (tests/pacing.test.ts).
+process.env.FLOW_CALM_START = '0';
 
 /** A room that opens with this plan already placed. room.start does not step, so the montaje of a
  * sell-capable plan is still open until the first tick. */

@@ -61,7 +61,7 @@ export function operationsCommand(g: GameState, c: Company, actor: Identity, typ
     if (state.requests.length >= 40) throw new Error('Límite de solicitudes de presupuesto alcanzado.');
     const request = { id: `C${c.id}-REQ${state.requests.length + 1}`, companyId: c.id, requestedBy: actor.id, amount: Number(p.amount), durationSeconds: Number(p.durationSeconds), maxServers: Number(p.maxServers), operations: parseOperations(p.operations), status: 'REQUESTED' as const, at: g.tick };
     state.requests.push(request);
-    event(g, c.id, `${request.id}: DevOps solicita ${money(request.amount)} · ${request.durationSeconds} s · máx. ${request.maxServers} servidores.`, 'neutral', 'DEVOPS');
+    event(g, c.id, `${request.id}: DevOps pide ${money(request.amount)} por ${request.durationSeconds} s, hasta ${request.maxServers} servidores.`, 'neutral', 'DEVOPS');
     return { ok: true, refs: [request.id] };
   }
   if (type === 'cto.infra_authorize') {
@@ -74,14 +74,14 @@ export function operationsCommand(g: GameState, c: Company, actor: Identity, typ
     const authorization: InfraAuthorization = { id: `C${c.id}-INFRA${state.authorizations.length}`, companyId: c.id, amount, durationSeconds: Number(p.durationSeconds), maxServers: Number(p.maxServers), operations: ops, authorizedBy: actor.id, at: g.tick, expires: g.tick + Number(p.durationSeconds), status: 'ACTIVE', kind: 'cto', ...(request ? { requestId: request.id } : {}) };
     state.authorizations.push(authorization);
     if (request) { request.status = 'AUTHORIZED'; request.decidedBy = actor.id; request.decidedAt = g.tick; request.authorizationId = authorization.id; }
-    event(g, c.id, `CTO autoriza ${money(amount)} de infraestructura · ${authorization.durationSeconds} s · máx. ${authorization.maxServers} servidores.`, 'neutral', 'CTO');
+    event(g, c.id, `El CTO autorizó ${money(amount)} de infraestructura por ${authorization.durationSeconds} s, hasta ${authorization.maxServers} servidores.`, 'neutral', 'CTO');
     return { ok: true, refs: [authorization.id, ...(request ? [request.id] : [])] };
   }
   if (type === 'cto.infra_reject') {
     const request = state.requests.find(r => r.id === p.requestId);
     if (!request || request.status !== 'REQUESTED') throw new Error('Solicitud no disponible.');
     request.status = 'REJECTED'; request.decidedBy = actor.id; request.decidedAt = g.tick;
-    event(g, c.id, `${request.id} rechazada por CTO.`, 'neutral', 'CTO');
+    event(g, c.id, `El CTO rechazó el pedido ${request.id} de DevOps.`, 'neutral', 'CTO');
     return { ok: true, refs: [request.id] };
   }
   if (type === 'cto.rollback_authorize') {
@@ -95,7 +95,7 @@ export function operationsCommand(g: GameState, c: Company, actor: Identity, typ
     for (const r of previous) { c.reserved = Math.max(0, c.reserved - r.reserved); r.reserved = 0; r.status = 'CANCELLED'; }
     const rollback: RollbackAuthorization = { id: `C${c.id}-RB${state.rollbacks.length + 1}`, companyId: c.id, targetVersion: target, amount, reserved: amount, spent: 0, authorizedBy: actor.id, at: g.tick, expires: g.tick + AUTHORIZATION_SECONDS, status: 'AUTHORIZED' };
     c.reserved += amount; state.rollbacks.push(rollback);
-    event(g, c.id, `CTO autoriza rollback a v${target} · reservado ${money(amount)}.`, 'neutral', 'CTO');
+    event(g, c.id, `El CTO autorizó volver a la versión ${target} y apartó ${money(amount)}.`, 'neutral', 'CTO');
     return { ok: true, refs: [rollback.id] };
   }
   if (type === 'deploy.rollback') {
@@ -106,7 +106,7 @@ export function operationsCommand(g: GameState, c: Company, actor: Identity, typ
     if (c.capital - c.infraBudget < c.reserved) throw new Error('Saldo reservado insuficiente. Solicita evaluación del CTO.');
     const strategy = p.strategy === 'rolling' ? 'rolling' : 'restart';
     rollback.status = 'IN_PROGRESS'; rollback.strategy = strategy; rollback.startedBy = actor.id; rollback.startedAt = g.tick; rollback.due = g.tick + STRATEGY_SECONDS[strategy];
-    event(g, c.id, `ROLLBACK a v${rollback.targetVersion} iniciado · ${strategy === 'rolling' ? 'ROLLING' : 'RESTART REPLACE'}.`, 'neutral', 'DEVOPS');
+    event(g, c.id, `DevOps empezó a volver a la versión ${rollback.targetVersion} con ${strategy === 'rolling' ? 'ROLLING' : 'RESTART REPLACE'}.`, 'neutral', 'DEVOPS');
     return { ok: true, refs: [rollback.id] };
   }
 }
@@ -115,12 +115,12 @@ function releaseRollback(c: Company, r: RollbackAuthorization) { c.reserved = Ma
 /** Per tick: scope expiry, rollback expiry and completion. A rollback is a new release; it refunds nothing. */
 export function advanceOperations(g: GameState, c: Company, event: Event, stale: (c: Company, keep?: Change) => void) {
   const state = operations(c);
-  for (const a of state.authorizations) if (a.status === 'ACTIVE' && g.tick >= a.expires) { a.status = 'EXPIRED'; if (a.kind === 'cto') event(g, c.id, `${a.id}: autorización de infraestructura vencida.`, 'neutral', 'DEVOPS'); }
+  for (const a of state.authorizations) if (a.status === 'ACTIVE' && g.tick >= a.expires) { a.status = 'EXPIRED'; if (a.kind === 'cto') event(g, c.id, `${a.id}: venció el presupuesto de infraestructura.`, 'neutral', 'DEVOPS'); }
   for (const r of state.rollbacks) {
     if (r.status === 'AUTHORIZED' && g.tick > r.expires) { releaseRollback(c, r); r.status = 'EXPIRED'; }
     if (r.status !== 'IN_PROGRESS' || g.tick < (r.due ?? Infinity)) continue;
     const target = state.releases.filter(x => x.version === r.targetVersion).at(-1);
-    if (!target || c.capital < r.amount || c.capital - c.infraBudget < c.reserved) { releaseRollback(c, r); r.status = 'FAILED'; event(g, c.id, `Rollback a v${r.targetVersion} cancelado por saldo insuficiente.`, 'neutral', 'CTO'); continue; }
+    if (!target || c.capital < r.amount || c.capital - c.infraBudget < c.reserved) { releaseRollback(c, r); r.status = 'FAILED'; event(g, c.id, `No se pudo volver a la versión ${r.targetVersion}: no alcanza el saldo.`, 'neutral', 'CTO'); continue; }
     // The initial version has no modules; its execution bundle may never have been materialized.
     const execution = structuredClone(c.runtime.releases[r.targetVersion] ?? { modules: [] });
     c.backend = structuredClone(target.backend); c.security = structuredClone(target.security); c.version++;
@@ -128,7 +128,7 @@ export function advanceOperations(g: GameState, c: Company, event: Event, stale:
     c.deployments++; c.capital -= r.amount; c.reserved = Math.max(0, c.reserved - r.reserved); r.spent = r.amount; r.reserved = 0; r.status = 'COMPLETED'; r.resultVersion = c.version;
     recordRelease(g, c, null, 'rollback', r.targetVersion);
     auditCompletion(g, c.id, 'rollback.completed', [r.id], [`production.version:${c.version}`, `base.version:${r.targetVersion}`, `capital.delta:${-r.amount}`]);
-    event(g, c.id, `ROLLBACK COMPLETADO · v${c.version} restaura v${r.targetVersion}`, 'good', 'DEPLOY');
+    event(g, c.id, `Listo: la versión ${c.version} restaura la ${r.targetVersion}.`, 'good', 'DEPLOY');
     stale(c);
   }
 }

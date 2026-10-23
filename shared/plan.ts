@@ -1,4 +1,4 @@
-import type { Graph, Role, ServiceId, TerminalReason, TrafficRequest } from './types.js';
+import type { Graph, Identity, Role, ServiceId, TerminalReason, TrafficRequest } from './types.js';
 
 /**
  * The service plan: the layer that used to be wired into the engine (SERVICE_IDS, server/traffic.ts)
@@ -59,4 +59,36 @@ export function planPublicationCost(previous: Graph, next: Graph) {
   const before = tally(previous), after = tally(next);
   return Object.entries(after).reduce((sum, [type, count]) =>
     sum + Math.max(0, count - (before[type] ?? 0)) * (isPlanPiece(type) ? PLAN_PIECES[type].cost : 0), PLAN_PUBLICATION_FEE);
+}
+
+/* Shared by the server, which enforces them, and the editor, which keeps a saved draft submittable. */
+/** Roads named by the pieces they join, so a comparison does not depend on the ids a client sent. */
+function planRoads(graph: Graph) {
+  const type = new Map(graph.nodes.map(node => [node.id, node.type]));
+  return new Set(graph.edges.map(edge => `${type.get(edge.source) ?? '?'}>${type.get(edge.target) ?? '?'}`));
+}
+/** True when the plan is untouched: same pieces on the same solares, joined by the same roads. */
+export function samePlan(previous: Graph, next: Graph) {
+  const before = tally(previous), after = tally(next), roads = planRoads(previous), nextRoads = planRoads(next);
+  return [...new Set([...Object.keys(before), ...Object.keys(after)])].every(type => (before[type] ?? 0) === (after[type] ?? 0))
+    && roads.size === nextRoads.size && [...roads].every(road => nextRoads.has(road));
+}
+/** Each role moves only its own pieces, and only the roads that leave them: the rest of the plan is
+ * visible and not grabbable. The entrance belongs to nobody, so any of the three may connect it. */
+export function assertPlanOwnership(previous: Graph, next: Graph, role: Identity['role']) {
+  const before = tally(previous), after = tally(next);
+  for (const type of new Set([...Object.keys(before), ...Object.keys(after)])) {
+    if ((before[type] ?? 0) === (after[type] ?? 0)) continue;
+    if (!isPlanPiece(type)) throw new Error('Esa pieza no existe en el catálogo del plano.');
+    const piece = PLAN_PIECES[type];
+    if (piece.owner !== role) throw new Error(`${piece.label} no es una pieza de tu rol.`);
+  }
+  const roads = planRoads(previous), nextRoads = planRoads(next);
+  for (const road of new Set([...roads, ...nextRoads])) {
+    if (roads.has(road) === nextRoads.has(road)) continue;
+    const source = road.split('>')[0];
+    if (source === 'entry' || !isPlanPiece(source)) continue;
+    if (PLAN_PIECES[source].owner !== role) throw new Error(`El camino que sale de ${PLAN_PIECES[source].label.toLowerCase()} lo dibuja su rol, no vos.`);
+  }
+  return after;
 }

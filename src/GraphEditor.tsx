@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { ReactFlow, ReactFlowProvider, Background, BackgroundVariant, Controls, Handle, Position, addEdge, applyNodeChanges, applyEdgeChanges, useReactFlow, type Connection, type Node, type Edge, type NodeProps, type NodeChange, type EdgeChange } from '@xyflow/react';
-import { BLOCKS, type Graph, type PrivateCompany, type Role } from '../shared/types';
-import { PLAN_PIECES, PLAN_PIECE_TYPES, PLAN_SLOTS, planPublicationCost, type PlanPiece } from '../shared/plan';
-import { addPiece, boardSlots, connect, removePiece } from './planBoard';
+import { BLOCKS, ROLE_LABELS, STATUS_LABELS, type Graph, type PrivateCompany, type Role } from '../shared/types';
+import { PLAN_PIECES, PLAN_PIECE_TYPES, planPublicationCost, type PlanPiece } from '../shared/plan';
+import { PLAN_NODE_WIDTH, addPiece, boardPoint, boardSlots, connect, editableBoard, removePiece } from './planBoard';
+import { LOGIC_BLOCKS, hasBlock, insertBlock, logicPath, removeBlock, sameLogic, submissionCost, type LogicPiece } from './logicBlocks';
 import type { BlockConfiguration } from '../shared/blocks';
 import { send, money, useGame } from './store';
 import { Icon } from './icons';
@@ -11,21 +12,24 @@ function PixelNode({ data, selected, type }: NodeProps) {
   const fixed=['entry','exit','read','write','payment'].includes(type??'');
   return <div className={`pixel-flow-node ${selected?'selected':''} ${fixed?'fixed':''}`}>
     {type!=='entry'&&<Handle type="target" position={Position.Left}/>}
-    <div className="node-type"><Icon name={type==='entry'||type==='exit'?'arrow':type==='auth'||type==='waf'?'shield':'chip'} size={13}/>{fixed?'SERVICE':'MODULE'}</div>
-    <strong>{String(data.label)}</strong><span>{data.config?'CONFIGURADO':data.value!=null?`CONFIG · ${data.value}`:type==='entry'?'INBOUND REQUEST':type==='exit'?'HTTP RESPONSE':'PRODUCTION SERVICE'}</span>
+    <div className="node-type"><Icon name={type==='entry'||type==='exit'?'arrow':type==='auth'||type==='waf'?'shield':'chip'} size={13}/>{fixed?'SERVICIO':'BLOQUE'}</div>
+    <strong>{String(data.label)}</strong><span>{data.config?'CONFIGURADO':data.value!=null?`CONFIG · ${data.value}`:type==='entry'?'ENTRA LA SOLICITUD':type==='exit'?'SALE LA RESPUESTA':'EN PRODUCCIÓN'}</span>
     {type!=='exit'&&<Handle type="source" position={Position.Right}/>}
   </div>;
 }
 export const flowNodeTypes=Object.fromEntries(['entry','exit','read','write','payment',...BLOCKS.backend.map(b=>b.type),...BLOCKS.security.map(b=>b.type)].map(t=>[t,PixelNode]));
 const defaultEdgeOptions={ type:'smoothstep', style:{ stroke:'#8e9aaf',strokeWidth:2 } };
 
+/** A placed piece. Roads start from the right point of a piece you own (the entrance is everybody's)
+ * and end on the left point of the next one, so a drag always goes the way traffic does. */
 function PlanPieceNode({ data, selected, type }: NodeProps) {
-  const piece=PLAN_PIECES[type as PlanPiece],mine=Boolean(data.mine);
-  return <div className={`plan-node ${selected?'selected':''} ${mine?'mine':'theirs'}`} title={piece.text}>
-    {type!=='entry'&&<Handle type="target" position={Position.Left}/>}
-    <div className="node-type"><Icon name={type==='security'?'shield':type==='entry'||type==='exit'?'arrow':'chip'} size={13}/>{mine?'TU PIEZA':'OTRO ROL'}</div>
+  const piece=PLAN_PIECES[type as PlanPiece],shared=type==='entry',mine=Boolean(data.mine)||shared;
+  const badge=typeof data.badge==='string'?data.badge:shared?'DE TODOS':mine?'TU PIEZA':'OTRO ROL';
+  return <div className={`plan-node ${selected?'selected':''} ${mine?'mine':'theirs'}`} style={{width:PLAN_NODE_WIDTH}} title={piece.text}>
+    {type!=='entry'&&<Handle type="target" position={Position.Left} isConnectableStart={false}/>}
+    <div className="node-type"><Icon name={type==='security'?'shield':type==='entry'||type==='exit'?'arrow':'chip'} size={13}/>{badge}</div>
     <strong>{piece.label}</strong><span>{piece.text}</span>
-    {type!=='exit'&&<Handle type="source" position={Position.Right}/>}
+    {type!=='exit'&&<Handle type="source" position={Position.Right} isConnectableStart={mine}/>}
   </div>;
 }
 /** An empty solar: it says what the company loses without the piece, never what to do about it.
@@ -33,31 +37,38 @@ function PlanPieceNode({ data, selected, type }: NodeProps) {
 function PlanGhostNode({ data }: NodeProps) {
   const piece=PLAN_PIECES[data.piece as PlanPiece],mine=Boolean(data.mine);
   const body=<><div className="node-type"><Icon name="plus" size={13}/>SOLAR VACÍO</div><strong>{piece.label}</strong><span>{String(data.reason)}</span></>;
-  if(!mine)return <div className="plan-node ghost theirs">{body}</div>;
-  return <button type="button" className="plan-node ghost mine nodrag nopan" onClick={()=>(data.onPlace as ()=>void)?.()}>{body}</button>;
+  if(!mine)return <div className="plan-node ghost theirs" style={{width:PLAN_NODE_WIDTH}}>{body}</div>;
+  return <button type="button" className="plan-node ghost mine nodrag nopan" style={{width:PLAN_NODE_WIDTH}} onClick={()=>(data.onPlace as ()=>void)?.()}>{body}</button>;
 }
 /** The server bay is never drawn from the graph: capacity lives in company.servers, which DevOps
  * scales from its own console. The bay shows that truth so the board matches the company. */
 function PlanServerNode({ data }: NodeProps) {
   const count=Number(data.count);
-  return <div className={`plan-node servers ${data.mine?'mine':'theirs'}`}>
+  return <div className={`plan-node servers ${data.mine?'mine':'theirs'}`} style={{width:PLAN_NODE_WIDTH}}>
     <div className="node-type"><Icon name="server" size={13}/>{data.mine?'TUS MÁQUINAS':'INFRAESTRUCTURA'}</div>
     <strong>{PLAN_PIECES.server.label} ×{count}</strong><span>{PLAN_PIECES.server.text}</span>
   </div>;
 }
 export const planNodeTypes={...Object.fromEntries(PLAN_PIECE_TYPES.map(t=>[t,PlanPieceNode])),ghost:PlanGhostNode,servers:PlanServerNode};
+/** Every piece is centred on its board point, the way the projector centres its services. */
+const planNodeOrigin:[number,number]=[.5,.5];
+/** Plan changes still in the cycle: what the editor reports instead of a second submission. */
+const IN_CYCLE=['QA_PENDING','QA_RUNNING','CTO_PENDING','AUTHORIZED','EXPIRED','DEPLOYING'];
 
 /** The service plan: fixed solares, roads the team draws, and each role moving only its own pieces. */
 function PlanEditor({ company:c, role, active }: { company: PrivateCompany; role: Role; active: boolean }) {
   const draft=c.planDrafts?.[role];
-  const [plan,setPlan]=useState<Graph>(structuredClone(draft?.graph??c.plan));
+  const [plan,setPlan]=useState<Graph>(()=>structuredClone(editableBoard(c.plan,draft?.graph,role)));
   const servers=c.servers;
   const [selected,setSelected]=useState<string|null>(null),[dirty,setDirty]=useState(false),[busy,setBusy]=useState(false);
   const [openPiece,setOpenPiece]=useState<'inventory'|'payment'|null>(null);
+  // From the first sale on the plan changes through QA → CTO → DevOps (spec §5).
+  const cycle=!c.assembly.active;
+  const inCycle=(useGame(s=>s.snapshot?.changes)??[]).filter(ch=>ch.domain==='plan'&&IN_CYCLE.includes(ch.status));
   // The block editor keeps honouring the workflow's backend lock, as it did when App.tsx opened it.
-  const backendLocked=useGame(s=>Boolean(s.snapshot?.operations?.workflow?.backendLock));
+  const lockedBy=useGame(s=>s.snapshot?.operations?.workflow?.backendLock?.changeId),backendLocked=Boolean(lockedBy);
   const revision=useRef(draft?.revision??0);
-  const reload=useCallback(()=>{const next=draft?.graph??c.plan;setPlan(structuredClone(next));revision.current=draft?.revision??0;setDirty(false);setSelected(null);},[draft,c.plan]);
+  const reload=useCallback(()=>{const next=editableBoard(c.plan,draft?.graph,role);setPlan(structuredClone(next));revision.current=draft?.revision??0;setDirty(false);setSelected(null);},[draft,c.plan,role]);
   // A plan published by another role (or by Claude) never overwrites unsaved local work.
   useEffect(()=>{if(!dirty)reload();},[draft?.revision,c.version]);
   function place(piece:PlanPiece) {
@@ -69,9 +80,9 @@ function PlanEditor({ company:c, role, active }: { company: PrivateCompany; role
   const buildNodes=useCallback((current:Graph):Node[]=>{
     const slots=boardSlots(current,role),mineByType=new Map(slots.map(s=>[s.piece as string,s.mine]));
     return [
-      ...current.nodes.filter(n=>n.type!=='server').map(n=>({...n,draggable:false,selectable:Boolean(mineByType.get(n.type))&&active,deletable:false,data:{...n.data,mine:mineByType.get(n.type)}})) as Node[],
+      ...current.nodes.filter(n=>n.type!=='server').map(n=>({...n,position:boardPoint(n.type as PlanPiece),draggable:false,selectable:Boolean(mineByType.get(n.type))&&active,deletable:false,data:{...n.data,mine:mineByType.get(n.type)}})) as Node[],
       ...slots.filter(s=>!s.placed&&s.piece!=='server').map(s=>({id:`ghost-${s.piece}`,type:'ghost',position:s.position,draggable:false,selectable:false,connectable:false,data:{piece:s.piece,reason:s.reason,mine:s.mine&&active,onPlace:()=>place(s.piece)}})) as Node[],
-      {id:'plan-server-bay',type:'servers',position:PLAN_SLOTS.server,draggable:false,selectable:false,connectable:false,data:{count:servers,mine:role==='devops'}} as Node,
+      {id:'plan-server-bay',type:'servers',position:boardPoint('server'),draggable:false,selectable:false,connectable:false,data:{count:servers,mine:role==='devops'}} as Node,
     ];
   },[role,active,servers]);
   const [nodes,setNodes]=useState<Node[]>(()=>buildNodes(plan));
@@ -79,9 +90,9 @@ function PlanEditor({ company:c, role, active }: { company: PrivateCompany; role
   const onNodesChange=useCallback((changes:NodeChange[])=>setNodes(ns=>applyNodeChanges(changes,ns)),[]);
   const slots=boardSlots(plan,role);
   const onConnect=useCallback((connection:Connection)=>{if(!connection.source||!connection.target)return;setPlan(current=>connect(current,connection.source!,connection.target!));setDirty(true);},[]);
-  async function save(publish=false) {
+  async function save(mode:'plan.save'|'plan.publish'|'plan.submit'='plan.save') {
     setBusy(true);
-    const ok=await send(publish?'plan.publish':'plan.save',{companyId:c.id,payload:{graph:plan,revision:revision.current}});
+    const ok=await send(mode,{companyId:c.id,payload:{graph:plan,revision:revision.current}});
     if(ok){revision.current++;setDirty(false);}
     setBusy(false);
   }
@@ -98,7 +109,7 @@ function PlanEditor({ company:c, role, active }: { company: PrivateCompany; role
       <div className="palette-total"><span>PUBLICACIÓN</span><b>{money(cost)}</b></div>
     </aside>
     <div className="editor-flow" onDragOver={e=>{e.preventDefault();e.dataTransfer.dropEffect='copy';}} onDrop={e=>{e.preventDefault();const t=e.dataTransfer.getData('application/flow-war-plan');if(t)place(t as PlanPiece);}}>
-      <ReactFlow nodes={nodes} edges={plan.edges} onNodesChange={onNodesChange} onConnect={active?onConnect:undefined} onNodeClick={(_,n)=>{if(!n.id.startsWith('ghost-'))setSelected(n.id);}} onPaneClick={()=>setSelected(null)} nodeTypes={planNodeTypes} defaultEdgeOptions={defaultEdgeOptions} fitView fitViewOptions={{padding:.15}} minZoom={.2} maxZoom={1.4} nodesDraggable={false} nodesConnectable={active} elementsSelectable={active} deleteKeyCode={null} colorMode="dark"><Background variant={BackgroundVariant.Dots} color="#344052" gap={20} size={1}/><Controls showInteractive={false}/></ReactFlow>
+      <ReactFlow nodes={nodes} edges={plan.edges} onNodesChange={onNodesChange} onConnect={active?onConnect:undefined} onNodeClick={(_,n)=>{if(!n.id.startsWith('ghost-'))setSelected(n.id);}} onPaneClick={()=>setSelected(null)} nodeTypes={planNodeTypes} nodeOrigin={planNodeOrigin} connectionRadius={40} defaultEdgeOptions={defaultEdgeOptions} fitView fitViewOptions={{padding:.06}} minZoom={.2} maxZoom={1.4} nodesDraggable={false} nodesConnectable={active} elementsSelectable={active} deleteKeyCode={null} colorMode="dark"><Background variant={BackgroundVariant.Dots} color="#344052" gap={20} size={1}/><Controls showInteractive={false}/></ReactFlow>
       <div className="canvas-caption">{plan.nodes.length} PIEZAS <i/> {plan.edges.length} CAMINOS</div>
     </div>
     <aside className="node-inspector"><span className="eyebrow">INSPECTOR DE PIEZA</span>
@@ -106,18 +117,53 @@ function PlanEditor({ company:c, role, active }: { company: PrivateCompany; role
         <h3>{PLAN_PIECES[piece].label}</h3><span className="inspector-id">{piece.toUpperCase()}</span>
         <p className="piece-text">{PLAN_PIECES[piece].text}</p>
         <div className="inspector-cost"><span>INCORPORACIÓN</span><b>{money(PLAN_PIECES[piece].cost)}</b></div>
-        {(piece==='inventory'||piece==='payment')&&<button className="secondary-button" onClick={()=>setOpenPiece(piece)}>ABRIR SU LÓGICA INTERNA<Icon name="arrow" size={14}/></button>}
+        {(piece==='inventory'||piece==='payment')&&role==='backend'&&<p className="muted">Su lógica está debajo del plano: tocá un bloque para ponerlo o quitarlo.</p>}
         {PLAN_PIECES[piece].owner===role&&piece!=='entry'&&<button className="secondary-button danger" disabled={!active} onClick={()=>{setPlan(current=>removePiece(current,node!.id));setSelected(null);setDirty(true);}}>QUITAR PIEZA</button>}</>
       :<div className="inspector-empty"><Icon name="chip" size={34}/><span>SIN SELECCIÓN</span><p className="muted">Tocá un solar vacío para colocar tu pieza, o una pieza puesta para ver qué hace.</p></div>}
     </aside></div>
+    {(piece==='inventory'||piece==='payment')&&role==='backend'&&<PlanLogic key={piece} company={c} piece={piece} active={active} lockedBy={lockedBy} onOpen={()=>setOpenPiece(piece)}/>}
     <div className="editor-bottom"><span><i className={dirty?'yellow-dot':'green-dot'}/>{dirty?'CAMBIOS LOCALES':'PLANO SINCRONIZADO'}</span>
+      {cycle&&<span className="plan-cycle-note">{inCycle.length?inCycle.map(ch=>`${ch.id} · ${STATUS_LABELS[ch.status]}`).join(' · '):'Tu cambio pasa por QA → CTO → DevOps: el CTO autoriza su costo y DevOps lo despliega.'}</span>}
       <div className="button-row"><button className="secondary-button" disabled={!active||busy} onClick={()=>void save()}>GUARDAR</button>
-      <button className="primary-button small" disabled={!active||busy||!c.assembly.active} onClick={()=>void save(true)}>{busy?'PUBLICANDO…':`PUBLICAR · ${money(cost)}`}<Icon name="arrow" size={15}/></button></div></div>
+      {cycle?<button className="primary-button small" disabled={!active||busy} onClick={()=>void save('plan.submit')}>{busy?'ENVIANDO…':`ENVIAR AL CICLO · ${money(cost)}`}<Icon name="arrow" size={15}/></button>
+        :<button className="primary-button small" disabled={!active||busy} onClick={()=>void save('plan.publish')}>{busy?'PUBLICANDO…':`PUBLICAR · ${money(cost)}`}<Icon name="arrow" size={15}/></button>}</div></div>
     {openPiece&&<div className="plan-inner-editor"><div className="panel-title"><span>LÓGICA INTERNA DE {PLAN_PIECES[openPiece].label.toUpperCase()}</span><button className="text-button" onClick={()=>setOpenPiece(null)}>VOLVER AL PLANO</button></div><GraphEditor company={c} domain="backend" active={active&&!backendLocked}/></div>}
   </section>;
 }
-export function GraphViewer({ graph }: { graph: Graph }) {
-  return <div className="artifact-graph"><ReactFlow nodes={graph.nodes as Node[]} edges={graph.edges} nodeTypes={flowNodeTypes} defaultEdgeOptions={defaultEdgeOptions} fitView nodesDraggable={false} nodesConnectable={false} elementsSelectable={false} minZoom={.15} maxZoom={1} colorMode="dark"><Background color="#28374b" gap={20} size={1}/></ReactFlow></div>;
+/** Inventario and Pagos carry the purchase-flow blocks: one tap puts a block where the engine reads it,
+ * saved as Backend's draft, and the inner canvas stays one click away for wiring by hand. */
+function PlanLogic({ company:c, piece, active, lockedBy, onOpen }: { company: PrivateCompany; piece: LogicPiece; active: boolean; lockedBy?: string; onOpen: ()=>void }) {
+  const draft=c.drafts.backend;
+  const [graph,setGraph]=useState<Graph>(()=>structuredClone(draft?.graph??c.backend)),[busy,setBusy]=useState(false);
+  const revision=useRef(draft?.revision??0);
+  // A revision saved elsewhere (the inner canvas, Claude, a QA return) replaces what the panel shows.
+  useEffect(()=>{if((draft?.revision??0)>=revision.current){setGraph(structuredClone(draft?.graph??c.backend));revision.current=draft?.revision??0;}},[draft?.revision,c.version]);
+  const editable=active&&!lockedBy&&!busy,unchanged=sameLogic(graph,c.backend);
+  async function toggle(type:string) {
+    const next=hasBlock(graph,type)?removeBlock(graph,type):insertBlock(graph,type);
+    // The snapshot may land before the ack and set the revision already: the next one is sent+1, never more.
+    const sent=revision.current;setBusy(true);
+    if(await send('draft.save',{companyId:c.id,payload:{graph:next,revision:sent}})){revision.current=Math.max(revision.current,sent+1);setGraph(next);}
+    setBusy(false);
+  }
+  async function submit() {
+    const sent=revision.current;setBusy(true);
+    if(await send('change.submit',{companyId:c.id,payload:{graph,revision:sent}}))revision.current=Math.max(revision.current,sent+1);
+    setBusy(false);
+  }
+  return <div className="plan-logic"><div className="panel-title"><span>LÓGICA DE {PLAN_PIECES[piece].label.toUpperCase()}</span><button className="text-button" onClick={onOpen}>CABLEAR A MANO (AVANZADO)<Icon name="arrow" size={12}/></button></div>
+    <p className="plan-logic-path">{logicPath(graph).join(' → ')}</p>
+    <div className="plan-logic-blocks">{LOGIC_BLOCKS[piece].map(b=>{const block=BLOCKS.backend.find(x=>x.type===b.type)!,on=hasBlock(graph,b.type);
+      return <article key={b.type} className={on?'on':''}><div><strong>{block.label}</strong><small>{on?'PUESTO':money(block.cost)}</small></div><p>{b.text}</p>
+        <button className={on?'secondary-button danger':'secondary-button'} disabled={!editable} onClick={()=>void toggle(b.type)}>{on?'QUITAR':'PONER'}</button></article>;})}</div>
+    <div className="plan-logic-bottom"><span className="muted">{lockedBy?`Tu lógica está en revisión (${lockedBy}): se desbloquea si QA te la devuelve.`:unchanged?'Igual que producción.':'Cambio guardado en tu borrador. Ningún cambio llega a producción sin pasar por Seguridad → QA → CTO → DevOps.'}</span>
+      <button className="primary-button small" disabled={!editable||unchanged} onClick={()=>void submit()}>{busy?'ENVIANDO…':`ENVIAR A SEGURIDAD · ${money(submissionCost(graph.nodes))}`}<Icon name="arrow" size={14}/></button></div>
+  </div>;
+}
+/** A read-only graph. A plan change is drawn on the plan board, with each piece labelled by its owner. */
+export function GraphViewer({ graph, plan=false }: { graph: Graph; plan?: boolean }) {
+  const nodes=plan?graph.nodes.map(n=>{const owner=PLAN_PIECES[n.type as PlanPiece]?.owner;return {...n,position:boardPoint(n.type as PlanPiece),data:{...n.data,mine:true,badge:owner?ROLE_LABELS[owner].toUpperCase():'DE TODOS'}};}) as Node[]:graph.nodes as Node[];
+  return <div className="artifact-graph"><ReactFlow nodes={nodes} edges={graph.edges} nodeTypes={plan?planNodeTypes:flowNodeTypes} {...(plan?{nodeOrigin:planNodeOrigin}:{})} defaultEdgeOptions={defaultEdgeOptions} fitView nodesDraggable={false} nodesConnectable={false} elementsSelectable={false} minZoom={.15} maxZoom={1} colorMode="dark"><Background color="#28374b" gap={20} size={1}/></ReactFlow></div>;
 }
 function Editor({ company:c,domain,active }: { company: PrivateCompany; domain:'backend'|'security'; active:boolean }) {
   const draft=c.drafts[domain];
@@ -140,7 +186,7 @@ function Editor({ company:c,domain,active }: { company: PrivateCompany; domain:'
   useEffect(()=>{if(draft&&draft.revision>revision.current){if(dirty)setServerAhead(true);else reload();}},[draft?.revision]);
   useEffect(()=>{useGame.getState().setSelection({nodeId:selected??undefined});},[selected]);
   const node=nodes.find(n=>n.id===selected),block=blocks.find(b=>b.type===node?.type);
-  const cost=100+nodes.reduce((sum,n)=>sum+(blocks.find(b=>b.type===n.type)?.cost??0),0);
+  const cost=domain==='backend'?submissionCost(nodes):100+nodes.reduce((sum,n)=>sum+(blocks.find(b=>b.type===n.type)?.cost??0),0);
   return <section className="node-editor panel" style={{'--team':c.color} as CSSProperties}><div className="editor-topbar"><span><Icon name={domain==='backend'?'code':'shield'} size={17}/> {domain==='backend'?'ARQUITECTURA DE LÓGICA':'PERÍMETRO DE SEGURIDAD'}</span><span className="eyebrow">purchase-flow · BORRADOR <b>r{revision.current}</b> <i/> BASE v{c.version}.0</span></div><div className="editor-body"><aside className="block-palette"><div className="palette-heading"><span className="eyebrow">PIEZAS DISPONIBLES</span><b>{blocks.length.toString().padStart(2,'0')}</b></div>{blocks.map(b=><button draggable={active} disabled={!active} onDragStart={e=>{e.dataTransfer.setData('application/flow-war',b.type);e.dataTransfer.effectAllowed='move';}} onClick={()=>add(b.type)} key={b.type} className="palette-block"><span className="block-grip">⠿</span><Icon name={domain==='security'?'shield':'chip'} size={15}/><span>{b.label}<small>{money(b.cost)}</small></span><Icon name="plus" size={12}/></button>)}<div className="palette-total"><span>PUBLICACIÓN</span><b>{money(cost)}</b></div></aside><div className="editor-flow" onDragOver={e=>{e.preventDefault();e.dataTransfer.dropEffect='move';}} onDrop={e=>{e.preventDefault();add(e.dataTransfer.getData('application/flow-war'),screenToFlowPosition({x:e.clientX,y:e.clientY}));}}><ReactFlow nodes={nodes} edges={edges} onNodesChange={active?onNodesChange:undefined} onEdgesChange={active?onEdgesChange:undefined} onConnect={active?onConnect:undefined} onNodeClick={(_,n)=>setSelected(n.id)} onPaneClick={()=>setSelected(null)} nodeTypes={flowNodeTypes} defaultEdgeOptions={defaultEdgeOptions} fitView fitViewOptions={{padding:.2}} minZoom={.25} maxZoom={1.5} nodesDraggable={active} nodesConnectable={active} deleteKeyCode={active?['Backspace','Delete']:null} colorMode="dark"><Background variant={BackgroundVariant.Dots} color="#344052" gap={20} size={1}/><Controls showInteractive={false}/></ReactFlow><div className="canvas-caption">{nodes.length} NODOS <i/> {edges.length} CONEXIONES</div></div><aside className="node-inspector"><span className="eyebrow">INSPECTOR DE PIEZA</span>{node?<><div className="inspector-icon"><Icon name={domain==='security'?'shield':'chip'} size={30}/></div><h3>{String(node.data.label)}</h3><span className="inspector-id">{node.type?.toUpperCase()}</span>{node.type&&defaults(node.type,Number(node.data.value??1))&&<BlockInspector key={`${node.id}-${refresh}`} node={node} active={active} onChange={config=>{setNodes(ns=>ns.map(n=>n.id===node.id?{...n,data:{...n.data,config}}:n));setDirty(true);}}/>}{block&&<>{node.type==='atomic'&&<><label htmlFor="node-value">{block.unit.toUpperCase()}</label><input id="node-value" type="number" min={1} max={120} value={Number(node.data.value??block.value)} disabled={!active} onChange={e=>{setNodes(ns=>ns.map(n=>n.id===node.id?{...n,data:{...n.data,value:Number(e.target.value)}}:n));setDirty(true);}}/></>}<div className="inspector-cost"><span>INCORPORACIÓN</span><b>{money(block.cost)}</b></div><button className="secondary-button danger" disabled={!active} onClick={()=>{setNodes(ns=>ns.filter(n=>n.id!==node.id));setEdges(es=>es.filter(e=>e.source!==node.id&&e.target!==node.id));setSelected(null);setDirty(true);}}>ELIMINAR PIEZA</button></>}</>:<div className="inspector-empty"><Icon name="chip" size={34}/><span>SIN SELECCIÓN</span></div>}</aside></div><div className="editor-bottom"><span><i className={dirty?'yellow-dot':'green-dot'}/>{dirty?'CAMBIOS LOCALES':'BORRADOR SINCRONIZADO'}{serverAhead&&<> · <b>EL SERVIDOR TIENE LA REVISIÓN r{draft?.revision}</b> <button className="text-button" onClick={reload}>CARGAR REVISIÓN GUARDADA</button></>}</span><div className="button-row"><button className="secondary-button" disabled={!active||busy} onClick={()=>void save()}>GUARDAR</button><button className="primary-button small" disabled={!active||busy} onClick={()=>void save(true)}>{busy?'CONFIRMANDO…':'ENVIAR A SEGURIDAD'}<Icon name="arrow" size={15}/></button></div></div>{snapshot?.operations?.collaboration&&<div className="backend-observations">{Object.entries(snapshot.operations.collaboration.reviews).flatMap(([id,r])=>r.observations.map((o,i)=><p key={`${id}-${i}`}><b>{id} · {o.nodeId}</b> {o.text}</p>))}</div>}</section>;
 }
 export default function GraphEditor(props:{company:PrivateCompany;domain:'backend'|'security'|'plan';active:boolean;role?:Role}) {
